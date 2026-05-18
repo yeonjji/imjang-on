@@ -1,0 +1,35 @@
+name: pg-dump-backup
+on:
+  schedule:
+    - cron: '0 19 * * 0'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+    steps:
+      - name: Install pg_dump
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Dump
+        run: |
+          ts=$(date +%Y%m%d-%H%M%S)
+          pg_dump --no-owner --no-acl --format=custom "${{ env.DATABASE_URL }}" \
+            | gzip > backup-$ts.dump.gz
+          echo "BACKUP_FILE=backup-$ts.dump.gz" >> $GITHUB_ENV
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 30
+      - name: Notify
+        if: failure()
+        run: |
+          curl -X POST -H 'Content-Type: application/json' \
+            -d '{"content":"🔴 pg_dump backup failed"}' \
+            "${{ secrets.DISCORD_WEBHOOK_URL }}"
