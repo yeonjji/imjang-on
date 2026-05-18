@@ -1,0 +1,31 @@
+name: ingest-transactions-daily
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [apt-trade, apt-rent, offi-trade, offi-rent, rh-trade, rh-rent]
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      PUBLIC_DATA_KEY: ${{ secrets.PUBLIC_DATA_KEY }}
+      KAKAO_REST_KEY: ${{ secrets.KAKAO_REST_KEY }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      REVALIDATE_TOKEN: ${{ secrets.REVALIDATE_TOKEN }}
+      SITE_URL: ${{ secrets.SITE_URL }}
+      LOG_LEVEL: info
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma generate
+      - run: pnpm tsx scripts/ingest/transactions/runner.ts --api=${{ matrix.api }} --mode=daily
+        timeout-minutes: 60
