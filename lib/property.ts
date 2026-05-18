@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { PropertyType } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 export type PropertyTypeSlug = 'apt' | 'officetel' | 'villa';
 
@@ -30,7 +31,7 @@ export interface PropertyListParams {
 }
 
 export async function getPropertyList({ types, sigunguCode, page = 1, perPage = 30 }: PropertyListParams) {
-  const where: any = { propertyType: { in: types }, txCount12m: { gt: 0 } };
+  const where: Prisma.PropertyWhereInput = { propertyType: { in: types }, txCount12m: { gt: 0 } };
   if (sigunguCode) where.sigunguCode = sigunguCode;
   const [rows, total] = await Promise.all([
     prisma.property.findMany({

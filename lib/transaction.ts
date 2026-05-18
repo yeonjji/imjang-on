@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { DealType } from '@prisma/client';
+import type { DealType, Prisma } from '@prisma/client';
 
 export async function getTransactionCounts(propertyId: bigint) {
   const rows = await prisma.transaction.groupBy({
@@ -16,8 +16,12 @@ export async function getTransactionCounts(propertyId: bigint) {
 
 export async function getTransactionsByType(propertyId: bigint, dealType: DealType, params: { page?: number; perPage?: number; area?: number | null }) {
   const { page = 1, perPage = 10, area = null } = params;
-  const where: any = { propertyId, dealType };
-  if (area) where.exclusiveArea = { gte: (area - 3) * 3.3057851239669422, lte: (area + 3) * 3.3057851239669422 };
+  const where: Prisma.TransactionWhereInput = { propertyId, dealType };
+  if (area)
+    where.exclusiveArea = {
+      gte: (area - 3) * 3.3057851239669422,
+      lte: (area + 3) * 3.3057851239669422,
+    };
   return prisma.transaction.findMany({
     where,
     orderBy: [{ contractDate: 'desc' }, { id: 'desc' }],

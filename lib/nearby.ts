@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { PropertyType } from '@prisma/client';
+import type { PropertyType } from '@prisma/client';
 
 export interface NearbyProperty {
   id: string;
