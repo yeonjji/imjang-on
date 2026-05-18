@@ -13,7 +13,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:unit": "vitest run --dir tests/ingest --dir tests/lib",
+    "test:unit": "vitest run",
     "test:integration": "vitest run --dir tests/integration",
     "test:e2e": "playwright test",
     "test": "pnpm test:unit && pnpm test:integration",
@@ -29,9 +29,18 @@
     "react-dom": "^19"
   },
   "devDependencies": {
+    "@playwright/test": "^1",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "typescript": "^5"
+    "@vitest/coverage-v8": "^2",
+    "eslint": "^9",
+    "eslint-config-next": "^15",
+    "prettier": "^3",
+    "prettier-plugin-tailwindcss": "^0.6",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^2"
   }
 }
