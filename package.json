@@ -34,6 +34,7 @@
     "pino": "^9",
     "react": "^19",
     "react-dom": "^19",
+    "recharts": "^2",
     "tailwind-merge": "^2",
     "vaul": "^1",
     "zod": "^3"
