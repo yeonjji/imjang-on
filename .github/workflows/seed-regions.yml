@@ -1,0 +1,31 @@
+name: seed-regions
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Source version tag (e.g. 2026-Q2)'
+        required: false
+        default: ''
+  schedule:
+    - cron: '0 18 5 4 *'
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      LOG_LEVEL: info
+      REGION_SOURCE_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma generate
+      - name: Download regions data
+        run: |
+          curl -L -o data/regions.txt.zip "${{ secrets.REGIONS_DOWNLOAD_URL }}"
+          mkdir -p data && cd data && unzip -o regions.txt.zip
+      - run: pnpm tsx scripts/ingest/regions/seed.ts ./data/regions.txt
