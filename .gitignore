@@ -1,0 +1,51 @@
+# Node / pnpm
+node_modules/
+.pnpm-store/
+pnpm-debug.log*
+npm-debug.log*
+yarn-error.log*
+
+# Next.js
+.next/
+out/
+build/
+dist/
+next-env.d.ts
+*.tsbuildinfo
+
+# 환경변수
+.env
+.env.local
+.env.*.local
+
+# 테스트 산출물
+coverage/
+playwright-report/
+test-results/
+.vitest/
+
+# Prisma
+prisma/*.db
+prisma/migrations/dev.db*
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Vercel / Turbo
+.vercel/
+.turbo/
+
+# 로그
+*.log
+logs/
+
+# OMC 런타임 상태 (브레인스토밍 등 로컬 작업)
+.omc/
+
+# Claude Code 로컬 캐시 (settings.json은 추적)
+.claude/projects/
+.claude/cache/

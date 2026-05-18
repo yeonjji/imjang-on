@@ -1,0 +1,837 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>부동산 통합 플랫폼 UI 시안</title>
+  <style>
+    :root {
+      --bg: #f7fbff;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #64748b;
+      --line: #dbeafe;
+      --blue: #2563eb;
+      --blue-dark: #1e3a8a;
+      --sky: #38bdf8;
+      --sky-soft: #e0f2fe;
+      --soft: #f1f7ff;
+      --green: #0f9f6e;
+      --red: #ef4444;
+      --shadow: 0 14px 34px rgba(37, 99, 235, 0.10);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", "Noto Sans KR", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .page {
+      min-height: 100vh;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(247, 244, 239, 0.88);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(229, 221, 211, 0.8);
+    }
+
+    .nav {
+      max-width: 1180px;
+      margin: 0 auto;
+      height: 72px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      color: var(--blue-dark);
+      font-size: 22px;
+    }
+
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .menu {
+      display: flex;
+      gap: 26px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .nav-btn {
+      padding: 11px 16px;
+      border-radius: 999px;
+      background: var(--blue);
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .hero {
+      padding: 76px 0 42px;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 34px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 13px;
+      border-radius: 999px;
+      background: var(--sky-soft);
+      color: var(--blue-dark);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 18px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(38px, 5vw, 64px);
+      line-height: 1.08;
+      letter-spacing: -0.07em;
+      color: var(--blue-dark);
+    }
+
+    .hero p {
+      margin: 22px 0 0;
+      font-size: 18px;
+      line-height: 1.75;
+      color: var(--muted);
+      max-width: 600px;
+    }
+
+    .search-panel {
+      margin-top: 30px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .search-panel input {
+      flex: 1;
+      border: 0;
+      outline: 0;
+      font-size: 16px;
+      padding: 16px 18px;
+      background: transparent;
+      color: var(--text);
+    }
+
+    .search-panel button {
+      border: 0;
+      background: var(--blue);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 18px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .quick-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .tag {
+      padding: 9px 13px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .map-card {
+      min-height: 430px;
+      border-radius: 34px;
+      background:
+        linear-gradient(120deg, rgba(255,255,255,0.88), rgba(255,255,255,0.35)),
+        radial-gradient(circle at 30% 20%, #bfdbfe, transparent 28%),
+        radial-gradient(circle at 78% 65%, #bae6fd, transparent 26%),
+        #eff6ff;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .map-line {
+      position: absolute;
+      inset: 40px;
+      border: 2px dashed rgba(37, 99, 235, 0.20);
+      border-radius: 40% 60% 48% 52%;
+      transform: rotate(-12deg);
+    }
+
+    .pin {
+      position: absolute;
+      padding: 13px 15px;
+      border-radius: 18px;
+      background: white;
+      box-shadow: 0 10px 22px rgba(37, 99, 235, 0.14);
+      border: 1px solid var(--line);
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--blue-dark);
+    }
+
+    .pin small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .pin.one { top: 70px; left: 48px; }
+    .pin.two { top: 170px; right: 42px; }
+    .pin.three { bottom: 70px; left: 95px; }
+
+    .section {
+      padding: 34px 0;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .section h2 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.05em;
+      color: var(--blue-dark);
+    }
+
+    .section-desc {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .more {
+      color: var(--blue);
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .estate-card {
+      min-height: 230px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .badge {
+      display: inline-flex;
+      width: fit-content;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .estate-card h3 {
+      margin: 14px 0 8px;
+      font-size: 21px;
+      letter-spacing: -0.04em;
+    }
+
+    .estate-card .addr {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .price-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .price-box {
+      background: var(--soft);
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .price-box span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .price-box strong {
+      font-size: 15px;
+      color: var(--blue-dark);
+    }
+
+    .life-card {
+      min-height: 168px;
+    }
+
+    .life-card .icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      background: var(--sky-soft);
+      margin-bottom: 14px;
+      font-size: 20px;
+    }
+
+    .life-card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .life-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .calendar-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .calendar-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--soft);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .calendar-item strong { font-size: 15px; }
+    .calendar-item span { color: var(--muted); font-size: 13px; }
+
+    .wide-map {
+      min-height: 360px;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.88), rgba(255,255,255,0.25)),
+        repeating-linear-gradient(45deg, rgba(37,99,235,0.08) 0 2px, transparent 2px 28px),
+        #e0f2fe;
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .map-floating {
+      position: absolute;
+      left: 24px;
+      top: 24px;
+      width: 300px;
+      background: white;
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+    }
+
+    .map-floating h3 { margin: 0 0 8px; font-size: 20px; }
+    .map-floating p { margin: 0; color: var(--muted); line-height: 1.6; font-size: 14px; }
+
+    .detail-hero {
+      margin-top: 40px;
+      background: var(--card);
+      border-radius: 34px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .detail-cover {
+      min-height: 260px;
+      background:
+        linear-gradient(120deg, rgba(30,58,138,0.72), rgba(56,189,248,0.16)),
+        linear-gradient(135deg, #2563eb, #bae6fd);
+      padding: 32px;
+      display: flex;
+      align-items: end;
+      color: white;
+    }
+
+    .detail-cover h1 {
+      margin: 0;
+      font-size: 42px;
+      letter-spacing: -0.06em;
+    }
+
+    .detail-cover p {
+      margin: 10px 0 0;
+      color: rgba(255,255,255,0.86);
+      font-size: 16px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--line);
+    }
+
+    .summary-box {
+      background: white;
+      padding: 22px;
+    }
+
+    .summary-box span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .summary-box strong {
+      color: var(--blue-dark);
+      font-size: 20px;
+    }
+
+    .detail-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 22px;
+      padding: 34px 0 80px;
+      align-items: start;
+    }
+
+    .detail-main {
+      display: grid;
+      gap: 22px;
+    }
+
+    .sticky-side {
+      position: sticky;
+      top: 96px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .content-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      padding: 26px;
+    }
+
+    .content-card h2 {
+      margin: 0 0 8px;
+      color: var(--blue-dark);
+      font-size: 25px;
+      letter-spacing: -0.05em;
+    }
+
+    .content-card > p {
+      margin: 0 0 20px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .deal-table {
+      display: grid;
+      gap: 10px;
+    }
+
+    .deal-row {
+      display: grid;
+      grid-template-columns: 90px 1fr 120px 120px;
+      gap: 10px;
+      align-items: center;
+      padding: 16px;
+      border-radius: 18px;
+      background: var(--soft);
+      font-size: 14px;
+    }
+
+    .deal-row strong { color: var(--blue-dark); }
+    .deal-row span { color: var(--muted); }
+
+    .mini-chart {
+      height: 190px;
+      border-radius: 22px;
+      background:
+        linear-gradient(to top, rgba(107,79,58,0.1), transparent),
+        repeating-linear-gradient(to right, transparent 0 70px, rgba(107,79,58,0.08) 70px 71px),
+        var(--soft);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-line {
+      position: absolute;
+      left: 32px;
+      right: 32px;
+      bottom: 46px;
+      height: 78px;
+      border-bottom: 5px solid var(--blue);
+      border-radius: 60% 30% 40% 20%;
+      transform: rotate(-4deg);
+    }
+
+    .infra-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .infra-item {
+      padding: 17px;
+      border-radius: 20px;
+      background: var(--soft);
+      display: flex;
+      gap: 13px;
+      align-items: flex-start;
+    }
+
+    .infra-item b {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--blue-dark);
+    }
+
+    .infra-item span {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .story-box {
+      background: #eff6ff;
+      border-radius: 22px;
+      padding: 22px;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+
+    .side-button {
+      display: block;
+      text-align: center;
+      padding: 15px;
+      border-radius: 18px;
+      background: var(--blue);
+      color: white;
+      font-weight: 800;
+    }
+
+    .side-button.secondary {
+      background: white;
+      color: var(--blue-dark);
+      border: 1px solid var(--line);
+    }
+
+    .ad-box {
+      min-height: 180px;
+      border-radius: 24px;
+      border: 1px dashed #93c5fd;
+      background: rgba(255,255,255,0.65);
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+      padding: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .menu, .nav-btn { display: none; }
+      .hero, .split, .detail-layout { grid-template-columns: 1fr; }
+      .grid-3, .grid-4, .summary-grid, .infra-grid { grid-template-columns: 1fr; }
+      .detail-cover h1 { font-size: 32px; }
+      .deal-row { grid-template-columns: 1fr; }
+      .sticky-side { position: static; }
+      .map-card { min-height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <nav class="nav">
+        <a class="logo" href="#"><span class="logo-mark">M</span>부동산모아</a>
+        <div class="menu">
+          <a href="#">홈</a>
+          <a href="#">실거래가</a>
+          <a href="#">청약정보</a>
+          <a href="#">생활권</a>
+          <a href="#">지도탐색</a>
+        </div>
+        <a class="nav-btn" href="#">관심단지</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="container" style="padding-top:34px;">
+        <div style="display:flex; gap:8px; align-items:center; color:var(--muted); font-size:14px; margin-bottom:18px;">
+          <span>홈</span><span>›</span><strong style="color:var(--blue-dark);">실거래가 목록</strong>
+        </div>
+
+        <div class="card" style="padding:30px; border-radius:32px; margin-bottom:22px;">
+          <div class="eyebrow">부동산 통합 검색</div>
+          <h1 style="margin:0; font-size:42px; letter-spacing:-0.06em; color:var(--blue-dark);">실거래가 목록</h1>
+          <p style="margin:14px 0 0; color:var(--muted); line-height:1.7; font-size:16px;">아파트, 빌라, 주택의 매매·전세·월세 실거래가를 한 번에 확인하고 주변 생활권까지 비교해보세요.</p>
+
+          <div class="search-panel" style="margin-top:24px; box-shadow:none; border-color:#bfdbfe;">
+            <input placeholder="지역명, 단지명, 지하철역, 주소를 검색하세요" />
+            <button>검색</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="container" style="display:grid; grid-template-columns:280px 1fr; gap:22px; align-items:start; padding-bottom:80px;">
+        <aside class="sticky-side" style="top:96px;">
+          <div class="card">
+            <h3 style="margin:0 0 16px; color:var(--blue-dark);">필터</h3>
+
+            <div style="display:grid; gap:18px;">
+              <div>
+                <b style="display:block; margin-bottom:10px;">주거 유형</b>
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                  <span class="tag" style="background:var(--blue); color:white; border-color:var(--blue);">전체</span>
+                  <span class="tag">아파트</span>
+                  <span class="tag">빌라</span>
+                  <span class="tag">주택</span>
+                  <span class="tag">오피스텔</span>
+                </div>
+              </div>
+
+              <div>
+                <b style="display:block; margin-bottom:10px;">거래 유형</b>
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                  <span class="tag" style="background:var(--blue); color:white; border-color:var(--blue);">전체</span>
+                  <span class="tag">매매</span>
+                  <span class="tag">전세</span>
+                  <span class="tag">월세</span>
+                </div>
+              </div>
+
+              <div>
+                <b style="display:block; margin-bottom:10px;">가격대</b>
+                <div style="display:grid; gap:8px;">
+                  <div class="calendar-item" style="padding:12px;"><span>5억 이하</span></div>
+                  <div class="calendar-item" style="padding:12px;"><span>5억 ~ 10억</span></div>
+                  <div class="calendar-item" style="padding:12px;"><span>10억 ~ 15억</span></div>
+                  <div class="calendar-item" style="padding:12px;"><span>15억 이상</span></div>
+                </div>
+              </div>
+
+              <div>
+                <b style="display:block; margin-bottom:10px;">면적</b>
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                  <span class="tag">~59㎡</span>
+                  <span class="tag">60~84㎡</span>
+                  <span class="tag">85~114㎡</span>
+                  <span class="tag">115㎡~</span>
+                </div>
+              </div>
+
+              <div>
+                <b style="display:block; margin-bottom:10px;">생활권 조건</b>
+                <div style="display:grid; gap:8px; color:var(--muted); font-size:14px;">
+                  <label><input type="checkbox" /> 역세권</label>
+                  <label><input type="checkbox" /> 초등학교 근접</label>
+                  <label><input type="checkbox" /> 대형마트 근접</label>
+                  <label><input type="checkbox" /> 병원/약국 밀집</label>
+                  <label><input type="checkbox" /> 공원 근접</label>
+                </div>
+              </div>
+
+              <div>
+                <b style="display:block; margin-bottom:10px;">정렬</b>
+                <div style="display:grid; gap:8px;">
+                  <div class="calendar-item" style="padding:12px;"><span>최신 거래순</span></div>
+                  <div class="calendar-item" style="padding:12px;"><span>가격 높은순</span></div>
+                  <div class="calendar-item" style="padding:12px;"><span>거래 많은순</span></div>
+                  <div class="calendar-item" style="padding:12px;"><span>생활 인프라 우수순</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ad-box">목록 사이드 광고 영역</div>
+        </aside>
+
+        <section>
+          <div class="card" style="margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; gap:16px;">
+            <div>
+              <h2 style="margin:0; color:var(--blue-dark); font-size:24px; letter-spacing:-0.04em;">검색 결과 1,248건</h2>
+              <p style="margin:8px 0 0; color:var(--muted);">서울 마포구 기준 · 매매/전세/월세 통합 표시</p>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+              <span class="tag" style="background:var(--sky-soft); color:var(--blue-dark);">목록형</span>
+              <span class="tag">지도형</span>
+              <span class="tag">카드형</span>
+            </div>
+          </div>
+
+          <div class="wide-map" style="min-height:260px; margin-bottom:22px;">
+            <div class="map-floating">
+              <h3>지도에서 함께 보기</h3>
+              <p>목록 상단에 미니 지도를 배치하면 지역별 가격 분포와 생활권을 빠르게 파악할 수 있습니다.</p>
+            </div>
+          </div>
+
+          <div style="display:grid; gap:16px;">
+            <article class="card" style="display:grid; grid-template-columns:1fr 210px; gap:22px; align-items:center;">
+              <div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+                  <span class="badge">아파트</span>
+                  <span class="badge" style="background:#ecfeff; color:#0369a1;">역세권</span>
+                  <span class="badge" style="background:#f0fdf4; color:#047857;">생활권 우수</span>
+                </div>
+                <h3 style="margin:0 0 8px; font-size:24px; color:var(--blue-dark);">마포 래미안푸르지오</h3>
+                <p style="margin:0 0 14px; color:var(--muted);">서울 마포구 아현동 · 2014년 · 3,885세대 · 아현역 도보 5분</p>
+
+                <div class="price-row" style="max-width:540px; margin-top:0;">
+                  <div class="price-box"><span>매매</span><strong>14.8억</strong></div>
+                  <div class="price-box"><span>전세</span><strong>8.2억</strong></div>
+                  <div class="price-box"><span>월세</span><strong>5천/210</strong></div>
+                </div>
+              </div>
+              <div class="story-box" style="padding:18px;">
+                최근 거래 상승세<br />병원 18 · 마트 5 · 학교 4<br />청약 예정 단지 2건
+              </div>
+            </article>
+
+            <article class="card" style="display:grid; grid-template-columns:1fr 210px; gap:22px; align-items:center;">
+              <div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+                  <span class="badge">빌라</span>
+                  <span class="badge" style="background:#ecfeff; color:#0369a1;">신축</span>
+                  <span class="badge" style="background:#fff7ed; color:#c2410c;">전세 인기</span>
+                </div>
+                <h3 style="margin:0 0 8px; font-size:24px; color:var(--blue-dark);">성수동 신축빌라</h3>
+                <p style="margin:0 0 14px; color:var(--muted);">서울 성동구 성수동 · 뚝섬역 도보권 · 생활상권 밀집</p>
+
+                <div class="price-row" style="max-width:540px; margin-top:0;">
+                  <div class="price-box"><span>매매</span><strong>6.9억</strong></div>
+                  <div class="price-box"><span>전세</span><strong>4.6억</strong></div>
+                  <div class="price-box"><span>월세</span><strong>3천/150</strong></div>
+                </div>
+              </div>
+              <div class="story-box" style="padding:18px;">
+                역세권 소형 주거<br />카페·편의점 밀집<br />1인 가구 선호
+              </div>
+            </article>
+
+            <article class="card" style="display:grid; grid-template-columns:1fr 210px; gap:22px; align-items:center;">
+              <div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+                  <span class="badge">주택</span>
+                  <span class="badge" style="background:#f0fdf4; color:#047857;">조용한 주거지</span>
+                  <span class="badge" style="background:#eef2ff; color:#4338ca;">공원 근접</span>
+                </div>
+                <h3 style="margin:0 0 8px; font-size:24px; color:var(--blue-dark);">연희동 단독주택</h3>
+                <p style="margin:0 0 14px; color:var(--muted);">서울 서대문구 연희동 · 저층 주거지 · 공원 접근성 우수</p>
+
+                <div class="price-row" style="max-width:540px; margin-top:0;">
+                  <div class="price-box"><span>매매</span><strong>18.5억</strong></div>
+                  <div class="price-box"><span>전세</span><strong>9.8억</strong></div>
+                  <div class="price-box"><span>월세</span><strong>1억/280</strong></div>
+                </div>
+              </div>
+              <div class="story-box" style="padding:18px;">
+                조용한 생활권<br />공원·카페 접근성<br />가족 단위 선호
+              </div>
+            </article>
+          </div>
+
+          <div class="card" style="margin-top:20px; display:flex; justify-content:center; gap:8px;">
+            <span class="tag" style="background:var(--blue); color:white; border-color:var(--blue);">1</span>
+            <span class="tag">2</span>
+            <span class="tag">3</span>
+            <span class="tag">4</span>
+            <span class="tag">다음</span>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

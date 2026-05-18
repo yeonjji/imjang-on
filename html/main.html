@@ -1,0 +1,794 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>부동산 통합 플랫폼 UI 시안</title>
+  <style>
+    :root {
+      --bg: #f7fbff;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #64748b;
+      --line: #dbeafe;
+      --blue: #2563eb;
+      --blue-dark: #1e3a8a;
+      --sky: #38bdf8;
+      --sky-soft: #e0f2fe;
+      --soft: #f1f7ff;
+      --green: #0f9f6e;
+      --red: #ef4444;
+      --shadow: 0 14px 34px rgba(37, 99, 235, 0.10);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", "Noto Sans KR", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .page {
+      min-height: 100vh;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(247, 244, 239, 0.88);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(229, 221, 211, 0.8);
+    }
+
+    .nav {
+      max-width: 1180px;
+      margin: 0 auto;
+      height: 72px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      color: var(--blue-dark);
+      font-size: 22px;
+    }
+
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .menu {
+      display: flex;
+      gap: 26px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .nav-btn {
+      padding: 11px 16px;
+      border-radius: 999px;
+      background: var(--blue);
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .hero {
+      padding: 76px 0 42px;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 34px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 13px;
+      border-radius: 999px;
+      background: var(--sky-soft);
+      color: var(--blue-dark);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 18px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(38px, 5vw, 64px);
+      line-height: 1.08;
+      letter-spacing: -0.07em;
+      color: var(--blue-dark);
+    }
+
+    .hero p {
+      margin: 22px 0 0;
+      font-size: 18px;
+      line-height: 1.75;
+      color: var(--muted);
+      max-width: 600px;
+    }
+
+    .search-panel {
+      margin-top: 30px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .search-panel input {
+      flex: 1;
+      border: 0;
+      outline: 0;
+      font-size: 16px;
+      padding: 16px 18px;
+      background: transparent;
+      color: var(--text);
+    }
+
+    .search-panel button {
+      border: 0;
+      background: var(--blue);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 18px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .quick-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .tag {
+      padding: 9px 13px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .map-card {
+      min-height: 430px;
+      border-radius: 34px;
+      background:
+        linear-gradient(120deg, rgba(255,255,255,0.88), rgba(255,255,255,0.35)),
+        radial-gradient(circle at 30% 20%, #bfdbfe, transparent 28%),
+        radial-gradient(circle at 78% 65%, #bae6fd, transparent 26%),
+        #eff6ff;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .map-line {
+      position: absolute;
+      inset: 40px;
+      border: 2px dashed rgba(37, 99, 235, 0.20);
+      border-radius: 40% 60% 48% 52%;
+      transform: rotate(-12deg);
+    }
+
+    .pin {
+      position: absolute;
+      padding: 13px 15px;
+      border-radius: 18px;
+      background: white;
+      box-shadow: 0 10px 22px rgba(37, 99, 235, 0.14);
+      border: 1px solid var(--line);
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--blue-dark);
+    }
+
+    .pin small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .pin.one { top: 70px; left: 48px; }
+    .pin.two { top: 170px; right: 42px; }
+    .pin.three { bottom: 70px; left: 95px; }
+
+    .section {
+      padding: 34px 0;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .section h2 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.05em;
+      color: var(--blue-dark);
+    }
+
+    .section-desc {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .more {
+      color: var(--blue);
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .estate-card {
+      min-height: 230px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .badge {
+      display: inline-flex;
+      width: fit-content;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .estate-card h3 {
+      margin: 14px 0 8px;
+      font-size: 21px;
+      letter-spacing: -0.04em;
+    }
+
+    .estate-card .addr {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .price-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .price-box {
+      background: var(--soft);
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .price-box span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .price-box strong {
+      font-size: 15px;
+      color: var(--blue-dark);
+    }
+
+    .life-card {
+      min-height: 168px;
+    }
+
+    .life-card .icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      background: var(--sky-soft);
+      margin-bottom: 14px;
+      font-size: 20px;
+    }
+
+    .life-card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .life-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .calendar-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .calendar-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--soft);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .calendar-item strong { font-size: 15px; }
+    .calendar-item span { color: var(--muted); font-size: 13px; }
+
+    .wide-map {
+      min-height: 360px;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.88), rgba(255,255,255,0.25)),
+        repeating-linear-gradient(45deg, rgba(37,99,235,0.08) 0 2px, transparent 2px 28px),
+        #e0f2fe;
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .map-floating {
+      position: absolute;
+      left: 24px;
+      top: 24px;
+      width: 300px;
+      background: white;
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+    }
+
+    .map-floating h3 { margin: 0 0 8px; font-size: 20px; }
+    .map-floating p { margin: 0; color: var(--muted); line-height: 1.6; font-size: 14px; }
+
+    .detail-hero {
+      margin-top: 40px;
+      background: var(--card);
+      border-radius: 34px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .detail-cover {
+      min-height: 260px;
+      background:
+        linear-gradient(120deg, rgba(30,58,138,0.72), rgba(56,189,248,0.16)),
+        linear-gradient(135deg, #2563eb, #bae6fd);
+      padding: 32px;
+      display: flex;
+      align-items: end;
+      color: white;
+    }
+
+    .detail-cover h1 {
+      margin: 0;
+      font-size: 42px;
+      letter-spacing: -0.06em;
+    }
+
+    .detail-cover p {
+      margin: 10px 0 0;
+      color: rgba(255,255,255,0.86);
+      font-size: 16px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--line);
+    }
+
+    .summary-box {
+      background: white;
+      padding: 22px;
+    }
+
+    .summary-box span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .summary-box strong {
+      color: var(--blue-dark);
+      font-size: 20px;
+    }
+
+    .detail-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 22px;
+      padding: 34px 0 80px;
+      align-items: start;
+    }
+
+    .detail-main {
+      display: grid;
+      gap: 22px;
+    }
+
+    .sticky-side {
+      position: sticky;
+      top: 96px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .content-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      padding: 26px;
+    }
+
+    .content-card h2 {
+      margin: 0 0 8px;
+      color: var(--blue-dark);
+      font-size: 25px;
+      letter-spacing: -0.05em;
+    }
+
+    .content-card > p {
+      margin: 0 0 20px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .deal-table {
+      display: grid;
+      gap: 10px;
+    }
+
+    .deal-row {
+      display: grid;
+      grid-template-columns: 90px 1fr 120px 120px;
+      gap: 10px;
+      align-items: center;
+      padding: 16px;
+      border-radius: 18px;
+      background: var(--soft);
+      font-size: 14px;
+    }
+
+    .deal-row strong { color: var(--blue-dark); }
+    .deal-row span { color: var(--muted); }
+
+    .mini-chart {
+      height: 190px;
+      border-radius: 22px;
+      background:
+        linear-gradient(to top, rgba(107,79,58,0.1), transparent),
+        repeating-linear-gradient(to right, transparent 0 70px, rgba(107,79,58,0.08) 70px 71px),
+        var(--soft);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-line {
+      position: absolute;
+      left: 32px;
+      right: 32px;
+      bottom: 46px;
+      height: 78px;
+      border-bottom: 5px solid var(--blue);
+      border-radius: 60% 30% 40% 20%;
+      transform: rotate(-4deg);
+    }
+
+    .infra-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .infra-item {
+      padding: 17px;
+      border-radius: 20px;
+      background: var(--soft);
+      display: flex;
+      gap: 13px;
+      align-items: flex-start;
+    }
+
+    .infra-item b {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--blue-dark);
+    }
+
+    .infra-item span {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .story-box {
+      background: #eff6ff;
+      border-radius: 22px;
+      padding: 22px;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+
+    .side-button {
+      display: block;
+      text-align: center;
+      padding: 15px;
+      border-radius: 18px;
+      background: var(--blue);
+      color: white;
+      font-weight: 800;
+    }
+
+    .side-button.secondary {
+      background: white;
+      color: var(--blue-dark);
+      border: 1px solid var(--line);
+    }
+
+    .ad-box {
+      min-height: 180px;
+      border-radius: 24px;
+      border: 1px dashed #93c5fd;
+      background: rgba(255,255,255,0.65);
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+      padding: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .menu, .nav-btn { display: none; }
+      .hero, .split, .detail-layout { grid-template-columns: 1fr; }
+      .grid-3, .grid-4, .summary-grid, .infra-grid { grid-template-columns: 1fr; }
+      .detail-cover h1 { font-size: 32px; }
+      .deal-row { grid-template-columns: 1fr; }
+      .sticky-side { position: static; }
+      .map-card { min-height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <nav class="nav">
+        <a class="logo" href="#home"><span class="logo-mark">M</span>부동산모아</a>
+        <div class="menu">
+          <a href="#home">홈</a>
+          <a href="#deal">실거래가</a>
+          <a href="#apply">청약정보</a>
+          <a href="#life">생활권</a>
+          <a href="#map">지도탐색</a>
+        </div>
+        <a class="nav-btn" href="#detail">실거래 상세 보기</a>
+      </nav>
+    </header>
+
+    <main id="home">
+      <section class="container hero">
+        <div>
+          <div class="eyebrow">부동산 정보를 한곳에 모아보기</div>
+          <h1>실거래가부터 청약,<br />주변 인프라까지 한눈에.</h1>
+          <p>아파트, 빌라, 주택의 매매·전세·월세 실거래가와 청약 정보, 교통·병원·마트·학교 등 생활 인프라를 함께 확인하는 부동산 정보 플랫폼입니다.</p>
+
+          <div class="search-panel">
+            <input placeholder="아파트명, 지역명, 지하철역, 청약 단지를 검색해보세요" />
+            <button>검색</button>
+          </div>
+
+          <div class="quick-tags">
+            <span class="tag">#마포 실거래가</span>
+            <span class="tag">#송도 아파트</span>
+            <span class="tag">#동탄 청약</span>
+            <span class="tag">#역세권 빌라</span>
+          </div>
+        </div>
+
+        <div class="map-card" aria-label="메인 지도형 탐색 예시">
+          <div class="map-line"></div>
+          <div class="pin one">마포 래미안푸르지오<small>매매 14.8억 · 전세 8.2억</small></div>
+          <div class="pin two">공덕역 생활권<small>병원 18 · 마트 5 · 학교 4</small></div>
+          <div class="pin three">마포구 청약 예정<small>특별공급 D-5</small></div>
+        </div>
+      </section>
+
+      <section class="container section" id="deal">
+        <div class="section-head">
+          <div>
+            <h2>많이 찾는 실거래가</h2>
+            <p class="section-desc">매매·전세·월세를 나누지 않고 한 카드에서 함께 보여줍니다.</p>
+          </div>
+          <a class="more" href="#detail">실거래가 더보기</a>
+        </div>
+
+        <div class="grid-3">
+          <article class="card estate-card">
+            <div>
+              <span class="badge">아파트 · 인기</span>
+              <h3>마포 래미안푸르지오</h3>
+              <div class="addr">서울 마포구 아현동 · 3,885세대</div>
+            </div>
+            <div class="price-row">
+              <div class="price-box"><span>매매</span><strong>14.8억</strong></div>
+              <div class="price-box"><span>전세</span><strong>8.2억</strong></div>
+              <div class="price-box"><span>월세</span><strong>5천/210</strong></div>
+            </div>
+          </article>
+
+          <article class="card estate-card">
+            <div>
+              <span class="badge">빌라 · 역세권</span>
+              <h3>성수동 신축빌라</h3>
+              <div class="addr">서울 성동구 성수동 · 뚝섬역 도보권</div>
+            </div>
+            <div class="price-row">
+              <div class="price-box"><span>매매</span><strong>6.9억</strong></div>
+              <div class="price-box"><span>전세</span><strong>4.6억</strong></div>
+              <div class="price-box"><span>월세</span><strong>3천/150</strong></div>
+            </div>
+          </article>
+
+          <article class="card estate-card">
+            <div>
+              <span class="badge">주택 · 생활권</span>
+              <h3>연희동 단독주택</h3>
+              <div class="addr">서울 서대문구 연희동 · 조용한 주거지</div>
+            </div>
+            <div class="price-row">
+              <div class="price-box"><span>매매</span><strong>18.5억</strong></div>
+              <div class="price-box"><span>전세</span><strong>9.8억</strong></div>
+              <div class="price-box"><span>월세</span><strong>1억/280</strong></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="container section" id="apply">
+        <div class="split">
+          <div class="card">
+            <h2>오늘의 청약 정보</h2>
+            <p class="section-desc">지역별 청약 일정과 주변 실거래가를 함께 연결합니다.</p>
+            <div class="calendar-list" style="margin-top:18px;">
+              <div class="calendar-item"><div><strong>공덕 더센트럴</strong><br><span>특별공급 예정</span></div><b>D-5</b></div>
+              <div class="calendar-item"><div><strong>동탄 센트럴파크</strong><br><span>1순위 접수</span></div><b>D-12</b></div>
+              <div class="calendar-item"><div><strong>검단 리버포레</strong><br><span>모집공고 대기</span></div><b>예정</b></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>지역별 인기 검색</h2>
+            <p class="section-desc">검색 유입을 고려해 지역+실거래가 콘텐츠로 확장하기 좋은 영역입니다.</p>
+            <div class="calendar-list" style="margin-top:18px;">
+              <div class="calendar-item"><div><strong>마포구 실거래가</strong><br><span>아현동 · 공덕동 · 도화동</span></div><b>인기</b></div>
+              <div class="calendar-item"><div><strong>송도 아파트 시세</strong><br><span>송도동 · 센트럴파크 생활권</span></div><b>상승</b></div>
+              <div class="calendar-item"><div><strong>동탄 청약 정보</strong><br><span>동탄역 · 신도시 생활권</span></div><b>관심</b></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container section" id="life">
+        <div class="section-head">
+          <div>
+            <h2>생활권까지 함께 보기</h2>
+            <p class="section-desc">실거래가 상세와 연결되는 주변 인프라 콘텐츠입니다.</p>
+          </div>
+        </div>
+
+        <div class="grid-4">
+          <article class="card life-card"><div class="icon">🚇</div><h3>교통</h3><p>지하철역, 버스정류장, 주요 도로 접근성을 확인합니다.</p></article>
+          <article class="card life-card"><div class="icon">🏥</div><h3>병원·약국</h3><p>생활 의료시설과 응급 접근성을 함께 보여줍니다.</p></article>
+          <article class="card life-card"><div class="icon">🛒</div><h3>마트·편의점</h3><p>일상 동선에 필요한 편의시설 밀도를 제공합니다.</p></article>
+          <article class="card life-card"><div class="icon">🏫</div><h3>학교·학원</h3><p>학군과 교육 인프라를 생활권 기준으로 연결합니다.</p></article>
+        </div>
+      </section>
+
+      <section class="container section" id="map">
+        <div class="wide-map">
+          <div class="map-floating">
+            <h3>지도 기반 부동산 탐색</h3>
+            <p>실거래가, 청약, 교통, 병원, 마트, 학교 정보를 지도 위에서 겹쳐 볼 수 있는 영역입니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="container section">
+        <div class="section-head">
+          <div>
+            <h2>부동산 정보 가이드</h2>
+            <p class="section-desc">애드센스와 SEO를 고려해 정보성 콘텐츠를 메인 하단에 배치합니다.</p>
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <article class="card life-card"><div class="icon">📊</div><h3>실거래가 보는 법</h3><p>최근 거래가, 최고가, 전세가율을 함께 확인하는 방법을 안내합니다.</p></article>
+          <article class="card life-card"><div class="icon">🏗️</div><h3>청약 일정 확인법</h3><p>모집공고, 특별공급, 1순위 접수 흐름을 쉽게 정리합니다.</p></article>
+          <article class="card life-card"><div class="icon">🧭</div><h3>생활권 체크리스트</h3><p>교통, 병원, 마트, 학교, 공원을 기준으로 살기 좋은 곳을 살펴봅니다.</p></article>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
