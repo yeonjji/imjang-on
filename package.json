@@ -27,7 +27,8 @@
     "@prisma/client": "^5",
     "next": "^15",
     "react": "^19",
-    "react-dom": "^19"
+    "react-dom": "^19",
+    "zod": "^3"
   },
   "devDependencies": {
     "@playwright/test": "^1",
