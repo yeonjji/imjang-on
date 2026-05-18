@@ -22,5 +22,16 @@
     "prisma:deploy": "prisma migrate deploy",
     "seed:regions": "tsx scripts/ingest/regions/seed.ts",
     "ingest:run": "tsx scripts/ingest/transactions/runner.ts"
+  },
+  "dependencies": {
+    "next": "^15",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
   }
 }
