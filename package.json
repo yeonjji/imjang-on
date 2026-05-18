@@ -1,0 +1,25 @@
+{
+  "name": "imjang-on",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run --dir tests/ingest --dir tests/lib",
+    "test:integration": "vitest run --dir tests/integration",
+    "test:e2e": "playwright test",
+    "test": "pnpm test:unit && pnpm test:integration",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "seed:regions": "tsx scripts/ingest/regions/seed.ts",
+    "ingest:run": "tsx scripts/ingest/transactions/runner.ts"
+  }
+}
