@@ -24,6 +24,7 @@
     "ingest:run": "tsx scripts/ingest/transactions/runner.ts"
   },
   "dependencies": {
+    "@prisma/client": "^5",
     "next": "^15",
     "react": "^19",
     "react-dom": "^19"
@@ -39,6 +40,7 @@
     "eslint-config-next": "^15",
     "prettier": "^3",
     "prettier-plugin-tailwindcss": "^0.6",
+    "prisma": "^5",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^2"

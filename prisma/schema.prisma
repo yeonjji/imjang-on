@@ -1,0 +1,170 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [postgis, pg_trgm]
+}
+
+model Region {
+  code         String   @id @db.VarChar(10)
+  sido         String   @db.VarChar(20)
+  sigungu      String?  @db.VarChar(40)
+  eupmyeondong String?  @db.VarChar(40)
+  ri           String?  @db.VarChar(40)
+  fullName     String   @db.VarChar(120)
+  level        Int
+  parentCode   String?  @db.VarChar(10)
+  parent       Region?  @relation("RegionTree", fields: [parentCode], references: [code])
+  children     Region[] @relation("RegionTree")
+
+  isAbolished   Boolean   @default(false)
+  abolishedAt   DateTime? @db.Date
+  sourceVersion String    @db.VarChar(20)
+  updatedAt     DateTime  @updatedAt
+
+  sigunguCode String? @db.VarChar(5)
+
+  properties Property[]
+
+  @@index([sido, sigungu, eupmyeondong])
+  @@index([level, isAbolished])
+}
+
+enum PropertyType {
+  APARTMENT
+  OFFICETEL
+  ROW_HOUSE
+  MULTIPLEX
+}
+
+model Property {
+  id            BigInt       @id @default(autoincrement())
+  propertyType  PropertyType
+  name          String       @db.VarChar(80)
+  nameNorm      String       @db.VarChar(80)
+  regionCode    String       @db.VarChar(10)
+  region        Region       @relation(fields: [regionCode], references: [code])
+  address       String       @db.VarChar(200)
+  builtYear     Int?
+  households    Int?
+  buildingCount Int?
+  areaTypes     Int[]        @default([])
+
+  txCountTotal Int       @default(0)
+  txCount12m   Int       @default(0)
+  lastTxAt     DateTime?
+
+  saleCount12m    Int       @default(0)
+  saleAvgPrice12m BigInt?
+  saleLastPrice   BigInt?
+  saleLastAt      DateTime? @db.Date
+
+  jeonseCount12m      Int       @default(0)
+  jeonseAvgDeposit12m BigInt?
+  jeonseLastDeposit   BigInt?
+  jeonseLastAt        DateTime? @db.Date
+
+  wolseCount12m      Int       @default(0)
+  wolseAvgDeposit12m BigInt?
+  wolseAvgRent12m    Int?
+  wolseLastDeposit   BigInt?
+  wolseLastRent      Int?
+  wolseLastAt        DateTime? @db.Date
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sigunguCode String?                               @db.VarChar(5)
+  location    Unsupported("geography(Point,4326)")?
+
+  transactions Transaction[]
+
+  @@index([propertyType, regionCode])
+  @@index([name])
+  @@index([propertyType, lastTxAt(sort: Desc)])
+}
+
+enum DealType {
+  SALE
+  JEONSE
+  WOLSE
+}
+
+model Transaction {
+  id           BigInt       @id @default(autoincrement())
+  propertyId   BigInt
+  property     Property     @relation(fields: [propertyId], references: [id])
+  propertyType PropertyType
+  regionCode   String       @db.VarChar(10)
+  sigunguCode  String       @db.VarChar(5)
+
+  dealType      DealType
+  contractDate  DateTime @db.Date
+  exclusiveArea Decimal  @db.Decimal(6, 2)
+  floor         Int?
+  buildYear     Int?
+
+  dealAmount   Int?
+  registerDate DateTime? @db.Date
+  dealingType  String?   @db.VarChar(20)
+  buyerType    String?   @db.VarChar(20)
+  sellerType   String?   @db.VarChar(20)
+  cancelDate   DateTime? @db.Date
+  cancelType   String?   @db.VarChar(20)
+
+  deposit        Int?
+  monthlyRent    Int?
+  contractTerm   String?  @db.VarChar(20)
+  contractType   String?  @db.VarChar(20)
+  useRRRight     Boolean?
+  preDeposit     Int?
+  preMonthlyRent Int?
+
+  umd         String? @db.VarChar(40)
+  jibun       String? @db.VarChar(40)
+  roadName    String? @db.VarChar(120)
+  source      String  @db.VarChar(30)
+  externalKey String? @db.VarChar(80)
+  rawHash     String  @db.Char(64)
+
+  @@unique([rawHash])
+  @@index([propertyId, dealType, contractDate(sort: Desc)])
+  @@index([propertyId, contractDate(sort: Desc)])
+  @@index([sigunguCode, propertyType, dealType, contractDate(sort: Desc)])
+  @@index([regionCode, contractDate(sort: Desc)])
+  @@index([propertyType, contractDate(sort: Desc)])
+}
+
+enum IngestionStatus {
+  RUNNING
+  OK
+  ERROR
+}
+
+model IngestionRun {
+  id           BigInt          @id @default(autoincrement())
+  source       String          @db.VarChar(40)
+  targetKey    String          @db.VarChar(40)
+  status       IngestionStatus
+  rowsUpserted Int             @default(0)
+  errorMessage String?         @db.Text
+  startedAt    DateTime        @default(now())
+  finishedAt   DateTime?
+
+  @@index([source, targetKey])
+  @@index([status, startedAt(sort: Desc)])
+}
+
+model EmailSignup {
+  id        BigInt   @id @default(autoincrement())
+  email     String   @unique @db.VarChar(120)
+  topic     String   @db.VarChar(40)
+  createdAt DateTime @default(now())
+
+  @@index([topic])
+}
