@@ -49,3 +49,4 @@ logs/
 # Claude Code 로컬 캐시 (settings.json은 추적)
 .claude/projects/
 .claude/cache/
+.vercel
