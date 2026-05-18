@@ -7,3 +7,6 @@ playwright-report
 test-results
 *.lock
 pnpm-lock.yaml
+
+# Design source-of-truth mockups — DO NOT auto-format
+html/
