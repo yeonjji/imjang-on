@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: imjang-on-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: imjang_on
+      POSTGRES_USER: imjang
+      POSTGRES_PASSWORD: dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - imjang-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U imjang -d imjang_on"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  imjang-pgdata:
