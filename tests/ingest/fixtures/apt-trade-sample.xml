@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <header><resultCode>00</resultCode></header>
+  <body>
+    <items>
+      <item>
+        <aptNm>래미안서초에스티지</aptNm>
+        <aptDong>101</aptDong>
+        <aptSeq>11650-100</aptSeq>
+        <buildYear>2009</buildYear>
+        <dealAmount>302,000</dealAmount>
+        <dealYear>2025</dealYear>
+        <dealMonth>5</dealMonth>
+        <dealDay>12</dealDay>
+        <excluUseAr>84.99</excluUseAr>
+        <floor>12</floor>
+        <umdNm>반포동</umdNm>
+        <jibun>1-1</jibun>
+        <roadNm>반포대로</roadNm>
+        <sggCd>11650</sggCd>
+        <dealingGbn>중개거래</dealingGbn>
+        <buyerGbn>개인</buyerGbn>
+        <slerGbn>개인</slerGbn>
+        <rgstDate>20250520</rgstDate>
+      </item>
+    </items>
+    <totalCount>1</totalCount>
+  </body>
+</response>
