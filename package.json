@@ -22,6 +22,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "seed:regions": "tsx scripts/ingest/regions/seed.ts",
+    "seed:regions:api": "tsx scripts/ingest/regions/seed-from-api.ts",
     "ingest:run": "tsx scripts/ingest/transactions/runner.ts"
   },
   "dependencies": {
