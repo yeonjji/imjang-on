@@ -135,17 +135,17 @@ async function main() {
   await prisma.$executeRaw`
     UPDATE "Region" r
     SET "parentCode" = CASE
-      WHEN level = 2 THEN LPAD(LEFT(code, 2), 10, '0')
-      WHEN level = 3 THEN LPAD(LEFT(code, 5), 10, '0')
-      WHEN level = 4 THEN LPAD(LEFT(code, 8), 10, '0')
+      WHEN level = 2 THEN RPAD(LEFT(code, 2), 10, '0')
+      WHEN level = 3 THEN RPAD(LEFT(code, 5), 10, '0')
+      WHEN level = 4 THEN RPAD(LEFT(code, 8), 10, '0')
       ELSE NULL
     END
     WHERE level >= 2
       AND EXISTS (
         SELECT 1 FROM "Region" p WHERE p.code = CASE
-          WHEN r.level = 2 THEN LPAD(LEFT(r.code, 2), 10, '0')
-          WHEN r.level = 3 THEN LPAD(LEFT(r.code, 5), 10, '0')
-          WHEN r.level = 4 THEN LPAD(LEFT(r.code, 8), 10, '0')
+          WHEN r.level = 2 THEN RPAD(LEFT(r.code, 2), 10, '0')
+          WHEN r.level = 3 THEN RPAD(LEFT(r.code, 5), 10, '0')
+          WHEN r.level = 4 THEN RPAD(LEFT(r.code, 8), 10, '0')
         END
       )
   `;
