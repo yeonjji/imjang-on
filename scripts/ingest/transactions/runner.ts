@@ -118,7 +118,8 @@ async function runOne(
         propertyType: row.propertyType,
         name: row.name,
         sigunguCode: row.sigunguCode,
-        regionCode: row.sigunguCode,
+        // Region.code는 10자리. sigunguCode 5자리를 오른쪽 0 패딩하여 level-2 region에 FK 매칭
+        regionCode: row.sigunguCode.padEnd(10, '0'),
         address: buildAddress(row),
         buildYear: row.buildYear,
         roadName: row.roadName,
