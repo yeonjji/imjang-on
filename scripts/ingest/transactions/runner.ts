@@ -51,7 +51,13 @@ async function main() {
     where: { level: 2, isAbolished: false },
     select: { code: true },
   });
-  const sigunguIds = sigunguRecords.map((r) => r.code.slice(0, 5));
+  // sigunguCode (5자리) → 실제 Region.code (10자리) 매핑.
+  // padEnd로 강제 매핑하면 세종 등 특수 케이스 FK 위반 발생.
+  const sigunguToRegionCode = new Map<string, string>();
+  for (const r of sigunguRecords) {
+    sigunguToRegionCode.set(r.code.slice(0, 5), r.code);
+  }
+  const sigunguIds = Array.from(sigunguToRegionCode.keys());
 
   let totalUpserted = 0;
   let failed = 0;
@@ -61,9 +67,10 @@ async function main() {
   for (const api of apis) {
     const adapter = ADAPTERS[api];
     for (const sgg of sigunguIds) {
+      const regionCode = sigunguToRegionCode.get(sgg)!;
       for (const yyyymm of months) {
         try {
-          const upserted = await runOne(adapter, sgg, yyyymm, affectedPropertyIds, affectedRegionCodes);
+          const upserted = await runOne(adapter, sgg, regionCode, yyyymm, affectedPropertyIds, affectedRegionCodes);
           totalUpserted += upserted;
         } catch (err) {
           failed++;
@@ -100,6 +107,7 @@ async function main() {
 async function runOne(
   adapter: Adapter,
   sigungu: string,
+  regionCode: string,
   yyyymm: string,
   affectedProps: Set<bigint>,
   affectedRegions: Set<string>,
@@ -118,8 +126,8 @@ async function runOne(
         propertyType: row.propertyType,
         name: row.name,
         sigunguCode: row.sigunguCode,
-        // Region.code는 10자리. sigunguCode 5자리를 오른쪽 0 패딩하여 level-2 region에 FK 매칭
-        regionCode: row.sigunguCode.padEnd(10, '0'),
+        // 실제 level-2 Region.code (사전 매핑) — FK 안전 보장
+        regionCode,
         address: buildAddress(row),
         buildYear: row.buildYear,
         roadName: row.roadName,
