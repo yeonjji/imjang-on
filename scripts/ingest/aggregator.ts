@@ -9,22 +9,22 @@ export async function updatePropertyAggregates(propertyIds: bigint[]): Promise<v
       SELECT
         "propertyId" AS pid,
         COUNT(*)::int AS cnt_total,
-        COUNT(*)::int FILTER (WHERE "contractDate" >= NOW() - INTERVAL '12 months') AS cnt_12m,
+        (COUNT(*) FILTER (WHERE "contractDate" >= NOW() - INTERVAL '12 months'))::int AS cnt_12m,
         MAX("contractDate") AS last_at,
 
-        COUNT(*)::int FILTER (WHERE "dealType"='SALE' AND "contractDate" >= NOW() - INTERVAL '12 months') AS sale_cnt,
-        AVG("dealAmount")::bigint FILTER (WHERE "dealType"='SALE' AND "contractDate" >= NOW() - INTERVAL '12 months') AS sale_avg,
+        (COUNT(*) FILTER (WHERE "dealType"='SALE' AND "contractDate" >= NOW() - INTERVAL '12 months'))::int AS sale_cnt,
+        (AVG("dealAmount") FILTER (WHERE "dealType"='SALE' AND "contractDate" >= NOW() - INTERVAL '12 months'))::bigint AS sale_avg,
         (array_agg("dealAmount" ORDER BY "contractDate" DESC) FILTER (WHERE "dealType"='SALE'))[1]::bigint AS sale_last,
         MAX("contractDate") FILTER (WHERE "dealType"='SALE') AS sale_last_at,
 
-        COUNT(*)::int FILTER (WHERE "dealType"='JEONSE' AND "contractDate" >= NOW() - INTERVAL '12 months') AS jeonse_cnt,
-        AVG("deposit")::bigint FILTER (WHERE "dealType"='JEONSE' AND "contractDate" >= NOW() - INTERVAL '12 months') AS jeonse_avg,
+        (COUNT(*) FILTER (WHERE "dealType"='JEONSE' AND "contractDate" >= NOW() - INTERVAL '12 months'))::int AS jeonse_cnt,
+        (AVG("deposit") FILTER (WHERE "dealType"='JEONSE' AND "contractDate" >= NOW() - INTERVAL '12 months'))::bigint AS jeonse_avg,
         (array_agg("deposit" ORDER BY "contractDate" DESC) FILTER (WHERE "dealType"='JEONSE'))[1]::bigint AS jeonse_last,
         MAX("contractDate") FILTER (WHERE "dealType"='JEONSE') AS jeonse_last_at,
 
-        COUNT(*)::int FILTER (WHERE "dealType"='WOLSE' AND "contractDate" >= NOW() - INTERVAL '12 months') AS wolse_cnt,
-        AVG("deposit")::bigint FILTER (WHERE "dealType"='WOLSE' AND "contractDate" >= NOW() - INTERVAL '12 months') AS wolse_dep_avg,
-        AVG("monthlyRent")::int FILTER (WHERE "dealType"='WOLSE' AND "contractDate" >= NOW() - INTERVAL '12 months') AS wolse_rent_avg,
+        (COUNT(*) FILTER (WHERE "dealType"='WOLSE' AND "contractDate" >= NOW() - INTERVAL '12 months'))::int AS wolse_cnt,
+        (AVG("deposit") FILTER (WHERE "dealType"='WOLSE' AND "contractDate" >= NOW() - INTERVAL '12 months'))::bigint AS wolse_dep_avg,
+        (AVG("monthlyRent") FILTER (WHERE "dealType"='WOLSE' AND "contractDate" >= NOW() - INTERVAL '12 months'))::int AS wolse_rent_avg,
         (array_agg("deposit" ORDER BY "contractDate" DESC) FILTER (WHERE "dealType"='WOLSE'))[1]::bigint AS wolse_last_dep,
         (array_agg("monthlyRent" ORDER BY "contractDate" DESC) FILTER (WHERE "dealType"='WOLSE'))[1]::int AS wolse_last_rent,
         MAX("contractDate") FILTER (WHERE "dealType"='WOLSE') AS wolse_last_at
