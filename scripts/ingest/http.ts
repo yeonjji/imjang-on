@@ -30,7 +30,14 @@ export async function fetchPage(params: {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
     try {
-      const res = await fetch(url.toString(), { signal: ctrl.signal });
+      const res = await fetch(url.toString(), {
+        signal: ctrl.signal,
+        headers: {
+          // data.go.kr WAF가 빈 UA 요청을 차단 — 브라우저-like UA 명시
+          'User-Agent': 'imjang-on/1.0 (+https://imjang-on.com)',
+          Accept: 'application/xml,text/xml',
+        },
+      });
       if (!res.ok) {
         if ((res.status === 429 || res.status >= 500) && attempt < MAX_RETRIES) {
           const backoff = SLEEP_MS * Math.pow(3, attempt);
