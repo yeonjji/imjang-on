@@ -13,7 +13,7 @@ function parseYmdString(s: string): Date | null {
 
 export const adapterAptTrade: Adapter = {
   apiType: 'apt-trade',
-  endpoint: 'RTMSDataSvcAptTradeDev',
+  endpoint: 'RTMSDataSvcAptTrade',
   source: 'molit-apt-trade',
   parseRows(xml: string, sigunguCode: string) {
     const parsed = parseXml(xml);
