@@ -24,7 +24,14 @@ const schema = z.object({
   NODE_ENV: z.enum(['production', 'development', 'test']).default('development'),
 });
 
-const parsed = schema.safeParse(process.env);
+// GitHub Actions / Vercel은 미설정 secret을 빈 문자열로 전달.
+// z.string().url().optional()은 빈 문자열을 reject하므로 빈 값은 undefined로 치환.
+const sanitized: Record<string, string | undefined> = {};
+for (const [k, v] of Object.entries(process.env)) {
+  sanitized[k] = v === '' ? undefined : v;
+}
+
+const parsed = schema.safeParse(sanitized);
 
 if (!parsed.success) {
   console.error('❌ Invalid environment variables:', parsed.error.flatten().fieldErrors);
