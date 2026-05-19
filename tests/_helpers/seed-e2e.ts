@@ -43,9 +43,11 @@ async function main() {
   });
 
   const types = [DealType.SALE, DealType.JEONSE, DealType.WOLSE];
+  const now = Date.now();
   for (const dealType of types) {
     for (let i = 0; i < 12; i++) {
-      const date = new Date(2025, 4, 12 - i);
+      // i주 전 — 모두 최근 12개월 안에 들어옴
+      const date = new Date(now - i * 7 * 86_400_000);
       const hash = createHash('sha256').update(`${p.id}-${dealType}-${i}`).digest('hex');
       await prisma.transaction.create({
         data: {
