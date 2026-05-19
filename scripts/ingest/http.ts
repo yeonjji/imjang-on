@@ -16,7 +16,8 @@ export async function fetchPage(params: {
   if (!env.PUBLIC_DATA_KEY) {
     throw new Error('PUBLIC_DATA_KEY is required');
   }
-  const url = new URL(`${BASE}/${params.operation}/${params.operation}`);
+  // 공공데이터포털 패턴: {BASE}/{servicePath}/get{servicePath}
+  const url = new URL(`${BASE}/${params.operation}/get${params.operation}`);
   url.searchParams.set('serviceKey', env.PUBLIC_DATA_KEY);
   url.searchParams.set('LAWD_CD', params.lawdCd);
   url.searchParams.set('DEAL_YMD', params.dealYmd);
