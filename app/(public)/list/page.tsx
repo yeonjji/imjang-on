@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { PropertyType } from '@prisma/client';
-import { PropertyListCard } from './_components/property-list-card';
 import { ListFilterPanel } from './_components/list-filter-panel';
-import { PaginationNav } from './_components/pagination-nav';
-import { getPropertyList } from '@/lib/property';
-import type { DealFilter, PriceRange, AreaRange, SortOption } from '@/lib/property';
+import { MobileFilterSheet } from './_components/mobile-filter-sheet';
+import { PropertyList } from './_components/property-list';
+import { ListSkeleton } from './_components/list-skeleton';
 import { getSidoList } from '@/lib/region';
+import type { DealFilter, PriceRange, AreaRange, SortOption } from '@/lib/property';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -30,6 +30,7 @@ interface SearchParams {
   area?: string;
   sort?: string;
   region?: string;
+  sido?: string;
   page?: string;
 }
 
@@ -40,7 +41,8 @@ export default async function ListPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const sp = await searchParams;
+  const [sp, sidoList] = await Promise.all([searchParams, getSidoList()]);
+
   const typeSlug = sp.type ?? 'all';
   const types = TYPE_MAP[typeSlug] ?? TYPE_MAP.all;
   const deal = (sp.deal ?? 'all') as DealFilter;
@@ -48,19 +50,6 @@ export default async function ListPage({
   const areaRange = sp.area as AreaRange | undefined;
   const sort = (sp.sort ?? 'recent') as SortOption;
   const page = Math.max(1, Number(sp.page ?? '1'));
-
-  const sidoList = await getSidoList();
-
-  const { rows, total, totalPages, perPage } = await getPropertyList({
-    types,
-    deal,
-    priceRange,
-    areaRange,
-    sort,
-    sigunguCode: sp.region,
-    page,
-    perPage: 30,
-  });
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-8">
@@ -80,6 +69,11 @@ export default async function ListPage({
         </p>
       </div>
 
+      {/* 모바일 필터 버튼 */}
+      <Suspense>
+        <MobileFilterSheet sidoList={sidoList} />
+      </Suspense>
+
       {/* 2컬럼 */}
       <div className="flex gap-6 items-start">
         {/* 사이드바 280px */}
@@ -89,7 +83,6 @@ export default async function ListPage({
               <ListFilterPanel sidoList={sidoList} />
             </Suspense>
           </div>
-          {/* 광고 영역 */}
           <div className="mt-4 rounded-[22px] border border-dashed border-[#93c5fd] bg-white/65 p-5 text-center text-xs text-[var(--color-muted)]">
             광고 영역
           </div>
@@ -97,39 +90,18 @@ export default async function ListPage({
 
         {/* 메인 영역 */}
         <main className="min-w-0 flex-1">
-          {/* 결과 건수 */}
-          <div className="mb-4 rounded-[18px] border border-[var(--color-line)] bg-white px-5 py-3 shadow-[var(--shadow)]">
-            <p className="text-base font-bold text-[var(--color-blue-dark)]">
-              검색 결과 <span className="text-[var(--color-blue)]">{total.toLocaleString('ko-KR')}</span>건
-            </p>
-          </div>
-
-          {/* 카드 목록 */}
-          {rows.length === 0 ? (
-            <div className="rounded-[22px] border border-[var(--color-line)] bg-white p-12 text-center text-[var(--color-muted)]">
-              조건에 맞는 매물이 없습니다.
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {rows.map((p) => (
-                <PropertyListCard key={String(p.id)} property={p} deal={deal} />
-              ))}
-            </div>
-          )}
-
-          {/* 페이지네이션 */}
-          {totalPages > 1 && (
-            <div className="mt-6">
-              <Suspense>
-                <PaginationNav
-                  current={page}
-                  totalPages={totalPages}
-                  totalItems={total}
-                  perPage={perPage}
-                />
-              </Suspense>
-            </div>
-          )}
+          <Suspense fallback={<ListSkeleton />}>
+            <PropertyList
+              types={types}
+              deal={deal}
+              priceRange={priceRange}
+              areaRange={areaRange}
+              sort={sort}
+              sigunguCode={sp.region}
+              sido={sp.sido}
+              page={page}
+            />
+          </Suspense>
         </main>
       </div>
     </div>
