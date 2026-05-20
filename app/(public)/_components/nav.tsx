@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { Dropdown } from '@/components/ui/dropdown';
 import { Badge } from '@/components/ui/badge';
 import { SearchInput } from './search-input';
 import { useState } from 'react';
@@ -25,15 +24,7 @@ export function Nav() {
 
           <div className="hidden gap-6 text-[15px] font-semibold text-[var(--color-muted)] md:flex md:items-center">
             <Link href="/">홈</Link>
-            <Dropdown
-              label="실거래가"
-              items={[
-                { label: '전체 목록', href: '/list' },
-                { label: '아파트', href: '/apt' },
-                { label: '오피스텔', href: '/officetel' },
-                { label: '다세대', href: '/villa' },
-              ]}
-            />
+            <Link href="/list">실거래가</Link>
             <Link href="/region">지역</Link>
             <button onClick={() => setSoonOpen('청약')} className="inline-flex items-center gap-1.5">
               청약 <Badge tone="gray">Soon</Badge>

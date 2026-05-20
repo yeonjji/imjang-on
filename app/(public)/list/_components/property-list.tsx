@@ -1,4 +1,4 @@
-import { PropertyType } from '@prisma/client';
+import type { PropertyType } from '@prisma/client';
 import { getPropertyList } from '@/lib/property';
 import type { DealFilter, PriceRange, AreaRange, SortOption } from '@/lib/property';
 import { PropertyListCard } from './property-list-card';
