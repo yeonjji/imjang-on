@@ -6,7 +6,7 @@ on:
         description: 'API (all | apt-trade | apt-rent | offi-trade | offi-rent | rh-trade | rh-rent)'
         default: 'all'
       months:
-        description: 'Months to backfill'
+        description: 'Months to backfill (1–12)'
         default: '12'
 
 jobs:

@@ -29,6 +29,7 @@ interface RunArgs {
   api: ApiType | 'all';
   mode: Mode;
   months: number;
+  monthOffset?: number;
 }
 
 function parseArgs(): RunArgs {
@@ -37,13 +38,19 @@ function parseArgs(): RunArgs {
   const api = (get('api') ?? 'all') as ApiType | 'all';
   const mode = (get('mode') ?? 'daily') as Mode;
   const months = Number(get('months') ?? '1');
-  return { api, mode, months };
+  const monthOffset = get('month-offset') !== undefined ? Number(get('month-offset')) : undefined;
+  return { api, mode, months, monthOffset };
 }
 
 async function main() {
   const args = parseArgs();
   const apis = args.api === 'all' ? (Object.keys(ADAPTERS) as ApiType[]) : [args.api];
-  const months = args.mode === 'daily' ? getDailyMonths() : getBackfillMonths(args.months);
+  const months =
+    args.mode === 'daily'
+      ? getDailyMonths()
+      : args.monthOffset !== undefined
+        ? [getMonthByOffset(args.monthOffset)]
+        : getBackfillMonths(args.months);
 
   logger.info({ apis, months, mode: args.mode }, 'runner start');
 
@@ -59,8 +66,17 @@ async function main() {
   }
   const sigunguIds = Array.from(sigunguToRegionCode.keys());
 
+  const sources = apis.map((a) => ADAPTERS[a].source);
+  const doneRuns = await prisma.ingestionRun.findMany({
+    where: { source: { in: sources }, status: 'OK' },
+    select: { source: true, targetKey: true },
+  });
+  const doneKeys = new Set(doneRuns.map((r) => `${r.source}:${r.targetKey}`));
+  logger.info({ skippable: doneKeys.size }, 'resume: loaded completed keys');
+
   let totalUpserted = 0;
   let failed = 0;
+  let skipped = 0;
   const affectedPropertyIds = new Set<bigint>();
   const affectedRegionCodes = new Set<string>();
 
@@ -69,6 +85,11 @@ async function main() {
     for (const sgg of sigunguIds) {
       const regionCode = sigunguToRegionCode.get(sgg)!;
       for (const yyyymm of months) {
+        const targetKey = `${sgg}-${yyyymm}`;
+        if (doneKeys.has(`${adapter.source}:${targetKey}`)) {
+          skipped++;
+          continue;
+        }
         try {
           const upserted = await runOne(adapter, sgg, regionCode, yyyymm, affectedPropertyIds, affectedRegionCodes);
           totalUpserted += upserted;
@@ -97,7 +118,7 @@ async function main() {
     await revalidatePaths(paths);
   }
 
-  const summary = { totalUpserted, failed, properties: affectedPropertyIds.size };
+  const summary = { totalUpserted, skipped, failed, properties: affectedPropertyIds.size };
   logger.info(summary, 'runner done');
   await notify(failed === 0 ? 'info' : failed >= 5 ? 'warn' : 'info', 'ETL run complete', summary);
 
@@ -231,6 +252,11 @@ function computeHash(row: NormalizedTransaction, propertyId: bigint): string {
     mr: row.monthlyRent,
   });
   return createHash('sha256').update(key).digest('hex');
+}
+
+function getMonthByOffset(offset: number): string {
+  const now = new Date();
+  return ymd(new Date(now.getFullYear(), now.getMonth() - offset, 1));
 }
 
 function getDailyMonths(): string[] {
