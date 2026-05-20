@@ -26,7 +26,7 @@ export async function getPropertyById(id: bigint) {
 export type DealFilter = 'all' | 'sale' | 'jeonse' | 'wolse';
 export type PriceRange = 'lt5' | '5to10' | '10to15' | 'gt15';
 export type AreaRange = 'small' | 'medium' | 'large' | 'xlarge';
-export type SortOption = 'recent' | 'volume';
+export type SortOption = 'recent' | 'volume' | 'price_desc' | 'price_asc';
 
 export interface PropertyListParams {
   types: PropertyType[];
@@ -35,6 +35,7 @@ export interface PropertyListParams {
   areaRange?: AreaRange;
   sort?: SortOption;
   sigunguCode?: string;
+  sido?: string;
   page?: number;
   perPage?: number;
 }
@@ -50,6 +51,7 @@ export async function getPropertyList({
   areaRange,
   sort = 'recent',
   sigunguCode,
+  sido,
   page = 1,
   perPage = 30,
 }: PropertyListParams) {
@@ -66,7 +68,11 @@ export async function getPropertyList({
     where.txCount12m = { gt: 0 };
   }
 
-  if (sigunguCode) where.sigunguCode = sigunguCode;
+  if (sigunguCode) {
+    where.sigunguCode = sigunguCode;
+  } else if (sido) {
+    where.region = { sido };
+  }
 
   // priceRange → price filter
   if (priceRange) {
@@ -103,7 +109,17 @@ export async function getPropertyList({
 
   // deal + sort → orderBy
   let orderBy: Prisma.PropertyOrderByWithRelationInput;
-  if (deal === 'sale') {
+
+  if (sort === 'price_desc' || sort === 'price_asc') {
+    const direction = sort === 'price_desc' ? ('desc' as const) : ('asc' as const);
+    if (deal === 'jeonse') {
+      orderBy = { jeonseLastDeposit: { sort: direction, nulls: 'last' } };
+    } else if (deal === 'wolse') {
+      orderBy = { wolseLastDeposit: { sort: direction, nulls: 'last' } };
+    } else {
+      orderBy = { saleLastPrice: { sort: direction, nulls: 'last' } };
+    }
+  } else if (deal === 'sale') {
     orderBy = sort === 'volume' ? { saleCount12m: 'desc' } : { saleLastAt: 'desc' };
   } else if (deal === 'jeonse') {
     orderBy = sort === 'volume' ? { jeonseCount12m: 'desc' } : { jeonseLastAt: 'desc' };
