@@ -27,44 +27,60 @@ export function Pagination({
   const end = Math.min(current * perPage, totalItems);
 
   return (
-    <div className="flex items-center justify-between gap-3 py-3">
-      <nav className="flex items-center gap-1" aria-label="pagination">
-        <IconBtn label="first" onClick={() => onChange(1)} disabled={disabled || current === 1}>
-          <ChevronsLeft size={14} />
-        </IconBtn>
+    <div className="py-3">
+      {/* 모바일: 이전 / 페이지수 / 다음 */}
+      <div className="flex md:hidden items-center justify-between w-full">
         <IconBtn label="prev" onClick={() => onChange(current - 1)} disabled={disabled || current === 1}>
-          <ChevronLeft size={14} />
+          <ChevronLeft size={16} />
         </IconBtn>
-        {window.map((p, i) =>
-          p === '…' ? (
-            <span key={`g${i}`} className="px-2 text-sm text-[var(--color-muted)]">…</span>
-          ) : (
-            <button
-              key={p}
-              onClick={() => onChange(p)}
-              disabled={disabled}
-              aria-current={p === current ? 'page' : undefined}
-              className={cn(
-                'min-w-[32px] rounded-lg px-2.5 py-1 text-sm font-semibold',
-                p === current
-                  ? 'bg-[var(--color-blue)] text-white'
-                  : 'text-[var(--color-muted)] hover:bg-[var(--color-soft)]',
-              )}
-            >
-              {p}
-            </button>
-          ),
-        )}
+        <span className="text-sm font-semibold text-[var(--color-blue-dark)]">
+          {current} / {totalPages}
+        </span>
         <IconBtn label="next" onClick={() => onChange(current + 1)} disabled={disabled || current === totalPages}>
-          <ChevronRight size={14} />
+          <ChevronRight size={16} />
         </IconBtn>
-        <IconBtn label="last" onClick={() => onChange(totalPages)} disabled={disabled || current === totalPages}>
-          <ChevronsRight size={14} />
-        </IconBtn>
-      </nav>
-      <span className="text-xs text-[var(--color-muted)]">
-        {totalItems}건 중 {start}–{end} 표시
-      </span>
+      </div>
+
+      {/* 데스크톱: 기존 전체 */}
+      <div className="hidden md:flex items-center justify-between gap-3">
+        <nav className="flex items-center gap-1" aria-label="pagination">
+          <IconBtn label="first" onClick={() => onChange(1)} disabled={disabled || current === 1}>
+            <ChevronsLeft size={14} />
+          </IconBtn>
+          <IconBtn label="prev" onClick={() => onChange(current - 1)} disabled={disabled || current === 1}>
+            <ChevronLeft size={14} />
+          </IconBtn>
+          {window.map((p, i) =>
+            p === '…' ? (
+              <span key={`g${i}`} className="px-2 text-sm text-[var(--color-muted)]">…</span>
+            ) : (
+              <button
+                key={p}
+                onClick={() => onChange(p)}
+                disabled={disabled}
+                aria-current={p === current ? 'page' : undefined}
+                className={cn(
+                  'min-w-[32px] rounded-lg px-2.5 py-1 text-sm font-semibold',
+                  p === current
+                    ? 'bg-[var(--color-blue)] text-white'
+                    : 'text-[var(--color-muted)] hover:bg-[var(--color-soft)]',
+                )}
+              >
+                {p}
+              </button>
+            ),
+          )}
+          <IconBtn label="next" onClick={() => onChange(current + 1)} disabled={disabled || current === totalPages}>
+            <ChevronRight size={14} />
+          </IconBtn>
+          <IconBtn label="last" onClick={() => onChange(totalPages)} disabled={disabled || current === totalPages}>
+            <ChevronsRight size={14} />
+          </IconBtn>
+        </nav>
+        <span className="text-xs text-[var(--color-muted)]">
+          {totalItems}건 중 {start}–{end} 표시
+        </span>
+      </div>
     </div>
   );
 }
