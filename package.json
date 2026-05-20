@@ -18,12 +18,12 @@
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
     "test": "pnpm test:unit && pnpm test:integration",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:deploy": "prisma migrate deploy",
-    "seed:regions": "tsx scripts/ingest/regions/seed.ts",
-    "seed:regions:api": "tsx scripts/ingest/regions/seed-from-api.ts",
-    "ingest:run": "tsx scripts/ingest/transactions/runner.ts"
+    "prisma:generate": "dotenv -e .env.local -- prisma generate",
+    "prisma:migrate": "dotenv -e .env.local -- prisma migrate dev",
+    "prisma:deploy": "dotenv -e .env.local -- prisma migrate deploy",
+    "seed:regions": "dotenv -e .env.local -- tsx scripts/ingest/regions/seed.ts",
+    "seed:regions:api": "dotenv -e .env.local -- tsx scripts/ingest/regions/seed-from-api.ts",
+    "ingest:run": "dotenv -e .env.local -- tsx scripts/ingest/transactions/runner.ts"
   },
   "dependencies": {
     "@prisma/client": "^5",
@@ -48,6 +48,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^2",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "^15",
     "pino-pretty": "^11",

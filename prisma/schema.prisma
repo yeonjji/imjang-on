@@ -87,6 +87,15 @@ model Property {
   @@index([propertyType, regionCode])
   @@index([name])
   @@index([propertyType, lastTxAt(sort: Desc)])
+  @@index([propertyType, saleLastAt(sort: Desc)])
+  @@index([propertyType, saleCount12m(sort: Desc)])
+  @@index([propertyType, jeonseLastAt(sort: Desc)])
+  @@index([propertyType, jeonseCount12m(sort: Desc)])
+  @@index([propertyType, wolseLastAt(sort: Desc)])
+  @@index([propertyType, wolseCount12m(sort: Desc)])
+  @@index([propertyType, saleAvgPrice12m])
+  @@index([propertyType, jeonseAvgDeposit12m])
+  @@index([propertyType, wolseAvgDeposit12m])
 }
 
 enum DealType {

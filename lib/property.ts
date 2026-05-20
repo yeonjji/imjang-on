@@ -23,21 +23,101 @@ export async function getPropertyById(id: bigint) {
   });
 }
 
+export type DealFilter = 'all' | 'sale' | 'jeonse' | 'wolse';
+export type PriceRange = 'lt5' | '5to10' | '10to15' | 'gt15';
+export type AreaRange = 'small' | 'medium' | 'large' | 'xlarge';
+export type SortOption = 'recent' | 'volume';
+
 export interface PropertyListParams {
   types: PropertyType[];
+  deal?: DealFilter;
+  priceRange?: PriceRange;
+  areaRange?: AreaRange;
+  sort?: SortOption;
   sigunguCode?: string;
   page?: number;
   perPage?: number;
 }
 
-export async function getPropertyList({ types, sigunguCode, page = 1, perPage = 30 }: PropertyListParams) {
-  const where: Prisma.PropertyWhereInput = { propertyType: { in: types }, txCount12m: { gt: 0 } };
+function rangeArray(start: number, end: number): number[] {
+  return Array.from({ length: end - start }, (_, i) => start + i);
+}
+
+export async function getPropertyList({
+  types,
+  deal = 'all',
+  priceRange,
+  areaRange,
+  sort = 'recent',
+  sigunguCode,
+  page = 1,
+  perPage = 30,
+}: PropertyListParams) {
+  const where: Prisma.PropertyWhereInput = { propertyType: { in: types } };
+
+  // deal → count filter
+  if (deal === 'sale') {
+    where.saleCount12m = { gt: 0 };
+  } else if (deal === 'jeonse') {
+    where.jeonseCount12m = { gt: 0 };
+  } else if (deal === 'wolse') {
+    where.wolseCount12m = { gt: 0 };
+  } else {
+    where.txCount12m = { gt: 0 };
+  }
+
   if (sigunguCode) where.sigunguCode = sigunguCode;
+
+  // priceRange → price filter
+  if (priceRange) {
+    const priceCondition: Prisma.BigIntFilter =
+      priceRange === 'lt5'
+        ? { lt: BigInt(500_000_000) }
+        : priceRange === '5to10'
+          ? { gte: BigInt(500_000_000), lt: BigInt(1_000_000_000) }
+          : priceRange === '10to15'
+            ? { gte: BigInt(1_000_000_000), lt: BigInt(1_500_000_000) }
+            : { gte: BigInt(1_500_000_000) };
+
+    if (deal === 'jeonse') {
+      where.jeonseAvgDeposit12m = priceCondition;
+    } else if (deal === 'wolse') {
+      where.wolseAvgDeposit12m = priceCondition;
+    } else {
+      where.saleAvgPrice12m = priceCondition;
+    }
+  }
+
+  // areaRange → areaTypes filter
+  if (areaRange) {
+    const areas =
+      areaRange === 'small'
+        ? rangeArray(1, 18)
+        : areaRange === 'medium'
+          ? rangeArray(18, 26)
+          : areaRange === 'large'
+            ? rangeArray(26, 35)
+            : rangeArray(35, 100);
+    where.areaTypes = { hasSome: areas };
+  }
+
+  // deal + sort → orderBy
+  let orderBy: Prisma.PropertyOrderByWithRelationInput;
+  if (deal === 'sale') {
+    orderBy = sort === 'volume' ? { saleCount12m: 'desc' } : { saleLastAt: 'desc' };
+  } else if (deal === 'jeonse') {
+    orderBy = sort === 'volume' ? { jeonseCount12m: 'desc' } : { jeonseLastAt: 'desc' };
+  } else if (deal === 'wolse') {
+    orderBy = sort === 'volume' ? { wolseCount12m: 'desc' } : { wolseLastAt: 'desc' };
+  } else {
+    orderBy = sort === 'volume' ? { txCount12m: 'desc' } : { lastTxAt: 'desc' };
+  }
+
   const [rows, total] = await Promise.all([
     prisma.property.findMany({
       where,
       include: { region: true },
-      orderBy: { lastTxAt: 'desc' },
+      orderBy,
       skip: (page - 1) * perPage,
       take: perPage,
     }),

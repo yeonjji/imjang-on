@@ -3,15 +3,21 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatBillion, formatDate } from '@/lib/format';
 import { typeToSlug } from '@/lib/property';
+import type { DealFilter } from '@/lib/property';
 import type { Property, Region } from '@prisma/client';
 
 interface Props {
   property: Property & { region: Region };
+  deal?: DealFilter;
 }
 
-export function PropertyCard({ property: p }: Props) {
+export function PropertyCard({ property: p, deal }: Props) {
   const slug = typeToSlug(p.propertyType);
   const href = `/${slug}/${p.id}`;
+
+  const isHighlighted = (type: 'sale' | 'jeonse' | 'wolse') =>
+    !deal || deal === 'all' || deal === type;
+
   return (
     <Link href={href}>
       <Card className="transition hover:shadow-lg">
@@ -27,21 +33,21 @@ export function PropertyCard({ property: p }: Props) {
         </div>
         <div className="mt-4 space-y-1.5 text-sm">
           {p.saleCount12m > 0 && (
-            <p>
+            <p className={!isHighlighted('sale') ? 'opacity-40' : undefined}>
               <span className="inline-block w-12 text-[var(--color-muted)]">매매</span>
               평균 <b>{formatBillion(p.saleAvgPrice12m)}</b>
               <span className="ml-2 text-[var(--color-muted)]">최근 {formatBillion(p.saleLastPrice)} · {formatDate(p.saleLastAt)}</span>
             </p>
           )}
           {p.jeonseCount12m > 0 && (
-            <p>
+            <p className={!isHighlighted('jeonse') ? 'opacity-40' : undefined}>
               <span className="inline-block w-12 text-[var(--color-muted)]">전세</span>
               평균 <b>{formatBillion(p.jeonseAvgDeposit12m)}</b>
               <span className="ml-2 text-[var(--color-muted)]">최근 {formatBillion(p.jeonseLastDeposit)} · {formatDate(p.jeonseLastAt)}</span>
             </p>
           )}
           {p.wolseCount12m > 0 && (
-            <p>
+            <p className={!isHighlighted('wolse') ? 'opacity-40' : undefined}>
               <span className="inline-block w-12 text-[var(--color-muted)]">월세</span>
               보 <b>{formatBillion(p.wolseAvgDeposit12m)}</b> / 월 <b>{p.wolseAvgRent12m?.toLocaleString('ko-KR')}만원</b>
             </p>

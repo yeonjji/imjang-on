@@ -26,8 +26,9 @@ export function Nav() {
           <div className="hidden gap-6 text-[15px] font-semibold text-[var(--color-muted)] md:flex md:items-center">
             <Link href="/">홈</Link>
             <Dropdown
-              label="부동산"
+              label="실거래가"
               items={[
+                { label: '전체 목록', href: '/list' },
                 { label: '아파트', href: '/apt' },
                 { label: '오피스텔', href: '/officetel' },
                 { label: '다세대', href: '/villa' },
