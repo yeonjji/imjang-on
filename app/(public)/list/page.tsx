@@ -6,6 +6,7 @@ import { ListFilterPanel } from './_components/list-filter-panel';
 import { PaginationNav } from './_components/pagination-nav';
 import { getPropertyList } from '@/lib/property';
 import type { DealFilter, PriceRange, AreaRange, SortOption } from '@/lib/property';
+import { getSidoList } from '@/lib/region';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -48,6 +49,8 @@ export default async function ListPage({
   const sort = (sp.sort ?? 'recent') as SortOption;
   const page = Math.max(1, Number(sp.page ?? '1'));
 
+  const sidoList = await getSidoList();
+
   const { rows, total, totalPages, perPage } = await getPropertyList({
     types,
     deal,
@@ -83,7 +86,7 @@ export default async function ListPage({
         <aside className="hidden md:block w-[280px] shrink-0 sticky top-[88px]">
           <div className="rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow)]">
             <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-[var(--color-soft)]" />}>
-              <ListFilterPanel />
+              <ListFilterPanel sidoList={sidoList} />
             </Suspense>
           </div>
           {/* 광고 영역 */}
