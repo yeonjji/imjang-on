@@ -7,6 +7,8 @@ export interface NearbyProperty {
   address: string;
   region: string;
   distKm: number;
+  saleLastPrice: number | null;
+  jeonseLastDeposit: number | null;
 }
 
 export async function getNearbyProperties(opts: {
@@ -16,13 +18,25 @@ export async function getNearbyProperties(opts: {
   limit?: number;
 }): Promise<NearbyProperty[]> {
   const { propertyId, propertyType, radiusMeters = 2000, limit = 10 } = opts;
-  const rows = await prisma.$queryRaw<Array<{ id: bigint; name: string; address: string; full_name: string; dist_km: number }>>`
+  const rows = await prisma.$queryRaw<
+    Array<{
+      id: bigint;
+      name: string;
+      address: string;
+      full_name: string;
+      dist_km: number;
+      sale_last_price: number | null;
+      jeonse_last_deposit: number | null;
+    }>
+  >`
     WITH center AS (
       SELECT location FROM "Property" WHERE id = ${propertyId}
     )
     SELECT
       p.id, p.name, p.address, r."fullName" AS full_name,
-      (ST_Distance(p.location, c.location) / 1000.0) AS dist_km
+      (ST_Distance(p.location, c.location) / 1000.0) AS dist_km,
+      p."saleLastPrice"::float AS sale_last_price,
+      p."jeonseLastDeposit"::float AS jeonse_last_deposit
     FROM "Property" p
     JOIN "Region" r ON r.code = p."regionCode"
     JOIN center c ON true
@@ -41,5 +55,7 @@ export async function getNearbyProperties(opts: {
     address: r.address,
     region: r.full_name,
     distKm: r.dist_km,
+    saleLastPrice: r.sale_last_price,
+    jeonseLastDeposit: r.jeonse_last_deposit,
   }));
 }
