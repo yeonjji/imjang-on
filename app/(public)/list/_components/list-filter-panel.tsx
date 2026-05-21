@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Chip } from '@/components/ui/chip';
 import { Button } from '@/components/ui/button';
+import { PriceRangeSlider } from './price-range-slider';
 
 interface SidoItem {
   code: string;
@@ -28,7 +29,21 @@ export function ListFilterPanel({ sidoList }: Props) {
 
   const type = searchParams.get('type') ?? 'all';
   const deal = searchParams.get('deal') ?? 'all';
-  const price = searchParams.get('price') ?? null;
+  const priceMin = searchParams.get('price_min');
+  const priceMax = searchParams.get('price_max');
+
+  const DEAL_SLIDER: Record<string, { max: number; step: number }> = {
+    sale:   { max: 200_000, step: 10_000 },
+    jeonse: { max: 100_000, step:  5_000 },
+    wolse:  { max:  20_000, step:  1_000 },
+    all:    { max: 200_000, step: 10_000 },
+  };
+  const slider = DEAL_SLIDER[deal] ?? DEAL_SLIDER.all;
+  const sliderMin = 0;
+  const sliderMax = slider.max;
+  const sliderStep = slider.step;
+  const sliderValMin = Math.min(priceMin ? Number(priceMin) : sliderMin, sliderMax);
+  const sliderValMax = Math.min(priceMax ? Number(priceMax) : sliderMax, sliderMax);
   const area = searchParams.get('area') ?? null;
   const sort = searchParams.get('sort') ?? 'recent';
   const region = searchParams.get('region') ?? null;
@@ -44,7 +59,7 @@ export function ListFilterPanel({ sidoList }: Props) {
   }, [sido]);
 
   const hasActiveFilters =
-    type !== 'all' || deal !== 'all' || !!price || !!area || sort !== 'recent' || !!region || !!sido;
+    type !== 'all' || deal !== 'all' || !!priceMin || !!priceMax || !!area || sort !== 'recent' || !!region || !!sido;
 
   function updateParams(updates: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -78,10 +93,10 @@ export function ListFilterPanel({ sidoList }: Props) {
       <section>
         <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">거래유형</h3>
         <div className="flex flex-wrap gap-2 mt-2">
-          <Chip active={deal === 'all'} onClick={() => updateParams({ deal: 'all' })}>전체</Chip>
-          <Chip active={deal === 'sale'} onClick={() => updateParams({ deal: deal === 'sale' ? 'all' : 'sale' })}>매매</Chip>
-          <Chip active={deal === 'jeonse'} onClick={() => updateParams({ deal: deal === 'jeonse' ? 'all' : 'jeonse' })}>전세</Chip>
-          <Chip active={deal === 'wolse'} onClick={() => updateParams({ deal: deal === 'wolse' ? 'all' : 'wolse' })}>월세</Chip>
+          <Chip active={deal === 'all'} onClick={() => updateParams({ deal: 'all', price_min: null, price_max: null })}>전체</Chip>
+          <Chip active={deal === 'sale'} onClick={() => updateParams({ deal: deal === 'sale' ? 'all' : 'sale', price_min: null, price_max: null })}>매매</Chip>
+          <Chip active={deal === 'jeonse'} onClick={() => updateParams({ deal: deal === 'jeonse' ? 'all' : 'jeonse', price_min: null, price_max: null })}>전세</Chip>
+          <Chip active={deal === 'wolse'} onClick={() => updateParams({ deal: deal === 'wolse' ? 'all' : 'wolse', price_min: null, price_max: null })}>월세</Chip>
         </div>
       </section>
 
@@ -123,11 +138,47 @@ export function ListFilterPanel({ sidoList }: Props) {
         <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">
           가격대<span className="ml-1 text-xs text-[var(--color-muted)]">{priceLabel}</span>
         </h3>
-        <div className="flex flex-wrap gap-2 mt-2">
-          <Chip active={price === 'lt5'} onClick={() => updateParams({ price: price === 'lt5' ? null : 'lt5' })}>5억 이하</Chip>
-          <Chip active={price === '5to10'} onClick={() => updateParams({ price: price === '5to10' ? null : '5to10' })}>5~10억</Chip>
-          <Chip active={price === '10to15'} onClick={() => updateParams({ price: price === '10to15' ? null : '10to15' })}>10~15억</Chip>
-          <Chip active={price === 'gt15'} onClick={() => updateParams({ price: price === 'gt15' ? null : 'gt15' })}>15억 이상</Chip>
+
+        {/* 데스크톱: 슬라이더 */}
+        <div className="mt-2">
+          <PriceRangeSlider
+            min={sliderMin}
+            max={sliderMax}
+            step={sliderStep}
+            valueMin={sliderValMin}
+            valueMax={sliderValMax}
+            onChange={(min, max) => {
+              const isDefault = min === sliderMin && max === sliderMax;
+              updateParams({
+                price_min: isDefault ? null : String(min),
+                price_max: isDefault ? null : String(max),
+              });
+            }}
+          />
+        </div>
+
+        {/* 모바일: 기존 칩 */}
+        <div className="flex flex-wrap gap-2 mt-2 md:hidden">
+          <Chip
+            active={!priceMin && !priceMax}
+            onClick={() => updateParams({ price_min: null, price_max: null })}
+          >전체</Chip>
+          <Chip
+            active={!priceMin && priceMax === '50000'}
+            onClick={() => updateParams({ price_min: null, price_max: '50000' })}
+          >5억 이하</Chip>
+          <Chip
+            active={priceMin === '50000' && priceMax === '100000'}
+            onClick={() => updateParams({ price_min: '50000', price_max: '100000' })}
+          >5~10억</Chip>
+          <Chip
+            active={priceMin === '100000' && priceMax === '150000'}
+            onClick={() => updateParams({ price_min: '100000', price_max: '150000' })}
+          >10~15억</Chip>
+          <Chip
+            active={priceMin === '150000' && !priceMax}
+            onClick={() => updateParams({ price_min: '150000', price_max: null })}
+          >15억 이상</Chip>
         </div>
       </section>
 
