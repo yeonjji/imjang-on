@@ -28,4 +28,4 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma generate
       - run: pnpm tsx scripts/ingest/transactions/runner.ts --api=${{ matrix.api }} --mode=daily
-        timeout-minutes: 60
+        timeout-minutes: 120

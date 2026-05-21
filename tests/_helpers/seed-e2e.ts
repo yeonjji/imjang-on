@@ -10,6 +10,15 @@ async function main() {
 
   await prisma.region.create({
     data: {
+      code: '1100000000',
+      sido: '서울특별시',
+      fullName: '서울특별시',
+      level: 1,
+      sourceVersion: 'e2e',
+    },
+  });
+  await prisma.region.create({
+    data: {
       code: '1165010100',
       sido: '서울특별시',
       sigungu: '서초구',
@@ -70,6 +79,17 @@ async function main() {
   }
 
   await updatePropertyAggregates([p.id]);
+
+  // list perPage=30 → 2페이지 테스트용 추가 매물 30개
+  await prisma.property.createMany({
+    data: Array.from({ length: 30 }, (_, i) => ({
+      propertyType: PropertyType.APARTMENT,
+      name: `테스트아파트${i + 1}`,
+      nameNorm: `테스트아파트${i + 1}`,
+      regionCode: '1165010100',
+      address: '서울특별시 서초구 서초동',
+    })),
+  });
 
   console.log('e2e seed done. propertyId =', String(p.id));
   await prisma.$disconnect();

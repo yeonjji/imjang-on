@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('apt detail: 3 transaction sections + page 2', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/apt/1');
   await expect(page.getByRole('heading', { name: /래미안/ })).toBeVisible();
 
