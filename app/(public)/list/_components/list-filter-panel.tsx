@@ -21,16 +21,20 @@ interface SigunguItem {
 
 interface Props {
   sidoList: SidoItem[];
+  params?: URLSearchParams;
+  onParamsChange?: (next: URLSearchParams) => void;
 }
 
-export function ListFilterPanel({ sidoList }: Props) {
+export function ListFilterPanel({ sidoList, params: externalParams, onParamsChange }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const type = searchParams.get('type') ?? 'all';
-  const deal = searchParams.get('deal') ?? 'all';
-  const priceMin = searchParams.get('price_min');
-  const priceMax = searchParams.get('price_max');
+  const effectiveParams = externalParams ?? searchParams;
+
+  const type = effectiveParams.get('type') ?? 'all';
+  const deal = effectiveParams.get('deal') ?? 'all';
+  const priceMin = effectiveParams.get('price_min');
+  const priceMax = effectiveParams.get('price_max');
 
   const DEAL_SLIDER: Record<string, { max: number; step: number }> = {
     sale:   { max: 200_000, step:  5_000 },
@@ -44,10 +48,10 @@ export function ListFilterPanel({ sidoList }: Props) {
   const sliderStep = slider.step;
   const sliderValMin = Math.min(priceMin ? Number(priceMin) : sliderMin, sliderMax);
   const sliderValMax = Math.min(priceMax ? Number(priceMax) : sliderMax, sliderMax);
-  const area = searchParams.get('area') ?? null;
-  const sort = searchParams.get('sort') ?? 'recent';
-  const region = searchParams.get('region') ?? null;
-  const sido = searchParams.get('sido') ?? null;
+  const area = effectiveParams.get('area') ?? null;
+  const sort = effectiveParams.get('sort') ?? 'recent';
+  const region = effectiveParams.get('region') ?? null;
+  const sido = effectiveParams.get('sido') ?? null;
 
   const [sigunguList, setSigunguList] = useState<SigunguItem[]>([]);
 
@@ -62,13 +66,18 @@ export function ListFilterPanel({ sidoList }: Props) {
     type !== 'all' || deal !== 'all' || !!priceMin || !!priceMax || !!area || sort !== 'recent' || !!region || !!sido;
 
   function updateParams(updates: Record<string, string | null>) {
-    const params = new URLSearchParams(searchParams.toString());
+    const base = externalParams ?? searchParams;
+    const next = new URLSearchParams(base.toString());
     for (const [key, value] of Object.entries(updates)) {
-      if (value === null) params.delete(key);
-      else params.set(key, value);
+      if (value === null) next.delete(key);
+      else next.set(key, value);
     }
-    params.delete('page');
-    router.push(`/list?${params.toString()}`);
+    next.delete('page');
+    if (onParamsChange) {
+      onParamsChange(next);
+    } else {
+      router.push(`/list?${next.toString()}`);
+    }
   }
 
   const priceLabel =
@@ -203,7 +212,7 @@ export function ListFilterPanel({ sidoList }: Props) {
         </div>
       </section>
 
-      {hasActiveFilters && (
+      {hasActiveFilters && !onParamsChange && (
         <Button variant="ghost" size="sm" onClick={() => router.push('/list')}>
           필터 초기화
         </Button>
