@@ -1,0 +1,121 @@
+<h2>A안 설계 — 카드 + 페이지네이션 변경</h2>
+<p class="subtitle">모바일/데스크톱 비교. 어색한 부분 있으면 말씀해주세요</p>
+
+<div class="split" style="gap:24px;align-items:start;">
+
+  <!-- 모바일 -->
+  <div class="mockup">
+    <div class="mockup-header">📱 모바일 (현재 → 수정 후)</div>
+    <div class="mockup-body" style="padding:12px;background:#f8fafc;">
+
+      <!-- 현재 (깨짐) -->
+      <p style="font-size:11px;font-weight:700;color:#ef4444;margin:0 0 6px;">현재 — 깨짐</p>
+      <div style="border:2px dashed #fca5a5;border-radius:12px;padding:10px;background:white;display:grid;grid-template-columns:1fr 90px;gap:8px;overflow:hidden;margin-bottom:16px;">
+        <div>
+          <div style="background:#dbeafe;border-radius:6px;padding:2px 8px;font-size:10px;color:#1e40af;display:inline-block;margin-bottom:4px;">아파트</div>
+          <div style="font-size:13px;font-weight:bold;color:#1e3a5f;">래미안 퍼스티지</div>
+          <div style="font-size:10px;color:#94a3b8;margin-top:2px;">서울 서초구 · 2008년 · 2444세대</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:6px;">
+            <div style="background:#eff6ff;border-radius:6px;padding:4px;font-size:9px;text-align:center;">매매<br/><b style="font-size:10px;">30억</b></div>
+            <div style="background:#eff6ff;border-radius:6px;padding:4px;font-size:9px;text-align:center;">전세<br/><b style="font-size:10px;">15억</b></div>
+            <div style="background:#eff6ff;border-radius:6px;padding:4px;font-size:9px;text-align:center;">월세<br/><b style="font-size:10px;">5억</b></div>
+          </div>
+        </div>
+        <div style="background:#eff6ff;border-radius:8px;padding:6px;font-size:9px;color:#475569;">
+          <b style="font-size:10px;">12개월 24건</b><br/>매매 8건<br/>전세 10건<br/>월세 6건
+        </div>
+      </div>
+
+      <!-- 수정 후 -->
+      <p style="font-size:11px;font-weight:700;color:#16a34a;margin:0 0 6px;">수정 후 — 세로 스택</p>
+      <div style="border:2px solid #86efac;border-radius:12px;padding:10px;background:white;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div style="background:#dbeafe;border-radius:6px;padding:2px 8px;font-size:10px;color:#1e40af;display:inline-block;">아파트</div>
+          <span style="font-size:10px;color:#94a3b8;">12개월 24건</span>
+        </div>
+        <div style="font-size:13px;font-weight:bold;color:#1e3a5f;">래미안 퍼스티지</div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px;margin-bottom:8px;">서울 서초구 · 2008년 · 2444세대</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;">
+          <div style="background:#eff6ff;border-radius:6px;padding:6px;font-size:9px;text-align:center;">매매<br/><b style="font-size:11px;color:#1e3a5f;">30억</b></div>
+          <div style="background:#eff6ff;border-radius:6px;padding:6px;font-size:9px;text-align:center;">전세<br/><b style="font-size:11px;color:#1e3a5f;">15억</b></div>
+          <div style="background:#eff6ff;border-radius:6px;padding:6px;font-size:9px;text-align:center;">월세<br/><b style="font-size:11px;color:#1e3a5f;">5억/80만</b></div>
+        </div>
+      </div>
+
+      <!-- 모바일 필터 버튼 -->
+      <p style="font-size:11px;font-weight:700;color:#1d4ed8;margin:0 0 6px;">모바일 필터 버튼 (상단 고정)</p>
+      <div style="border:1px solid #e2e8f0;border-radius:10px;padding:8px;background:white;display:flex;gap:6px;align-items:center;">
+        <button style="background:#1e3a5f;color:white;border:none;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;">☰ 필터</button>
+        <span style="background:#dbeafe;color:#1e40af;border-radius:12px;padding:2px 8px;font-size:10px;">아파트</span>
+        <span style="background:#dcfce7;color:#166534;border-radius:12px;padding:2px 8px;font-size:10px;">매매</span>
+        <span style="font-size:10px;color:#94a3b8;">× 초기화</span>
+      </div>
+
+      <!-- 모바일 페이지네이션 -->
+      <p style="font-size:11px;font-weight:700;color:#7c3aed;margin:10px 0 6px;">페이지네이션 모바일 간소화</p>
+      <div style="border:1px solid #e2e8f0;border-radius:10px;padding:8px;background:white;display:flex;align-items:center;justify-content:space-between;">
+        <button style="background:#eff6ff;border:none;border-radius:8px;padding:5px 14px;font-size:12px;color:#1e3a5f;cursor:pointer;">← 이전</button>
+        <span style="font-size:12px;color:#475569;font-weight:600;">3 / 47</span>
+        <button style="background:#1e3a5f;color:white;border:none;border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer;">다음 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 데스크톱 -->
+  <div class="mockup">
+    <div class="mockup-header">🖥 데스크톱 (변경 없음 + 정렬 추가)</div>
+    <div class="mockup-body" style="padding:12px;background:#f8fafc;">
+
+      <!-- 카드 유지 -->
+      <p style="font-size:11px;font-weight:700;color:#475569;margin:0 0 6px;">카드 레이아웃 그대로 유지</p>
+      <div style="border:1px solid #e2e8f0;border-radius:12px;padding:10px;background:white;display:grid;grid-template-columns:1fr 120px;gap:8px;margin-bottom:16px;">
+        <div>
+          <div style="background:#dbeafe;border-radius:6px;padding:2px 8px;font-size:10px;color:#1e40af;display:inline-block;margin-bottom:4px;">아파트</div>
+          <div style="font-size:13px;font-weight:bold;color:#1e3a5f;">래미안 퍼스티지</div>
+          <div style="font-size:10px;color:#94a3b8;margin-top:2px;margin-bottom:6px;">서울 서초구 · 2008년 · 2444세대</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;">
+            <div style="background:#eff6ff;border-radius:6px;padding:4px;font-size:9px;text-align:center;">매매<br/><b>30억</b></div>
+            <div style="background:#eff6ff;border-radius:6px;padding:4px;font-size:9px;text-align:center;">전세<br/><b>15억</b></div>
+            <div style="background:#eff6ff;border-radius:6px;padding:4px;font-size:9px;text-align:center;">월세<br/><b>5억</b></div>
+          </div>
+        </div>
+        <div style="background:#eff6ff;border-radius:8px;padding:6px;font-size:9px;color:#475569;">
+          <b>12개월 24건</b><br/>매매 8건<br/>전세 10건<br/>월세 6건
+        </div>
+      </div>
+
+      <!-- 정렬 추가 -->
+      <p style="font-size:11px;font-weight:700;color:#16a34a;margin:0 0 6px;">정렬 옵션 추가 (사이드바)</p>
+      <div style="border:1px solid #e2e8f0;border-radius:10px;padding:10px;background:white;margin-bottom:16px;">
+        <p style="font-size:11px;font-weight:700;color:#1e3a5f;margin:0 0 6px;">정렬</p>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+          <span style="background:#1e3a5f;color:white;border-radius:12px;padding:3px 10px;font-size:10px;">최신거래순</span>
+          <span style="background:#eff6ff;color:#475569;border-radius:12px;padding:3px 10px;font-size:10px;">거래많은순</span>
+          <span style="background:#eff6ff;color:#475569;border-radius:12px;padding:3px 10px;font-size:10px;">가격 높은순</span>
+          <span style="background:#eff6ff;color:#475569;border-radius:12px;padding:3px 10px;font-size:10px;">가격 낮은순</span>
+        </div>
+      </div>
+
+      <!-- 지역 필터 -->
+      <p style="font-size:11px;font-weight:700;color:#d97706;margin:0 0 6px;">지역 필터 추가 (사이드바)</p>
+      <div style="border:1px solid #e2e8f0;border-radius:10px;padding:10px;background:white;">
+        <p style="font-size:11px;font-weight:700;color:#1e3a5f;margin:0 0 6px;">지역</p>
+        <select style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:5px 8px;font-size:11px;color:#475569;margin-bottom:6px;">
+          <option>시도 선택</option>
+          <option selected>서울특별시</option>
+          <option>경기도</option>
+        </select>
+        <select style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:5px 8px;font-size:11px;color:#475569;">
+          <option>시군구 전체</option>
+          <option>강남구</option>
+          <option selected>서초구</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px;padding:14px;background:#f0fdf4;border-radius:12px;border:1px solid #86efac;font-size:13px;color:#166534;">
+  ✅ 이 방향이 맞으면 다음으로 스켈레톤 로딩 설계도 보여드릴게요.
+</div>

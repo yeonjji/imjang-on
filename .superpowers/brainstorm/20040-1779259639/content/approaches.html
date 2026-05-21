@@ -1,0 +1,70 @@
+<h2>/list 페이지 개선 방향 선택</h2>
+<p class="subtitle">어떤 방향으로 개선할지 골라주세요</p>
+
+<div class="options">
+
+  <!-- Option A -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>점진적 개선 <span style="font-size:12px;background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;margin-left:6px;">빠름 · 안전</span></h3>
+      <p>기존 구조는 유지하면서 문제 항목만 수정</p>
+      <ul style="margin:10px 0 0 0;padding-left:18px;font-size:13px;color:#555;line-height:1.9;">
+        <li>카드: 모바일에서 <code>grid-cols-1</code> 전환 (깨짐 수정)</li>
+        <li>필터: 모바일 "필터" 버튼 → 바텀시트</li>
+        <li>지역 필터: 시도→시군구 드릴다운 추가</li>
+        <li>정렬: 가격 높은순/낮은순 추가</li>
+        <li>페이지네이션: 모바일 간소화 (이전/다음 + 페이지수만)</li>
+        <li>스켈레톤 로딩 추가</li>
+      </ul>
+      <div style="margin-top:12px;padding:10px;background:#f0f9ff;border-radius:10px;font-size:12px;color:#0369a1;">
+        ⏱ 예상 작업: 소·중형 태스크 6개
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>카드 + 필터 전면 재설계 <span style="font-size:12px;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;margin-left:6px;">권장</span></h3>
+      <p>카드 레이아웃과 필터 UX를 새로 설계</p>
+      <ul style="margin:10px 0 0 0;padding-left:18px;font-size:13px;color:#555;line-height:1.9;">
+        <li>카드: 모바일 전용 레이아웃 + 최근거래일·가격추이(↑↓) 추가</li>
+        <li>필터: 상단 가로 필터바(모바일) + 사이드바(데스크톱) 듀얼 모드</li>
+        <li>지역 필터: 시도→시군구 드릴다운</li>
+        <li>키워드 검색: 단지명 입력 필터 추가</li>
+        <li>정렬 강화: 4가지 (최신/거래많은/가격높은/가격낮은)</li>
+        <li>페이지네이션: 모바일 간소화 + "30개씩/50개씩" 선택</li>
+        <li>스켈레톤 로딩 + 필터 활성 뱃지</li>
+      </ul>
+      <div style="margin-top:12px;padding:10px;background:#f0fdf4;border-radius:10px;font-size:12px;color:#15803d;">
+        ⏱ 예상 작업: 중형 태스크 10~12개
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>테이블 뷰 + 모바일 퍼스트 <span style="font-size:12px;background:#f3e8ff;color:#7e22ce;padding:2px 8px;border-radius:10px;margin-left:6px;">대규모</span></h3>
+      <p>카드 대신 테이블/리스트 뷰 전환 + 완전 모바일 퍼스트</p>
+      <ul style="margin:10px 0 0 0;padding-left:18px;font-size:13px;color:#555;line-height:1.9;">
+        <li>데스크톱: 테이블 뷰 (이름·지역·매매·전세·월세·거래수 컬럼)</li>
+        <li>모바일: 세로 카드 스택, 스와이프로 필터</li>
+        <li>뷰 전환 토글 (카드 ↔ 테이블)</li>
+        <li>B의 모든 기능 포함</li>
+        <li>무한 스크롤 (페이지네이션 대체 옵션)</li>
+      </ul>
+      <div style="margin-top:12px;padding:10px;background:#faf5ff;border-radius:10px;font-size:12px;color:#7e22ce;">
+        ⏱ 예상 작업: 대형 태스크 15개+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px;padding:14px 18px;background:#fffbeb;border-radius:14px;border:1px solid #fcd34d;font-size:13px;color:#92400e;">
+  💡 <strong>추천:</strong> B안 — 카드 깨짐·모바일 필터·지역 필터가 모두 해결되고, 키워드 검색과 정렬 강화까지 묶어 한 번에 완성도를 높일 수 있어요.
+</div>

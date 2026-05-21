@@ -1,0 +1,65 @@
+<h2>현재 /list 페이지 — 개선 포인트</h2>
+<p class="subtitle">코드 분석 결과 발견한 4가지 주요 문제</p>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px;">
+
+  <!-- 문제 1 -->
+  <div style="border:2px solid #f87171;border-radius:16px;padding:20px;background:#fff5f5;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <span style="background:#f87171;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;">1</span>
+      <h3 style="margin:0;color:#b91c1c;font-size:15px;">모바일 필터 없음</h3>
+    </div>
+    <div style="background:#fee2e2;border-radius:10px;padding:12px;font-size:13px;color:#7f1d1d;margin-bottom:10px;">
+      <code style="background:#fecaca;padding:2px 6px;border-radius:4px;">hidden md:block</code> → 모바일에서 사이드바 필터가 통째로 사라짐
+    </div>
+    <p style="font-size:13px;color:#666;margin:0;">모바일 사용자는 유형·가격 필터를 전혀 쓸 수 없음</p>
+  </div>
+
+  <!-- 문제 2 -->
+  <div style="border:2px solid #fb923c;border-radius:16px;padding:20px;background:#fff7ed;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <span style="background:#fb923c;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;">2</span>
+      <h3 style="margin:0;color:#c2410c;font-size:15px;">지역 필터 UI 누락</h3>
+    </div>
+    <div style="background:#ffedd5;border-radius:10px;padding:12px;font-size:13px;color:#7c2d12;margin-bottom:10px;">
+      URL에 <code style="background:#fed7aa;padding:2px 6px;border-radius:4px;">?region=</code> 파라미터가 있지만 FilterPanel에 지역 선택 UI가 없음
+    </div>
+    <p style="font-size:13px;color:#666;margin:0;">시도 → 시군구 드릴다운 UI 자체가 미구현 상태</p>
+  </div>
+
+  <!-- 문제 3 -->
+  <div style="border:2px solid #facc15;border-radius:16px;padding:20px;background:#fefce8;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <span style="background:#facc15;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;">3</span>
+      <h3 style="margin:0;color:#a16207;font-size:15px;">카드 정보 부족</h3>
+    </div>
+    <div style="background:#fef9c3;border-radius:10px;padding:12px;font-size:13px;color:#713f12;margin-bottom:10px;">
+      최근 거래일, 가격 변동 추이(↑↓), 면적 정보가 카드에 없음
+    </div>
+    <p style="font-size:13px;color:#666;margin:0;">사용자가 클릭 전 판단할 수 있는 정보 부족</p>
+  </div>
+
+  <!-- 문제 4 -->
+  <div style="border:2px solid #a78bfa;border-radius:16px;padding:20px;background:#faf5ff;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <span style="background:#a78bfa;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;">4</span>
+      <h3 style="margin:0;color:#6d28d9;font-size:15px;">정렬 옵션 부족 + 로딩 없음</h3>
+    </div>
+    <div style="background:#ede9fe;border-radius:10px;padding:12px;font-size:13px;color:#4c1d95;margin-bottom:10px;">
+      정렬: 최신거래순·거래많은순 2개뿐. 필터 변경 시 스켈레톤 없이 빈 화면
+    </div>
+    <p style="font-size:13px;color:#666;margin:0;">가격 높은순/낮은순 정렬 없음. UX 공백 발생</p>
+  </div>
+
+</div>
+
+<div style="margin-top:24px;border:1px solid #e2e8f0;border-radius:16px;padding:20px;background:#f8fafc;">
+  <h3 style="margin:0 0 12px 0;color:#1e3a5f;font-size:15px;">추가 개선 가능 항목</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;">
+    <span style="background:#dbeafe;color:#1e40af;padding:4px 12px;border-radius:20px;font-size:13px;">키워드 검색 (단지명)</span>
+    <span style="background:#dcfce7;color:#166534;padding:4px 12px;border-radius:20px;font-size:13px;">가격 높은순/낮은순 정렬</span>
+    <span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:20px;font-size:13px;">필터 활성 상태 뱃지 표시</span>
+    <span style="background:#f3e8ff;color:#6b21a8;padding:4px 12px;border-radius:20px;font-size:13px;">스켈레톤 로딩</span>
+    <span style="background:#ffe4e6;color:#9f1239;padding:4px 12px;border-radius:20px;font-size:13px;">모바일 바텀시트 필터</span>
+  </div>
+</div>
