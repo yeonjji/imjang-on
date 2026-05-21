@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
+import { Button } from '@/components/ui/button';
 import { ListFilterPanel } from './list-filter-panel';
 
 interface SidoItem {
@@ -17,7 +18,18 @@ interface Props {
 
 export function MobileFilterSheet({ sidoList }: Props) {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
   const searchParams = useSearchParams();
+
+  const [pendingParams, setPendingParams] = useState(
+    () => new URLSearchParams(searchParams.toString()),
+  );
+
+  useEffect(() => {
+    if (open) {
+      setPendingParams(new URLSearchParams(searchParams.toString()));
+    }
+  }, [open, searchParams]);
 
   const activeCount = [
     (searchParams.get('type') ?? 'all') !== 'all',
@@ -27,6 +39,26 @@ export function MobileFilterSheet({ sidoList }: Props) {
     (searchParams.get('sort') ?? 'recent') !== 'recent',
     !!(searchParams.get('region') || searchParams.get('sido')),
   ].filter(Boolean).length;
+
+  function handleApply() {
+    router.push(`/list?${pendingParams.toString()}`);
+    setOpen(false);
+  }
+
+  function handleReset() {
+    setPendingParams(new URLSearchParams());
+  }
+
+  const footer = (
+    <div className="flex gap-3">
+      <Button variant="ghost" size="sm" onClick={handleReset} className="shrink-0">
+        필터 초기화
+      </Button>
+      <Button onClick={handleApply} className="flex-1">
+        조회
+      </Button>
+    </div>
+  );
 
   return (
     <div className="flex md:hidden items-center gap-2 mb-4">
@@ -41,8 +73,12 @@ export function MobileFilterSheet({ sidoList }: Props) {
           </span>
         )}
       </button>
-      <BottomSheet open={open} onOpenChange={setOpen} title="필터">
-        <ListFilterPanel sidoList={sidoList} />
+      <BottomSheet open={open} onOpenChange={setOpen} title="필터" footer={footer}>
+        <ListFilterPanel
+          sidoList={sidoList}
+          params={pendingParams}
+          onParamsChange={setPendingParams}
+        />
       </BottomSheet>
     </div>
   );
