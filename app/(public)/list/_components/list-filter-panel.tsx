@@ -148,10 +148,9 @@ export function ListFilterPanel({ sidoList }: Props) {
             valueMin={sliderValMin}
             valueMax={sliderValMax}
             onChange={(min, max) => {
-              const isDefault = min === sliderMin && max === sliderMax;
               updateParams({
-                price_min: isDefault ? null : String(min),
-                price_max: isDefault ? null : String(max),
+                price_min: min === sliderMin ? null : String(min),
+                price_max: max === sliderMax ? null : String(max),
               });
             }}
           />

@@ -74,7 +74,7 @@ export function PriceRangeSlider({ min, max, step, valueMin, valueMax, onChange 
           onChange={(e) => setLocalMin(Math.min(Number(e.target.value), localMax - step))}
           onMouseUp={commit}
           onTouchEnd={commit}
-          className={THUMB_STYLE}
+          className={`${THUMB_STYLE}${localMin >= localMax - step ? ' z-10' : ''}`}
         />
         {/* 최댓값 핸들 */}
         <input
