@@ -6,7 +6,7 @@ import { MobileFilterSheet } from './_components/mobile-filter-sheet';
 import { PropertyList } from './_components/property-list';
 import { ListSkeleton } from './_components/list-skeleton';
 import { getSidoList } from '@/lib/region';
-import type { DealFilter, PriceRange, AreaRange, SortOption } from '@/lib/property';
+import type { DealFilter, AreaRange, SortOption } from '@/lib/property';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -26,7 +26,8 @@ const TYPE_MAP: Record<string, PropertyType[]> = {
 interface SearchParams {
   type?: string;
   deal?: string;
-  price?: string;
+  price_min?: string;
+  price_max?: string;
   area?: string;
   sort?: string;
   region?: string;
@@ -46,7 +47,8 @@ export default async function ListPage({
   const typeSlug = sp.type ?? 'all';
   const types = TYPE_MAP[typeSlug] ?? TYPE_MAP.all;
   const deal = (sp.deal ?? 'all') as DealFilter;
-  const priceRange = sp.price as PriceRange | undefined;
+  const priceMin = sp.price_min ? Number(sp.price_min) : undefined;
+  const priceMax = sp.price_max ? Number(sp.price_max) : undefined;
   const areaRange = sp.area as AreaRange | undefined;
   const sort = (sp.sort ?? 'recent') as SortOption;
   const page = Math.max(1, Number(sp.page ?? '1'));
@@ -94,7 +96,8 @@ export default async function ListPage({
             <PropertyList
               types={types}
               deal={deal}
-              priceRange={priceRange}
+              priceMin={priceMin}
+              priceMax={priceMax}
               areaRange={areaRange}
               sort={sort}
               sigunguCode={sp.region}
