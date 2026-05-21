@@ -24,20 +24,35 @@ export async function getPropertyById(id: bigint) {
 }
 
 export type DealFilter = 'all' | 'sale' | 'jeonse' | 'wolse';
-export type PriceRange = 'lt5' | '5to10' | '10to15' | 'gt15';
 export type AreaRange = 'small' | 'medium' | 'large' | 'xlarge';
 export type SortOption = 'recent' | 'volume' | 'price_desc' | 'price_asc';
 
 export interface PropertyListParams {
   types: PropertyType[];
   deal?: DealFilter;
-  priceRange?: PriceRange;
+  priceMin?: number;  // 만원 단위
+  priceMax?: number;  // 만원 단위
   areaRange?: AreaRange;
   sort?: SortOption;
   sigunguCode?: string;
   sido?: string;
   page?: number;
   perPage?: number;
+}
+
+export function buildPriceCondition(
+  priceMin: number | undefined,
+  priceMax: number | undefined,
+): Prisma.BigIntFilter | undefined {
+  if (priceMin === undefined && priceMax === undefined) return undefined;
+  const cond: Prisma.BigIntFilter = {};
+  if (priceMin !== undefined && priceMin > 0) {
+    cond.gte = BigInt(priceMin) * BigInt(10_000);
+  }
+  if (priceMax !== undefined) {
+    cond.lte = BigInt(priceMax) * BigInt(10_000);
+  }
+  return cond;
 }
 
 function rangeArray(start: number, end: number): number[] {
@@ -47,7 +62,8 @@ function rangeArray(start: number, end: number): number[] {
 export async function getPropertyList({
   types,
   deal = 'all',
-  priceRange,
+  priceMin,
+  priceMax,
   areaRange,
   sort = 'recent',
   sigunguCode,
@@ -74,23 +90,14 @@ export async function getPropertyList({
     where.region = { sido };
   }
 
-  // priceRange → price filter
-  if (priceRange) {
-    const priceCondition: Prisma.BigIntFilter =
-      priceRange === 'lt5'
-        ? { lt: BigInt(500_000_000) }
-        : priceRange === '5to10'
-          ? { gte: BigInt(500_000_000), lt: BigInt(1_000_000_000) }
-          : priceRange === '10to15'
-            ? { gte: BigInt(1_000_000_000), lt: BigInt(1_500_000_000) }
-            : { gte: BigInt(1_500_000_000) };
-
+  const priceCond = buildPriceCondition(priceMin, priceMax);
+  if (priceCond) {
     if (deal === 'jeonse') {
-      where.jeonseAvgDeposit12m = priceCondition;
+      where.jeonseAvgDeposit12m = priceCond;
     } else if (deal === 'wolse') {
-      where.wolseAvgDeposit12m = priceCondition;
+      where.wolseAvgDeposit12m = priceCond;
     } else {
-      where.saleAvgPrice12m = priceCondition;
+      where.saleAvgPrice12m = priceCond;
     }
   }
 
