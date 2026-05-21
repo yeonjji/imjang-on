@@ -25,8 +25,7 @@ export function MobileFilterSheet({ sidoList }: Props) {
     !!(searchParams.get('price_min') || searchParams.get('price_max')),
     !!searchParams.get('area'),
     (searchParams.get('sort') ?? 'recent') !== 'recent',
-    !!searchParams.get('region'),
-    !!searchParams.get('sido'),
+    !!(searchParams.get('region') || searchParams.get('sido')),
   ].filter(Boolean).length;
 
   return (

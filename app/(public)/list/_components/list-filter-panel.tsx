@@ -33,10 +33,10 @@ export function ListFilterPanel({ sidoList }: Props) {
   const priceMax = searchParams.get('price_max');
 
   const DEAL_SLIDER: Record<string, { max: number; step: number }> = {
-    sale:   { max: 200_000, step: 10_000 },
+    sale:   { max: 200_000, step:  5_000 },
     jeonse: { max: 100_000, step:  5_000 },
     wolse:  { max:  20_000, step:  1_000 },
-    all:    { max: 200_000, step: 10_000 },
+    all:    { max: 200_000, step:  5_000 },
   };
   const slider = DEAL_SLIDER[deal] ?? DEAL_SLIDER.all;
   const sliderMin = 0;

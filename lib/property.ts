@@ -96,8 +96,14 @@ export async function getPropertyList({
       where.jeonseAvgDeposit12m = priceCond;
     } else if (deal === 'wolse') {
       where.wolseAvgDeposit12m = priceCond;
-    } else {
+    } else if (deal === 'sale') {
       where.saleAvgPrice12m = priceCond;
+    } else {
+      where.OR = [
+        { saleAvgPrice12m: priceCond },
+        { jeonseAvgDeposit12m: priceCond },
+        { wolseAvgDeposit12m: priceCond },
+      ];
     }
   }
 
