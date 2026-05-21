@@ -57,3 +57,108 @@ export async function getMonthlyChartData(propertyId: bigint) {
   }
   return byType;
 }
+
+export interface UnifiedTxRow {
+  id: string;
+  dealType: DealType;
+  contractDate: string;
+  exclusiveArea: number;
+  floor: number | null;
+  dealAmount: number | null;
+  deposit: number | null;
+  monthlyRent: number | null;
+}
+
+export interface AreaSummaryItem {
+  area: number;
+  lastPrice: number | null;
+  avg12m: number | null;
+  count12m: number;
+}
+
+export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryItem[]> {
+  const rows = await prisma.$queryRaw<
+    Array<{ area: number; last_price: number | null; avg_12m: number | null; cnt_12m: number }>
+  >`
+    WITH base AS (
+      SELECT
+        ROUND("exclusiveArea"::numeric / 3.3057851239669422)::int AS area_pyeong,
+        "dealAmount",
+        "contractDate"
+      FROM "Transaction"
+      WHERE "propertyId" = ${propertyId}
+        AND "dealType" = 'SALE'
+        AND "dealAmount" IS NOT NULL
+    ),
+    latest AS (
+      SELECT DISTINCT ON (area_pyeong)
+        area_pyeong,
+        "dealAmount"::float AS last_price
+      FROM base
+      ORDER BY area_pyeong, "contractDate" DESC
+    ),
+    stats AS (
+      SELECT
+        area_pyeong,
+        AVG("dealAmount")::float AS avg_12m,
+        COUNT(*)::int AS cnt_12m
+      FROM base
+      WHERE "contractDate" >= NOW() - INTERVAL '12 months'
+      GROUP BY area_pyeong
+    )
+    SELECT
+      l.area_pyeong AS area,
+      l.last_price,
+      s.avg_12m,
+      COALESCE(s.cnt_12m, 0) AS cnt_12m
+    FROM latest l
+    LEFT JOIN stats s ON s.area_pyeong = l.area_pyeong
+    ORDER BY COALESCE(s.cnt_12m, 0) DESC
+    LIMIT 4
+  `;
+  return rows.map((r) => ({
+    area: r.area,
+    lastPrice: r.last_price,
+    avg12m: r.avg_12m,
+    count12m: r.cnt_12m,
+  }));
+}
+
+export async function getUnifiedTransactions(
+  propertyId: bigint,
+  params: { page?: number; perPage?: number },
+): Promise<{ rows: UnifiedTxRow[]; totalCount: number }> {
+  const { page = 1, perPage = 15 } = params;
+  const [rawRows, totalCount] = await Promise.all([
+    prisma.transaction.findMany({
+      where: { propertyId },
+      orderBy: [{ contractDate: 'desc' }, { id: 'desc' }],
+      skip: (page - 1) * perPage,
+      take: perPage,
+      select: {
+        id: true,
+        dealType: true,
+        contractDate: true,
+        exclusiveArea: true,
+        floor: true,
+        dealAmount: true,
+        deposit: true,
+        monthlyRent: true,
+      },
+    }),
+    prisma.transaction.count({ where: { propertyId } }),
+  ]);
+  return {
+    rows: rawRows.map((t) => ({
+      id: String(t.id),
+      dealType: t.dealType,
+      contractDate: t.contractDate.toISOString().slice(0, 10),
+      exclusiveArea: Number(t.exclusiveArea),
+      floor: t.floor,
+      dealAmount: t.dealAmount as number | null,
+      deposit: t.deposit as number | null,
+      monthlyRent: t.monthlyRent as number | null,
+    })),
+    totalCount,
+  };
+}
