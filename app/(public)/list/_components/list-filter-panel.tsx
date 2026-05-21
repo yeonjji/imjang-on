@@ -66,8 +66,7 @@ export function ListFilterPanel({ sidoList, params: externalParams, onParamsChan
     type !== 'all' || deal !== 'all' || !!priceMin || !!priceMax || !!area || sort !== 'recent' || !!region || !!sido;
 
   function updateParams(updates: Record<string, string | null>) {
-    const base = externalParams ?? searchParams;
-    const next = new URLSearchParams(base.toString());
+    const next = new URLSearchParams(effectiveParams.toString());
     for (const [key, value] of Object.entries(updates)) {
       if (value === null) next.delete(key);
       else next.set(key, value);
