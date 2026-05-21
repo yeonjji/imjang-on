@@ -33,7 +33,8 @@ export function MobileFilterSheet({ sidoList }: Props) {
   ].filter(Boolean).length;
 
   function handleApply() {
-    router.push(`/list?${pendingParams.toString()}`);
+    const qs = pendingParams.toString();
+    router.push(qs ? `/list?${qs}` : '/list');
     setOpen(false);
   }
 
