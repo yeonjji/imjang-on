@@ -78,7 +78,7 @@ export default async function ListPage({
       <div className="flex gap-6 items-start">
         {/* 사이드바 280px */}
         <aside className="hidden md:block w-[280px] shrink-0 sticky top-[88px]">
-          <div className="rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow)]">
+          <div className="max-h-[calc(100vh-104px)] overflow-y-auto rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow)]">
             <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-[var(--color-soft)]" />}>
               <ListFilterPanel sidoList={sidoList} />
             </Suspense>
