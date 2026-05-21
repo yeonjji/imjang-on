@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
@@ -21,15 +21,7 @@ export function MobileFilterSheet({ sidoList }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [pendingParams, setPendingParams] = useState(
-    () => new URLSearchParams(searchParams.toString()),
-  );
-
-  useEffect(() => {
-    if (open) {
-      setPendingParams(new URLSearchParams(searchParams.toString()));
-    }
-  }, [open, searchParams]);
+  const [pendingParams, setPendingParams] = useState<URLSearchParams>(new URLSearchParams());
 
   const activeCount = [
     (searchParams.get('type') ?? 'all') !== 'all',
@@ -63,7 +55,10 @@ export function MobileFilterSheet({ sidoList }: Props) {
   return (
     <div className="flex md:hidden items-center gap-2 mb-4">
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setPendingParams(new URLSearchParams(searchParams.toString()));
+          setOpen(true);
+        }}
         className="flex items-center gap-1.5 rounded-xl bg-[var(--color-blue-dark)] px-4 py-2 text-sm font-semibold text-white"
       >
         필터
