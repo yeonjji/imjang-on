@@ -21,7 +21,9 @@ export function MobileFilterSheet({ sidoList }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [pendingParams, setPendingParams] = useState<URLSearchParams>(new URLSearchParams());
+  const [pendingParams, setPendingParams] = useState(
+    () => new URLSearchParams(searchParams.toString()),
+  );
 
   const activeCount = [
     (searchParams.get('type') ?? 'all') !== 'all',
@@ -69,7 +71,15 @@ export function MobileFilterSheet({ sidoList }: Props) {
           </span>
         )}
       </button>
-      <BottomSheet open={open} onOpenChange={setOpen} title="필터" footer={footer}>
+      <BottomSheet
+        open={open}
+        onOpenChange={(next) => {
+          // swipe-dismiss = cancel; pending changes discarded intentionally (per spec)
+          setOpen(next);
+        }}
+        title="필터"
+        footer={footer}
+      >
         <ListFilterPanel
           sidoList={sidoList}
           params={pendingParams}
