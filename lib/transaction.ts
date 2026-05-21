@@ -155,9 +155,9 @@ export async function getUnifiedTransactions(
       contractDate: t.contractDate.toISOString().slice(0, 10),
       exclusiveArea: Number(t.exclusiveArea),
       floor: t.floor,
-      dealAmount: t.dealAmount as number | null,
-      deposit: t.deposit as number | null,
-      monthlyRent: t.monthlyRent as number | null,
+      dealAmount: t.dealAmount !== null ? Number(t.dealAmount) : null,
+      deposit: t.deposit !== null ? Number(t.deposit) : null,
+      monthlyRent: t.monthlyRent !== null ? Number(t.monthlyRent) : null,
     })),
     totalCount,
   };
