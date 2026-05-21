@@ -22,7 +22,7 @@ export function MobileFilterSheet({ sidoList }: Props) {
   const activeCount = [
     (searchParams.get('type') ?? 'all') !== 'all',
     (searchParams.get('deal') ?? 'all') !== 'all',
-    !!searchParams.get('price'),
+    !!(searchParams.get('price_min') || searchParams.get('price_max')),
     !!searchParams.get('area'),
     (searchParams.get('sort') ?? 'recent') !== 'recent',
     !!searchParams.get('region'),
