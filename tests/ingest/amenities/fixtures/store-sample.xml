@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <header><resultCode>00</resultCode><resultMsg>NORMAL SERVICE.</resultMsg></header>
+  <body>
+    <items>
+      <item>
+        <bizesId>B001</bizesId>
+        <bizesNm>스타벅스 강남점</bizesNm>
+        <rdnmAdr>서울특별시 강남구 테헤란로 101</rdnmAdr>
+        <lon>127.027619</lon>
+        <lat>37.498095</lat>
+        <indsLclsCd>Q</indsLclsCd>
+        <indsLclsNm>음식</indsLclsNm>
+        <indsMclsNm>커피전문점/카페</indsMclsNm>
+        <signguCd>11680</signguCd>
+      </item>
+      <item>
+        <bizesId>B002</bizesId>
+        <bizesNm>올리브영 역삼점</bizesNm>
+        <rdnmAdr>서울특별시 강남구 역삼로 160</rdnmAdr>
+        <lon>127.035432</lon>
+        <lat>37.500217</lat>
+        <indsLclsCd>G</indsLclsCd>
+        <indsLclsNm>소매</indsLclsNm>
+        <indsMclsNm>화장품/미용</indsMclsNm>
+        <signguCd>11680</signguCd>
+      </item>
+    </items>
+    <totalCount>2</totalCount>
+  </body>
+</response>
