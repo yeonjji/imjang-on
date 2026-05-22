@@ -177,3 +177,42 @@ model EmailSignup {
 
   @@index([topic])
 }
+
+model EvCharger {
+  id           BigInt                                @id @default(autoincrement())
+  sourceId     String                                @unique @db.VarChar(80)
+  name         String                                @db.VarChar(100)
+  address      String                                @db.VarChar(200)
+  location     Unsupported("geography(Point,4326)")?
+  chargeSpeed  String                                @db.VarChar(10)
+  chargerCount Int
+  operatorName String?                               @db.VarChar(80)
+  updatedAt    DateTime                              @updatedAt
+
+  @@index([chargeSpeed])
+}
+
+model TraditionalMarket {
+  id         BigInt                                @id @default(autoincrement())
+  sourceId   String                                @unique @db.VarChar(80)
+  name       String                                @db.VarChar(100)
+  address    String                                @db.VarChar(200)
+  location   Unsupported("geography(Point,4326)")?
+  marketType String?                               @db.VarChar(40)
+  updatedAt  DateTime                              @updatedAt
+}
+
+model Store {
+  id           BigInt                                @id @default(autoincrement())
+  sourceId     String                                @unique @db.VarChar(80)
+  name         String                                @db.VarChar(100)
+  address      String                                @db.VarChar(200)
+  location     Unsupported("geography(Point,4326)")?
+  industryCode String?                               @db.VarChar(20)
+  industryName String?                               @db.VarChar(60)
+  sigunguCode  String                                @db.VarChar(5)
+  updatedAt    DateTime                              @updatedAt
+
+  @@index([sigunguCode])
+  @@index([industryCode])
+}
