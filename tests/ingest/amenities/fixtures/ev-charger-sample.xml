@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <header><resultCode>00</resultCode><resultMsg>NORMAL SERVICE.</resultMsg></header>
+  <body>
+    <items>
+      <item>
+        <statId>ST001</statId>
+        <statNm>서울역 EV충전소</statNm>
+        <addr>서울특별시 중구 한강대로 405</addr>
+        <lat>37.555946</lat>
+        <lng>126.972317</lng>
+        <chgerId>01</chgerId>
+        <chgerType>03</chgerType>
+        <busiNm>환경부</busiNm>
+      </item>
+      <item>
+        <statId>ST001</statId>
+        <statNm>서울역 EV충전소</statNm>
+        <addr>서울특별시 중구 한강대로 405</addr>
+        <lat>37.555946</lat>
+        <lng>126.972317</lng>
+        <chgerId>02</chgerId>
+        <chgerType>02</chgerType>
+        <busiNm>환경부</busiNm>
+      </item>
+      <item>
+        <statId>ST002</statId>
+        <statNm>강남구청 주차장</statNm>
+        <addr>서울특별시 강남구 학동로 426</addr>
+        <lat>37.517235</lat>
+        <lng>127.047325</lng>
+        <chgerId>01</chgerId>
+        <chgerType>02</chgerType>
+        <busiNm>한국전력</busiNm>
+      </item>
+    </items>
+    <totalCount>3</totalCount>
+  </body>
+</response>
