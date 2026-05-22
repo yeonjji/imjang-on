@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <header><resultCode>00</resultCode><resultMsg>NORMAL SERVICE.</resultMsg></header>
+  <body>
+    <items>
+      <item>
+        <mrktId>M001</mrktId>
+        <mrktNm>광장시장</mrktNm>
+        <rdnmAdr>서울특별시 종로구 창경궁로 88</rdnmAdr>
+        <la>37.570180</la>
+        <lo>126.999560</lo>
+        <mrktTypNm>종합시장</mrktTypNm>
+      </item>
+      <item>
+        <mrktId>M002</mrktId>
+        <mrktNm>남대문시장</mrktNm>
+        <rdnmAdr>서울특별시 중구 남대문시장4길 21</rdnmAdr>
+        <la>37.558945</la>
+        <lo>126.976662</lo>
+        <mrktTypNm>종합시장</mrktTypNm>
+      </item>
+    </items>
+    <totalCount>2</totalCount>
+  </body>
+</response>
