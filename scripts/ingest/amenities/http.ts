@@ -52,12 +52,14 @@ export async function fetchAmenityPage(
   }
 }
 
+const MAX_PAGES = 1000;
+
 export async function fetchAllPages<T>(
   fetcher: (pageNo: number) => Promise<{ items: T[]; totalCount: number }>,
 ): Promise<T[]> {
   const all: T[] = [];
   let pageNo = 1;
-  while (true) {
+  while (pageNo <= MAX_PAGES) {
     const { items, totalCount } = await fetcher(pageNo);
     all.push(...items);
     if (all.length >= totalCount || items.length === 0) break;
