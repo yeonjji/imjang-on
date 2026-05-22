@@ -47,10 +47,10 @@ export function buildPriceCondition(
   if (priceMin === undefined && priceMax === undefined) return undefined;
   const cond: Prisma.BigIntFilter = {};
   if (priceMin !== undefined && priceMin > 0) {
-    cond.gte = BigInt(priceMin) * BigInt(10_000);
+    cond.gte = BigInt(priceMin);
   }
   if (priceMax !== undefined) {
-    cond.lte = BigInt(priceMax) * BigInt(10_000);
+    cond.lte = BigInt(priceMax);
   }
   return cond;
 }
