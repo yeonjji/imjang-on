@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       source:
-        description: 'ev-charger | traditional-market | store'
+        description: 'ev-charger | traditional-market | store | school | park'
         required: true
         default: 'ev-charger'
 
@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        source: ${{ github.event_name == 'workflow_dispatch' && fromJson(format('["{0}"]', inputs.source)) || fromJson('["ev-charger","traditional-market","store"]') }}
+        source: ${{ github.event_name == 'workflow_dispatch' && fromJson(format('["{0}"]', inputs.source)) || fromJson('["ev-charger","traditional-market","store","school","park"]') }}
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
@@ -31,4 +31,4 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma generate
       - run: pnpm tsx scripts/ingest/amenities/runner.ts --source=${{ matrix.source }}
-        timeout-minutes: 60
+        timeout-minutes: 90
