@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <header><resultCode>00</resultCode><resultMsg>NORMAL SERVICE.</resultMsg></header>
+  <body>
+    <items>
+      <item>
+        <parkId>PK001</parkId>
+        <parkNm>남산공원</parkNm>
+        <rdnmadr>서울특별시 중구 삼일대로 231</rdnmadr>
+        <latitude>37.550000</latitude>
+        <longitude>126.988000</longitude>
+        <parkSe>근린공원</parkSe>
+        <parkAr>2950000</parkAr>
+      </item>
+      <item>
+        <parkId>PK002</parkId>
+        <parkNm>어린이대공원</parkNm>
+        <rdnmadr>서울특별시 광진구 능동로 216</rdnmadr>
+        <latitude>37.548000</latitude>
+        <longitude>127.074000</longitude>
+        <parkSe>어린이공원</parkSe>
+        <parkAr>530000</parkAr>
+      </item>
+      <item>
+        <parkId>PK003</parkId>
+        <parkNm>좌표없는공원</parkNm>
+        <rdnmadr>서울특별시 강남구 테헤란로 1</rdnmadr>
+        <latitude>0</latitude>
+        <longitude>0</longitude>
+        <parkSe>체육공원</parkSe>
+        <parkAr>10000</parkAr>
+      </item>
+    </items>
+    <totalCount>3</totalCount>
+  </body>
+</response>
