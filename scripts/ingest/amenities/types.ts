@@ -11,6 +11,14 @@ export interface NormalizedEvCharger {
   operatorName: string | null;
 }
 
+export interface NormalizedEvChargerUnit {
+  sourceId: string;        // statId-chgerId
+  stationSourceId: string; // statId
+  chgerId: string;
+  chgerType: string;
+  isFast: boolean;
+}
+
 export interface NormalizedTraditionalMarket {
   sourceId: string;
   name: string;

@@ -11,6 +11,7 @@ import { AMENITY_INGEST_SOURCE } from './types';
 import type {
   AmenitySourceKey,
   NormalizedEvCharger,
+  NormalizedEvChargerUnit,
   NormalizedTraditionalMarket,
   NormalizedStore,
   NormalizedSchool,
@@ -74,9 +75,10 @@ async function main() {
 }
 
 async function ingestEvChargers(): Promise<number> {
-  const rows = await fetchAllEvChargers();
-  for (let i = 0; i < rows.length; i += CHUNK) {
-    const chunk = rows.slice(i, i + CHUNK);
+  const { stations, units } = await fetchAllEvChargers();
+
+  for (let i = 0; i < stations.length; i += CHUNK) {
+    const chunk = stations.slice(i, i + CHUNK);
     const values = chunk.map((r: NormalizedEvCharger) =>
       Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.chargeSpeed}, ${r.chargerCount}, ${r.operatorName ?? null}, ST_SetSRID(ST_MakePoint(${r.lng}, ${r.lat}), 4326)::geography, NOW())`,
     );
@@ -93,7 +95,26 @@ async function ingestEvChargers(): Promise<number> {
         "updatedAt" = NOW()
     `;
   }
-  return rows.length;
+
+  for (let i = 0; i < units.length; i += CHUNK) {
+    const chunk = units.slice(i, i + CHUNK);
+    const values = chunk.map((u: NormalizedEvChargerUnit) =>
+      Prisma.sql`(${u.sourceId}, ${u.stationSourceId}, ${u.chgerId}, ${u.chgerType}, ${u.isFast}, NOW())`,
+    );
+    await prisma.$executeRaw`
+      INSERT INTO "EvChargerUnit" ("sourceId", "stationSourceId", "chgerId", "chgerType", "isFast", "updatedAt")
+      VALUES ${Prisma.join(values)}
+      ON CONFLICT ("sourceId") DO UPDATE SET
+        "stationSourceId" = EXCLUDED."stationSourceId",
+        "chgerId" = EXCLUDED."chgerId",
+        "chgerType" = EXCLUDED."chgerType",
+        "isFast" = EXCLUDED."isFast",
+        "updatedAt" = NOW()
+    `;
+  }
+
+  logger.info({ stations: stations.length, units: units.length }, 'ev-charger ingest summary');
+  return stations.length;
 }
 
 async function ingestTraditionalMarkets(): Promise<number> {

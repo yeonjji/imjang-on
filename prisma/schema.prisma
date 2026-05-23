@@ -189,7 +189,22 @@ model EvCharger {
   operatorName String?                               @db.VarChar(80)
   updatedAt    DateTime                              @updatedAt
 
+  units EvChargerUnit[]
+
   @@index([chargeSpeed])
+}
+
+model EvChargerUnit {
+  id              BigInt   @id @default(autoincrement())
+  sourceId        String   @unique @db.VarChar(120) // statId-chgerId
+  stationSourceId String   @db.VarChar(80)
+  station         EvCharger @relation(fields: [stationSourceId], references: [sourceId], onDelete: Cascade)
+  chgerId         String   @db.VarChar(20)
+  chgerType       String   @db.VarChar(4)
+  isFast          Boolean
+  updatedAt       DateTime @updatedAt
+
+  @@index([stationSourceId])
 }
 
 model TraditionalMarket {
