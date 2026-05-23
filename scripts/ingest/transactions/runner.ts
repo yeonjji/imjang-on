@@ -150,68 +150,77 @@ async function runOne(
 
   try {
     const rows = await fetchAll(adapter, sigungu, yyyymm);
-    let upserted = 0;
-    const propertyCache = new Map<string, Awaited<ReturnType<typeof findOrCreateProperty>>>();
+
+    // 시군구 내 기존 매물 일괄 로드 → findOrCreateProperty의 findFirst N번 → 1번으로 축소
+    const existingProps = await prisma.property.findMany({
+      where: { regionCode: { startsWith: sigungu } },
+    });
+    const propCache = new Map<string, (typeof existingProps)[0]>();
+    for (const p of existingProps) {
+      propCache.set(`${p.propertyType}:${p.name}`, p);
+    }
+
+    // 행별 property 확정 (캐시 miss 시에만 findOrCreateProperty 호출)
+    type Resolved = { row: NormalizedTransaction; property: (typeof existingProps)[0] };
+    const resolved: Resolved[] = [];
     for (const row of rows) {
       if (!row.name) continue;
-      const cacheKey = `${row.propertyType}:${row.name}:${row.sigunguCode}`;
-      let property = propertyCache.get(cacheKey);
+      const key = `${row.propertyType}:${row.name}`;
+      let property = propCache.get(key);
       if (!property) {
         property = await findOrCreateProperty({
           propertyType: row.propertyType,
           name: row.name,
           sigunguCode: row.sigunguCode,
-          // 실제 level-2 Region.code (사전 매핑) — FK 안전 보장
           regionCode,
           address: buildAddress(row),
           buildYear: row.buildYear,
           roadName: row.roadName,
         });
-        propertyCache.set(cacheKey, property);
+        propCache.set(key, property);
       }
-      const rawHash = computeHash(row, property.id);
-      try {
-        await prisma.transaction.upsert({
-          where: { rawHash },
-          create: {
-            propertyId: property.id,
-            propertyType: row.propertyType,
-            regionCode: property.regionCode,
-            sigunguCode: row.sigunguCode,
-            dealType: row.dealType,
-            contractDate: row.contractDate,
-            exclusiveArea: row.exclusiveArea,
-            floor: row.floor,
-            buildYear: row.buildYear,
-            dealAmount: row.dealAmount,
-            registerDate: row.registerDate,
-            dealingType: row.dealingType,
-            buyerType: row.buyerType,
-            sellerType: row.sellerType,
-            cancelDate: row.cancelDate,
-            cancelType: row.cancelType,
-            deposit: row.deposit,
-            monthlyRent: row.monthlyRent,
-            contractTerm: row.contractTerm,
-            contractType: row.contractType,
-            useRRRight: row.useRRRight,
-            preDeposit: row.preDeposit,
-            preMonthlyRent: row.preMonthlyRent,
-            umd: row.umd,
-            jibun: row.jibun,
-            roadName: row.roadName,
-            source: adapter.source,
-            externalKey: row.externalKey,
-            rawHash,
-          },
-          update: {},
-        });
-        upserted++;
-        affectedProps.add(property.id);
-        affectedRegions.add(row.sigunguCode);
-      } catch (err) {
-        logger.warn({ err, rawHash }, 'transaction upsert failed');
-      }
+      resolved.push({ row, property });
+    }
+
+    // 거래 배치 insert (rawHash unique → skipDuplicates로 멱등 처리)
+    const { count: upserted } = await prisma.transaction.createMany({
+      skipDuplicates: true,
+      data: resolved.map(({ row, property }) => ({
+        rawHash: computeHash(row, property.id),
+        propertyId: property.id,
+        propertyType: row.propertyType,
+        regionCode: property.regionCode,
+        sigunguCode: row.sigunguCode,
+        dealType: row.dealType,
+        contractDate: row.contractDate,
+        exclusiveArea: row.exclusiveArea,
+        floor: row.floor,
+        buildYear: row.buildYear,
+        dealAmount: row.dealAmount,
+        registerDate: row.registerDate,
+        dealingType: row.dealingType,
+        buyerType: row.buyerType,
+        sellerType: row.sellerType,
+        cancelDate: row.cancelDate,
+        cancelType: row.cancelType,
+        deposit: row.deposit,
+        monthlyRent: row.monthlyRent,
+        contractTerm: row.contractTerm,
+        contractType: row.contractType,
+        useRRRight: row.useRRRight,
+        preDeposit: row.preDeposit,
+        preMonthlyRent: row.preMonthlyRent,
+        umd: row.umd,
+        jibun: row.jibun,
+        roadName: row.roadName,
+        source: adapter.source,
+        externalKey: row.externalKey,
+      })),
+    });
+
+    for (const { property, row } of resolved) {
+      affectedProps.add(property.id);
+      affectedRegions.add(row.sigunguCode);
     }
 
     await prisma.ingestionRun.update({
