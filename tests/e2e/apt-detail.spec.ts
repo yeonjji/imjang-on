@@ -1,15 +1,16 @@
 import { test, expect } from '@playwright/test';
 
-test('apt detail: 3 transaction sections + page 2', async ({ page }) => {
+test('apt detail: unified transaction table + page 2', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/apt/1');
   await expect(page.getByRole('heading', { name: /래미안/ })).toBeVisible();
 
-  for (const label of ['매매 거래 내역', '전세 거래 내역', '월세 거래 내역']) {
-    await expect(page.getByText(label)).toBeVisible();
+  await expect(page.getByText('최근 실거래 내역')).toBeVisible();
+
+  for (const badge of ['매매', '전세', '월세']) {
+    await expect(page.getByText(badge).first()).toBeVisible();
   }
 
-  const sale = page.locator('section', { hasText: '매매 거래 내역' });
-  await sale.getByRole('button', { name: '2' }).click();
-  await expect(sale.getByText(/12건 중 11–12/)).toBeVisible();
+  await page.getByRole('button', { name: '2' }).click();
+  await expect(page.getByText(/36건 중 16–30/)).toBeVisible();
 });

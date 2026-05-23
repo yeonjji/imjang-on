@@ -81,6 +81,7 @@ async function main() {
   await updatePropertyAggregates([p.id]);
 
   // list perPage=30 → 2페이지 테스트용 추가 매물 30개
+  // txCount12m: 1 설정 → getPropertyList의 txCount12m > 0 필터 통과
   await prisma.property.createMany({
     data: Array.from({ length: 30 }, (_, i) => ({
       propertyType: PropertyType.APARTMENT,
@@ -88,6 +89,7 @@ async function main() {
       nameNorm: `테스트아파트${i + 1}`,
       regionCode: '1165010100',
       address: '서울특별시 서초구 서초동',
+      txCount12m: 1,
     })),
   });
 
