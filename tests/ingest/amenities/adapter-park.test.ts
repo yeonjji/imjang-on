@@ -11,8 +11,8 @@ const xml = readFileSync(
 describe('adapter-park', () => {
   it('좌표 있는 항목만 파싱한다', () => {
     const { rows, totalCount } = parseParkXml(xml);
-    expect(totalCount).toBe(3);
-    expect(rows).toHaveLength(2);
+    expect(totalCount).toBe(4);
+    expect(rows).toHaveLength(3); // PK003 좌표 0 → 제외
   });
 
   it('남산공원 파싱 결과', () => {
@@ -27,15 +27,21 @@ describe('adapter-park', () => {
     expect(park!.lng).toBeCloseTo(126.988);
   });
 
+  it('도로명주소 비어있으면 지번주소로 fallback', () => {
+    const { rows } = parseParkXml(xml);
+    const park = rows.find((r) => r.sourceId === 'PK004');
+    expect(park!.address).toBe('부산광역시 사하구 다대동 113-7');
+  });
+
   it('parkType 없는 경우 null 처리', () => {
-    const xmlNoType = xml.replace('<PARK_SE>근린공원</PARK_SE>', '');
+    const xmlNoType = xml.replace('<parkSe>근린공원</parkSe>', '');
     const { rows } = parseParkXml(xmlNoType);
     const park = rows.find((r) => r.sourceId === 'PK001');
     expect(park!.parkType).toBeNull();
   });
 
   it('면적 없는 경우 null 처리', () => {
-    const xmlNoArea = xml.replace('<PARK_AR>2950000</PARK_AR>', '');
+    const xmlNoArea = xml.replace('<parkAr>2950000</parkAr>', '');
     const { rows } = parseParkXml(xmlNoArea);
     const park = rows.find((r) => r.sourceId === 'PK001');
     expect(park!.area).toBeNull();

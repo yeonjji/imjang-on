@@ -14,26 +14,29 @@ export function parseParkXml(xml: string): {
 
   const rows: NormalizedPark[] = [];
   for (const item of items) {
-    const lat = Number(item.LATITUDE);
-    const lng = Number(item.LONGITUDE);
+    const lat = Number(item.latitude);
+    const lng = Number(item.longitude);
     if (!lat || !lng) continue;
 
-    const sourceId = String(item.MANAGE_NO ?? '').trim();
+    const sourceId = String(item.manageNo ?? '').trim();
     if (!sourceId) continue;
 
-    const rawArea = item.PARK_AR;
+    const rawArea = item.parkAr;
     const area =
       rawArea !== undefined && rawArea !== null && rawArea !== ''
         ? Number(rawArea) || null
         : null;
 
+    // 도로명주소(rdnmadr) 비어있으면 지번주소(lnmadr)로 fallback
+    const address = String(item.rdnmadr ?? '').trim() || String(item.lnmadr ?? '').trim();
+
     rows.push({
       sourceId,
-      name: String(item.PARK_NM ?? '').trim(),
-      address: String(item.RDNMADR ?? '').trim(),
+      name: String(item.parkNm ?? '').trim(),
+      address,
       lat,
       lng,
-      parkType: item.PARK_SE ? String(item.PARK_SE).trim() : null,
+      parkType: item.parkSe ? String(item.parkSe).trim() : null,
       area,
     });
   }

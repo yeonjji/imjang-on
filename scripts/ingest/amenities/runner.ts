@@ -18,7 +18,8 @@ import type {
   NormalizedPark,
 } from './types';
 
-const CHUNK = 500;
+// Supabase pooler 기본 connection_limit이 작아 청크가 크면 P2024 timeout 발생
+const CHUNK = 200;
 
 function parseArgs(): { source: AmenitySourceKey } {
   const args = process.argv.slice(2);
@@ -214,7 +215,8 @@ async function ingestStores(): Promise<number> {
     logger.info({ sigunguCode, count: rows.length }, 'store sigungu done');
   });
 
-  await runWithLimit(tasks, 5);
+  // Supabase pooler 동시 연결 제약 → 동시성 낮게 유지
+  await runWithLimit(tasks, 2);
   return upserted;
 }
 
