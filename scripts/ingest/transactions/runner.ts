@@ -71,7 +71,13 @@ async function main() {
     where: { source: { in: sources }, status: 'OK' },
     select: { source: true, targetKey: true },
   });
-  const doneKeys = new Set(doneRuns.map((r) => `${r.source}:${r.targetKey}`));
+  // daily 모드에서 이번달은 항상 재처리 — 당월 신규 거래 누락 방지
+  const currentMonth = args.mode === 'daily' ? getDailyMonths()[0] : null;
+  const doneKeys = new Set(
+    doneRuns
+      .filter((r) => !currentMonth || !r.targetKey.endsWith(`-${currentMonth}`))
+      .map((r) => `${r.source}:${r.targetKey}`),
+  );
   logger.info({ skippable: doneKeys.size }, 'resume: loaded completed keys');
 
   let totalUpserted = 0;
@@ -80,6 +86,7 @@ async function main() {
   const affectedPropertyIds = new Set<bigint>();
   const affectedRegionCodes = new Set<string>();
 
+  const tasks: Array<() => Promise<void>> = [];
   for (const api of apis) {
     const adapter = ADAPTERS[api];
     for (const sgg of sigunguIds) {
@@ -90,16 +97,19 @@ async function main() {
           skipped++;
           continue;
         }
-        try {
-          const upserted = await runOne(adapter, sgg, regionCode, yyyymm, affectedPropertyIds, affectedRegionCodes);
-          totalUpserted += upserted;
-        } catch (err) {
-          failed++;
-          logger.error({ err, api, sgg, yyyymm }, 'sigungu-month failed');
-        }
+        tasks.push(async () => {
+          try {
+            const upserted = await runOne(adapter, sgg, regionCode, yyyymm, affectedPropertyIds, affectedRegionCodes);
+            totalUpserted += upserted;
+          } catch (err) {
+            failed++;
+            logger.error({ err, api: adapter.source, sgg, yyyymm }, 'sigungu-month failed');
+          }
+        });
       }
     }
   }
+  await runWithLimit(tasks, 5);
 
   if (affectedPropertyIds.size > 0) {
     await updatePropertyAggregates(Array.from(affectedPropertyIds));
@@ -141,18 +151,24 @@ async function runOne(
   try {
     const rows = await fetchAll(adapter, sigungu, yyyymm);
     let upserted = 0;
+    const propertyCache = new Map<string, Awaited<ReturnType<typeof findOrCreateProperty>>>();
     for (const row of rows) {
       if (!row.name) continue;
-      const property = await findOrCreateProperty({
-        propertyType: row.propertyType,
-        name: row.name,
-        sigunguCode: row.sigunguCode,
-        // 실제 level-2 Region.code (사전 매핑) — FK 안전 보장
-        regionCode,
-        address: buildAddress(row),
-        buildYear: row.buildYear,
-        roadName: row.roadName,
-      });
+      const cacheKey = `${row.propertyType}:${row.name}:${row.sigunguCode}`;
+      let property = propertyCache.get(cacheKey);
+      if (!property) {
+        property = await findOrCreateProperty({
+          propertyType: row.propertyType,
+          name: row.name,
+          sigunguCode: row.sigunguCode,
+          // 실제 level-2 Region.code (사전 매핑) — FK 안전 보장
+          regionCode,
+          address: buildAddress(row),
+          buildYear: row.buildYear,
+          roadName: row.roadName,
+        });
+        propertyCache.set(cacheKey, property);
+      }
       const rawHash = computeHash(row, property.id);
       try {
         await prisma.transaction.upsert({
@@ -279,6 +295,17 @@ function ymd(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   return `${y}${m}`;
+}
+
+async function runWithLimit(tasks: Array<() => Promise<void>>, concurrency: number): Promise<void> {
+  let nextIdx = 0;
+  async function worker() {
+    while (nextIdx < tasks.length) {
+      const i = nextIdx++;
+      await tasks[i]();
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, worker));
 }
 
 main().catch((err) => {
