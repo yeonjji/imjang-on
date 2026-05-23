@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { notify } from '@/scripts/ingest/notify';
@@ -7,7 +8,16 @@ import { fetchStoresBySigungu } from './adapter-store';
 import { fetchAllSchools } from './adapter-school';
 import { fetchAllParks } from './adapter-park';
 import { AMENITY_INGEST_SOURCE } from './types';
-import type { AmenitySourceKey } from './types';
+import type {
+  AmenitySourceKey,
+  NormalizedEvCharger,
+  NormalizedTraditionalMarket,
+  NormalizedStore,
+  NormalizedSchool,
+  NormalizedPark,
+} from './types';
+
+const CHUNK = 500;
 
 function parseArgs(): { source: AmenitySourceKey } {
   const args = process.argv.slice(2);
@@ -65,44 +75,90 @@ async function main() {
 
 async function ingestEvChargers(): Promise<number> {
   const rows = await fetchAllEvChargers();
-  let upserted = 0;
-  for (const row of rows) {
-    await prisma.evCharger.upsert({
-      where: { sourceId: row.sourceId },
-      create: { sourceId: row.sourceId, name: row.name, address: row.address, chargeSpeed: row.chargeSpeed, chargerCount: row.chargerCount, operatorName: row.operatorName },
-      update: { name: row.name, address: row.address, chargeSpeed: row.chargeSpeed, chargerCount: row.chargerCount, operatorName: row.operatorName },
-    });
-    if (row.lat && row.lng) {
-      await prisma.$executeRaw`
-        UPDATE "EvCharger"
-        SET location = ST_SetSRID(ST_MakePoint(${row.lng}, ${row.lat}), 4326)::geography
-        WHERE "sourceId" = ${row.sourceId}
-      `;
-    }
-    upserted++;
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK);
+    const values = chunk.map((r: NormalizedEvCharger) =>
+      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.chargeSpeed}, ${r.chargerCount}, ${r.operatorName ?? null}, ST_SetSRID(ST_MakePoint(${r.lng}, ${r.lat}), 4326)::geography, NOW())`,
+    );
+    await prisma.$executeRaw`
+      INSERT INTO "EvCharger" ("sourceId", name, address, "chargeSpeed", "chargerCount", "operatorName", location, "updatedAt")
+      VALUES ${Prisma.join(values)}
+      ON CONFLICT ("sourceId") DO UPDATE SET
+        name = EXCLUDED.name,
+        address = EXCLUDED.address,
+        "chargeSpeed" = EXCLUDED."chargeSpeed",
+        "chargerCount" = EXCLUDED."chargerCount",
+        "operatorName" = EXCLUDED."operatorName",
+        location = EXCLUDED.location,
+        "updatedAt" = NOW()
+    `;
   }
-  return upserted;
+  return rows.length;
 }
 
 async function ingestTraditionalMarkets(): Promise<number> {
   const rows = await fetchAllTraditionalMarkets();
-  let upserted = 0;
-  for (const row of rows) {
-    await prisma.traditionalMarket.upsert({
-      where: { sourceId: row.sourceId },
-      create: { sourceId: row.sourceId, name: row.name, address: row.address, marketType: row.marketType },
-      update: { name: row.name, address: row.address, marketType: row.marketType },
-    });
-    if (row.lat && row.lng) {
-      await prisma.$executeRaw`
-        UPDATE "TraditionalMarket"
-        SET location = ST_SetSRID(ST_MakePoint(${row.lng}, ${row.lat}), 4326)::geography
-        WHERE "sourceId" = ${row.sourceId}
-      `;
-    }
-    upserted++;
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK);
+    const values = chunk.map((r: NormalizedTraditionalMarket) =>
+      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.marketType ?? null}, ST_SetSRID(ST_MakePoint(${r.lng}, ${r.lat}), 4326)::geography, NOW())`,
+    );
+    await prisma.$executeRaw`
+      INSERT INTO "TraditionalMarket" ("sourceId", name, address, "marketType", location, "updatedAt")
+      VALUES ${Prisma.join(values)}
+      ON CONFLICT ("sourceId") DO UPDATE SET
+        name = EXCLUDED.name,
+        address = EXCLUDED.address,
+        "marketType" = EXCLUDED."marketType",
+        location = EXCLUDED.location,
+        "updatedAt" = NOW()
+    `;
   }
-  return upserted;
+  return rows.length;
+}
+
+async function ingestSchools(): Promise<number> {
+  const rows = await fetchAllSchools();
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK);
+    const values = chunk.map((r: NormalizedSchool) =>
+      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.schoolLevel}, ${r.schoolType ?? null}, ST_SetSRID(ST_MakePoint(${r.lng}, ${r.lat}), 4326)::geography, NOW())`,
+    );
+    await prisma.$executeRaw`
+      INSERT INTO "School" ("sourceId", name, address, "schoolLevel", "schoolType", location, "updatedAt")
+      VALUES ${Prisma.join(values)}
+      ON CONFLICT ("sourceId") DO UPDATE SET
+        name = EXCLUDED.name,
+        address = EXCLUDED.address,
+        "schoolLevel" = EXCLUDED."schoolLevel",
+        "schoolType" = EXCLUDED."schoolType",
+        location = EXCLUDED.location,
+        "updatedAt" = NOW()
+    `;
+  }
+  return rows.length;
+}
+
+async function ingestParks(): Promise<number> {
+  const rows = await fetchAllParks();
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK);
+    const values = chunk.map((r: NormalizedPark) =>
+      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.parkType ?? null}, ${r.area ?? null}, ST_SetSRID(ST_MakePoint(${r.lng}, ${r.lat}), 4326)::geography, NOW())`,
+    );
+    await prisma.$executeRaw`
+      INSERT INTO "Park" ("sourceId", name, address, "parkType", area, location, "updatedAt")
+      VALUES ${Prisma.join(values)}
+      ON CONFLICT ("sourceId") DO UPDATE SET
+        name = EXCLUDED.name,
+        address = EXCLUDED.address,
+        "parkType" = EXCLUDED."parkType",
+        area = EXCLUDED.area,
+        location = EXCLUDED.location,
+        "updatedAt" = NOW()
+    `;
+  }
+  return rows.length;
 }
 
 async function ingestStores(): Promise<number> {
@@ -113,90 +169,43 @@ async function ingestStores(): Promise<number> {
   const sigunguCodes = [...new Set(sigunguRecords.map((r) => r.code.slice(0, 5)))];
 
   let upserted = 0;
-  for (const sigunguCode of sigunguCodes) {
+  const tasks = sigunguCodes.map((sigunguCode) => async () => {
     const rows = await fetchStoresBySigungu(sigunguCode);
-    for (const row of rows) {
-      await prisma.store.upsert({
-        where: { sourceId: row.sourceId },
-        create: { sourceId: row.sourceId, name: row.name, address: row.address, industryCode: row.industryCode, industryName: row.industryName, sigunguCode: row.sigunguCode },
-        update: { name: row.name, address: row.address, industryCode: row.industryCode, industryName: row.industryName, sigunguCode: row.sigunguCode },
-      });
-      if (row.lat && row.lng) {
-        await prisma.$executeRaw`
-          UPDATE "Store"
-          SET location = ST_SetSRID(ST_MakePoint(${row.lng}, ${row.lat}), 4326)::geography
-          WHERE "sourceId" = ${row.sourceId}
-        `;
-      }
-      upserted++;
+    for (let i = 0; i < rows.length; i += CHUNK) {
+      const chunk = rows.slice(i, i + CHUNK);
+      const values = chunk.map((r: NormalizedStore) =>
+        Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.industryCode ?? null}, ${r.industryName ?? null}, ${r.sigunguCode}, ST_SetSRID(ST_MakePoint(${r.lng}, ${r.lat}), 4326)::geography, NOW())`,
+      );
+      await prisma.$executeRaw`
+        INSERT INTO "Store" ("sourceId", name, address, "industryCode", "industryName", "sigunguCode", location, "updatedAt")
+        VALUES ${Prisma.join(values)}
+        ON CONFLICT ("sourceId") DO UPDATE SET
+          name = EXCLUDED.name,
+          address = EXCLUDED.address,
+          "industryCode" = EXCLUDED."industryCode",
+          "industryName" = EXCLUDED."industryName",
+          "sigunguCode" = EXCLUDED."sigunguCode",
+          location = EXCLUDED.location,
+          "updatedAt" = NOW()
+      `;
     }
+    upserted += rows.length;
     logger.info({ sigunguCode, count: rows.length }, 'store sigungu done');
-  }
+  });
+
+  await runWithLimit(tasks, 5);
   return upserted;
 }
 
-async function ingestSchools(): Promise<number> {
-  const rows = await fetchAllSchools();
-  let upserted = 0;
-  for (const row of rows) {
-    await prisma.school.upsert({
-      where: { sourceId: row.sourceId },
-      create: {
-        sourceId: row.sourceId,
-        name: row.name,
-        address: row.address,
-        schoolLevel: row.schoolLevel,
-        schoolType: row.schoolType,
-      },
-      update: {
-        name: row.name,
-        address: row.address,
-        schoolLevel: row.schoolLevel,
-        schoolType: row.schoolType,
-      },
-    });
-    if (row.lat && row.lng) {
-      await prisma.$executeRaw`
-        UPDATE "School"
-        SET location = ST_SetSRID(ST_MakePoint(${row.lng}, ${row.lat}), 4326)::geography
-        WHERE "sourceId" = ${row.sourceId}
-      `;
+async function runWithLimit(tasks: Array<() => Promise<void>>, concurrency: number): Promise<void> {
+  let nextIdx = 0;
+  async function worker() {
+    while (nextIdx < tasks.length) {
+      const i = nextIdx++;
+      await tasks[i]();
     }
-    upserted++;
   }
-  return upserted;
-}
-
-async function ingestParks(): Promise<number> {
-  const rows = await fetchAllParks();
-  let upserted = 0;
-  for (const row of rows) {
-    await prisma.park.upsert({
-      where: { sourceId: row.sourceId },
-      create: {
-        sourceId: row.sourceId,
-        name: row.name,
-        address: row.address,
-        parkType: row.parkType,
-        area: row.area,
-      },
-      update: {
-        name: row.name,
-        address: row.address,
-        parkType: row.parkType,
-        area: row.area,
-      },
-    });
-    if (row.lat && row.lng) {
-      await prisma.$executeRaw`
-        UPDATE "Park"
-        SET location = ST_SetSRID(ST_MakePoint(${row.lng}, ${row.lat}), 4326)::geography
-        WHERE "sourceId" = ${row.sourceId}
-      `;
-    }
-    upserted++;
-  }
-  return upserted;
+  await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, worker));
 }
 
 main().catch((err) => {
