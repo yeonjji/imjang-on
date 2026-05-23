@@ -4,14 +4,16 @@ import { notify } from '@/scripts/ingest/notify';
 import { fetchAllEvChargers } from './adapter-ev-charger';
 import { fetchAllTraditionalMarkets } from './adapter-traditional-market';
 import { fetchStoresBySigungu } from './adapter-store';
+import { fetchAllSchools } from './adapter-school';
+import { fetchAllParks } from './adapter-park';
 import { AMENITY_INGEST_SOURCE } from './types';
 import type { AmenitySourceKey } from './types';
 
 function parseArgs(): { source: AmenitySourceKey } {
   const args = process.argv.slice(2);
   const raw = args.find((a) => a.startsWith('--source='))?.split('=')[1];
-  if (!raw || !['ev-charger', 'traditional-market', 'store'].includes(raw)) {
-    throw new Error(`--source must be one of: ev-charger, traditional-market, store. Got: ${raw}`);
+  if (!raw || !['ev-charger', 'traditional-market', 'store', 'school', 'park'].includes(raw)) {
+    throw new Error(`--source must be one of: ev-charger, traditional-market, store, school, park. Got: ${raw}`);
   }
   return { source: raw as AmenitySourceKey };
 }
@@ -33,6 +35,10 @@ async function main() {
       upserted = await ingestEvChargers();
     } else if (source === 'traditional-market') {
       upserted = await ingestTraditionalMarkets();
+    } else if (source === 'school') {
+      upserted = await ingestSchools();
+    } else if (source === 'park') {
+      upserted = await ingestParks();
     } else {
       upserted = await ingestStores();
     }
@@ -125,6 +131,70 @@ async function ingestStores(): Promise<number> {
       upserted++;
     }
     logger.info({ sigunguCode, count: rows.length }, 'store sigungu done');
+  }
+  return upserted;
+}
+
+async function ingestSchools(): Promise<number> {
+  const rows = await fetchAllSchools();
+  let upserted = 0;
+  for (const row of rows) {
+    await prisma.school.upsert({
+      where: { sourceId: row.sourceId },
+      create: {
+        sourceId: row.sourceId,
+        name: row.name,
+        address: row.address,
+        schoolLevel: row.schoolLevel,
+        schoolType: row.schoolType,
+      },
+      update: {
+        name: row.name,
+        address: row.address,
+        schoolLevel: row.schoolLevel,
+        schoolType: row.schoolType,
+      },
+    });
+    if (row.lat && row.lng) {
+      await prisma.$executeRaw`
+        UPDATE "School"
+        SET location = ST_SetSRID(ST_MakePoint(${row.lng}, ${row.lat}), 4326)::geography
+        WHERE "sourceId" = ${row.sourceId}
+      `;
+    }
+    upserted++;
+  }
+  return upserted;
+}
+
+async function ingestParks(): Promise<number> {
+  const rows = await fetchAllParks();
+  let upserted = 0;
+  for (const row of rows) {
+    await prisma.park.upsert({
+      where: { sourceId: row.sourceId },
+      create: {
+        sourceId: row.sourceId,
+        name: row.name,
+        address: row.address,
+        parkType: row.parkType,
+        area: row.area,
+      },
+      update: {
+        name: row.name,
+        address: row.address,
+        parkType: row.parkType,
+        area: row.area,
+      },
+    });
+    if (row.lat && row.lng) {
+      await prisma.$executeRaw`
+        UPDATE "Park"
+        SET location = ST_SetSRID(ST_MakePoint(${row.lng}, ${row.lat}), 4326)::geography
+        WHERE "sourceId" = ${row.sourceId}
+      `;
+    }
+    upserted++;
   }
   return upserted;
 }
