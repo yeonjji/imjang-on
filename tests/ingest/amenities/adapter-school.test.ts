@@ -28,7 +28,7 @@ describe('adapter-school', () => {
   });
 
   it('schoolType 없는 경우 null 처리', () => {
-    const xmlNoType = xml.replace('<fondScCd>공립</fondScCd>', '');
+    const xmlNoType = xml.replace('<fondType>공립</fondType>', '');
     const { rows } = parseSchoolXml(xmlNoType);
     const school = rows.find((r) => r.sourceId === 'SC001');
     expect(school!.schoolType).toBeNull();

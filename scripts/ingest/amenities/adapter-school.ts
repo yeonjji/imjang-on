@@ -1,7 +1,7 @@
 import { parseXml, getItems, getTotalCount } from '@/scripts/ingest/xml-parse';
 import type { NormalizedSchool } from './types';
 
-const BASE_URL = 'https://apis.data.go.kr/1741000/baseSchoolInfo/getBaseSchoolList';
+const BASE_URL = 'https://api.data.go.kr/openapi/tn_pubr_public_elesch_mskul_lc_api';
 const PAGE_SIZE = 1000;
 
 export function parseSchoolXml(xml: string): {
@@ -27,8 +27,8 @@ export function parseSchoolXml(xml: string): {
       address: String(item.rdnmadr ?? '').trim(),
       lat,
       lng,
-      schoolLevel: String(item.schlSe ?? '').trim(),
-      schoolType: item.fondScCd ? String(item.fondScCd).trim() : null,
+      schoolLevel: String(item.schoolSe ?? '').trim(),
+      schoolType: item.fondType ? String(item.fondType).trim() : null,
     });
   }
 
@@ -49,6 +49,7 @@ export async function fetchAllSchools(): Promise<NormalizedSchool[]> {
       serviceKey,
       pageNo,
       numOfRows: PAGE_SIZE,
+      type: 'xml',
     });
     const { rows, totalCount } = parseSchoolXml(xml);
     all.push(...rows);

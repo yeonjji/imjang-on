@@ -28,14 +28,14 @@ describe('adapter-park', () => {
   });
 
   it('parkType 없는 경우 null 처리', () => {
-    const xmlNoType = xml.replace('<parkSe>근린공원</parkSe>', '');
+    const xmlNoType = xml.replace('<PARK_SE>근린공원</PARK_SE>', '');
     const { rows } = parseParkXml(xmlNoType);
     const park = rows.find((r) => r.sourceId === 'PK001');
     expect(park!.parkType).toBeNull();
   });
 
   it('면적 없는 경우 null 처리', () => {
-    const xmlNoArea = xml.replace('<parkAr>2950000</parkAr>', '');
+    const xmlNoArea = xml.replace('<PARK_AR>2950000</PARK_AR>', '');
     const { rows } = parseParkXml(xmlNoArea);
     const park = rows.find((r) => r.sourceId === 'PK001');
     expect(park!.area).toBeNull();

@@ -1,7 +1,7 @@
 import { parseXml, getItems, getTotalCount } from '@/scripts/ingest/xml-parse';
 import type { NormalizedPark } from './types';
 
-const BASE_URL = 'https://apis.data.go.kr/1613000/NatUrPkInfoService/getNatUrPkInfo';
+const BASE_URL = 'https://api.data.go.kr/openapi/tn_pubr_public_cty_park_info_api';
 const PAGE_SIZE = 1000;
 
 export function parseParkXml(xml: string): {
@@ -14,14 +14,14 @@ export function parseParkXml(xml: string): {
 
   const rows: NormalizedPark[] = [];
   for (const item of items) {
-    const lat = Number(item.latitude);
-    const lng = Number(item.longitude);
+    const lat = Number(item.LATITUDE);
+    const lng = Number(item.LONGITUDE);
     if (!lat || !lng) continue;
 
-    const sourceId = String(item.parkId ?? '').trim();
+    const sourceId = String(item.MANAGE_NO ?? '').trim();
     if (!sourceId) continue;
 
-    const rawArea = item.parkAr;
+    const rawArea = item.PARK_AR;
     const area =
       rawArea !== undefined && rawArea !== null && rawArea !== ''
         ? Number(rawArea) || null
@@ -29,11 +29,11 @@ export function parseParkXml(xml: string): {
 
     rows.push({
       sourceId,
-      name: String(item.parkNm ?? '').trim(),
-      address: String(item.rdnmadr ?? '').trim(),
+      name: String(item.PARK_NM ?? '').trim(),
+      address: String(item.RDNMADR ?? '').trim(),
       lat,
       lng,
-      parkType: item.parkSe ? String(item.parkSe).trim() : null,
+      parkType: item.PARK_SE ? String(item.PARK_SE).trim() : null,
       area,
     });
   }
@@ -55,6 +55,7 @@ export async function fetchAllParks(): Promise<NormalizedPark[]> {
       serviceKey,
       pageNo,
       numOfRows: PAGE_SIZE,
+      type: 'xml',
     });
     const { rows, totalCount } = parseParkXml(xml);
     all.push(...rows);

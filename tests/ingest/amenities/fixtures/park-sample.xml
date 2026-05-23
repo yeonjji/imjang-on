@@ -4,31 +4,31 @@
   <body>
     <items>
       <item>
-        <parkId>PK001</parkId>
-        <parkNm>남산공원</parkNm>
-        <rdnmadr>서울특별시 중구 삼일대로 231</rdnmadr>
-        <latitude>37.550000</latitude>
-        <longitude>126.988000</longitude>
-        <parkSe>근린공원</parkSe>
-        <parkAr>2950000</parkAr>
+        <MANAGE_NO>PK001</MANAGE_NO>
+        <PARK_NM>남산공원</PARK_NM>
+        <RDNMADR>서울특별시 중구 삼일대로 231</RDNMADR>
+        <LATITUDE>37.550000</LATITUDE>
+        <LONGITUDE>126.988000</LONGITUDE>
+        <PARK_SE>근린공원</PARK_SE>
+        <PARK_AR>2950000</PARK_AR>
       </item>
       <item>
-        <parkId>PK002</parkId>
-        <parkNm>어린이대공원</parkNm>
-        <rdnmadr>서울특별시 광진구 능동로 216</rdnmadr>
-        <latitude>37.548000</latitude>
-        <longitude>127.074000</longitude>
-        <parkSe>어린이공원</parkSe>
-        <parkAr>530000</parkAr>
+        <MANAGE_NO>PK002</MANAGE_NO>
+        <PARK_NM>어린이대공원</PARK_NM>
+        <RDNMADR>서울특별시 광진구 능동로 216</RDNMADR>
+        <LATITUDE>37.548000</LATITUDE>
+        <LONGITUDE>127.074000</LONGITUDE>
+        <PARK_SE>어린이공원</PARK_SE>
+        <PARK_AR>530000</PARK_AR>
       </item>
       <item>
-        <parkId>PK003</parkId>
-        <parkNm>좌표없는공원</parkNm>
-        <rdnmadr>서울특별시 강남구 테헤란로 1</rdnmadr>
-        <latitude>0</latitude>
-        <longitude>0</longitude>
-        <parkSe>체육공원</parkSe>
-        <parkAr>10000</parkAr>
+        <MANAGE_NO>PK003</MANAGE_NO>
+        <PARK_NM>좌표없는공원</PARK_NM>
+        <RDNMADR>서울특별시 강남구 테헤란로 1</RDNMADR>
+        <LATITUDE>0</LATITUDE>
+        <LONGITUDE>0</LONGITUDE>
+        <PARK_SE>체육공원</PARK_SE>
+        <PARK_AR>10000</PARK_AR>
       </item>
     </items>
     <totalCount>3</totalCount>

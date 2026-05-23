@@ -9,8 +9,8 @@
         <rdnmadr>서울특별시 종로구 창경궁로 1</rdnmadr>
         <latitude>37.570000</latitude>
         <longitude>126.990000</longitude>
-        <schlSe>초등학교</schlSe>
-        <fondScCd>공립</fondScCd>
+        <schoolSe>초등학교</schoolSe>
+        <fondType>공립</fondType>
       </item>
       <item>
         <schoolId>SC002</schoolId>
@@ -18,8 +18,8 @@
         <rdnmadr>서울특별시 중구 세종대로 1</rdnmadr>
         <latitude>37.560000</latitude>
         <longitude>126.980000</longitude>
-        <schlSe>중학교</schlSe>
-        <fondScCd>사립</fondScCd>
+        <schoolSe>중학교</schoolSe>
+        <fondType>사립</fondType>
       </item>
       <item>
         <schoolId>SC003</schoolId>
@@ -27,8 +27,8 @@
         <rdnmadr>서울특별시 강남구 테헤란로 1</rdnmadr>
         <latitude>0</latitude>
         <longitude>0</longitude>
-        <schlSe>고등학교</schlSe>
-        <fondScCd>공립</fondScCd>
+        <schoolSe>고등학교</schoolSe>
+        <fondType>공립</fondType>
       </item>
     </items>
     <totalCount>3</totalCount>
