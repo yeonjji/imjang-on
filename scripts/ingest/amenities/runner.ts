@@ -19,6 +19,14 @@ import type {
 // Supabase pooler 기본 connection_limit이 작아 청크가 크면 P2024 timeout 발생
 const CHUNK = 200;
 
+// ON CONFLICT는 한 statement 안에서 같은 PK를 두 번 갱신하지 못해 21000 에러를 낸다.
+// 외부 API가 동일 sourceId를 중복 반환하는 경우가 있어 INSERT 전에 sourceId 단위로 dedupe.
+function dedupeBySourceId<T extends { sourceId: string }>(rows: T[]): T[] {
+  const map = new Map<string, T>();
+  for (const r of rows) map.set(r.sourceId, r);
+  return Array.from(map.values());
+}
+
 function parseArgs(): { source: AmenitySourceKey } {
   const args = process.argv.slice(2);
   const raw = args.find((a) => a.startsWith('--source='))?.split('=')[1];
@@ -72,7 +80,9 @@ async function main() {
 }
 
 async function ingestEvChargers(): Promise<number> {
-  const { stations, units } = await fetchAllEvChargers();
+  const fetched = await fetchAllEvChargers();
+  const stations = dedupeBySourceId(fetched.stations);
+  const units = dedupeBySourceId(fetched.units);
 
   for (let i = 0; i < stations.length; i += CHUNK) {
     const chunk = stations.slice(i, i + CHUNK);
@@ -115,7 +125,7 @@ async function ingestEvChargers(): Promise<number> {
 }
 
 async function ingestTraditionalMarkets(): Promise<number> {
-  const rows = await fetchAllTraditionalMarkets();
+  const rows = dedupeBySourceId(await fetchAllTraditionalMarkets());
   for (let i = 0; i < rows.length; i += CHUNK) {
     const chunk = rows.slice(i, i + CHUNK);
     const values = chunk.map((r: NormalizedTraditionalMarket) =>
@@ -136,7 +146,7 @@ async function ingestTraditionalMarkets(): Promise<number> {
 }
 
 async function ingestParks(): Promise<number> {
-  const rows = await fetchAllParks();
+  const rows = dedupeBySourceId(await fetchAllParks());
   for (let i = 0; i < rows.length; i += CHUNK) {
     const chunk = rows.slice(i, i + CHUNK);
     const values = chunk.map((r: NormalizedPark) =>
@@ -166,7 +176,7 @@ async function ingestStores(): Promise<number> {
 
   let upserted = 0;
   const tasks = sigunguCodes.map((sigunguCode) => async () => {
-    const rows = await fetchStoresBySigungu(sigunguCode);
+    const rows = dedupeBySourceId(await fetchStoresBySigungu(sigunguCode));
     for (let i = 0; i < rows.length; i += CHUNK) {
       const chunk = rows.slice(i, i + CHUNK);
       const values = chunk.map((r: NormalizedStore) =>
