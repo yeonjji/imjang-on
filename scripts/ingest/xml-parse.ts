@@ -20,7 +20,9 @@ export function getItems(parsed: Record<string, unknown>): Record<string, unknow
 }
 
 export function getTotalCount(parsed: Record<string, unknown>): number {
-  const v = (parsed as any)?.response?.body?.totalCount;
+  // API마다 totalCount 위치가 다름 (body 또는 header). body 우선, 없으면 header fallback.
+  const root = (parsed as any)?.response;
+  const v = root?.body?.totalCount ?? root?.header?.totalCount;
   return typeof v === 'number' ? v : Number(v ?? 0);
 }
 
