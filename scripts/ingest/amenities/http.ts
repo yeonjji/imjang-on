@@ -1,7 +1,8 @@
 // scripts/ingest/amenities/http.ts
 import { logger } from '@/lib/logger';
 
-const TIMEOUT_MS = 20_000;
+// 9999 row XML 응답은 20초로 부족 → 60초로 상향
+const TIMEOUT_MS = 60_000;
 const SLEEP_MS = 100;
 const MAX_RETRIES = 3;
 
@@ -62,6 +63,9 @@ export async function fetchAllPages<T>(
   while (pageNo <= MAX_PAGES) {
     const { items, totalCount } = await fetcher(pageNo);
     all.push(...items);
+    if (pageNo === 1 || pageNo % 10 === 0) {
+      logger.info({ pageNo, fetched: all.length, totalCount }, 'amenity page fetched');
+    }
     if (all.length >= totalCount || items.length === 0) break;
     pageNo++;
   }

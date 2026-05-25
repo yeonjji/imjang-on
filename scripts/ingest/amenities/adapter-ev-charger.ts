@@ -3,7 +3,8 @@ import type { NormalizedEvCharger, NormalizedEvChargerUnit } from './types';
 
 const FAST_TYPES = new Set(['01', '03', '04', '05', '06', '07']);
 const BASE_URL = 'https://apis.data.go.kr/B552584/EvCharger/getChargerInfo';
-const PAGE_SIZE = 9999;
+// 9999는 응답 크기가 커서 timeout 위험 → 안정성 우선으로 1000
+const PAGE_SIZE = 1000;
 
 export interface EvChargerParseResult {
   stations: NormalizedEvCharger[];
