@@ -23,6 +23,7 @@ jobs:
       PUBLIC_DATA_KEY: ${{ secrets.PUBLIC_DATA_KEY }}
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
       LOG_LEVEL: info
+      PRISMA_INGEST: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

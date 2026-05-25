@@ -109,7 +109,8 @@ async function main() {
       }
     }
   }
-  await runWithLimit(tasks, 5);
+  // Supabase pooler 동시 연결 제약 — 5로 두면 connection pool / statement timeout 빈발
+  await runWithLimit(tasks, 2);
 
   if (affectedPropertyIds.size > 0) {
     await updatePropertyAggregates(Array.from(affectedPropertyIds));

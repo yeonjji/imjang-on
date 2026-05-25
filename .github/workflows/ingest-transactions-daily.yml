@@ -20,6 +20,7 @@ jobs:
       REVALIDATE_TOKEN: ${{ secrets.REVALIDATE_TOKEN }}
       SITE_URL: ${{ secrets.SITE_URL }}
       LOG_LEVEL: info
+      PRISMA_INGEST: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
