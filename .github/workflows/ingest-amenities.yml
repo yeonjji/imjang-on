@@ -33,4 +33,4 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma generate
       - run: pnpm tsx scripts/ingest/amenities/runner.ts --source=${{ matrix.source }}
-        timeout-minutes: 90
+        timeout-minutes: 180

@@ -16,8 +16,8 @@ import type {
   NormalizedPark,
 } from './types';
 
-// Supabase pooler 기본 connection_limit이 작아 청크가 크면 P2024 timeout 발생
-const CHUNK = 200;
+// Pro Compute로 상향 후 청크를 키워 INSERT 횟수 감소
+const CHUNK = 1000;
 
 // ON CONFLICT는 한 statement 안에서 같은 PK를 두 번 갱신하지 못해 21000 에러를 낸다.
 // 외부 API가 동일 sourceId를 중복 반환하는 경우가 있어 INSERT 전에 sourceId 단위로 dedupe.
