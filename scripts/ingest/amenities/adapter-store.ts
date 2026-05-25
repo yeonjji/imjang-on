@@ -17,12 +17,13 @@ export function parseStoreXml(
 
   const rows: NormalizedStore[] = [];
   for (const item of items) {
-    const lat = Number(item.lat);
-    const lng = Number(item.lon);
-    if (!lat || !lng) continue;
-
     const sourceId = String(item.bizesId ?? '').trim();
     if (!sourceId) continue;
+
+    const rawLat = Number(item.lat);
+    const rawLng = Number(item.lon);
+    const lat = Number.isFinite(rawLat) && rawLat !== 0 ? rawLat : null;
+    const lng = Number.isFinite(rawLng) && rawLng !== 0 ? rawLng : null;
 
     rows.push({
       sourceId,
@@ -44,6 +45,7 @@ export async function fetchStoresBySigungu(
 ): Promise<NormalizedStore[]> {
   const { env } = await import('@/lib/env');
   const { fetchAmenityPage, fetchAllPages } = await import('./http');
+  const { enrichWithGeocode } = await import('./geocode-fill');
 
   const serviceKey = env.PUBLIC_DATA_KEY;
   if (!serviceKey) throw new Error('PUBLIC_DATA_KEY is required');
@@ -63,5 +65,5 @@ export async function fetchStoresBySigungu(
     return { items: rows, totalCount };
   });
 
-  return all;
+  return enrichWithGeocode(all);
 }

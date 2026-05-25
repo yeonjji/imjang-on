@@ -14,12 +14,13 @@ export function parseTraditionalMarketXml(xml: string): {
 
   const rows: NormalizedTraditionalMarket[] = [];
   for (const item of items) {
-    const lat = Number(item.la);
-    const lng = Number(item.lo);
-    if (!lat || !lng) continue;
-
     const sourceId = String(item.mrktId ?? '').trim();
     if (!sourceId) continue;
+
+    const rawLat = Number(item.la);
+    const rawLng = Number(item.lo);
+    const lat = Number.isFinite(rawLat) && rawLat !== 0 ? rawLat : null;
+    const lng = Number.isFinite(rawLng) && rawLng !== 0 ? rawLng : null;
 
     rows.push({
       sourceId,
@@ -37,6 +38,7 @@ export function parseTraditionalMarketXml(xml: string): {
 export async function fetchAllTraditionalMarkets(): Promise<NormalizedTraditionalMarket[]> {
   const { env } = await import('@/lib/env');
   const { fetchAmenityPage, fetchAllPages } = await import('./http');
+  const { enrichWithGeocode } = await import('./geocode-fill');
 
   const serviceKey = env.PUBLIC_DATA_KEY;
   if (!serviceKey) throw new Error('PUBLIC_DATA_KEY is required');
@@ -54,5 +56,5 @@ export async function fetchAllTraditionalMarkets(): Promise<NormalizedTraditiona
     return { items: rows, totalCount };
   });
 
-  return all;
+  return enrichWithGeocode(all);
 }

@@ -14,12 +14,13 @@ export function parseParkXml(xml: string): {
 
   const rows: NormalizedPark[] = [];
   for (const item of items) {
-    const lat = Number(item.latitude);
-    const lng = Number(item.longitude);
-    if (!lat || !lng) continue;
-
     const sourceId = String(item.manageNo ?? '').trim();
     if (!sourceId) continue;
+
+    const rawLat = Number(item.latitude);
+    const rawLng = Number(item.longitude);
+    const lat = Number.isFinite(rawLat) && rawLat !== 0 ? rawLat : null;
+    const lng = Number.isFinite(rawLng) && rawLng !== 0 ? rawLng : null;
 
     const rawArea = item.parkAr;
     const area =
@@ -47,6 +48,7 @@ export function parseParkXml(xml: string): {
 export async function fetchAllParks(): Promise<NormalizedPark[]> {
   const { env } = await import('@/lib/env');
   const { fetchAmenityPage, fetchAllPages } = await import('./http');
+  const { enrichWithGeocode } = await import('./geocode-fill');
 
   const serviceKey = env.PUBLIC_DATA_KEY;
   if (!serviceKey) throw new Error('PUBLIC_DATA_KEY is required');
@@ -65,5 +67,5 @@ export async function fetchAllParks(): Promise<NormalizedPark[]> {
     return { items: rows, totalCount };
   });
 
-  return all;
+  return enrichWithGeocode(all);
 }

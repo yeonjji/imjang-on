@@ -27,6 +27,13 @@ function dedupeBySourceId<T extends { sourceId: string }>(rows: T[]): T[] {
   return Array.from(map.values());
 }
 
+// 좌표가 없으면 NULL geography를 INSERT하도록 분기 (geocode 실패한 amenity 대비)
+function locationSql(lat: number | null, lng: number | null) {
+  return lat != null && lng != null
+    ? Prisma.sql`ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography`
+    : Prisma.sql`NULL::geography`;
+}
+
 function parseArgs(): { source: AmenitySourceKey } {
   const args = process.argv.slice(2);
   const raw = args.find((a) => a.startsWith('--source='))?.split('=')[1];
@@ -87,7 +94,7 @@ async function ingestEvChargers(): Promise<number> {
   for (let i = 0; i < stations.length; i += CHUNK) {
     const chunk = stations.slice(i, i + CHUNK);
     const values = chunk.map((r: NormalizedEvCharger) =>
-      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.chargeSpeed}, ${r.chargerCount}, ${r.operatorName ?? null}, ST_SetSRID(ST_MakePoint(${r.lng}, ${r.lat}), 4326)::geography, NOW())`,
+      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.chargeSpeed}, ${r.chargerCount}, ${r.operatorName ?? null}, ${locationSql(r.lat, r.lng)}, NOW())`,
     );
     await prisma.$executeRaw`
       INSERT INTO "EvCharger" ("sourceId", name, address, "chargeSpeed", "chargerCount", "operatorName", location, "updatedAt")
@@ -129,7 +136,7 @@ async function ingestTraditionalMarkets(): Promise<number> {
   for (let i = 0; i < rows.length; i += CHUNK) {
     const chunk = rows.slice(i, i + CHUNK);
     const values = chunk.map((r: NormalizedTraditionalMarket) =>
-      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.marketType ?? null}, ST_SetSRID(ST_MakePoint(${r.lng}, ${r.lat}), 4326)::geography, NOW())`,
+      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.marketType ?? null}, ${locationSql(r.lat, r.lng)}, NOW())`,
     );
     await prisma.$executeRaw`
       INSERT INTO "TraditionalMarket" ("sourceId", name, address, "marketType", location, "updatedAt")
@@ -150,7 +157,7 @@ async function ingestParks(): Promise<number> {
   for (let i = 0; i < rows.length; i += CHUNK) {
     const chunk = rows.slice(i, i + CHUNK);
     const values = chunk.map((r: NormalizedPark) =>
-      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.parkType ?? null}, ${r.area ?? null}, ST_SetSRID(ST_MakePoint(${r.lng}, ${r.lat}), 4326)::geography, NOW())`,
+      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.parkType ?? null}, ${r.area ?? null}, ${locationSql(r.lat, r.lng)}, NOW())`,
     );
     await prisma.$executeRaw`
       INSERT INTO "Park" ("sourceId", name, address, "parkType", area, location, "updatedAt")
@@ -180,7 +187,7 @@ async function ingestStores(): Promise<number> {
     for (let i = 0; i < rows.length; i += CHUNK) {
       const chunk = rows.slice(i, i + CHUNK);
       const values = chunk.map((r: NormalizedStore) =>
-        Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.industryCode ?? null}, ${r.industryName ?? null}, ${r.sigunguCode}, ST_SetSRID(ST_MakePoint(${r.lng}, ${r.lat}), 4326)::geography, NOW())`,
+        Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.industryCode ?? null}, ${r.industryName ?? null}, ${r.sigunguCode}, ${locationSql(r.lat, r.lng)}, NOW())`,
       );
       await prisma.$executeRaw`
         INSERT INTO "Store" ("sourceId", name, address, "industryCode", "industryName", "sigunguCode", location, "updatedAt")

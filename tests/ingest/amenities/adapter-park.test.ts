@@ -9,10 +9,13 @@ const xml = readFileSync(
 );
 
 describe('adapter-park', () => {
-  it('좌표 있는 항목만 파싱한다', () => {
+  it('좌표 없어도 row를 생성하고 lat/lng는 null로 둔다', () => {
     const { rows, totalCount } = parseParkXml(xml);
     expect(totalCount).toBe(4);
-    expect(rows).toHaveLength(3); // PK003 좌표 0 → 제외
+    expect(rows).toHaveLength(4); // PK003은 좌표 0이지만 row 유지, lat/lng는 null
+    const pk003 = rows.find((r) => r.sourceId === 'PK003');
+    expect(pk003!.lat).toBeNull();
+    expect(pk003!.lng).toBeNull();
   });
 
   it('남산공원 파싱 결과', () => {

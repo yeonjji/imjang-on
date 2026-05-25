@@ -4,8 +4,8 @@ export interface NormalizedEvCharger {
   sourceId: string;
   name: string;
   address: string;
-  lat: number;
-  lng: number;
+  lat: number | null;
+  lng: number | null;
   chargeSpeed: string;
   chargerCount: number;
   operatorName: string | null;
@@ -23,8 +23,8 @@ export interface NormalizedTraditionalMarket {
   sourceId: string;
   name: string;
   address: string;
-  lat: number;
-  lng: number;
+  lat: number | null;
+  lng: number | null;
   marketType: string | null;
 }
 
@@ -32,8 +32,8 @@ export interface NormalizedStore {
   sourceId: string;
   name: string;
   address: string;
-  lat: number;
-  lng: number;
+  lat: number | null;
+  lng: number | null;
   industryCode: string | null;
   industryName: string | null;
   sigunguCode: string;
@@ -43,8 +43,8 @@ export interface NormalizedPark {
   sourceId: string;
   name: string;
   address: string;
-  lat: number;
-  lng: number;
+  lat: number | null;
+  lng: number | null;
   parkType: string | null;
   area: number | null;
 }

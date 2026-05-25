@@ -25,9 +25,11 @@ describe('adapter-traditional-market', () => {
     expect(gwang!.lng).toBeCloseTo(126.99956);
   });
 
-  it('좌표 없는 항목은 건너뛴다', () => {
+  it('좌표 없는 항목은 row는 유지하되 lat/lng를 null로 둔다', () => {
     const xmlWithEmpty = xml.replace('<la>37.570180</la>', '<la>0</la>');
     const { rows } = parseTraditionalMarketXml(xmlWithEmpty);
-    expect(rows).toHaveLength(1);
+    expect(rows).toHaveLength(2);
+    const gwang = rows.find((r) => r.sourceId === 'M001');
+    expect(gwang!.lat).toBeNull();
   });
 });

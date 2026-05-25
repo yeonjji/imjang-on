@@ -24,15 +24,21 @@ function buildEvChargerData(items: Record<string, unknown>[]): EvChargerParseRes
     const chgerType = String(item.chgerType ?? '').trim().padStart(2, '0');
     const isFast = FAST_TYPES.has(chgerType);
 
+    const rawLat = Number(item.lat);
+    const rawLng = Number(item.lng);
+    const lat = Number.isFinite(rawLat) && rawLat !== 0 ? rawLat : null;
+    const lng = Number.isFinite(rawLng) && rawLng !== 0 ? rawLng : null;
+
     if (stationMap.has(statId)) {
       const existing = stationMap.get(statId)!;
       existing.chargerCount += 1;
       if (isFast) existing.chargeSpeed = '급속';
+      // 같은 statId의 후속 item에 좌표가 있으면 보강
+      if (existing.lat == null && lat != null && lng != null) {
+        existing.lat = lat;
+        existing.lng = lng;
+      }
     } else {
-      const lat = Number(item.lat);
-      const lng = Number(item.lng);
-      if (!lat || !lng) continue;
-
       stationMap.set(statId, {
         sourceId: statId,
         name: String(item.statNm ?? '').trim(),
@@ -57,11 +63,9 @@ function buildEvChargerData(items: Record<string, unknown>[]): EvChargerParseRes
     });
   }
 
-  // 충전소 미생성된 unit 제외 (lat/lng 누락 등)
-  const validStationIds = new Set(stationMap.keys());
   return {
     stations: Array.from(stationMap.values()),
-    units: units.filter((u) => validStationIds.has(u.stationSourceId)),
+    units,
   };
 }
 
@@ -75,6 +79,7 @@ export function parseEvChargerXml(xml: string): EvChargerParseResult & { totalCo
 export async function fetchAllEvChargers(): Promise<EvChargerParseResult> {
   const { env } = await import('@/lib/env');
   const { fetchAmenityPage, fetchAllPages } = await import('./http');
+  const { enrichWithGeocode } = await import('./geocode-fill');
 
   const serviceKey = env.PUBLIC_DATA_KEY;
   if (!serviceKey) throw new Error('PUBLIC_DATA_KEY is required');
@@ -90,5 +95,7 @@ export async function fetchAllEvChargers(): Promise<EvChargerParseResult> {
     return { items, totalCount };
   });
 
-  return buildEvChargerData(allItems);
+  const result = buildEvChargerData(allItems);
+  await enrichWithGeocode(result.stations);
+  return result;
 }
