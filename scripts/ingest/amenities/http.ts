@@ -3,8 +3,10 @@ import { logger } from '@/lib/logger';
 
 // 9999 row XML 응답은 20초로 부족 → 60초로 상향
 const TIMEOUT_MS = 60_000;
-const SLEEP_MS = 100;
-const MAX_RETRIES = 3;
+const SLEEP_MS = 250;
+const MAX_RETRIES = 5;
+// rate limit(429) 전용 큰 backoff — 일반 retry보다 훨씬 길게
+const RATE_LIMIT_BACKOFF_MS = 5_000;
 
 export async function fetchAmenityPage(
   baseUrl: string,
@@ -30,7 +32,10 @@ export async function fetchAmenityPage(
       });
       if (!res.ok) {
         if ((res.status === 429 || res.status >= 500) && attempt < MAX_RETRIES) {
-          const backoff = SLEEP_MS * Math.pow(3, attempt);
+          const backoff =
+            res.status === 429
+              ? RATE_LIMIT_BACKOFF_MS * Math.pow(2, attempt - 1)
+              : SLEEP_MS * Math.pow(3, attempt);
           logger.warn({ status: res.status, attempt, backoff }, 'amenity http retry');
           await sleep(backoff);
           continue;
