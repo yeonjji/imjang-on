@@ -5,7 +5,6 @@ import { notify } from '@/scripts/ingest/notify';
 import { fetchAllEvChargers } from './adapter-ev-charger';
 import { fetchAllTraditionalMarkets } from './adapter-traditional-market';
 import { fetchStoresBySigungu } from './adapter-store';
-import { fetchAllSchools } from './adapter-school';
 import { fetchAllParks } from './adapter-park';
 import { AMENITY_INGEST_SOURCE } from './types';
 import type {
@@ -14,7 +13,6 @@ import type {
   NormalizedEvChargerUnit,
   NormalizedTraditionalMarket,
   NormalizedStore,
-  NormalizedSchool,
   NormalizedPark,
 } from './types';
 
@@ -24,8 +22,8 @@ const CHUNK = 200;
 function parseArgs(): { source: AmenitySourceKey } {
   const args = process.argv.slice(2);
   const raw = args.find((a) => a.startsWith('--source='))?.split('=')[1];
-  if (!raw || !['ev-charger', 'traditional-market', 'store', 'school', 'park'].includes(raw)) {
-    throw new Error(`--source must be one of: ev-charger, traditional-market, store, school, park. Got: ${raw}`);
+  if (!raw || !['ev-charger', 'traditional-market', 'store', 'park'].includes(raw)) {
+    throw new Error(`--source must be one of: ev-charger, traditional-market, store, park. Got: ${raw}`);
   }
   return { source: raw as AmenitySourceKey };
 }
@@ -47,8 +45,6 @@ async function main() {
       upserted = await ingestEvChargers();
     } else if (source === 'traditional-market') {
       upserted = await ingestTraditionalMarkets();
-    } else if (source === 'school') {
-      upserted = await ingestSchools();
     } else if (source === 'park') {
       upserted = await ingestParks();
     } else {
@@ -132,28 +128,6 @@ async function ingestTraditionalMarkets(): Promise<number> {
         name = EXCLUDED.name,
         address = EXCLUDED.address,
         "marketType" = EXCLUDED."marketType",
-        location = EXCLUDED.location,
-        "updatedAt" = NOW()
-    `;
-  }
-  return rows.length;
-}
-
-async function ingestSchools(): Promise<number> {
-  const rows = await fetchAllSchools();
-  for (let i = 0; i < rows.length; i += CHUNK) {
-    const chunk = rows.slice(i, i + CHUNK);
-    const values = chunk.map((r: NormalizedSchool) =>
-      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.schoolLevel}, ${r.schoolType ?? null}, ST_SetSRID(ST_MakePoint(${r.lng}, ${r.lat}), 4326)::geography, NOW())`,
-    );
-    await prisma.$executeRaw`
-      INSERT INTO "School" ("sourceId", name, address, "schoolLevel", "schoolType", location, "updatedAt")
-      VALUES ${Prisma.join(values)}
-      ON CONFLICT ("sourceId") DO UPDATE SET
-        name = EXCLUDED.name,
-        address = EXCLUDED.address,
-        "schoolLevel" = EXCLUDED."schoolLevel",
-        "schoolType" = EXCLUDED."schoolType",
         location = EXCLUDED.location,
         "updatedAt" = NOW()
     `;

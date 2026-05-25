@@ -232,19 +232,6 @@ model Store {
   @@index([industryCode])
 }
 
-model School {
-  id          BigInt                                @id @default(autoincrement())
-  sourceId    String                                @unique @db.VarChar(80)
-  name        String                                @db.VarChar(100)
-  address     String                                @db.VarChar(200)
-  location    Unsupported("geography(Point,4326)")?
-  schoolLevel String                                @db.VarChar(10)
-  schoolType  String?                               @db.VarChar(20)
-  updatedAt   DateTime                              @updatedAt
-
-  @@index([schoolLevel])
-}
-
 model Park {
   id        BigInt                                @id @default(autoincrement())
   sourceId  String                                @unique @db.VarChar(80)
