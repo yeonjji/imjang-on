@@ -12,9 +12,13 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function VillaHubPage() {
+  // 빌드 시 DB 일시 장애에도 배포 통과시키고 ISR이 다음 사이클에 채운다
   const popular = await getTopPropertiesByVolume({
     types: [PropertyType.ROW_HOUSE, PropertyType.MULTIPLEX],
     limit: 30,
+  }).catch((err) => {
+    console.error('VillaHubPage: popular query failed', err);
+    return [];
   });
 
   return (

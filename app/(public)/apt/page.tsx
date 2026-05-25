@@ -12,7 +12,12 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function AptHubPage() {
-  const popular = await getTopPropertiesByVolume({ types: [PropertyType.APARTMENT], limit: 30 });
+  // 빌드 시 DB 일시 장애에도 배포 통과시키고 ISR이 다음 사이클에 채운다
+  const popular = await getTopPropertiesByVolume({ types: [PropertyType.APARTMENT], limit: 30 })
+    .catch((err) => {
+      console.error('AptHubPage: popular query failed', err);
+      return [];
+    });
 
   return (
     <section className="mx-auto max-w-[1180px] px-6 py-16">

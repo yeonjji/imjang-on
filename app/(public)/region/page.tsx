@@ -11,7 +11,11 @@ export const metadata: Metadata = {
 export const revalidate = 86_400;
 
 export default async function RegionHubPage() {
-  const sidos = await getSidoList();
+  // 빌드 시 DB 일시 장애에도 배포 통과시키고 ISR이 다음 사이클에 채운다
+  const sidos = await getSidoList().catch((err) => {
+    console.error('RegionHubPage: sido query failed', err);
+    return [] as Awaited<ReturnType<typeof getSidoList>>;
+  });
   return (
     <section className="mx-auto max-w-[1180px] px-6 py-16">
       <h1 className="mb-8 text-3xl font-black text-[var(--color-blue-dark)] md:text-4xl">
