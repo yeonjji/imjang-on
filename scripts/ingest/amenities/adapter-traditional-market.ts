@@ -1,8 +1,14 @@
 import { parseXml, getItems, getTotalCount } from '@/scripts/ingest/xml-parse';
 import type { NormalizedTraditionalMarket } from './types';
+import { createHash } from 'node:crypto';
 
-const BASE_URL = 'https://apis.data.go.kr/1192000/ldMrktInfo/getLdMrktInfo';
+// 전국전통시장표준데이터 (행정안전부 표준데이터). 고유 ID 필드가 없어 name+address 해시로 sourceId 생성.
+const BASE_URL = 'https://api.data.go.kr/openapi/tn_pubr_public_trdit_mrkt_api';
 const PAGE_SIZE = 1000;
+
+function marketSourceId(name: string, address: string): string {
+  return createHash('sha256').update(`${name}|${address}`).digest('hex').slice(0, 32);
+}
 
 export function parseTraditionalMarketXml(xml: string): {
   rows: NormalizedTraditionalMarket[];
@@ -14,21 +20,24 @@ export function parseTraditionalMarketXml(xml: string): {
 
   const rows: NormalizedTraditionalMarket[] = [];
   for (const item of items) {
-    const sourceId = String(item.mrktId ?? '').trim();
-    if (!sourceId) continue;
+    const name = String(item.mrktNm ?? '').trim();
+    if (!name) continue;
 
-    const rawLat = Number(item.la);
-    const rawLng = Number(item.lo);
+    const address =
+      String(item.rdnmadr ?? '').trim() || String(item.lnmadr ?? '').trim();
+
+    const rawLat = Number(item.latitude);
+    const rawLng = Number(item.longitude);
     const lat = Number.isFinite(rawLat) && rawLat !== 0 ? rawLat : null;
     const lng = Number.isFinite(rawLng) && rawLng !== 0 ? rawLng : null;
 
     rows.push({
-      sourceId,
-      name: String(item.mrktNm ?? '').trim(),
-      address: String(item.rdnmAdr ?? '').trim(),
+      sourceId: marketSourceId(name, address),
+      name,
+      address,
       lat,
       lng,
-      marketType: item.mrktTypNm ? String(item.mrktTypNm).trim() : null,
+      marketType: item.mrktType ? String(item.mrktType).trim() : null,
     });
   }
 

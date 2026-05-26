@@ -4,22 +4,26 @@
   <body>
     <items>
       <item>
-        <mrktId>M001</mrktId>
         <mrktNm>광장시장</mrktNm>
-        <rdnmAdr>서울특별시 종로구 창경궁로 88</rdnmAdr>
-        <la>37.570180</la>
-        <lo>126.999560</lo>
-        <mrktTypNm>종합시장</mrktTypNm>
+        <mrktType>종합시장</mrktType>
+        <rdnmadr>서울특별시 종로구 창경궁로 88</rdnmadr>
+        <lnmadr></lnmadr>
+        <latitude>37.570180</latitude>
+        <longitude>126.999560</longitude>
+        <storNumber>200</storNumber>
       </item>
       <item>
-        <mrktId>M002</mrktId>
-        <mrktNm>남대문시장</mrktNm>
-        <rdnmAdr>서울특별시 중구 남대문시장4길 21</rdnmAdr>
-        <la>37.558945</la>
-        <lo>126.976662</lo>
-        <mrktTypNm>종합시장</mrktTypNm>
+        <mrktNm>월성청구시장</mrktNm>
+        <mrktType>상설장</mrktType>
+        <rdnmadr></rdnmadr>
+        <lnmadr>대구광역시 달서구 월성동 89-2</lnmadr>
+        <latitude></latitude>
+        <longitude></longitude>
+        <storNumber>185</storNumber>
       </item>
     </items>
+    <numOfRows>1000</numOfRows>
+    <pageNo>1</pageNo>
     <totalCount>2</totalCount>
   </body>
 </response>
