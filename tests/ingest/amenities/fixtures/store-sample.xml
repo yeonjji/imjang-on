@@ -9,20 +9,26 @@
         <rdnmAdr>서울특별시 강남구 테헤란로 101</rdnmAdr>
         <lon>127.027619</lon>
         <lat>37.498095</lat>
-        <indsLclsCd>Q</indsLclsCd>
+        <indsLclsCd>I2</indsLclsCd>
         <indsLclsNm>음식</indsLclsNm>
-        <indsMclsNm>커피전문점/카페</indsMclsNm>
+        <indsMclsCd>I212</indsMclsCd>
+        <indsMclsNm>비알코올</indsMclsNm>
+        <indsSclsCd>I21201</indsSclsCd>
+        <indsSclsNm>카페</indsSclsNm>
         <signguCd>11680</signguCd>
       </item>
       <item>
         <bizesId>B002</bizesId>
-        <bizesNm>올리브영 역삼점</bizesNm>
+        <bizesNm>GS25 역삼점</bizesNm>
         <rdnmAdr>서울특별시 강남구 역삼로 160</rdnmAdr>
         <lon>127.035432</lon>
         <lat>37.500217</lat>
-        <indsLclsCd>G</indsLclsCd>
+        <indsLclsCd>G2</indsLclsCd>
         <indsLclsNm>소매</indsLclsNm>
-        <indsMclsNm>화장품/미용</indsMclsNm>
+        <indsMclsCd>G204</indsMclsCd>
+        <indsMclsNm>종합 소매</indsMclsNm>
+        <indsSclsCd>G20405</indsSclsCd>
+        <indsSclsNm>편의점</indsSclsNm>
         <signguCd>11680</signguCd>
       </item>
     </items>

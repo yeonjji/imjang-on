@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 import { notify } from '@/scripts/ingest/notify';
 import { streamEvChargers } from './adapter-ev-charger';
 import { fetchAllTraditionalMarkets } from './adapter-traditional-market';
-import { fetchStoresBySigungu } from './adapter-store';
+import { fetchStoresByUpjong, STORE_UPJONG_TARGETS } from './adapter-store';
 import { fetchAllParks } from './adapter-park';
 import { AMENITY_INGEST_SOURCE } from './types';
 import type {
@@ -238,15 +238,10 @@ async function ingestParks(): Promise<number> {
 }
 
 async function ingestStores(): Promise<number> {
-  const sigunguRecords = await prisma.region.findMany({
-    where: { level: 2, isAbolished: false },
-    select: { code: true },
-  });
-  const sigunguCodes = [...new Set(sigunguRecords.map((r) => r.code.slice(0, 5)))];
-
   let upserted = 0;
-  const tasks = sigunguCodes.map((sigunguCode) => async () => {
-    const rows = dedupeBySourceId(await fetchStoresBySigungu(sigunguCode));
+  // 생활인프라 업종(편의점/슈퍼/마트/약국/카페/병원/의원)만 업종 코드 단위로 수집
+  for (const t of STORE_UPJONG_TARGETS) {
+    const rows = dedupeBySourceId(await fetchStoresByUpjong(t.divId, t.code));
     for (let i = 0; i < rows.length; i += CHUNK) {
       const chunk = rows.slice(i, i + CHUNK);
       const values = chunk.map((r: NormalizedStore) =>
@@ -266,23 +261,9 @@ async function ingestStores(): Promise<number> {
       `;
     }
     upserted += rows.length;
-    logger.info({ sigunguCode, count: rows.length }, 'store sigungu done');
-  });
-
-  // Supabase pooler 동시 연결 제약 → 동시성 낮게 유지
-  await runWithLimit(tasks, 2);
-  return upserted;
-}
-
-async function runWithLimit(tasks: Array<() => Promise<void>>, concurrency: number): Promise<void> {
-  let nextIdx = 0;
-  async function worker() {
-    while (nextIdx < tasks.length) {
-      const i = nextIdx++;
-      await tasks[i]();
-    }
+    logger.info({ label: t.label, code: t.code, count: rows.length }, 'store upjong done');
   }
-  await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, worker));
+  return upserted;
 }
 
 main().catch((err) => {

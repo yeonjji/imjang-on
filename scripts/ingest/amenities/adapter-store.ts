@@ -4,9 +4,33 @@ import type { NormalizedStore } from './types';
 const BASE_URL = 'https://apis.data.go.kr/B553077/api/open/sdsc2/storeListInUpjong';
 const PAGE_SIZE = 1000;
 
+// 전체 상가업소(~280만)는 과도하므로 임장에 의미있는 생활인프라 업종만 수집(~31만).
+// 편의점/슈퍼/마트/약국/카페는 소분류(indsSclsCd), 병원/의원은 중분류(indsMclsCd) 단위로 가져온다.
+export const STORE_UPJONG_TARGETS: Array<{
+  divId: 'indsMclsCd' | 'indsSclsCd';
+  code: string;
+  label: string;
+}> = [
+  { divId: 'indsSclsCd', code: 'G20405', label: '편의점' },
+  { divId: 'indsSclsCd', code: 'G20404', label: '슈퍼마켓' },
+  { divId: 'indsSclsCd', code: 'G20402', label: '대형마트' },
+  { divId: 'indsSclsCd', code: 'G21501', label: '약국' },
+  { divId: 'indsSclsCd', code: 'I21201', label: '카페' },
+  { divId: 'indsMclsCd', code: 'Q101', label: '병원' },
+  { divId: 'indsMclsCd', code: 'Q102', label: '의원' },
+];
+
+function pickStr(item: Record<string, unknown>, ...keys: string[]): string | null {
+  for (const k of keys) {
+    const v = item[k];
+    if (v != null && String(v).trim()) return String(v).trim();
+  }
+  return null;
+}
+
 export function parseStoreXml(
   xml: string,
-  sigunguCode: string,
+  fallbackSigungu = '',
 ): {
   rows: NormalizedStore[];
   totalCount: number;
@@ -31,17 +55,19 @@ export function parseStoreXml(
       address: String(item.rdnmAdr ?? '').trim(),
       lat,
       lng,
-      industryCode: item.indsLclsCd ? String(item.indsLclsCd).trim() : null,
-      industryName: item.indsLclsNm ? String(item.indsLclsNm).trim() : null,
-      sigunguCode: item.signguCd ? String(item.signguCd).trim() : sigunguCode,
+      // 가장 구체적인 분류(소→중→대)를 우선 저장해 '편의점'/'약국'처럼 의미있게 표시
+      industryCode: pickStr(item, 'indsSclsCd', 'indsMclsCd', 'indsLclsCd'),
+      industryName: pickStr(item, 'indsSclsNm', 'indsMclsNm', 'indsLclsNm'),
+      sigunguCode: item.signguCd ? String(item.signguCd).trim() : fallbackSigungu,
     });
   }
 
   return { rows, totalCount };
 }
 
-export async function fetchStoresBySigungu(
-  sigunguCode: string,
+export async function fetchStoresByUpjong(
+  divId: string,
+  code: string,
 ): Promise<NormalizedStore[]> {
   const { env } = await import('@/lib/env');
   const { fetchAmenityPage, fetchAllPages } = await import('./http');
@@ -55,12 +81,12 @@ export async function fetchStoresBySigungu(
   await fetchAllPages(async (pageNo) => {
     const xml = await fetchAmenityPage(BASE_URL, {
       serviceKey,
-      pageIndex: pageNo,
-      pageSize: PAGE_SIZE,
-      divId: 'signguCd',
-      key: sigunguCode,
+      divId,
+      key: code,
+      pageNo,
+      numOfRows: PAGE_SIZE,
     });
-    const { rows, totalCount } = parseStoreXml(xml, sigunguCode);
+    const { rows, totalCount } = parseStoreXml(xml);
     all.push(...rows);
     return { items: rows, totalCount };
   });
