@@ -7,6 +7,7 @@ const schema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
   PUBLIC_DATA_KEY: z.string().optional(),
+  NEIS_API_KEY: z.string().optional(),
   KAKAO_REST_KEY: z.string().optional(),
   KAKAO_JS_KEY: z.string().optional(),
 

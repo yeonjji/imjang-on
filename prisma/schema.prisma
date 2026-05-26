@@ -244,3 +244,22 @@ model Park {
 
   @@index([parkType])
 }
+
+model School {
+  id         BigInt                                @id @default(autoincrement())
+  sourceId   String                                @unique @db.VarChar(80)
+  name       String                                @db.VarChar(100)
+  address    String                                @db.VarChar(200)
+  location   Unsupported("geography(Point,4326)")?
+  schoolKind String?                               @db.VarChar(20)
+  foundType  String?                               @db.VarChar(20)
+  coeduType  String?                               @db.VarChar(20)
+  region     String?                               @db.VarChar(20)
+  eduOffice  String?                               @db.VarChar(40)
+  tel        String?                               @db.VarChar(30)
+  homepage   String?                               @db.VarChar(200)
+  updatedAt  DateTime                              @updatedAt
+
+  @@index([schoolKind])
+  @@index([region])
+}

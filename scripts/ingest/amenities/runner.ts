@@ -6,6 +6,7 @@ import { streamEvChargers } from './adapter-ev-charger';
 import { fetchAllTraditionalMarkets } from './adapter-traditional-market';
 import { fetchStoresByUpjong, STORE_UPJONG_TARGETS } from './adapter-store';
 import { fetchAllParks } from './adapter-park';
+import { fetchAllSchools } from './adapter-school';
 import { AMENITY_INGEST_SOURCE } from './types';
 import type {
   AmenitySourceKey,
@@ -14,6 +15,7 @@ import type {
   NormalizedTraditionalMarket,
   NormalizedStore,
   NormalizedPark,
+  NormalizedSchool,
 } from './types';
 
 // Pro Compute로 상향 후 청크를 키워 INSERT 횟수 감소
@@ -37,8 +39,8 @@ function locationSql(lat: number | null, lng: number | null) {
 function parseArgs(): { source: AmenitySourceKey } {
   const args = process.argv.slice(2);
   const raw = args.find((a) => a.startsWith('--source='))?.split('=')[1];
-  if (!raw || !['ev-charger', 'traditional-market', 'store', 'park'].includes(raw)) {
-    throw new Error(`--source must be one of: ev-charger, traditional-market, store, park. Got: ${raw}`);
+  if (!raw || !['ev-charger', 'traditional-market', 'store', 'park', 'school'].includes(raw)) {
+    throw new Error(`--source must be one of: ev-charger, traditional-market, store, park, school. Got: ${raw}`);
   }
   return { source: raw as AmenitySourceKey };
 }
@@ -62,6 +64,8 @@ async function main() {
       upserted = await ingestTraditionalMarkets();
     } else if (source === 'park') {
       upserted = await ingestParks();
+    } else if (source === 'school') {
+      upserted = await ingestSchools();
     } else {
       upserted = await ingestStores();
     }
@@ -231,6 +235,33 @@ async function ingestParks(): Promise<number> {
         "parkType" = EXCLUDED."parkType",
         area = EXCLUDED.area,
         location = EXCLUDED.location,
+        "updatedAt" = NOW()
+    `;
+  }
+  return rows.length;
+}
+
+async function ingestSchools(): Promise<number> {
+  const rows = dedupeBySourceId(await fetchAllSchools());
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK);
+    const values = chunk.map((r: NormalizedSchool) =>
+      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${locationSql(r.lat, r.lng)}, ${r.schoolKind ?? null}, ${r.foundType ?? null}, ${r.coeduType ?? null}, ${r.region ?? null}, ${r.eduOffice ?? null}, ${r.tel ?? null}, ${r.homepage ?? null}, NOW())`,
+    );
+    await prisma.$executeRaw`
+      INSERT INTO "School" ("sourceId", name, address, location, "schoolKind", "foundType", "coeduType", region, "eduOffice", tel, homepage, "updatedAt")
+      VALUES ${Prisma.join(values)}
+      ON CONFLICT ("sourceId") DO UPDATE SET
+        name = EXCLUDED.name,
+        address = EXCLUDED.address,
+        location = EXCLUDED.location,
+        "schoolKind" = EXCLUDED."schoolKind",
+        "foundType" = EXCLUDED."foundType",
+        "coeduType" = EXCLUDED."coeduType",
+        region = EXCLUDED.region,
+        "eduOffice" = EXCLUDED."eduOffice",
+        tel = EXCLUDED.tel,
+        homepage = EXCLUDED.homepage,
         "updatedAt" = NOW()
     `;
   }
