@@ -11,6 +11,7 @@ const RATE_LIMIT_BACKOFF_MS = 5_000;
 export async function fetchAmenityPage(
   baseUrl: string,
   params: Record<string, string | number>,
+  headerOverrides?: Record<string, string>,
 ): Promise<string> {
   const url = new URL(baseUrl);
   for (const [k, v] of Object.entries(params)) {
@@ -28,6 +29,7 @@ export async function fetchAmenityPage(
         headers: {
           'User-Agent': 'imjang-on/1.0 (+https://imjang-on.com)',
           Accept: 'application/xml,text/xml,application/json',
+          ...headerOverrides,
         },
       });
       if (!res.ok) {

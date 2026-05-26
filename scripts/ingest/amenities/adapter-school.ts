@@ -81,12 +81,12 @@ export async function fetchAllSchools(): Promise<NormalizedSchool[]> {
   const all: NormalizedSchool[] = [];
   let pIndex = 1;
   while (pIndex <= MAX_PAGES) {
-    const body = await fetchAmenityPage(BASE_URL, {
-      KEY: apiKey,
-      Type: 'json',
-      pIndex,
-      pSize: PAGE_SIZE,
-    });
+    // NEIS는 Accept에 application/json|xml을 명시하면 500을 반환한다. */* 로 호출.
+    const body = await fetchAmenityPage(
+      BASE_URL,
+      { KEY: apiKey, Type: 'json', pIndex, pSize: PAGE_SIZE },
+      { Accept: '*/*' },
+    );
     const { rows, totalCount } = parseSchoolJson(body);
     all.push(...rows);
     if (pIndex === 1 || pIndex % 5 === 0) {
