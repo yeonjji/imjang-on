@@ -30,6 +30,7 @@ interface RunArgs {
   mode: Mode;
   months: number;
   monthOffset?: number;
+  limit?: number;
 }
 
 function parseArgs(): RunArgs {
@@ -39,7 +40,8 @@ function parseArgs(): RunArgs {
   const mode = (get('mode') ?? 'daily') as Mode;
   const months = Number(get('months') ?? '1');
   const monthOffset = get('month-offset') !== undefined ? Number(get('month-offset')) : undefined;
-  return { api, mode, months, monthOffset };
+  const limit = get('limit') !== undefined ? Number(get('limit')) : undefined;
+  return { api, mode, months, monthOffset, limit };
 }
 
 async function main() {
@@ -109,8 +111,13 @@ async function main() {
       }
     }
   }
+  // --limit: 한 실행이 처리할 타깃(시군구·월) 수 상한. 대량 write가 누적되면 Supabase가
+  // 디스크 압박으로 read-only(25006)로 빠지므로, 짧게 나눠 실행해 스파이크를 낮춘다.
+  // resume(doneKeys)가 이어주므로 여러 번 돌리면 전체가 완료된다.
+  const pending = args.limit ? tasks.slice(0, args.limit) : tasks;
+  logger.info({ pending: pending.length, total: tasks.length, limit: args.limit ?? null }, 'tasks to run this pass');
   // Supabase pooler 동시 연결 제약 — 5로 두면 connection pool / statement timeout 빈발
-  await runWithLimit(tasks, 2);
+  await runWithLimit(pending, 2);
 
   if (affectedPropertyIds.size > 0) {
     await updatePropertyAggregates(Array.from(affectedPropertyIds));

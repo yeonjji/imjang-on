@@ -8,6 +8,9 @@ on:
       months:
         description: 'Months to backfill (1–12)'
         default: '12'
+      limit:
+        description: 'Max targets (sigungu-month) per run; empty = no limit. Use to avoid DB read-only on disk spikes.'
+        default: ''
 
 jobs:
   backfill:
@@ -32,5 +35,5 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma generate
       - if: ${{ inputs.api == 'all' || inputs.api == matrix.api }}
-        run: pnpm tsx scripts/ingest/transactions/runner.ts --api=${{ matrix.api }} --mode=backfill --months=${{ inputs.months }}
+        run: pnpm tsx scripts/ingest/transactions/runner.ts --api=${{ matrix.api }} --mode=backfill --months=${{ inputs.months }} --limit=${{ inputs.limit }}
         timeout-minutes: 350
