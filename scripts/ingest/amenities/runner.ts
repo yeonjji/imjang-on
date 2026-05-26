@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { notify } from '@/scripts/ingest/notify';
-import { fetchAllEvChargers } from './adapter-ev-charger';
+import { streamEvChargers } from './adapter-ev-charger';
 import { fetchAllTraditionalMarkets } from './adapter-traditional-market';
 import { fetchStoresBySigungu } from './adapter-store';
 import { fetchAllParks } from './adapter-park';
@@ -57,7 +57,7 @@ async function main() {
     let upserted = 0;
 
     if (source === 'ev-charger') {
-      upserted = await ingestEvChargers();
+      upserted = await ingestEvChargers(ingestSource);
     } else if (source === 'traditional-market') {
       upserted = await ingestTraditionalMarkets();
     } else if (source === 'park') {
@@ -86,11 +86,7 @@ async function main() {
   }
 }
 
-async function ingestEvChargers(): Promise<number> {
-  const fetched = await fetchAllEvChargers();
-  const stations = dedupeBySourceId(fetched.stations);
-  const units = dedupeBySourceId(fetched.units);
-
+async function writeEvChargerStations(stations: NormalizedEvCharger[]): Promise<void> {
   for (let i = 0; i < stations.length; i += CHUNK) {
     const chunk = stations.slice(i, i + CHUNK);
     const values = chunk.map((r: NormalizedEvCharger) =>
@@ -102,14 +98,14 @@ async function ingestEvChargers(): Promise<number> {
       ON CONFLICT ("sourceId") DO UPDATE SET
         name = EXCLUDED.name,
         address = EXCLUDED.address,
-        "chargeSpeed" = EXCLUDED."chargeSpeed",
-        "chargerCount" = EXCLUDED."chargerCount",
         "operatorName" = EXCLUDED."operatorName",
         location = EXCLUDED.location,
         "updatedAt" = NOW()
     `;
   }
+}
 
+async function writeEvChargerUnits(units: NormalizedEvChargerUnit[]): Promise<void> {
   for (let i = 0; i < units.length; i += CHUNK) {
     const chunk = units.slice(i, i + CHUNK);
     const values = chunk.map((u: NormalizedEvChargerUnit) =>
@@ -126,9 +122,76 @@ async function ingestEvChargers(): Promise<number> {
         "updatedAt" = NOW()
     `;
   }
+}
 
-  logger.info({ stations: stations.length, units: units.length }, 'ev-charger ingest summary');
-  return stations.length;
+// chargerCount/chargeSpeed는 페이지(flush) 경계에 한 station의 충전기가 걸치면
+// 부분 집계로 어긋날 수 있다. 전체 수집이 끝나면 EvChargerUnit 기준으로 정확히 재집계한다.
+async function recomputeEvChargerAggregates(): Promise<void> {
+  await prisma.$executeRaw`
+    UPDATE "EvCharger" e SET
+      "chargerCount" = sub.cnt,
+      "chargeSpeed" = CASE WHEN sub.has_fast THEN '급속' ELSE '완속' END
+    FROM (
+      SELECT "stationSourceId", COUNT(*)::int AS cnt, bool_or("isFast") AS has_fast
+      FROM "EvChargerUnit" GROUP BY "stationSourceId"
+    ) sub
+    WHERE e."sourceId" = sub."stationSourceId"
+  `;
+}
+
+async function ingestEvChargers(ingestSource: string): Promise<number> {
+  // resume 체크포인트: 마지막으로 flush 완료한 페이지를 rowsUpserted에 보관
+  const cp = await prisma.ingestionRun.findFirst({
+    where: { source: ingestSource, targetKey: 'checkpoint' },
+    orderBy: { id: 'desc' },
+  });
+
+  let checkpointId: bigint;
+  let startPage = 1;
+  if (cp && cp.status !== 'OK') {
+    startPage = cp.rowsUpserted + 1;
+    checkpointId = cp.id;
+    logger.info({ startPage }, 'ev-charger resuming from checkpoint');
+  } else {
+    const created = await prisma.ingestionRun.create({
+      data: { source: ingestSource, targetKey: 'checkpoint', status: 'RUNNING', rowsUpserted: 0 },
+    });
+    checkpointId = created.id;
+  }
+
+  let totalStations = 0;
+  let totalUnits = 0;
+
+  const { complete, lastPage } = await streamEvChargers(startPage, async ({ result, lastPage }) => {
+    const stations = dedupeBySourceId(result.stations);
+    const units = dedupeBySourceId(result.units);
+    await writeEvChargerStations(stations);
+    await writeEvChargerUnits(units);
+    totalStations += stations.length;
+    totalUnits += units.length;
+    await prisma.ingestionRun.update({
+      where: { id: checkpointId },
+      data: { status: 'RUNNING', rowsUpserted: lastPage },
+    });
+    logger.info({ lastPage, stations: stations.length, units: units.length }, 'ev-charger flush committed');
+  });
+
+  if (complete) await recomputeEvChargerAggregates();
+
+  await prisma.ingestionRun.update({
+    where: { id: checkpointId },
+    data: {
+      status: complete ? 'OK' : 'RUNNING',
+      rowsUpserted: lastPage,
+      finishedAt: complete ? new Date() : null,
+    },
+  });
+
+  logger.info(
+    { complete, lastPage, totalStations, totalUnits },
+    complete ? 'ev-charger ingest complete' : 'ev-charger ingest partial — re-run to resume',
+  );
+  return totalStations;
 }
 
 async function ingestTraditionalMarkets(): Promise<number> {
