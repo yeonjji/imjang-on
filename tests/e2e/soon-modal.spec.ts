@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-// Phase 1 nav: Soon 버튼은 데스크탑 메뉴(hidden md:flex)에만 존재.
-// 모바일 nav는 Phase 2에서 bottom tab bar로 별도 구현 예정.
-test.skip(({ viewport }) => (viewport?.width ?? 9999) < 768, 'mobile nav not implemented in Phase 1');
+// 이 테스트는 데스크톱 인라인 메뉴의 청약 버튼을 직접 클릭한다.
+// 모바일에서는 청약 버튼이 햄버거 서랍 안에 있고(닫혀 있으면 inert) 직접 클릭 대상이 아니므로 데스크톱에서만 실행한다.
+// (모바일 서랍 동작은 mobile-nav.spec.ts에서 커버)
+test.skip(({ viewport }) => (viewport?.width ?? 9999) < 768, '청약 버튼은 모바일에선 햄버거 서랍 안에 있어 데스크톱에서만 테스트');
 
 test('soon modal email signup', async ({ page }) => {
   await page.goto('/');
