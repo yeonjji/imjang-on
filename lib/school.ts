@@ -71,3 +71,15 @@ export async function getSchoolKindCounts(sigunguCode: string) {
   }
   return { total, counts };
 }
+
+// /school/regions 그리드: 시군구별 학교 수 (전국)
+export async function getSchoolCountsBySigungu() {
+  const grouped = await prisma.school.groupBy({
+    by: ['sigunguCode'],
+    where: { sigunguCode: { not: null } },
+    _count: { _all: true },
+  });
+  const map = new Map<string, number>();
+  for (const g of grouped) if (g.sigunguCode) map.set(g.sigunguCode, g._count._all);
+  return map;
+}

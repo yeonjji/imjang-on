@@ -14,6 +14,7 @@ const STATIC_ENTRIES: MetadataRoute.Sitemap = [
   { url: `${SITE}/region`, changeFrequency: 'weekly', priority: 0.8 },
   { url: `${SITE}/life`, changeFrequency: 'weekly', priority: 0.8 },
   { url: `${SITE}/school`, changeFrequency: 'weekly', priority: 0.8 },
+  { url: `${SITE}/school/regions`, changeFrequency: 'weekly', priority: 0.7 },
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
