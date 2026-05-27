@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { SearchInput } from './search-input';
@@ -19,10 +19,12 @@ const links = [
 ];
 
 export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    closeBtnRef.current?.focus();
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
     }
@@ -34,7 +36,7 @@ export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
   }, [open, onClose]);
 
   return (
-    <div className="md:hidden" aria-hidden={!open}>
+    <div className="md:hidden" aria-hidden={!open} inert={!open}>
       <div
         data-testid="mobile-drawer-overlay"
         onClick={onClose}
@@ -53,6 +55,7 @@ export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
       >
         <div className="mb-2 flex justify-end">
           <button
+            ref={closeBtnRef}
             onClick={onClose}
             aria-label="메뉴 닫기"
             className="grid h-9 w-9 place-items-center rounded-lg text-[var(--color-muted)] hover:bg-[var(--color-soft)]"
