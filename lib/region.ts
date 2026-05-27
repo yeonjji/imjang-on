@@ -30,3 +30,11 @@ export async function getEupmyeondongsBySigungu(sigunguCode: string) {
     orderBy: { eupmyeondong: 'asc' },
   });
 }
+
+export async function getAllSigungus() {
+  return prisma.region.findMany({
+    where: { level: 2, isAbolished: false, sigunguCode: { not: null } },
+    select: { sido: true, sigungu: true, sigunguCode: true },
+    orderBy: [{ sido: 'asc' }, { sigungu: 'asc' }],
+  });
+}
