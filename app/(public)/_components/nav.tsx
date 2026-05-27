@@ -25,11 +25,9 @@ export function Nav() {
           <div className="hidden gap-6 text-[15px] font-semibold text-[var(--color-muted)] md:flex md:items-center">
             <Link href="/">홈</Link>
             <Link href="/list">실거래가</Link>
-<button onClick={() => setSoonOpen('청약')} className="inline-flex items-center gap-1.5">
+            <Link href="/life">생활인프라</Link>
+            <button onClick={() => setSoonOpen('청약')} className="inline-flex items-center gap-1.5">
               청약 <Badge tone="gray">Soon</Badge>
-            </button>
-            <button onClick={() => setSoonOpen('생활권')} className="inline-flex items-center gap-1.5">
-              생활권 <Badge tone="gray">Soon</Badge>
             </button>
           </div>
 

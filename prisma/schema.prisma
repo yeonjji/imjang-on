@@ -258,8 +258,10 @@ model School {
   eduOffice  String?                               @db.VarChar(40)
   tel        String?                               @db.VarChar(30)
   homepage   String?                               @db.VarChar(200)
+  sigunguCode String?                              @db.VarChar(5)
   updatedAt  DateTime                              @updatedAt
 
   @@index([schoolKind])
   @@index([region])
+  @@index([sigunguCode, schoolKind])
 }

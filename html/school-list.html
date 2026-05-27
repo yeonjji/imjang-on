@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>학교찾기 목록 — 목업</title>
+  <style>
+    :root{
+      --bg:#f7fbff; --card:#fff; --text:#172033; --muted:#64748b; --line:#dbeafe;
+      --blue:#2563eb; --blue-dark:#1e3a8a; --sky:#38bdf8; --sky-soft:#e0f2fe;
+      --soft:#f1f7ff; --green:#0f9f6e; --shadow:0 14px 34px rgba(37,99,235,.10); --radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Pretendard","Noto Sans KR",sans-serif}
+    a{color:inherit;text-decoration:none}
+    .topbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.88);
+      backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+    .nav{max-width:1180px;margin:0 auto;height:72px;padding:0 24px;display:flex;align-items:center;gap:24px}
+    .logo{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:-.04em;color:var(--blue-dark);font-size:22px}
+    .logo-mark{width:34px;height:34px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#38bdf8);
+      display:grid;place-items:center;color:#fff;font-size:16px;font-weight:900}
+    .menu{display:flex;gap:24px;font-size:15px;font-weight:600;color:var(--muted)}
+    .menu .active{color:var(--blue);font-weight:800}
+    .menu .soon{display:inline-flex;align-items:center;gap:5px}
+    .badge-soon{font-size:10px;font-weight:700;background:#eef2f7;color:#94a3b8;border-radius:6px;padding:2px 6px}
+    .searchbox{margin-left:auto;width:240px;height:40px;border:1px solid var(--line);border-radius:12px;
+      background:var(--soft);display:flex;align-items:center;padding:0 12px;color:var(--muted);font-size:14px}
+    .wrap{max-width:1180px;margin:0 auto;padding:28px 24px 60px}
+    .crumb{font-size:13px;color:var(--muted);margin-bottom:18px;display:flex;gap:7px;flex-wrap:wrap}
+    .crumb .here{color:var(--blue-dark);font-weight:700}
+    .header-card{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:26px 28px;
+      box-shadow:var(--shadow);margin-bottom:22px}
+    .eyebrow{font-size:12px;font-weight:800;color:var(--blue);margin:0 0 6px}
+    h1{font-size:30px;font-weight:900;letter-spacing:-.02em;color:var(--blue-dark);margin:0}
+    .sub{margin:8px 0 0;color:var(--muted);font-size:14px}
+    .stat-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+    .stat-chip{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:8px 14px;font-size:13px}
+    .stat-chip b{color:var(--blue-dark);font-weight:800}
+    .region-switch{margin-left:auto;font-size:13px;color:var(--blue);font-weight:700;border:1px solid var(--line);
+      border-radius:10px;padding:8px 12px;background:#fff}
+    .cols{display:flex;gap:24px;align-items:flex-start}
+    .aside{width:280px;flex-shrink:0;position:sticky;top:88px}
+    .panel{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:var(--shadow)}
+    .panel h3{font-size:14px;font-weight:800;color:var(--blue-dark);margin:0 0 12px}
+    .fgroup{margin-bottom:20px}
+    .flabel{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:9px}
+    .chips{display:flex;gap:7px;flex-wrap:wrap}
+    .chip{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:6px 13px;background:#fff;color:var(--text);cursor:pointer}
+    .chip.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700}
+    .fsearch{width:100%;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font-size:14px;background:var(--soft)}
+    .ad{margin-top:16px;border:1px dashed #93c5fd;border-radius:22px;background:rgba(255,255,255,.65);
+      padding:26px;text-align:center;color:var(--muted);font-size:12px}
+    .main{flex:1;min-width:0}
+    .listbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .count{font-size:14px;color:var(--muted)}
+    .count b{color:var(--blue-dark)}
+    .sort{font-size:13px;border:1px solid var(--line);border-radius:10px;padding:7px 12px;background:#fff;color:var(--text)}
+    .cards{display:flex;flex-direction:column;gap:12px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 20px;
+      box-shadow:var(--shadow);display:flex;align-items:center;gap:16px;transition:.15s}
+    .card:hover{border-color:var(--sky);transform:translateY(-1px)}
+    .sicon{width:48px;height:48px;border-radius:14px;background:var(--sky-soft);display:grid;place-items:center;
+      font-size:22px;flex-shrink:0}
+    .cbody{flex:1;min-width:0}
+    .cname{font-size:16px;font-weight:800;color:var(--blue-dark);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .tag{font-size:11px;font-weight:700;border-radius:7px;padding:3px 8px}
+    .tag.kind{background:#dbeafe;color:#1e40af}
+    .tag.found{background:#dcfce7;color:#15803d}
+    .tag.coedu{background:#fef9c3;color:#a16207}
+    .caddr{font-size:13px;color:var(--muted);margin-top:6px}
+    .cmeta{text-align:right;flex-shrink:0}
+    .nearby{font-size:13px;color:var(--text)}
+    .nearby b{color:var(--blue);font-weight:800}
+    .go{font-size:12px;color:var(--muted);margin-top:6px}
+    .pager{display:flex;justify-content:center;gap:6px;margin-top:28px}
+    .pg{min-width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:#fff;
+      display:grid;place-items:center;font-size:14px;color:var(--text)}
+    .pg.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700}
+    @media(max-width:860px){.aside{display:none}.menu{display:none}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <nav class="nav">
+      <a class="logo"><span class="logo-mark">임</span>임장온</a>
+      <div class="menu">
+        <a>홈</a>
+        <a>실거래가</a>
+        <a class="active">생활인프라</a>
+        <a class="soon">청약 <span class="badge-soon">Soon</span></a>
+      </div>
+      <div class="searchbox">🔍 단지·지역·학교 검색</div>
+    </nav>
+  </div>
+
+  <div class="wrap">
+    <div class="crumb">
+      <a>홈</a> › <a>생활인프라</a> › <a>학교찾기</a> › <a>서울특별시</a> ›
+      <span class="here">강남구</span>
+    </div>
+
+    <div class="header-card">
+      <div style="display:flex;align-items:flex-start">
+        <div>
+          <p class="eyebrow">학교찾기 · 서울특별시 강남구</p>
+          <h1>강남구 학교</h1>
+          <p class="sub">강남구에 위치한 초·중·고·특수학교를 한눈에. 학교를 누르면 근처 아파트 실거래가까지 확인할 수 있어요.</p>
+        </div>
+        <button class="region-switch">지역 변경 ▾</button>
+      </div>
+      <div class="stat-chips">
+        <span class="stat-chip">전체 <b>168</b>개</span>
+        <span class="stat-chip">초등 <b>61</b></span>
+        <span class="stat-chip">중학교 <b>42</b></span>
+        <span class="stat-chip">고등 <b>38</b></span>
+        <span class="stat-chip">특수 <b>4</b></span>
+      </div>
+    </div>
+
+    <div class="cols">
+      <aside class="aside">
+        <div class="panel">
+          <h3>필터</h3>
+          <div class="fgroup">
+            <div class="flabel">학교명 검색</div>
+            <input class="fsearch" placeholder="예) 대청중학교" />
+          </div>
+          <div class="fgroup">
+            <div class="flabel">학교급</div>
+            <div class="chips">
+              <span class="chip on">전체</span><span class="chip">초등학교</span>
+              <span class="chip">중학교</span><span class="chip">고등학교</span><span class="chip">특수</span>
+            </div>
+          </div>
+          <div class="fgroup">
+            <div class="flabel">설립유형</div>
+            <div class="chips">
+              <span class="chip on">전체</span><span class="chip">국공립</span><span class="chip">사립</span>
+            </div>
+          </div>
+          <div class="fgroup">
+            <div class="flabel">남녀공학</div>
+            <div class="chips">
+              <span class="chip on">전체</span><span class="chip">남</span><span class="chip">여</span><span class="chip">공학</span>
+            </div>
+          </div>
+        </div>
+        <div class="ad">광고 영역</div>
+      </aside>
+
+      <main class="main">
+        <div class="listbar">
+          <span class="count"><b>168</b>개 학교</span>
+          <select class="sort"><option>이름순</option><option>학교급순</option></select>
+        </div>
+        <div class="cards">
+          <a class="card">
+            <div class="sicon">🏫</div>
+            <div class="cbody">
+              <div class="cname">대청중학교 <span class="tag kind">중학교</span><span class="tag found">공립</span><span class="tag coedu">남녀공학</span></div>
+              <div class="caddr">서울특별시 강남구 개포로 109길 21</div>
+            </div>
+            <div class="cmeta">
+              <div class="nearby">주변 아파트 <b>23</b>단지</div>
+              <div class="go">상세 보기 →</div>
+            </div>
+          </a>
+          <a class="card">
+            <div class="sicon">🏫</div>
+            <div class="cbody">
+              <div class="cname">개포고등학교 <span class="tag kind">고등학교</span><span class="tag found">공립</span><span class="tag coedu">남녀공학</span></div>
+              <div class="caddr">서울특별시 강남구 삼성로 14길 30</div>
+            </div>
+            <div class="cmeta">
+              <div class="nearby">주변 아파트 <b>18</b>단지</div>
+              <div class="go">상세 보기 →</div>
+            </div>
+          </a>
+          <a class="card">
+            <div class="sicon">🏫</div>
+            <div class="cbody">
+              <div class="cname">대도초등학교 <span class="tag kind">초등학교</span><span class="tag found">공립</span></div>
+              <div class="caddr">서울특별시 강남구 삼성로 56길 11</div>
+            </div>
+            <div class="cmeta">
+              <div class="nearby">주변 아파트 <b>31</b>단지</div>
+              <div class="go">상세 보기 →</div>
+            </div>
+          </a>
+          <a class="card">
+            <div class="sicon">🏫</div>
+            <div class="cbody">
+              <div class="cname">중동고등학교 <span class="tag kind">고등학교</span><span class="tag found">사립</span><span class="tag coedu">남</span></div>
+              <div class="caddr">서울특별시 강남구 봉은사로 821</div>
+            </div>
+            <div class="cmeta">
+              <div class="nearby">주변 아파트 <b>12</b>단지</div>
+              <div class="go">상세 보기 →</div>
+            </div>
+          </a>
+        </div>
+        <div class="pager">
+          <span class="pg">‹</span><span class="pg on">1</span><span class="pg">2</span>
+          <span class="pg">3</span><span class="pg">4</span><span class="pg">›</span>
+        </div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

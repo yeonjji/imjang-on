@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>학교 상세 — 목업</title>
+  <style>
+    :root{
+      --bg:#f7fbff; --card:#fff; --text:#172033; --muted:#64748b; --line:#dbeafe;
+      --blue:#2563eb; --blue-dark:#1e3a8a; --sky:#38bdf8; --sky-soft:#e0f2fe;
+      --soft:#f1f7ff; --green:#0f9f6e; --shadow:0 14px 34px rgba(37,99,235,.10); --radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Pretendard","Noto Sans KR",sans-serif}
+    a{color:inherit;text-decoration:none}
+    .topbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.88);
+      backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+    .nav{max-width:1180px;margin:0 auto;height:72px;padding:0 24px;display:flex;align-items:center;gap:24px}
+    .logo{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:-.04em;color:var(--blue-dark);font-size:22px}
+    .logo-mark{width:34px;height:34px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#38bdf8);
+      display:grid;place-items:center;color:#fff;font-size:16px;font-weight:900}
+    .menu{display:flex;gap:24px;font-size:15px;font-weight:600;color:var(--muted)}
+    .menu .active{color:var(--blue);font-weight:800}
+    .badge-soon{font-size:10px;font-weight:700;background:#eef2f7;color:#94a3b8;border-radius:6px;padding:2px 6px}
+    .searchbox{margin-left:auto;width:240px;height:40px;border:1px solid var(--line);border-radius:12px;
+      background:var(--soft);display:flex;align-items:center;padding:0 12px;color:var(--muted);font-size:14px}
+    .wrap{max-width:1180px;margin:0 auto;padding:28px 24px 60px}
+    .crumb{font-size:13px;color:var(--muted);margin-bottom:18px;display:flex;gap:7px;flex-wrap:wrap}
+    .crumb .here{color:var(--blue-dark);font-weight:700}
+
+    .hero{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:28px 30px;
+      box-shadow:var(--shadow);display:flex;align-items:center;gap:20px}
+    .hicon{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,var(--sky-soft),#fff);
+      display:grid;place-items:center;font-size:30px;border:1px solid var(--line)}
+    .htitle{font-size:28px;font-weight:900;letter-spacing:-.02em;color:var(--blue-dark);margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .tag{font-size:12px;font-weight:700;border-radius:8px;padding:4px 10px}
+    .tag.kind{background:#dbeafe;color:#1e40af}.tag.found{background:#dcfce7;color:#15803d}.tag.coedu{background:#fef9c3;color:#a16207}
+    .hmeta{color:var(--muted);font-size:14px;margin-top:8px;display:flex;gap:16px;flex-wrap:wrap}
+    .hmeta a{color:var(--blue);font-weight:600}
+
+    .layout{display:grid;grid-template-columns:1fr 320px;gap:28px;margin-top:26px}
+    .stack{display:flex;flex-direction:column;gap:22px}
+    .sec{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:var(--shadow)}
+    .sec h2{font-size:18px;font-weight:800;color:var(--blue-dark);margin:0 0 16px;display:flex;align-items:center;gap:8px}
+
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 24px}
+    .info-row{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:10px}
+    .info-row .k{color:var(--muted);font-size:13px}.info-row .v{font-weight:700;font-size:14px}
+
+    .map{height:260px;border-radius:16px;border:1px solid var(--line);
+      background:repeating-linear-gradient(45deg,#eef5ff,#eef5ff 12px,#f7fbff 12px,#f7fbff 24px);
+      display:grid;place-items:center;color:var(--muted);font-size:14px;position:relative}
+    .pin{position:absolute;font-size:30px}
+
+    .apt{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line)}
+    .apt:last-child{border-bottom:none}
+    .apt .an{font-weight:700;font-size:15px}
+    .apt .ad{font-size:12px;color:var(--muted);margin-top:3px}
+    .apt .ap{text-align:right}
+    .apt .price{font-weight:800;color:var(--blue-dark);font-size:15px}
+    .apt .jeonse{font-size:12px;color:var(--muted);margin-top:2px}
+    .dist{display:inline-block;font-size:11px;font-weight:700;color:var(--sky);background:var(--sky-soft);
+      border-radius:6px;padding:2px 7px;margin-left:6px}
+
+    .tabs{display:flex;gap:8px;margin-bottom:14px}
+    .tab{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:7px 15px;background:#fff;cursor:pointer}
+    .tab.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700}
+    .poi{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+    .poi:last-child{border-bottom:none}
+    .poi .pic{width:36px;height:36px;border-radius:10px;background:var(--soft);display:grid;place-items:center;font-size:17px}
+    .poi .pn{font-weight:600;font-size:14px}.poi .pa{font-size:12px;color:var(--muted)}
+
+    .side{display:flex;flex-direction:column;gap:18px;position:sticky;top:88px;align-self:start}
+    .toc{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:var(--shadow)}
+    .toc a{display:block;font-size:14px;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--soft)}
+    .toc a:last-child{border-bottom:none}
+    .same{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:var(--shadow)}
+    .same h3{font-size:14px;font-weight:800;color:var(--blue-dark);margin:0 0 12px}
+    .same a{display:block;font-size:14px;padding:7px 0;color:var(--text)}
+    .ad{border:1px dashed #93c5fd;border-radius:20px;background:rgba(255,255,255,.65);padding:30px;text-align:center;color:var(--muted);font-size:12px}
+    @media(max-width:860px){.layout{grid-template-columns:1fr}.side{position:static}.menu{display:none}.info-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <nav class="nav">
+      <a class="logo"><span class="logo-mark">임</span>임장온</a>
+      <div class="menu">
+        <a>홈</a><a>실거래가</a><a class="active">생활인프라</a>
+        <a>청약 <span class="badge-soon">Soon</span></a>
+      </div>
+      <div class="searchbox">🔍 단지·지역·학교 검색</div>
+    </nav>
+  </div>
+
+  <div class="wrap">
+    <div class="crumb">
+      <a>홈</a> › <a>생활인프라</a> › <a>학교찾기</a> › <a>서울특별시</a> › <a>강남구</a> ›
+      <span class="here">대청중학교</span>
+    </div>
+
+    <div class="hero">
+      <div class="hicon">🏫</div>
+      <div>
+        <h1 class="htitle">대청중학교
+          <span class="tag kind">중학교</span><span class="tag found">공립</span><span class="tag coedu">남녀공학</span>
+        </h1>
+        <div class="hmeta">
+          <span>📍 서울특별시 강남구 개포로109길 21</span>
+          <span>📞 02-573-9602</span>
+          <a>🔗 홈페이지</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="stack">
+        <section class="sec" id="info">
+          <h2>학교 정보</h2>
+          <div class="info-grid">
+            <div class="info-row"><span class="k">학교급</span><span class="v">중학교</span></div>
+            <div class="info-row"><span class="k">설립유형</span><span class="v">공립</span></div>
+            <div class="info-row"><span class="k">남녀공학</span><span class="v">남녀공학</span></div>
+            <div class="info-row"><span class="k">관할 교육청</span><span class="v">서울특별시강남서초교육지원청</span></div>
+            <div class="info-row"><span class="k">전화</span><span class="v">02-573-9602</span></div>
+            <div class="info-row"><span class="k">지역</span><span class="v">서울특별시 강남구</span></div>
+          </div>
+        </section>
+
+        <section class="sec" id="map">
+          <h2>위치</h2>
+          <div class="map"><span class="pin">📍</span><span style="margin-top:46px">카카오 정적 지도 위젯</span></div>
+        </section>
+
+        <section class="sec" id="apt">
+          <h2>🏠 주변 아파트 실거래가 <span style="font-size:13px;color:var(--muted);font-weight:500">· 반경 1km</span></h2>
+          <div class="apt">
+            <div><div class="an">래미안대치팰리스<span class="dist">320m</span></div><div class="ad">서울 강남구 · 2015년 · 1,608세대</div></div>
+            <div class="ap"><div class="price">38억 5,000</div><div class="jeonse">전세 21억</div></div>
+          </div>
+          <div class="apt">
+            <div><div class="an">대치아이파크<span class="dist">540m</span></div><div class="ad">서울 강남구 · 2008년 · 768세대</div></div>
+            <div class="ap"><div class="price">31억</div><div class="jeonse">전세 17억 5,000</div></div>
+          </div>
+          <div class="apt">
+            <div><div class="an">개포우성1차<span class="dist">680m</span></div><div class="ad">서울 강남구 · 1983년 · 690세대</div></div>
+            <div class="ap"><div class="price">29억</div><div class="jeonse">전세 12억</div></div>
+          </div>
+          <div style="text-align:center;margin-top:14px"><a style="font-size:13px;color:var(--blue);font-weight:700">주변 아파트 더보기 →</a></div>
+        </section>
+
+        <section class="sec" id="poi">
+          <h2>주변 생활 인프라</h2>
+          <div class="tabs">
+            <span class="tab on">공원</span><span class="tab">전통시장</span><span class="tab">충전소</span>
+          </div>
+          <div class="poi"><div class="pic">🌳</div><div style="flex:1"><div class="pn">개포근린공원 <span class="dist">410m</span></div><div class="pa">근린공원 · 12,300㎡</div></div></div>
+          <div class="poi"><div class="pic">🌳</div><div style="flex:1"><div class="pn">대치유수지체육공원 <span class="dist">760m</span></div><div class="pa">체육공원</div></div></div>
+          <div class="poi"><div class="pic">🌳</div><div style="flex:1"><div class="pn">양재천 산책로 <span class="dist">900m</span></div><div class="pa">하천변 공원</div></div></div>
+        </section>
+      </div>
+
+      <aside class="side">
+        <div class="toc">
+          <a href="#info">학교 정보</a>
+          <a href="#map">위치</a>
+          <a href="#apt">주변 아파트 실거래가</a>
+          <a href="#poi">주변 생활 인프라</a>
+        </div>
+        <div class="same">
+          <h3>강남구 다른 학교</h3>
+          <a>· 개포고등학교</a>
+          <a>· 대도초등학교</a>
+          <a>· 중동고등학교</a>
+          <a style="color:var(--blue);font-weight:700">강남구 학교 전체 보기 →</a>
+        </div>
+        <div class="ad">광고 영역</div>
+      </aside>
+    </div>
+  </div>
+</body>
+</html>
