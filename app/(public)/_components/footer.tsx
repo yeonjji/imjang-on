@@ -18,7 +18,7 @@ export function Footer() {
             <li><Link href="/officetel">오피스텔</Link></li>
             <li><Link href="/villa">다세대</Link></li>
             <li><Link href="/region">지역</Link></li>
-            <li><Link href="/life">생활인프라</Link></li>
+            <li><Link href="/life">생활편의</Link></li>
             <li><Link href="/school">학교찾기</Link></li>
           </ul>
         </div>

@@ -37,12 +37,12 @@ export default async function SchoolListPage({ searchParams }: Props) {
     <div className="mx-auto max-w-[1180px] px-6 py-8">
       <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
         <Link href="/">홈</Link><span>›</span>
-        <Link href="/life">생활인프라</Link><span>›</span>
+        <Link href="/life">생활편의</Link><span>›</span>
         <span className="font-semibold text-[var(--color-blue-dark)]">학교찾기</span>
       </nav>
 
       <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
-        <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">생활인프라 · 학교찾기</p>
+        <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">생활편의 · 학교찾기</p>
         <h1 className="text-3xl font-black tracking-tight text-[var(--color-blue-dark)]">학교찾기</h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">지역·학교급으로 좁혀보세요. 학교를 누르면 주변 아파트 실거래가까지 확인할 수 있어요.</p>
         <Link
