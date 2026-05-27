@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 
 declare global {
   interface Window {
+    // 네이버 지도 SDK는 번들 타입이 없어 any로 둔다.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     naver?: any;
   }
 }
