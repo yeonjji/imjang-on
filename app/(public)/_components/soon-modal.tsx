@@ -34,7 +34,7 @@ export function SoonModal({ open, topic, onClose }: { open: boolean; topic: stri
       ) : (
         <form onSubmit={submit} className="space-y-3">
           <p className="text-sm text-[var(--color-muted)]">
-            실거래가에 이어 청약·생활인프라·전세대출을 단계적으로 추가합니다. 출시 알림을 받으시려면 이메일을 남겨주세요 (선택).
+            실거래가에 이어 청약·생활편의·전세대출을 단계적으로 추가합니다. 출시 알림을 받으시려면 이메일을 남겨주세요 (선택).
           </p>
           <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="이메일 주소" required />
           <div className="flex justify-end gap-2">

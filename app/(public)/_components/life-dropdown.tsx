@@ -47,6 +47,7 @@ export function LifeDropdown({ onSoon }: Props) {
       {open && (
         <div
           data-testid="life-dropdown"
+          aria-label="생활편의 메뉴"
           className="absolute left-0 top-[calc(100%+14px)] z-30 grid w-[640px] grid-cols-4 gap-5 rounded-2xl border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]"
         >
           {LIFE_GROUPS.map((group) => (

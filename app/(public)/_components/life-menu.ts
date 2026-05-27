@@ -9,6 +9,7 @@ export interface LifeSubItem {
 
 export interface LifeGroup {
   label: string;
+  /** 그룹 최상위 라우트 — href 접두 불변식 검증 + 추후 그룹 랜딩 페이지에 사용 */
   route: string;
   items: LifeSubItem[];
 }
