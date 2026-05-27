@@ -5,13 +5,15 @@ import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { SchoolFilterPanel } from './school-filter-panel';
 
-export function SchoolMobileFilterSheet({ basePath }: { basePath: string }) {
+interface SidoItem { code: string; sido: string; fullName: string; }
+
+export function SchoolMobileFilterSheet({ basePath, sidoList }: { basePath: string; sidoList?: SidoItem[] }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const sp = useSearchParams();
   const [pending, setPending] = useState(() => new URLSearchParams(sp.toString()));
 
-  const activeCount = ['kind', 'found', 'coedu', 'q'].filter((k) => sp.get(k) && sp.get(k) !== 'all').length;
+  const activeCount = ['sido', 'kind', 'found', 'coedu', 'q'].filter((k) => sp.get(k) && sp.get(k) !== 'all').length;
 
   return (
     <div className="mb-4 flex items-center gap-2 md:hidden">
@@ -32,7 +34,7 @@ export function SchoolMobileFilterSheet({ basePath }: { basePath: string }) {
           </div>
         }
       >
-        <SchoolFilterPanel basePath={basePath} params={pending} onParamsChange={setPending} />
+        <SchoolFilterPanel basePath={basePath} sidoList={sidoList} params={pending} onParamsChange={setPending} />
       </BottomSheet>
     </div>
   );

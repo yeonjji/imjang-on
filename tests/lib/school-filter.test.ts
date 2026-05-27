@@ -5,6 +5,17 @@ describe('buildSchoolWhere', () => {
   it('시군구만 있으면 sigunguCode 조건', () => {
     expect(buildSchoolWhere({ sigunguCode: '11680' })).toEqual({ sigunguCode: '11680' });
   });
+  it('시도만 있으면 region 조건', () => {
+    expect(buildSchoolWhere({ sido: '서울특별시' })).toEqual({ region: '서울특별시' });
+  });
+  it('아무 지역도 없으면 빈 조건', () => {
+    expect(buildSchoolWhere({})).toEqual({});
+  });
+  it('시군구가 시도보다 우선', () => {
+    const w = buildSchoolWhere({ sido: '서울특별시', sigunguCode: '11680' });
+    expect(w.sigunguCode).toBe('11680');
+    expect(w.region).toBeUndefined();
+  });
   it('학교급 필터를 schoolKind로 매핑', () => {
     expect(buildSchoolWhere({ sigunguCode: '11680', kind: 'elem' }).schoolKind).toBe('초등학교');
     expect(buildSchoolWhere({ sigunguCode: '11680', kind: 'mid' }).schoolKind).toBe('중학교');

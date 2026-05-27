@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
-import { getSchoolById, getSchoolsBySigungu } from '@/lib/school';
+import { getSchoolById, getSchoolList } from '@/lib/school';
 import { getSigunguByCode } from '@/lib/region';
 import { getNearbyApartments, getSchoolNearbyAmenities } from '@/lib/amenity';
 import { SchoolHero } from './_components/school-hero';
@@ -54,7 +54,7 @@ export default async function SchoolDetailPage({ params }: Params) {
     coord
       ? getSchoolNearbyAmenities(coord.lat, coord.lng)
       : Promise.resolve({ parks: [], mart: [], chargers: [] } as Awaited<ReturnType<typeof getSchoolNearbyAmenities>>),
-    getSchoolsBySigungu({ sigunguCode }, 1),
+    getSchoolList({ sigunguCode }, 1),
   ]);
 
   const others = otherList.rows.filter((s) => s.id !== school.id).slice(0, 4);

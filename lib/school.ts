@@ -6,7 +6,8 @@ export type FoundSlug = 'all' | 'public' | 'private';
 export type CoeduSlug = 'all' | 'male' | 'female' | 'co';
 
 export interface SchoolFilter {
-  sigunguCode: string;
+  sido?: string;
+  sigunguCode?: string;
   kind?: SchoolKindSlug;
   found?: FoundSlug;
   coedu?: CoeduSlug;
@@ -21,7 +22,9 @@ const KIND_MAP: Record<Exclude<SchoolKindSlug, 'all'>, string> = {
 };
 
 export function buildSchoolWhere(f: SchoolFilter): Prisma.SchoolWhereInput {
-  const where: Prisma.SchoolWhereInput = { sigunguCode: f.sigunguCode };
+  const where: Prisma.SchoolWhereInput = {};
+  if (f.sigunguCode) where.sigunguCode = f.sigunguCode;
+  else if (f.sido) where.region = f.sido;
   if (f.kind && f.kind !== 'all') where.schoolKind = KIND_MAP[f.kind];
   if (f.found === 'public') where.foundType = { in: ['공립', '국립'] };
   else if (f.found === 'private') where.foundType = '사립';
@@ -34,8 +37,10 @@ export function buildSchoolWhere(f: SchoolFilter): Prisma.SchoolWhereInput {
 
 const PER_PAGE = 30;
 
-export async function getSchoolsBySigungu(f: SchoolFilter, page = 1) {
+export async function getSchoolList(f: SchoolFilter, page = 1) {
   const where = buildSchoolWhere(f);
+  // 상세 URL이 /school/[sigunguCode]/[id]라서 지역 미지정 목록도 sigunguCode 있는 학교만 노출
+  if (!f.sigunguCode) where.sigunguCode = { not: null };
   const [rows, total] = await Promise.all([
     prisma.school.findMany({
       where,
@@ -65,16 +70,4 @@ export async function getSchoolKindCounts(sigunguCode: string) {
     total += g._count._all;
   }
   return { total, counts };
-}
-
-// /school 허브: 시군구별 학교 수 (전국)
-export async function getSchoolCountsBySigungu() {
-  const grouped = await prisma.school.groupBy({
-    by: ['sigunguCode'],
-    where: { sigunguCode: { not: null } },
-    _count: { _all: true },
-  });
-  const map = new Map<string, number>();
-  for (const g of grouped) if (g.sigunguCode) map.set(g.sigunguCode, g._count._all);
-  return map;
 }

@@ -2,19 +2,16 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { getSigunguByCode } from '@/lib/region';
-import { getSchoolsBySigungu, getSchoolKindCounts, type SchoolKindSlug, type FoundSlug, type CoeduSlug } from '@/lib/school';
-import { SchoolFilterPanel } from './_components/school-filter-panel';
-import { SchoolMobileFilterSheet } from './_components/school-mobile-filter-sheet';
-import { SchoolCard } from './_components/school-card';
-import { SchoolPagination } from './_components/school-pagination';
+import { getSchoolList, getSchoolKindCounts, type SchoolKindSlug, type FoundSlug, type CoeduSlug } from '@/lib/school';
+import { SchoolFilterPanel } from '../_components/school-filter-panel';
+import { SchoolMobileFilterSheet } from '../_components/school-mobile-filter-sheet';
+import { SchoolCard } from '../_components/school-card';
+import { SchoolPagination } from '../_components/school-pagination';
 import type { Metadata } from 'next';
 
 export const revalidate = 21_600;
 
-interface Params {
-  params: Promise<{ sigunguCode: string }>;
-  searchParams: Promise<Record<string, string>>;
-}
+interface Params { params: Promise<{ sigunguCode: string }>; searchParams: Promise<Record<string, string>>; }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { sigunguCode } = await params;
@@ -27,7 +24,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function SchoolListPage({ params, searchParams }: Params) {
+export default async function SchoolSigunguListPage({ params, searchParams }: Params) {
   const { sigunguCode } = await params;
   const sp = await searchParams;
   const region = await getSigunguByCode(sigunguCode);
@@ -44,7 +41,7 @@ export default async function SchoolListPage({ params, searchParams }: Params) {
   };
 
   const [{ rows, total, totalPages, perPage }, kindCounts] = await Promise.all([
-    getSchoolsBySigungu(filter, page),
+    getSchoolList(filter, page),
     getSchoolKindCounts(sigunguCode),
   ]);
 
@@ -60,7 +57,7 @@ export default async function SchoolListPage({ params, searchParams }: Params) {
       <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">학교찾기 · {region.fullName}</p>
         <h1 className="text-3xl font-black tracking-tight text-[var(--color-blue-dark)]">{region.sigungu} 학교</h1>
-        <p className="mt-2 text-sm text-[var(--color-muted)]">전체 {kindCounts.total.toLocaleString('ko-KR')}개 · 학교를 누르면 주변 아파트 실거래가까지 확인할 수 있어요.</p>
+        <p className="mt-2 text-sm text-[var(--color-muted)]">전체 {kindCounts.total.toLocaleString('ko-KR')}개 · <Link href="/school" className="font-semibold text-[var(--color-blue)]">전국에서 검색 →</Link></p>
       </div>
 
       <Suspense><SchoolMobileFilterSheet basePath={basePath} /></Suspense>
@@ -83,7 +80,7 @@ export default async function SchoolListPage({ params, searchParams }: Params) {
             <div className="rounded-[22px] border border-[var(--color-line)] bg-white p-12 text-center text-[var(--color-muted)]">조건에 맞는 학교가 없습니다.</div>
           ) : (
             <div className="flex flex-col gap-3">
-              {rows.map((s) => <SchoolCard key={String(s.id)} school={s} basePath={basePath} />)}
+              {rows.map((s) => <SchoolCard key={String(s.id)} school={s} />)}
             </div>
           )}
           {totalPages > 1 && (
