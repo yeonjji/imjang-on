@@ -21,3 +21,18 @@ test.describe('데스크톱 생활편의 드롭다운', () => {
     await expect(page.getByText('약국 정보는 곧 만나요')).toBeVisible();
   });
 });
+
+test.describe('모바일 생활편의 아코디언', () => {
+  test.skip(({ viewport }) => (viewport?.width ?? 9999) >= 768, '데스크톱은 드롭다운 사용');
+
+  test('아코디언을 펼치고 학교 하위로 이동한다', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: '메뉴 열기' }).click();
+
+    const drawer = page.getByTestId('mobile-drawer');
+    await drawer.getByRole('button', { name: '생활편의' }).click();
+    await drawer.getByRole('link', { name: '중학교' }).click();
+
+    await expect(page).toHaveURL(/\/school\?kind=mid/);
+  });
+});

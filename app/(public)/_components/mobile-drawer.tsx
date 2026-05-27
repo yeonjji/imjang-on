@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { X, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { SearchInput } from './search-input';
+import { LIFE_GROUPS } from './life-menu';
 
 interface Props {
   open: boolean;
@@ -15,11 +16,11 @@ interface Props {
 const links = [
   { href: '/', label: '홈' },
   { href: '/list', label: '실거래가' },
-  { href: '/life', label: '생활인프라' },
 ];
 
 export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const [lifeOpen, setLifeOpen] = useState(false);
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -78,6 +79,48 @@ export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
             {l.label}
           </Link>
         ))}
+
+        <button
+          type="button"
+          onClick={() => setLifeOpen((v) => !v)}
+          aria-expanded={lifeOpen}
+          className="inline-flex items-center justify-between rounded-lg px-2 py-3 text-left text-[15px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-soft)]"
+        >
+          생활편의
+          <ChevronDown size={18} className={`transition-transform ${lifeOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {lifeOpen && (
+          <div className="mb-1 flex flex-col gap-0.5 pl-2">
+            {LIFE_GROUPS.map((group) => (
+              <div key={group.label} className="py-1">
+                <p className="px-2 py-1 text-xs font-bold text-[var(--color-blue-dark)]">{group.label}</p>
+                {group.items.map((item) =>
+                  item.live ? (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      onClick={onClose}
+                      className="block rounded-lg px-3 py-2 text-[14px] text-[var(--color-text)] hover:bg-[var(--color-soft)]"
+                    >
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => onSoonClick(item.label)}
+                      className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-left text-[14px] text-[var(--color-muted)] hover:bg-[var(--color-soft)]"
+                    >
+                      {item.label}
+                      {item.soon && <Badge tone="gray">Soon</Badge>}
+                    </button>
+                  ),
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
         <button
           onClick={() => onSoonClick('청약')}
