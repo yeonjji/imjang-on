@@ -22,7 +22,10 @@ export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const [lifeOpen, setLifeOpen] = useState(false);
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setLifeOpen(false);
+      return;
+    }
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     closeBtnRef.current?.focus();
