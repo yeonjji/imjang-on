@@ -2,7 +2,7 @@ import { CategoryCard } from './_components/category-card';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: '생활편의 — 학교·의료·상권·도시인프라',
+  title: '생활편의 — 학교·공원·마트·충전소',
   description: '아파트 주변 학교, 공원, 마트·편의, 병원·약국, 충전소 등 생활편의 정보를 한곳에서.',
   alternates: { canonical: '/life' },
 };
