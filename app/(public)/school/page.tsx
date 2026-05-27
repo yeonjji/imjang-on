@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { getSidoList } from '@/lib/region';
+import { getSidoList, getAllSigungus } from '@/lib/region';
 import { getSchoolList, type SchoolKindSlug, type FoundSlug, type CoeduSlug } from '@/lib/school';
 import { SchoolFilterPanel } from './_components/school-filter-panel';
 import { SchoolMobileFilterSheet } from './_components/school-mobile-filter-sheet';
 import { SchoolCard } from './_components/school-card';
 import { SchoolPagination } from './_components/school-pagination';
+import { RegionLinks } from './_components/region-links';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -20,7 +21,10 @@ interface Props { searchParams: Promise<Record<string, string>>; }
 
 export default async function SchoolListPage({ searchParams }: Props) {
   const sp = await searchParams;
-  const sidoList = await getSidoList().catch(() => []);
+  const [sidoList, allSigungus] = await Promise.all([
+    getSidoList().catch(() => []),
+    getAllSigungus().catch(() => []),
+  ]);
   const basePath = '/school';
   const page = Math.max(1, Number(sp.page ?? '1'));
   const filter = {
@@ -77,6 +81,8 @@ export default async function SchoolListPage({ searchParams }: Props) {
           )}
         </main>
       </div>
+
+      <RegionLinks sigungus={allSigungus} />
     </div>
   );
 }
