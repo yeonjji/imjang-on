@@ -55,7 +55,7 @@ export function SearchInput() {
         />
       </div>
       {open && results && (results.properties.length > 0 || results.regions.length > 0) && (
-        <div className="absolute right-0 z-40 mt-2 w-80 rounded-2xl border border-[var(--color-line)] bg-white p-2 shadow-[var(--shadow-soft)]">
+        <div className="absolute left-0 right-0 z-40 mt-2 rounded-2xl border border-[var(--color-line)] bg-white p-2 shadow-[var(--shadow-soft)] md:left-auto md:w-80">
           {results.properties.length > 0 && (
             <>
               <p className="px-3 py-1 text-xs font-bold uppercase text-[var(--color-muted)]">단지</p>
