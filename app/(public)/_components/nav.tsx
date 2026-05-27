@@ -7,6 +7,7 @@ import { SearchInput } from './search-input';
 import { useState } from 'react';
 import { SoonModal } from './soon-modal';
 import { MobileDrawer } from './mobile-drawer';
+import { LifeDropdown } from './life-dropdown';
 
 export function Nav() {
   const [soonOpen, setSoonOpen] = useState<string | null>(null);
@@ -28,7 +29,7 @@ export function Nav() {
           <div className="hidden gap-6 text-[15px] font-semibold text-[var(--color-muted)] md:flex md:items-center">
             <Link href="/">홈</Link>
             <Link href="/list">실거래가</Link>
-            <Link href="/life">생활인프라</Link>
+            <LifeDropdown onSoon={(topic) => setSoonOpen(topic)} />
             <button onClick={() => setSoonOpen('청약')} className="inline-flex items-center gap-1.5">
               청약 <Badge tone="gray">Soon</Badge>
             </button>
@@ -52,10 +53,10 @@ export function Nav() {
       <MobileDrawer
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
-        onSoonClick={() => {
-          setSoonOpen('청약');
+        onSoonClick={((topic: string) => {
+          setSoonOpen(topic);
           setMenuOpen(false);
-        }}
+        }) as unknown as () => void}
       />
 
       <SoonModal open={!!soonOpen} topic={soonOpen} onClose={() => setSoonOpen(null)} />
