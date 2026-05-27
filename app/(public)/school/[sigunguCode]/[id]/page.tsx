@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { getSchoolById, getSchoolsBySigungu } from '@/lib/school';
 import { getSigunguByCode } from '@/lib/region';
-import { getNearbyApartments, getNearbyParks, getNearbyStores, getNearbyEvChargers } from '@/lib/amenity';
+import { getNearbyApartments, getSchoolNearbyAmenities } from '@/lib/amenity';
 import { SchoolHero } from './_components/school-hero';
 import { SchoolInfo } from './_components/school-info';
 import { NearbyApartments } from './_components/nearby-apartments';
@@ -12,7 +12,7 @@ import { SchoolDetailSidebar } from './_components/school-detail-sidebar';
 import { NaverMap } from '@/components/ui/naver-map';
 import { Card } from '@/components/ui/card';
 import type { Metadata } from 'next';
-import type { NearbyApartment, NearbyPark, NearbyStore, NearbyEvCharger } from '@/lib/amenity';
+import type { NearbyApartment } from '@/lib/amenity';
 
 export const revalidate = 86_400;
 
@@ -49,15 +49,14 @@ export default async function SchoolDetailPage({ params }: Params) {
   const basePath = `/school/${sigunguCode}`;
   const coord = await getSchoolLatLng(schoolId);
 
-  const [apts, parks, stores, chargers, otherList] = await Promise.all([
+  const [apts, amenities, otherList] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
-    coord ? getNearbyParks(coord.lat, coord.lng) : Promise.resolve([] as NearbyPark[]),
-    coord ? getNearbyStores(coord.lat, coord.lng) : Promise.resolve([] as NearbyStore[]),
-    coord ? getNearbyEvChargers(coord.lat, coord.lng) : Promise.resolve([] as NearbyEvCharger[]),
+    coord
+      ? getSchoolNearbyAmenities(coord.lat, coord.lng)
+      : Promise.resolve({ parks: [], mart: [], chargers: [] } as Awaited<ReturnType<typeof getSchoolNearbyAmenities>>),
     getSchoolsBySigungu({ sigunguCode }, 1),
   ]);
 
-  const mart = stores.filter((s) => ['G20405', 'G20404', 'G20402', 'I21201'].some((p) => (s.industryCode ?? '').startsWith(p)));
   const others = otherList.rows.filter((s) => s.id !== school.id).slice(0, 4);
 
   return (
@@ -82,7 +81,7 @@ export default async function SchoolDetailPage({ params }: Params) {
             </Card>
           )}
           <NearbyApartments items={apts} />
-          {coord && <NearbyAmenities parks={parks} mart={mart} chargers={chargers} />}
+          {coord && <NearbyAmenities parks={amenities.parks} mart={amenities.mart} chargers={amenities.chargers} />}
         </main>
         <aside><SchoolDetailSidebar basePath={basePath} others={others} /></aside>
       </div>
