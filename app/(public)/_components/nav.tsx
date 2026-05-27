@@ -1,13 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import { Menu } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { SearchInput } from './search-input';
 import { useState } from 'react';
 import { SoonModal } from './soon-modal';
+import { MobileDrawer } from './mobile-drawer';
 
 export function Nav() {
   const [soonOpen, setSoonOpen] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <>
@@ -31,11 +34,29 @@ export function Nav() {
             </button>
           </div>
 
-          <div className="ml-auto w-48 lg:w-64">
+          <div className="ml-auto hidden w-48 md:block lg:w-64">
             <SearchInput />
           </div>
+
+          <button
+            onClick={() => setMenuOpen(true)}
+            aria-label="메뉴 열기"
+            aria-expanded={menuOpen}
+            className="ml-auto grid h-10 w-10 place-items-center rounded-lg text-[var(--color-text)] hover:bg-[var(--color-soft)] md:hidden"
+          >
+            <Menu size={22} />
+          </button>
         </nav>
       </header>
+
+      <MobileDrawer
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onSoonClick={() => {
+          setSoonOpen('청약');
+          setMenuOpen(false);
+        }}
+      />
 
       <SoonModal open={!!soonOpen} topic={soonOpen} onClose={() => setSoonOpen(null)} />
     </>
