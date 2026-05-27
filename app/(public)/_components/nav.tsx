@@ -53,10 +53,10 @@ export function Nav() {
       <MobileDrawer
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
-        onSoonClick={((topic: string) => {
+        onSoonClick={(topic) => {
           setSoonOpen(topic);
           setMenuOpen(false);
-        }) as unknown as () => void}
+        }}
       />
 
       <SoonModal open={!!soonOpen} topic={soonOpen} onClose={() => setSoonOpen(null)} />

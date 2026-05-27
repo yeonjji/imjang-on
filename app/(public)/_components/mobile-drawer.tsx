@@ -9,7 +9,7 @@ import { SearchInput } from './search-input';
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSoonClick: () => void;
+  onSoonClick: (topic: string) => void;
 }
 
 const links = [
@@ -80,7 +80,7 @@ export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
         ))}
 
         <button
-          onClick={onSoonClick}
+          onClick={() => onSoonClick('청약')}
           className="inline-flex items-center gap-1.5 rounded-lg px-2 py-3 text-left text-[15px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-soft)]"
         >
           청약 <Badge tone="gray">Soon</Badge>
