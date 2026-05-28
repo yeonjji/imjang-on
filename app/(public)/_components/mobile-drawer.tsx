@@ -98,9 +98,9 @@ export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
             {LIFE_GROUPS.map((group) => (
               <div key={group.slug} className="py-1">
                 <Link
-                  href={`/life#${group.slug}`}
+                  href={`/life/${group.slug}`}
                   onClick={onClose}
-                  className="flex items-center justify-between rounded-lg px-2 py-3 text-xs font-bold text-[var(--color-blue-dark)] hover:bg-[var(--color-soft)]"
+                  className="mb-1 flex items-center justify-between rounded-lg border-b border-[var(--color-line)] px-2 py-3 text-[14px] font-bold text-[var(--color-blue-dark)] hover:bg-[var(--color-soft)]"
                 >
                   {group.label}
                   <span aria-hidden className="text-[var(--color-muted)]">›</span>
