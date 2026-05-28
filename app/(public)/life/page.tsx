@@ -1,4 +1,5 @@
-import { LIFE_GROUPS } from '../_components/life-menu';
+import Link from 'next/link';
+import { LIFE_GROUPS, LIFE_ITEM_EMOJI } from '../_components/life-menu';
 import { LifeItemCard } from './_components/life-item-card';
 import type { Metadata } from 'next';
 
@@ -9,13 +10,6 @@ export const metadata: Metadata = {
 };
 
 export const revalidate = 86_400;
-
-const ITEM_EMOJI: Record<string, string> = {
-  '학교': '🏫', '어린이집': '👶',
-  '병원·의원': '🏥', '약국': '💊', '보건소': '🩺',
-  '편의점': '🏪', '마트': '🛒', '카페': '☕', '전통시장': '🏬',
-  '공원': '🌳', '충전소': '⚡', '주차장': '🅿️',
-};
 
 export default function LifeHubPage() {
   return (
@@ -31,10 +25,19 @@ export default function LifeHubPage() {
       <div className="flex flex-col gap-12">
         {LIFE_GROUPS.map((group) => (
           <section key={group.slug} id={group.slug} className="scroll-mt-20">
-            <h2 className="mb-3 text-xl font-bold text-[var(--color-blue-dark)]">{group.label}</h2>
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <h2 className="text-xl font-bold text-[var(--color-blue-dark)]">{group.label}</h2>
+              <Link
+                href={`/life/${group.slug}`}
+                aria-label={`${group.label} 더보기`}
+                className="text-sm font-semibold text-[var(--color-blue)] hover:underline focus-visible:underline focus-visible:outline-none"
+              >
+                더보기 →
+              </Link>
+            </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
               {group.items.map((item) => (
-                <LifeItemCard key={item.label} item={item} emoji={ITEM_EMOJI[item.label] ?? '📍'} />
+                <LifeItemCard key={item.label} item={item} emoji={LIFE_ITEM_EMOJI[item.label] ?? '📍'} />
               ))}
             </div>
           </section>

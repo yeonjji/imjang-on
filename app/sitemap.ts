@@ -1,19 +1,25 @@
 import { prisma } from '@/lib/db';
 import { getAllSigungus } from '@/lib/region';
 import { AMENITY_CATEGORIES, AMENITY_SLUGS } from '@/lib/amenity/category';
+import { LIFE_GROUPS } from '@/app/(public)/_components/life-menu';
 import type { MetadataRoute } from 'next';
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://imjang-on.com';
 
 export const revalidate = 86_400;
 
-const STATIC_ENTRIES: MetadataRoute.Sitemap = [
+export const STATIC_ENTRIES: MetadataRoute.Sitemap = [
   { url: `${SITE}/`, changeFrequency: 'daily', priority: 1.0 },
   { url: `${SITE}/apt`, changeFrequency: 'daily', priority: 0.9 },
   { url: `${SITE}/officetel`, changeFrequency: 'daily', priority: 0.9 },
   { url: `${SITE}/villa`, changeFrequency: 'daily', priority: 0.9 },
   { url: `${SITE}/region`, changeFrequency: 'weekly', priority: 0.8 },
   { url: `${SITE}/life`, changeFrequency: 'weekly', priority: 0.8 },
+  ...LIFE_GROUPS.map((g) => ({
+    url: `${SITE}/life/${g.slug}`,
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  })),
   { url: `${SITE}/school`, changeFrequency: 'weekly', priority: 0.8 },
   { url: `${SITE}/school/regions`, changeFrequency: 'weekly', priority: 0.7 },
   ...AMENITY_SLUGS.map((slug) => ({

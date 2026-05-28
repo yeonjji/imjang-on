@@ -8,6 +8,7 @@ import { AmenityFilterPanel } from './_components/amenity-filter-panel';
 import { AmenityMobileFilterSheet } from './_components/amenity-mobile-filter-sheet';
 import { AmenityCard } from './_components/amenity-card';
 import { AmenityPagination } from './_components/amenity-pagination';
+import { SiblingTabs } from '../../_components/sibling-tabs';
 import type { Metadata } from 'next';
 
 export const revalidate = 21_600;
@@ -48,7 +49,8 @@ export default async function AmenityListPage({ params, searchParams }: Params) 
   if (!def) notFound();
 
   if (!sp.sido && !sp.region) {
-    redirect(`/amenity/${category}?sido=서울`);
+    // 한글 sido는 location 헤더 인코딩 필수 (Node http 모듈이 non-ASCII 거부)
+    redirect(`/amenity/${category}?sido=${encodeURIComponent('서울')}`);
   }
 
   const effectiveSido = sp.sido ?? (sp.region ? sidoFromPrefix(sp.region.slice(0, 2)) : undefined);
@@ -76,7 +78,7 @@ export default async function AmenityListPage({ params, searchParams }: Params) 
       <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
         <Link href="/">홈</Link><span>›</span>
         <Link href="/life">생활편의</Link><span>›</span>
-        <Link href="/life#amenity">상권·편의</Link><span>›</span>
+        <Link href="/life/amenity">상권·편의</Link><span>›</span>
         <span className="font-semibold text-[var(--color-blue-dark)]">{def.breadcrumbLabel}</span>
       </nav>
 
@@ -89,6 +91,8 @@ export default async function AmenityListPage({ params, searchParams }: Params) 
           전체 {total.toLocaleString('ko-KR')}개
         </p>
       </div>
+
+      <SiblingTabs currentHref={`/amenity/${category}`} />
 
       <Suspense><AmenityMobileFilterSheet def={defView} basePath={basePath} sidoList={sidoList} /></Suspense>
 

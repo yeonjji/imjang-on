@@ -53,9 +53,9 @@ export function LifeDropdown({ onSoon }: Props) {
           {LIFE_GROUPS.map((group) => (
             <div key={group.slug} className="flex flex-col gap-1">
               <Link
-                href={`/life#${group.slug}`}
+                href={`/life/${group.slug}`}
                 onClick={() => setOpen(false)}
-                className="mb-1 inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[13px] font-bold text-[var(--color-blue-dark)] hover:bg-[var(--color-soft)]"
+                className="mb-1 flex items-center justify-between gap-1 border-b border-[var(--color-line)] px-2 pb-1.5 text-[14px] font-bold text-[var(--color-blue-dark)] hover:bg-[var(--color-soft)]"
               >
                 {group.label}
                 <span aria-hidden className="text-[var(--color-muted)]">›</span>

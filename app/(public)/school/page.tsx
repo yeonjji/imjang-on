@@ -6,6 +6,7 @@ import { SchoolFilterPanel } from './_components/school-filter-panel';
 import { SchoolMobileFilterSheet } from './_components/school-mobile-filter-sheet';
 import { SchoolCard } from './_components/school-card';
 import { SchoolPagination } from './_components/school-pagination';
+import { SiblingTabs } from '../_components/sibling-tabs';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -52,6 +53,8 @@ export default async function SchoolListPage({ searchParams }: Props) {
           📍 지역별 학교 찾기 →
         </Link>
       </div>
+
+      <SiblingTabs currentHref="/school" />
 
       <Suspense><SchoolMobileFilterSheet basePath={basePath} sidoList={sidoList} /></Suspense>
 
