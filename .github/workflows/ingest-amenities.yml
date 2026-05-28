@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       source:
-        description: 'ev-charger | traditional-market | store | park | school'
+        description: 'ev-charger | traditional-market | store | park | school | childcare'
         required: true
         default: 'ev-charger'
 
@@ -16,12 +16,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        source: ${{ github.event_name == 'workflow_dispatch' && fromJson(format('["{0}"]', inputs.source)) || fromJson('["ev-charger","traditional-market","store","park","school"]') }}
+        source: ${{ github.event_name == 'workflow_dispatch' && fromJson(format('["{0}"]', inputs.source)) || fromJson('["ev-charger","traditional-market","store","park","school","childcare"]') }}
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
       PUBLIC_DATA_KEY: ${{ secrets.PUBLIC_DATA_KEY }}
       NEIS_API_KEY: ${{ secrets.NEIS_API_KEY }}
+      CHILDCARE_API_KEY: ${{ secrets.CHILDCARE_API_KEY }}
       KAKAO_REST_KEY: ${{ secrets.KAKAO_REST_KEY }}
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
       LOG_LEVEL: info
