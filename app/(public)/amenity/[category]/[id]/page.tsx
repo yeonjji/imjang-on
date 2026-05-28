@@ -74,7 +74,7 @@ export default async function AmenityDetailPage({ params }: Params) {
       <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
         <Link href="/">홈</Link><span>›</span>
         <Link href="/life">생활편의</Link><span>›</span>
-        <Link href="/life#amenity">상권·편의</Link><span>›</span>
+        <Link href="/life/amenity">상권·편의</Link><span>›</span>
         <Link href={`/amenity/${def.slug}`}>{def.breadcrumbLabel}</Link><span>›</span>
         {region && (
           <>
