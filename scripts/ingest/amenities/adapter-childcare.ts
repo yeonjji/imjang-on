@@ -157,13 +157,12 @@ export function parseChildcareXml(
 
 export { BASE_URL };
 
-import { logger } from '@/lib/logger';
-
 export async function fetchAllChildcare(): Promise<NormalizedChildcare[]> {
   const { env } = await import('@/lib/env');
   const { prisma } = await import('@/lib/db');
   const { fetchAmenityPage } = await import('./http');
   const { enrichWithGeocode } = await import('./geocode-fill');
+  const { logger } = await import('@/lib/logger');
 
   const key = env.CHILDCARE_API_KEY;
   if (!key) throw new Error('CHILDCARE_API_KEY is required');
