@@ -16,10 +16,11 @@ const STATIC_ENTRIES: MetadataRoute.Sitemap = [
   { url: `${SITE}/life`, changeFrequency: 'weekly', priority: 0.8 },
   { url: `${SITE}/school`, changeFrequency: 'weekly', priority: 0.8 },
   { url: `${SITE}/school/regions`, changeFrequency: 'weekly', priority: 0.7 },
-  ...AMENITY_SLUGS.flatMap((slug) => [
-    { url: `${SITE}/amenity/${slug}`, changeFrequency: 'weekly' as const, priority: 0.8 },
-    { url: `${SITE}/amenity/${slug}/regions`, changeFrequency: 'weekly' as const, priority: 0.7 },
-  ]),
+  ...AMENITY_SLUGS.map((slug) => ({
+    url: `${SITE}/amenity/${slug}`,
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  })),
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
