@@ -49,7 +49,8 @@ export default async function AmenityListPage({ params, searchParams }: Params) 
   if (!def) notFound();
 
   if (!sp.sido && !sp.region) {
-    redirect(`/amenity/${category}?sido=서울`);
+    // 한글 sido는 location 헤더 인코딩 필수 (Node http 모듈이 non-ASCII 거부)
+    redirect(`/amenity/${category}?sido=${encodeURIComponent('서울')}`);
   }
 
   const effectiveSido = sp.sido ?? (sp.region ? sidoFromPrefix(sp.region.slice(0, 2)) : undefined);
