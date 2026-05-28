@@ -6,7 +6,7 @@ import { getSigunguByCode } from '@/lib/region';
 import { getNearbyApartments, getSchoolNearbyAmenities } from '@/lib/amenity/nearby';
 import { SchoolHero } from './_components/school-hero';
 import { SchoolInfo } from './_components/school-info';
-import { NearbyApartments } from './_components/nearby-apartments';
+import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { NearbyAmenities } from './_components/nearby-amenities';
 import { SchoolDetailSidebar } from './_components/school-detail-sidebar';
 import { NaverMap } from '@/components/ui/naver-map';
