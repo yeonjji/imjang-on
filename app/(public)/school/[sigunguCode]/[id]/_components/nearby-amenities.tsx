@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import type { NearbyPark, NearbyStore, NearbyEvCharger } from '@/lib/amenity';
+import type { NearbyPark, NearbyStore, NearbyEvCharger } from '@/lib/amenity/nearby';
 
 interface Props { parks: NearbyPark[]; mart: NearbyStore[]; chargers: NearbyEvCharger[]; }
 type Tab = 'park' | 'mart' | 'charger';

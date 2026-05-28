@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { getAllSigungus } from '@/lib/region';
+import { AMENITY_CATEGORIES, AMENITY_SLUGS } from '@/lib/amenity/category';
 import type { MetadataRoute } from 'next';
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://imjang-on.com';
@@ -15,13 +16,17 @@ const STATIC_ENTRIES: MetadataRoute.Sitemap = [
   { url: `${SITE}/life`, changeFrequency: 'weekly', priority: 0.8 },
   { url: `${SITE}/school`, changeFrequency: 'weekly', priority: 0.8 },
   { url: `${SITE}/school/regions`, changeFrequency: 'weekly', priority: 0.7 },
+  ...AMENITY_SLUGS.flatMap((slug) => [
+    { url: `${SITE}/amenity/${slug}`, changeFrequency: 'weekly' as const, priority: 0.8 },
+    { url: `${SITE}/amenity/${slug}/regions`, changeFrequency: 'weekly' as const, priority: 0.7 },
+  ]),
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // DB 장애 시에도 최소 entries로 빌드가 깨지지 않도록 보호
   // (revalidate 1일 안에 자동 복구)
   try {
-    const [sigungus, properties, schoolSigungus] = await Promise.all([
+    const [sigungus, properties, schoolSigungus, amenityCountsBySlug] = await Promise.all([
       prisma.region.findMany({
         where: { level: 2, isAbolished: false },
         select: { code: true },
@@ -31,6 +36,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         select: { id: true, propertyType: true, updatedAt: true },
       }),
       getAllSigungus().catch(() => []),
+      Promise.all(
+        AMENITY_SLUGS.map(async (slug) => ({
+          slug,
+          counts: await AMENITY_CATEGORIES[slug].getCountsBySigungu().catch(() => new Map<string, number>()),
+        })),
+      ),
     ]);
 
     const entries: MetadataRoute.Sitemap = [...STATIC_ENTRIES];
@@ -48,6 +59,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'weekly',
         priority: 0.7,
       });
+    }
+    for (const { slug, counts } of amenityCountsBySlug) {
+      for (const [sigunguCode, count] of counts) {
+        if (count <= 0) continue;
+        entries.push({
+          url: `${SITE}/amenity/${slug}/${sigunguCode}`,
+          changeFrequency: 'weekly',
+          priority: 0.6,
+        });
+      }
     }
     for (const p of properties) {
       const prefix =

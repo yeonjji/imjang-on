@@ -1,0 +1,22 @@
+import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
+import type { AmenityCategoryDef, AmenityItem } from '@/lib/amenity/category';
+
+export function AmenityCard({ item, def, basePath }: { item: AmenityItem; def: AmenityCategoryDef; basePath: string }) {
+  const summary = def.inferRowSummary(item);
+  return (
+    <Link href={`${basePath}/${item.id}`}>
+      <article className="flex items-center gap-4 rounded-[18px] border border-[var(--color-line)] bg-white px-5 py-4 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-sky)]">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[var(--color-sky-soft)] text-2xl">{def.emoji}</div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-base font-bold text-[var(--color-blue-dark)]">{item.name}</h3>
+            {summary && <Badge tone="blue">{summary}</Badge>}
+          </div>
+          <p className="mt-1.5 truncate text-sm text-[var(--color-muted)]">{item.address}</p>
+        </div>
+        <span className="shrink-0 text-xs text-[var(--color-muted)]">상세 →</span>
+      </article>
+    </Link>
+  );
+}

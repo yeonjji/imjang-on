@@ -208,13 +208,17 @@ model EvChargerUnit {
 }
 
 model TraditionalMarket {
-  id         BigInt                                @id @default(autoincrement())
-  sourceId   String                                @unique @db.VarChar(80)
-  name       String                                @db.VarChar(100)
-  address    String                                @db.VarChar(200)
-  location   Unsupported("geography(Point,4326)")?
-  marketType String?                               @db.VarChar(40)
-  updatedAt  DateTime                              @updatedAt
+  id          BigInt                                @id @default(autoincrement())
+  sourceId    String                                @unique @db.VarChar(80)
+  name        String                                @db.VarChar(100)
+  address     String                                @db.VarChar(200)
+  location    Unsupported("geography(Point,4326)")?
+  marketType  String?                               @db.VarChar(40)
+  sigunguCode String?                               @db.VarChar(5)
+  updatedAt   DateTime                              @updatedAt
+
+  @@index([sigunguCode])
+  @@index([marketType])
 }
 
 model Store {
