@@ -32,8 +32,8 @@ function pickDate(item: Record<string, unknown>, key: string): Date | null {
 }
 
 function pickCoord(item: Record<string, unknown>): { lat: number | null; lng: number | null } {
-  const lat = Number(item.la);
-  const lng = Number(item.lo);
+  const lat = item.la != null && item.la !== '' ? Number(item.la) : NaN;
+  const lng = item.lo != null && item.lo !== '' ? Number(item.lo) : NaN;
   if (
     Number.isFinite(lat) &&
     Number.isFinite(lng) &&
@@ -46,9 +46,9 @@ function pickCoord(item: Record<string, unknown>): { lat: number | null; lng: nu
 }
 
 export function detectChildcareError(body: string): 'key' | 'rate' | 'server' | null {
-  if (/INFO-100|INFO-400/.test(body)) return 'key';
-  if (/INFO-300/.test(body)) return 'rate';
-  if (/ERROR-100|ERROR-200/.test(body)) return 'server';
+  if (/\bINFO-100\b|\bINFO-400\b/.test(body)) return 'key';
+  if (/\bINFO-300\b/.test(body)) return 'rate';
+  if (/\bERROR-100\b|\bERROR-200\b/.test(body)) return 'server';
   return null;
 }
 
@@ -120,6 +120,7 @@ export function parseChildcareXml(
       childCntM5: pickInt(item, 'child_cnt_m5'),
       childCntSp: pickInt(item, 'child_cnt_sp'),
       childCntTot: pickInt(item, 'child_cnt_tot'),
+      // API has no em_cnt_3y band (2y → 4y)
       emTenure0y: pickInt(item, 'em_cnt_0y'),
       emTenure1y: pickInt(item, 'em_cnt_1y'),
       emTenure2y: pickInt(item, 'em_cnt_2y'),
