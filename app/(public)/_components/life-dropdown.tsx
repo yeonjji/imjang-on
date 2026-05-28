@@ -51,10 +51,15 @@ export function LifeDropdown({ onSoon }: Props) {
           className="absolute left-0 top-[calc(100%+14px)] z-30 grid w-[640px] grid-cols-4 gap-5 rounded-2xl border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]"
         >
           {LIFE_GROUPS.map((group) => (
-            <div key={group.label} className="flex flex-col gap-1">
-              <p className="mb-1 px-2 text-[13px] font-bold text-[var(--color-blue-dark)]">
+            <div key={group.slug} className="flex flex-col gap-1">
+              <Link
+                href={`/life#${group.slug}`}
+                onClick={() => setOpen(false)}
+                className="mb-1 inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[13px] font-bold text-[var(--color-blue-dark)] hover:bg-[var(--color-soft)]"
+              >
                 {group.label}
-              </p>
+                <span aria-hidden className="text-[var(--color-muted)]">›</span>
+              </Link>
               {group.items.map((item) =>
                 item.live ? (
                   <Link
