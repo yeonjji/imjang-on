@@ -38,3 +38,26 @@ export async function getAllSigungus() {
     orderBy: [{ sido: 'asc' }, { sigungu: 'asc' }],
   });
 }
+
+const SIDO_PREFIX: Record<string, string> = {
+  '서울': '11', '부산': '26', '대구': '27', '인천': '28',
+  '광주': '29', '대전': '30', '울산': '31', '세종': '36',
+  '경기': '41', '강원': '51', '충북': '43', '충남': '44',
+  '전북': '52', '전남': '46', '경북': '47', '경남': '48',
+  '제주': '50',
+};
+
+export function sidoPrefix(sido: string): string | undefined {
+  if (!sido) return undefined;
+  return SIDO_PREFIX[sido]
+    ?? SIDO_PREFIX[sido.replace(/(특별시|광역시|특별자치시|특별자치도|도)$/, '')];
+}
+
+const PREFIX_TO_SIDO: Record<string, string> = Object.fromEntries(
+  Object.entries(SIDO_PREFIX).map(([k, v]) => [v, k]),
+);
+
+export function sidoFromPrefix(prefix: string): string | undefined {
+  if (!prefix) return undefined;
+  return PREFIX_TO_SIDO[prefix];
+}
