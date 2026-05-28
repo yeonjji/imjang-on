@@ -1,0 +1,92 @@
+-- CreateTable
+CREATE TABLE "Childcare" (
+    "id" BIGSERIAL NOT NULL,
+    "sourceId" VARCHAR(11) NOT NULL,
+    "name" VARCHAR(150) NOT NULL,
+    "crType" VARCHAR(20),
+    "status" VARCHAR(10),
+    "vehicleOp" VARCHAR(10),
+    "services" VARCHAR(150),
+    "sido" VARCHAR(20),
+    "sigungu" VARCHAR(20),
+    "sigunguCode" VARCHAR(5) NOT NULL,
+    "zipcode" VARCHAR(6),
+    "address" VARCHAR(300) NOT NULL,
+    "tel" VARCHAR(14),
+    "fax" VARCHAR(14),
+    "homepage" VARCHAR(150),
+    "repName" VARCHAR(60),
+    "location" geography(Point,4326),
+    "roomCount" INTEGER,
+    "roomSize" DOUBLE PRECISION,
+    "playgroundCount" INTEGER,
+    "cctvCount" INTEGER,
+    "staffCount" INTEGER,
+    "capacity" INTEGER,
+    "currentCount" INTEGER,
+    "confirmDate" DATE,
+    "pauseBeginDate" DATE,
+    "pauseEndDate" DATE,
+    "abolishDate" DATE,
+    "dataStdDate" DATE,
+    "classCnt00" INTEGER,
+    "classCnt01" INTEGER,
+    "classCnt02" INTEGER,
+    "classCnt03" INTEGER,
+    "classCnt04" INTEGER,
+    "classCnt05" INTEGER,
+    "classCntM2" INTEGER,
+    "classCntM3" INTEGER,
+    "classCntM5" INTEGER,
+    "classCntSp" INTEGER,
+    "classCntTot" INTEGER,
+    "childCnt00" INTEGER,
+    "childCnt01" INTEGER,
+    "childCnt02" INTEGER,
+    "childCnt03" INTEGER,
+    "childCnt04" INTEGER,
+    "childCnt05" INTEGER,
+    "childCntM2" INTEGER,
+    "childCntM3" INTEGER,
+    "childCntM5" INTEGER,
+    "childCntSp" INTEGER,
+    "childCntTot" INTEGER,
+    "emTenure0y" INTEGER,
+    "emTenure1y" INTEGER,
+    "emTenure2y" INTEGER,
+    "emTenure4y" INTEGER,
+    "emTenure6y" INTEGER,
+    "emRoleDirector" INTEGER,
+    "emRoleTeacher" INTEGER,
+    "emRoleSpecial" INTEGER,
+    "emRoleTherapy" INTEGER,
+    "emRoleNutrition" INTEGER,
+    "emRoleNurse" INTEGER,
+    "emRoleNurseAssist" INTEGER,
+    "emRoleCook" INTEGER,
+    "emRoleOffice" INTEGER,
+    "emRoleTot" INTEGER,
+    "waitCnt00" INTEGER,
+    "waitCnt01" INTEGER,
+    "waitCnt02" INTEGER,
+    "waitCnt03" INTEGER,
+    "waitCnt04" INTEGER,
+    "waitCnt05" INTEGER,
+    "waitCntM6" INTEGER,
+    "waitCntTot" INTEGER,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Childcare_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Childcare_sourceId_key" ON "Childcare"("sourceId");
+
+-- CreateIndex
+CREATE INDEX "Childcare_sigunguCode_status_idx" ON "Childcare"("sigunguCode", "status");
+
+-- CreateIndex
+CREATE INDEX "Childcare_crType_idx" ON "Childcare"("crType");
+
+-- PostGIS GIST index
+CREATE INDEX IF NOT EXISTS "Childcare_location_idx" ON "Childcare" USING GIST ("location");
