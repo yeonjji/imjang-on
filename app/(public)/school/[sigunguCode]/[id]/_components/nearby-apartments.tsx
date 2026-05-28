@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { formatBillion } from '@/lib/format';
-import type { NearbyApartment } from '@/lib/amenity';
+import type { NearbyApartment } from '@/lib/amenity/nearby';
 
 export function NearbyApartments({ items }: { items: NearbyApartment[] }) {
   if (items.length === 0) return null;

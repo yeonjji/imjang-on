@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { getSchoolById, getSchoolList } from '@/lib/school';
 import { getSigunguByCode } from '@/lib/region';
-import { getNearbyApartments, getSchoolNearbyAmenities } from '@/lib/amenity';
+import { getNearbyApartments, getSchoolNearbyAmenities } from '@/lib/amenity/nearby';
 import { SchoolHero } from './_components/school-hero';
 import { SchoolInfo } from './_components/school-info';
 import { NearbyApartments } from './_components/nearby-apartments';
@@ -12,7 +12,7 @@ import { SchoolDetailSidebar } from './_components/school-detail-sidebar';
 import { NaverMap } from '@/components/ui/naver-map';
 import { Card } from '@/components/ui/card';
 import type { Metadata } from 'next';
-import type { NearbyApartment } from '@/lib/amenity';
+import type { NearbyApartment } from '@/lib/amenity/nearby';
 
 export const revalidate = 86_400;
 
