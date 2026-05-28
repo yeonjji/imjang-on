@@ -48,6 +48,8 @@ test('모바일: 카드 가로 스크롤 없음 (375px)', async ({ page }) => {
 test('모바일 페이지네이션: 이전/다음 버튼만 노출', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/list?page=2');
-  await expect(page.getByRole('button', { name: 'prev' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'next' })).toBeVisible();
+  // Next.js dev mode가 "Open Next.js Dev Tools" 버튼을 띄워 strict 매칭 충돌
+  // → exact: true로 페이지네이션 버튼만 잡음
+  await expect(page.getByRole('button', { name: 'prev', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'next', exact: true })).toBeVisible();
 });

@@ -39,7 +39,6 @@ jobs:
         continue-on-error: true
 
   e2e:
-    if: github.event_name == 'push'
     needs: check
     runs-on: ubuntu-latest
     services:
