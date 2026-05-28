@@ -10,7 +10,19 @@ const ANCHORS = [
   { href: '#same', label: '같은 카테고리' },
 ];
 
-export function AmenityDetailSidebar({ basePath, others, def }: { basePath: string; others: AmenityItem[]; def: AmenityCategoryDef }) {
+export function AmenityDetailSidebar({
+  others,
+  def,
+  sigunguCode,
+}: {
+  others: AmenityItem[];
+  def: AmenityCategoryDef;
+  sigunguCode?: string | null;
+}) {
+  const regionListHref = sigunguCode
+    ? `/amenity/${def.slug}?region=${sigunguCode}`
+    : `/amenity/${def.slug}`;
+
   return (
     <div className="sticky top-24 flex flex-col gap-4">
       <Card>
@@ -23,8 +35,14 @@ export function AmenityDetailSidebar({ basePath, others, def }: { basePath: stri
         <Card>
           <h3 className="mb-3 text-sm font-bold text-[var(--color-blue-dark)]">같은 지역 다른 {def.label}</h3>
           <ul className="flex flex-col gap-2">
-            {others.map((it) => <li key={String(it.id)}><Link href={`${basePath}/${it.id}`} className="text-sm hover:text-[var(--color-blue)]">· {it.name}</Link></li>)}
-            <li><Link href={basePath} className="text-sm font-semibold text-[var(--color-blue)]">지역 {def.label} 전체 →</Link></li>
+            {others.map((it) => (
+              <li key={String(it.id)}>
+                <Link href={`/amenity/${def.slug}/${it.id}`} className="text-sm hover:text-[var(--color-blue)]">· {it.name}</Link>
+              </li>
+            ))}
+            <li>
+              <Link href={regionListHref} className="text-sm font-semibold text-[var(--color-blue)]">지역 {def.label} 전체 →</Link>
+            </li>
           </ul>
         </Card>
       )}
