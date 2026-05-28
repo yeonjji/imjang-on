@@ -58,3 +58,25 @@ export interface AmenityCategoryDef {
   /** 시군구 picker / 허브용 카운트 (groupBy 결과) */
   getCountsBySigungu(): Promise<Map<string, number>>;
 }
+
+// --- 레지스트리 ---
+import { convenienceDef } from './adapters/convenience';
+import { cafeDef } from './adapters/cafe';
+import { martDef } from './adapters/mart';
+import { marketDef } from './adapters/market';
+
+export const AMENITY_SLUGS = ['convenience', 'mart', 'cafe', 'market'] as const satisfies readonly AmenitySlug[];
+
+export const AMENITY_CATEGORIES: Record<AmenitySlug, AmenityCategoryDef> = {
+  convenience: convenienceDef,
+  mart: martDef,
+  cafe: cafeDef,
+  market: marketDef,
+};
+
+export function getCategoryDef(slug: string): AmenityCategoryDef | null {
+  if ((AMENITY_SLUGS as readonly string[]).includes(slug)) {
+    return AMENITY_CATEGORIES[slug as AmenitySlug];
+  }
+  return null;
+}
