@@ -8,6 +8,7 @@ import { AmenityFilterPanel } from './_components/amenity-filter-panel';
 import { AmenityMobileFilterSheet } from './_components/amenity-mobile-filter-sheet';
 import { AmenityCard } from './_components/amenity-card';
 import { AmenityPagination } from './_components/amenity-pagination';
+import { SiblingTabs } from '../../_components/sibling-tabs';
 import type { Metadata } from 'next';
 
 export const revalidate = 21_600;
@@ -89,6 +90,8 @@ export default async function AmenityListPage({ params, searchParams }: Params) 
           전체 {total.toLocaleString('ko-KR')}개
         </p>
       </div>
+
+      <SiblingTabs currentHref={`/amenity/${category}`} />
 
       <Suspense><AmenityMobileFilterSheet def={defView} basePath={basePath} sidoList={sidoList} /></Suspense>
 
