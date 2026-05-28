@@ -16,7 +16,8 @@ test.describe('amenity mart happy path', () => {
     await expect(firstCard).toBeVisible();
     await firstCard.click();
 
-    await expect(page.getByRole('heading', { name: /주변 아파트/ })).toBeVisible({ timeout: 5000 });
+    // DETAIL 진입 검증 — "위치" h2는 NaverMap 섹션으로 항상 렌더 (주변 아파트는 nearby 0건일 때 hide)
+    await expect(page.getByRole('heading', { name: '위치' })).toBeVisible({ timeout: 5000 });
   });
 
   test('sub-filter(대형마트) → URL ?sub=hyper', async ({ page }) => {
