@@ -1,7 +1,7 @@
 <response>
   <item>
     <sidoname>서울특별시</sidoname>
-    <sigunguname>송파구</sigunguname>
+    <sigunname>송파구</sigunname>
     <stcode>11620000341</stcode>
     <crname>1111어린이집</crname>
     <crtypename>가정</crtypename>
@@ -27,18 +27,18 @@
     <crabldt></crabldt>
     <datastdrdt>2019-04-01</datastdrdt>
     <crspec>시간연장형,일시보육</crspec>
-    <class_cnt_tot>7</class_cnt_tot>
-    <child_cnt_tot>70</child_cnt_tot>
-    <em_cnt_a1>1</em_cnt_a1>
-    <em_cnt_a2>4</em_cnt_a2>
-    <em_cnt_tot>7</em_cnt_tot>
-    <crrepname>홍길동</crrepname>
-    <ew_cnt_01>4</ew_cnt_01>
-    <ew_cnt_tot>18</ew_cnt_tot>
+    <CLASS_CNT_TOT>7</CLASS_CNT_TOT>
+    <CHILD_CNT_TOT>70</CHILD_CNT_TOT>
+    <EM_CNT_A1>1</EM_CNT_A1>
+    <EM_CNT_A2>4</EM_CNT_A2>
+    <EM_CNT_TOT>7</EM_CNT_TOT>
+    <CRREPNAME>홍길동</CRREPNAME>
+    <EW_CNT_01>4</EW_CNT_01>
+    <EW_CNT_TOT>18</EW_CNT_TOT>
   </item>
   <item>
     <sidoname>전라북도</sidoname>
-    <sigunguname>전주시 완산구</sigunguname>
+    <sigunname>전주시 완산구</sigunname>
     <stcode>11200000040</stcode>
     <crname>2222어린이집</crname>
     <crtypename>민간</crtypename>
@@ -57,6 +57,6 @@
     <crabldt>2015-05-04</crabldt>
     <datastdrdt>2019-04-01</datastdrdt>
     <crspec>일반</crspec>
-    <crrepname>홍길동2</crrepname>
+    <CRREPNAME>홍길동2</CRREPNAME>
   </item>
 </response>

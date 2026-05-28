@@ -59,6 +59,11 @@ describe('adapter-childcare', () => {
     expect(b.abolishDate?.toISOString().slice(0, 10)).toBe('2015-05-04');
   });
 
+  it('미인증 템플릿(매니페스트) 응답은 데이터로 취급하지 않는다', () => {
+    const manifest = '<response><item><sidoname>01</sidoname><sigunname>02</sigunname><stcode>03</stcode><crname>04</crname><la>19</la><lo>20</lo></item></response>';
+    expect(parseChildcareXml(manifest, '11380')).toEqual([]);
+  });
+
   it('정보/에러 코드를 분류한다', () => {
     expect(detectChildcareError('<response>INFO-100</response>')).toBe('key');
     expect(detectChildcareError('<response>INFO-300</response>')).toBe('rate');
