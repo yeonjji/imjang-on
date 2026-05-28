@@ -31,7 +31,13 @@ export async function generateMetadata({ params, searchParams }: Params): Promis
   return {
     title: `${scope} ${def.label}`,
     description: `${scope}의 ${def.label} 목록과 위치, 주변 아파트 실거래가.`,
-    alternates: { canonical: `/amenity/${def.slug}${sp.sido ? `?sido=${encodeURIComponent(sp.sido)}` : ''}` },
+    alternates: {
+      canonical: sp.region
+        ? `/amenity/${def.slug}?region=${sp.region}`
+        : sp.sido
+          ? `/amenity/${def.slug}?sido=${encodeURIComponent(sp.sido)}`
+          : `/amenity/${def.slug}`,
+    },
   };
 }
 
