@@ -150,3 +150,46 @@ export function parseChildcareXml(
 }
 
 export { BASE_URL };
+
+import { logger } from '@/lib/logger';
+
+export async function fetchAllChildcare(): Promise<NormalizedChildcare[]> {
+  const { env } = await import('@/lib/env');
+  const { prisma } = await import('@/lib/db');
+  const { fetchAmenityPage } = await import('./http');
+  const { enrichWithGeocode } = await import('./geocode-fill');
+
+  const key = env.CHILDCARE_API_KEY;
+  if (!key) throw new Error('CHILDCARE_API_KEY is required');
+
+  const regions = await prisma.region.findMany({
+    where: { sigunguCode: { not: null } },
+    distinct: ['sigunguCode'],
+    select: { sigunguCode: true },
+  });
+  const arcodes = regions
+    .map((r) => r.sigunguCode)
+    .filter((c): c is string => !!c)
+    .sort();
+
+  logger.info({ arcodes: arcodes.length }, 'childcare ingest: arcode 순회 시작');
+
+  const all: NormalizedChildcare[] = [];
+  let done = 0;
+  for (const arcode of arcodes) {
+    const body = await fetchAmenityPage(BASE_URL, { key, arcode, stcode: '' });
+    const errKind = detectChildcareError(body);
+    if (errKind === 'key') throw new Error(`childcare 인증키 오류(INFO-100/400) arcode=${arcode}`);
+    if (errKind === 'rate') throw new Error(`childcare 일 요청 한도 초과(INFO-300) arcode=${arcode} — 재실행 필요`);
+    if (errKind === 'server') throw new Error(`childcare 서버 오류(ERROR) arcode=${arcode}`);
+
+    const rows = parseChildcareXml(body, arcode);
+    all.push(...rows);
+    done++;
+    if (done === 1 || done % 30 === 0) {
+      logger.info({ done, total: arcodes.length, fetched: all.length }, 'childcare 진행');
+    }
+  }
+
+  return enrichWithGeocode(all);
+}
