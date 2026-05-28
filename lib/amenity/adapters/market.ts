@@ -1,0 +1,136 @@
+import type { Prisma } from '@prisma/client';
+import { prisma } from '@/lib/db';
+import type {
+  AmenityCategoryDef,
+  AmenityItem,
+  AmenityListFilter,
+  AmenityListResult,
+} from '@/lib/amenity/category';
+
+const PER_PAGE = 30;
+
+type MarketSub = 'all' | 'permanent' | 'periodic' | 'unknown';
+
+export function classifyMarketSub(marketType: string | null): MarketSub {
+  const v = (marketType ?? '').trim();
+  if (!v) return 'unknown';
+  if (v.includes('상설')) return 'permanent';
+  if (v.includes('정기') || v.includes('일장')) return 'periodic';
+  return 'unknown';
+}
+
+function normalizeSub(sub: string | undefined): MarketSub {
+  return sub === 'permanent' || sub === 'periodic' ? sub : 'all';
+}
+
+export function buildMarketWhere(f: AmenityListFilter): Prisma.TraditionalMarketWhereInput {
+  const where: Prisma.TraditionalMarketWhereInput = {};
+  if (f.sigunguCode) where.sigunguCode = f.sigunguCode;
+  const sub = normalizeSub(f.sub);
+  if (sub === 'permanent') where.marketType = { contains: '상설' };
+  else if (sub === 'periodic')
+    where.OR = [
+      { marketType: { contains: '정기' } },
+      { marketType: { contains: '일장' } },
+    ];
+  if (f.q) where.name = { contains: f.q };
+  return where;
+}
+
+function toItem(m: {
+  id: bigint;
+  name: string;
+  address: string;
+  sigunguCode: string | null;
+  marketType: string | null;
+}): AmenityItem {
+  return {
+    id: m.id,
+    name: m.name,
+    address: m.address,
+    sigunguCode: m.sigunguCode,
+    marketType: m.marketType,
+  };
+}
+
+async function getList(f: AmenityListFilter, page: number): Promise<AmenityListResult> {
+  const where = buildMarketWhere(f);
+  // 시군구가 지정되지 않은 LIST는 sigunguCode가 있는 row만 노출 (DETAIL URL 일관성)
+  if (!f.sigunguCode) where.sigunguCode = { not: null };
+  const [rows, total] = await Promise.all([
+    prisma.traditionalMarket.findMany({
+      where,
+      orderBy: { name: 'asc' },
+      skip: (page - 1) * PER_PAGE,
+      take: PER_PAGE,
+      select: { id: true, name: true, address: true, sigunguCode: true, marketType: true },
+    }),
+    prisma.traditionalMarket.count({ where }),
+  ]);
+  return {
+    rows: rows.map(toItem),
+    total,
+    page,
+    perPage: PER_PAGE,
+    totalPages: Math.ceil(total / PER_PAGE),
+  };
+}
+
+async function getById(id: bigint): Promise<AmenityItem | null> {
+  const m = await prisma.traditionalMarket.findUnique({
+    where: { id },
+    select: { id: true, name: true, address: true, sigunguCode: true, marketType: true },
+  });
+  return m ? toItem(m) : null;
+}
+
+async function getLatLng(id: bigint): Promise<{ lat: number; lng: number } | null> {
+  const rows = await prisma.$queryRaw<{ lat: number; lng: number }[]>`
+    SELECT ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng
+    FROM "TraditionalMarket" WHERE id = ${id} AND location IS NOT NULL
+  `;
+  return rows[0] ?? null;
+}
+
+async function getCountsBySigungu(): Promise<Map<string, number>> {
+  const grouped = await prisma.traditionalMarket.groupBy({
+    by: ['sigunguCode'],
+    where: { sigunguCode: { not: null } },
+    _count: { _all: true },
+  });
+  const map = new Map<string, number>();
+  for (const g of grouped) if (g.sigunguCode) map.set(g.sigunguCode, g._count._all);
+  return map;
+}
+
+function inferRowSummary(row: AmenityItem): string | null {
+  const k = classifyMarketSub(row.marketType ?? null);
+  if (k === 'permanent') return '상설시장';
+  if (k === 'periodic') return '정기시장';
+  return row.marketType ?? null;
+}
+
+export const marketDef: AmenityCategoryDef = {
+  slug: 'market',
+  label: '전통시장',
+  emoji: '🏬',
+  breadcrumbLabel: '전통시장',
+  subFilters: {
+    paramKey: 'sub',
+    defaultSlug: 'all',
+    options: [
+      { slug: 'all', label: '전체' },
+      { slug: 'permanent', label: '상설' },
+      { slug: 'periodic', label: '정기·N일장' },
+    ],
+  },
+  getList,
+  getById,
+  getLatLng,
+  inferRowSummary,
+  detailFields: (item) => [
+    { label: '시장 유형', value: item.marketType ?? '-' },
+    { label: '분류', value: inferRowSummary(item) ?? '-' },
+  ],
+  getCountsBySigungu,
+};
