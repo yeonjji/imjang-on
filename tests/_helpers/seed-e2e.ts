@@ -93,6 +93,19 @@ async function main() {
     })),
   });
 
+  // amenity LIST e2e용 — /amenity/mart 에 표시될 대형마트 1개
+  // (industryCode 'G20402' = 대형마트, mart adapter PREFIX_HYPER)
+  await prisma.store.create({
+    data: {
+      sourceId: 'e2e-mart-hyper-1',
+      name: 'e2e 대형마트',
+      address: '서울특별시 서초구 서초동',
+      industryCode: 'G20402',
+      industryName: '대형마트',
+      sigunguCode: '11650',
+    },
+  });
+
   console.log('e2e seed done. propertyId =', String(p.id));
   await prisma.$disconnect();
 }
