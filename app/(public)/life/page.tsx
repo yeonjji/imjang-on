@@ -29,7 +29,8 @@ export default function LifeHubPage() {
               <h2 className="text-xl font-bold text-[var(--color-blue-dark)]">{group.label}</h2>
               <Link
                 href={`/life/${group.slug}`}
-                className="text-sm font-semibold text-[var(--color-blue)] hover:underline"
+                aria-label={`${group.label} 더보기`}
+                className="text-sm font-semibold text-[var(--color-blue)] hover:underline focus-visible:underline focus-visible:outline-none"
               >
                 더보기 →
               </Link>
