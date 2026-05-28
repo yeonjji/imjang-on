@@ -7,6 +7,7 @@ import { fetchAllTraditionalMarkets } from './adapter-traditional-market';
 import { fetchStoresByUpjong, STORE_UPJONG_TARGETS } from './adapter-store';
 import { fetchAllParks } from './adapter-park';
 import { fetchAllSchools } from './adapter-school';
+import { fetchAllChildcare } from './adapter-childcare';
 import { AMENITY_INGEST_SOURCE } from './types';
 import type {
   AmenitySourceKey,
@@ -16,6 +17,7 @@ import type {
   NormalizedStore,
   NormalizedPark,
   NormalizedSchool,
+  NormalizedChildcare,
 } from './types';
 
 // Pro Compute로 상향 후 청크를 키워 INSERT 횟수 감소
@@ -39,8 +41,8 @@ function locationSql(lat: number | null, lng: number | null) {
 function parseArgs(): { source: AmenitySourceKey } {
   const args = process.argv.slice(2);
   const raw = args.find((a) => a.startsWith('--source='))?.split('=')[1];
-  if (!raw || !['ev-charger', 'traditional-market', 'store', 'park', 'school'].includes(raw)) {
-    throw new Error(`--source must be one of: ev-charger, traditional-market, store, park, school. Got: ${raw}`);
+  if (!raw || !['ev-charger', 'traditional-market', 'store', 'park', 'school', 'childcare'].includes(raw)) {
+    throw new Error(`--source must be one of: ev-charger, traditional-market, store, park, school, childcare. Got: ${raw}`);
   }
   return { source: raw as AmenitySourceKey };
 }
@@ -66,6 +68,8 @@ async function main() {
       upserted = await ingestParks();
     } else if (source === 'school') {
       upserted = await ingestSchools();
+    } else if (source === 'childcare') {
+      upserted = await ingestChildcare();
     } else {
       upserted = await ingestStores();
     }
@@ -264,6 +268,53 @@ async function ingestSchools(): Promise<number> {
         homepage = EXCLUDED.homepage,
         "updatedAt" = NOW()
     `;
+  }
+  return rows.length;
+}
+
+// Childcare는 컬럼이 60+개라 수동 나열 대신 정규화 row의 키로 INSERT를 구성한다.
+const CHILDCARE_COLUMNS: (keyof NormalizedChildcare)[] = [
+  'sourceId', 'name', 'crType', 'status', 'vehicleOp', 'services',
+  'sido', 'sigungu', 'sigunguCode', 'zipcode', 'address', 'tel', 'fax',
+  'homepage', 'repName',
+  'roomCount', 'roomSize', 'playgroundCount', 'cctvCount', 'staffCount',
+  'capacity', 'currentCount',
+  'confirmDate', 'pauseBeginDate', 'pauseEndDate', 'abolishDate', 'dataStdDate',
+  'classCnt00', 'classCnt01', 'classCnt02', 'classCnt03', 'classCnt04', 'classCnt05',
+  'classCntM2', 'classCntM3', 'classCntM5', 'classCntSp', 'classCntTot',
+  'childCnt00', 'childCnt01', 'childCnt02', 'childCnt03', 'childCnt04', 'childCnt05',
+  'childCntM2', 'childCntM3', 'childCntM5', 'childCntSp', 'childCntTot',
+  'emTenure0y', 'emTenure1y', 'emTenure2y', 'emTenure4y', 'emTenure6y',
+  'emRoleDirector', 'emRoleTeacher', 'emRoleSpecial', 'emRoleTherapy', 'emRoleNutrition',
+  'emRoleNurse', 'emRoleNurseAssist', 'emRoleCook', 'emRoleOffice', 'emRoleTot',
+  'waitCnt00', 'waitCnt01', 'waitCnt02', 'waitCnt03', 'waitCnt04', 'waitCnt05',
+  'waitCntM6', 'waitCntTot',
+];
+
+async function ingestChildcare(): Promise<number> {
+  const rows = dedupeBySourceId(await fetchAllChildcare());
+  const cols = CHILDCARE_COLUMNS.map((c) => `"${c}"`).join(', ');
+  // ON CONFLICT 시 sourceId 제외 전 컬럼 갱신
+  const updates = CHILDCARE_COLUMNS.filter((c) => c !== 'sourceId')
+    .map((c) => `"${c}" = EXCLUDED."${c}"`)
+    .join(', ');
+
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK);
+    const values = chunk.map((r: NormalizedChildcare) => {
+      const cells = CHILDCARE_COLUMNS.map((c) => Prisma.sql`${r[c] ?? null}`);
+      return Prisma.sql`(${Prisma.join(cells)}, ${locationSql(r.lat, r.lng)}, NOW())`;
+    });
+    await prisma.$executeRaw(
+      Prisma.sql`
+        INSERT INTO "Childcare" (${Prisma.raw(cols)}, location, "updatedAt")
+        VALUES ${Prisma.join(values)}
+        ON CONFLICT ("sourceId") DO UPDATE SET
+          ${Prisma.raw(updates)},
+          location = EXCLUDED.location,
+          "updatedAt" = NOW()
+      `,
+    );
   }
   return rows.length;
 }
