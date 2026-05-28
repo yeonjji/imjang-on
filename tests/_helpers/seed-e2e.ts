@@ -44,8 +44,7 @@ async function main() {
       propertyType: PropertyType.APARTMENT,
       name: '래미안서초에스티지',
       nameNorm: '래미안서초에스티지',
-      regionCode: '1165010100',
-      sigunguCode: '11650',
+      regionCode: '1165010100', // sigunguCode는 generated column (regionCode 앞 5자리)
       address: '서울특별시 서초구 서초동',
       builtYear: 2009,
       households: 1184,
@@ -88,8 +87,7 @@ async function main() {
       propertyType: PropertyType.APARTMENT,
       name: `테스트아파트${i + 1}`,
       nameNorm: `테스트아파트${i + 1}`,
-      regionCode: '1165010100',
-      sigunguCode: '11650',
+      regionCode: '1165010100', // sigunguCode는 generated column에서 자동 도출
       address: '서울특별시 서초구 서초동',
       txCount12m: 1,
     })),
