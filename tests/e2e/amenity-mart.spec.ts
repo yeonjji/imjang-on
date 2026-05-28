@@ -16,7 +16,8 @@ test.describe('amenity mart happy path', () => {
     await expect(firstCard).toBeVisible();
     await firstCard.click();
 
-    await expect(page.getByRole('heading', { name: /주변 아파트/ })).toBeVisible({ timeout: 5000 });
+    // DETAIL 진입 검증 — "마트 정보" h2(AmenityInfo)는 location 유무와 무관하게 항상 렌더
+    await expect(page.getByRole('heading', { name: '마트 정보' })).toBeVisible({ timeout: 5000 });
   });
 
   test('sub-filter(대형마트) → URL ?sub=hyper', async ({ page }) => {

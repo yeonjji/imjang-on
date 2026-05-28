@@ -44,8 +44,7 @@ async function main() {
       propertyType: PropertyType.APARTMENT,
       name: '래미안서초에스티지',
       nameNorm: '래미안서초에스티지',
-      regionCode: '1165010100',
-      sigunguCode: '11650',
+      regionCode: '1165010100', // sigunguCode는 generated column (regionCode 앞 5자리)
       address: '서울특별시 서초구 서초동',
       builtYear: 2009,
       households: 1184,
@@ -88,11 +87,23 @@ async function main() {
       propertyType: PropertyType.APARTMENT,
       name: `테스트아파트${i + 1}`,
       nameNorm: `테스트아파트${i + 1}`,
-      regionCode: '1165010100',
-      sigunguCode: '11650',
+      regionCode: '1165010100', // sigunguCode는 generated column에서 자동 도출
       address: '서울특별시 서초구 서초동',
       txCount12m: 1,
     })),
+  });
+
+  // amenity LIST e2e용 — /amenity/mart 에 표시될 대형마트 1개
+  // (industryCode 'G20402' = 대형마트, mart adapter PREFIX_HYPER)
+  await prisma.store.create({
+    data: {
+      sourceId: 'e2e-mart-hyper-1',
+      name: 'e2e 대형마트',
+      address: '서울특별시 서초구 서초동',
+      industryCode: 'G20402',
+      industryName: '대형마트',
+      sigunguCode: '11650',
+    },
   });
 
   console.log('e2e seed done. propertyId =', String(p.id));
