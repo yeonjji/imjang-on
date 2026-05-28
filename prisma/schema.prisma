@@ -265,3 +265,94 @@ model School {
   @@index([region])
   @@index([sigunguCode, schoolKind])
 }
+
+model Childcare {
+  id          BigInt                                @id @default(autoincrement())
+  sourceId    String                                @unique @db.VarChar(11)
+  name        String                                @db.VarChar(150)
+
+  crType      String?                               @db.VarChar(20)
+  status      String?                               @db.VarChar(10)
+  vehicleOp   String?                               @db.VarChar(10)
+  services    String?                               @db.VarChar(150)
+
+  sido        String?                               @db.VarChar(20)
+  sigungu     String?                               @db.VarChar(20)
+  sigunguCode String                                @db.VarChar(5)
+  zipcode     String?                               @db.VarChar(6)
+  address     String                                @db.VarChar(300)
+  tel         String?                               @db.VarChar(14)
+  fax         String?                               @db.VarChar(14)
+  homepage    String?                               @db.VarChar(150)
+  repName     String?                               @db.VarChar(60)
+  location    Unsupported("geography(Point,4326)")?
+
+  roomCount       Int?
+  roomSize        Float?
+  playgroundCount Int?
+  cctvCount       Int?
+  staffCount      Int?
+  capacity        Int?
+  currentCount    Int?
+
+  confirmDate    DateTime? @db.Date
+  pauseBeginDate DateTime? @db.Date
+  pauseEndDate   DateTime? @db.Date
+  abolishDate    DateTime? @db.Date
+  dataStdDate    DateTime? @db.Date
+
+  classCnt00  Int?
+  classCnt01  Int?
+  classCnt02  Int?
+  classCnt03  Int?
+  classCnt04  Int?
+  classCnt05  Int?
+  classCntM2  Int?
+  classCntM3  Int?
+  classCntM5  Int?
+  classCntSp  Int?
+  classCntTot Int?
+
+  childCnt00  Int?
+  childCnt01  Int?
+  childCnt02  Int?
+  childCnt03  Int?
+  childCnt04  Int?
+  childCnt05  Int?
+  childCntM2  Int?
+  childCntM3  Int?
+  childCntM5  Int?
+  childCntSp  Int?
+  childCntTot Int?
+
+  emTenure0y Int?
+  emTenure1y Int?
+  emTenure2y Int?
+  emTenure4y Int?
+  emTenure6y Int?
+
+  emRoleDirector    Int?
+  emRoleTeacher     Int?
+  emRoleSpecial     Int?
+  emRoleTherapy     Int?
+  emRoleNutrition   Int?
+  emRoleNurse       Int?
+  emRoleNurseAssist Int?
+  emRoleCook        Int?
+  emRoleOffice      Int?
+  emRoleTot         Int?
+
+  waitCnt00  Int?
+  waitCnt01  Int?
+  waitCnt02  Int?
+  waitCnt03  Int?
+  waitCnt04  Int?
+  waitCnt05  Int?
+  waitCntM6  Int?
+  waitCntTot Int?
+
+  updatedAt DateTime @updatedAt
+
+  @@index([sigunguCode, status])
+  @@index([crType])
+}
