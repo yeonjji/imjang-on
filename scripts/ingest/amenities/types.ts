@@ -64,12 +64,90 @@ export interface NormalizedSchool {
   homepage: string | null;
 }
 
+export interface NormalizedChildcare {
+  sourceId: string;
+  name: string;
+  crType: string | null;
+  status: string | null;
+  vehicleOp: string | null;
+  services: string | null;
+  sido: string | null;
+  sigungu: string | null;
+  sigunguCode: string;
+  zipcode: string | null;
+  address: string;
+  tel: string | null;
+  fax: string | null;
+  homepage: string | null;
+  repName: string | null;
+  lat: number | null;
+  lng: number | null;
+  roomCount: number | null;
+  roomSize: number | null;
+  playgroundCount: number | null;
+  cctvCount: number | null;
+  staffCount: number | null;
+  capacity: number | null;
+  currentCount: number | null;
+  confirmDate: Date | null;
+  pauseBeginDate: Date | null;
+  pauseEndDate: Date | null;
+  abolishDate: Date | null;
+  dataStdDate: Date | null;
+  classCnt00: number | null;
+  classCnt01: number | null;
+  classCnt02: number | null;
+  classCnt03: number | null;
+  classCnt04: number | null;
+  classCnt05: number | null;
+  classCntM2: number | null;
+  classCntM3: number | null;
+  classCntM5: number | null;
+  classCntSp: number | null;
+  classCntTot: number | null;
+  childCnt00: number | null;
+  childCnt01: number | null;
+  childCnt02: number | null;
+  childCnt03: number | null;
+  childCnt04: number | null;
+  childCnt05: number | null;
+  childCntM2: number | null;
+  childCntM3: number | null;
+  childCntM5: number | null;
+  childCntSp: number | null;
+  childCntTot: number | null;
+  emTenure0y: number | null;
+  emTenure1y: number | null;
+  emTenure2y: number | null;
+  emTenure4y: number | null;
+  emTenure6y: number | null;
+  emRoleDirector: number | null;
+  emRoleTeacher: number | null;
+  emRoleSpecial: number | null;
+  emRoleTherapy: number | null;
+  emRoleNutrition: number | null;
+  emRoleNurse: number | null;
+  emRoleNurseAssist: number | null;
+  emRoleCook: number | null;
+  emRoleOffice: number | null;
+  emRoleTot: number | null;
+  waitCnt00: number | null;
+  waitCnt01: number | null;
+  waitCnt02: number | null;
+  waitCnt03: number | null;
+  waitCnt04: number | null;
+  waitCnt05: number | null;
+  waitCntM6: number | null;
+  waitCntTot: number | null;
+}
+
 export type AmenitySourceKey =
   | 'ev-charger'
   | 'traditional-market'
   | 'store'
   | 'park'
-  | 'school';
+  | 'school'
+  | 'childcare';
 
 export const AMENITY_INGEST_SOURCE: Record<AmenitySourceKey, string> = {
   'ev-charger': 'amenity-ev-charger',
@@ -77,4 +155,5 @@ export const AMENITY_INGEST_SOURCE: Record<AmenitySourceKey, string> = {
   'store': 'amenity-store',
   'park': 'amenity-park',
   'school': 'amenity-school',
+  'childcare': 'amenity-childcare',
 };

@@ -8,6 +8,7 @@ const schema = z.object({
 
   PUBLIC_DATA_KEY: z.string().optional(),
   NEIS_API_KEY: z.string().optional(),
+  CHILDCARE_API_KEY: z.string().optional(),
   KAKAO_REST_KEY: z.string().optional(),
   KAKAO_JS_KEY: z.string().optional(),
   NEXT_PUBLIC_NAVER_MAP_CLIENT_ID: z.string().optional(),
