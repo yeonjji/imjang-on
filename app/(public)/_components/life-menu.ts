@@ -31,10 +31,10 @@ export const LIFE_GROUPS: LifeGroup[] = [
   {
     label: '상권·편의',
     items: [
-      { label: '편의점', href: '/amenity?type=convenience', live: false },
-      { label: '마트', href: '/amenity?type=mart', live: false },
-      { label: '카페', href: '/amenity?type=cafe', live: false },
-      { label: '전통시장', href: '/amenity?type=market', live: false },
+      { label: '편의점', href: '/amenity/convenience', live: true },
+      { label: '마트', href: '/amenity/mart', live: true },
+      { label: '카페', href: '/amenity/cafe', live: true },
+      { label: '전통시장', href: '/amenity/market', live: true },
     ],
   },
   {

@@ -19,8 +19,20 @@ describe('LIFE_GROUPS', () => {
     ]);
   });
 
-  it('교육시설 외 그룹 하위는 아직 라이브가 아니다', () => {
-    const others = LIFE_GROUPS.filter((g) => g.label !== '교육시설');
+  it('상권·편의 4종(편의점·마트·카페·전통시장)은 /amenity/[category]로 라이브이다', () => {
+    const amenity = LIFE_GROUPS.find((g) => g.label === '상권·편의')!;
+    expect(amenity.items).toEqual([
+      { label: '편의점', href: '/amenity/convenience', live: true },
+      { label: '마트', href: '/amenity/mart', live: true },
+      { label: '카페', href: '/amenity/cafe', live: true },
+      { label: '전통시장', href: '/amenity/market', live: true },
+    ]);
+  });
+
+  it('의료시설·도시인프라 그룹 하위는 아직 라이브가 아니다', () => {
+    const others = LIFE_GROUPS.filter(
+      (g) => g.label !== '교육시설' && g.label !== '상권·편의',
+    );
     expect(others.flatMap((g) => g.items).every((i) => !i.live)).toBe(true);
   });
 
