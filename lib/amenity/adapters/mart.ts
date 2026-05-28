@@ -6,6 +6,7 @@ import type {
   AmenityListFilter,
   AmenityListResult,
 } from '@/lib/amenity/category';
+import { sidoPrefix } from '@/lib/region';
 
 const PER_PAGE = 30;
 const PREFIX_SUPER = 'G20404';
@@ -19,7 +20,12 @@ function normalizeSub(sub: string | undefined): MartSub {
 
 export function buildMartWhere(f: AmenityListFilter): Prisma.StoreWhereInput {
   const where: Prisma.StoreWhereInput = {};
-  if (f.sigunguCode) where.sigunguCode = f.sigunguCode;
+  if (f.sigunguCode) {
+    where.sigunguCode = f.sigunguCode;
+  } else if (f.sido) {
+    const prefix = sidoPrefix(f.sido);
+    if (prefix) where.sigunguCode = { startsWith: prefix };
+  }
   const sub = normalizeSub(f.sub);
   if (sub === 'super') where.industryCode = { startsWith: PREFIX_SUPER };
   else if (sub === 'hyper') where.industryCode = { startsWith: PREFIX_HYPER };

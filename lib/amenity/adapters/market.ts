@@ -6,6 +6,7 @@ import type {
   AmenityListFilter,
   AmenityListResult,
 } from '@/lib/amenity/category';
+import { sidoPrefix } from '@/lib/region';
 
 const PER_PAGE = 30;
 
@@ -25,8 +26,15 @@ function normalizeSub(sub: string | undefined): MarketSub {
 
 export function buildMarketWhere(f: AmenityListFilter): Prisma.TraditionalMarketWhereInput {
   const where: Prisma.TraditionalMarketWhereInput = {};
-  if (f.sigunguCode) where.sigunguCode = f.sigunguCode;
-  else where.sigunguCode = { not: null }; // 시군구 미지정 LIST는 sigunguCode 있는 row만 (DETAIL URL 일관성)
+  if (f.sigunguCode) {
+    where.sigunguCode = f.sigunguCode;
+  } else if (f.sido) {
+    const prefix = sidoPrefix(f.sido);
+    if (prefix) where.sigunguCode = { startsWith: prefix };
+    else where.sigunguCode = { not: null };
+  } else {
+    where.sigunguCode = { not: null }; // 시군구 미지정 LIST는 sigunguCode 있는 row만 (DETAIL URL 일관성)
+  }
   const sub = normalizeSub(f.sub);
   if (sub === 'permanent') where.marketType = { contains: '상설' };
   else if (sub === 'periodic')

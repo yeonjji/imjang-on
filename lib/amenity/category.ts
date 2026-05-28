@@ -18,6 +18,7 @@ export interface AmenityItem {
 
 export interface AmenityListFilter {
   sigunguCode?: string;
+  sido?: string;
   q?: string;
   /** def별 sub-filter 슬러그 (없으면 'all') */
   sub?: string;
