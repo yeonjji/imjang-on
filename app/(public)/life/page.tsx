@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { LIFE_GROUPS, LIFE_ITEM_EMOJI } from '../_components/life-menu';
 import { LifeItemCard } from './_components/life-item-card';
 import type { Metadata } from 'next';
@@ -24,7 +25,15 @@ export default function LifeHubPage() {
       <div className="flex flex-col gap-12">
         {LIFE_GROUPS.map((group) => (
           <section key={group.slug} id={group.slug} className="scroll-mt-20">
-            <h2 className="mb-3 text-xl font-bold text-[var(--color-blue-dark)]">{group.label}</h2>
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <h2 className="text-xl font-bold text-[var(--color-blue-dark)]">{group.label}</h2>
+              <Link
+                href={`/life/${group.slug}`}
+                className="text-sm font-semibold text-[var(--color-blue)] hover:underline"
+              >
+                더보기 →
+              </Link>
+            </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
               {group.items.map((item) => (
                 <LifeItemCard key={item.label} item={item} emoji={LIFE_ITEM_EMOJI[item.label] ?? '📍'} />

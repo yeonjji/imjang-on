@@ -49,3 +49,15 @@ test.describe('모바일 생활편의 아코디언', () => {
     await expect(page).toHaveURL(/\/amenity\/convenience/);
   });
 });
+
+test.describe('/life 인덱스 → 그룹 허브', () => {
+  test('각 그룹 섹션 헤더의 "더보기" 링크가 /life/[group]으로 이동한다', async ({ page }) => {
+    await page.goto('/life');
+    const moreLinks = page.getByRole('link', { name: /더보기/ });
+    await expect(moreLinks).toHaveCount(4);
+
+    await page.goto('/life');
+    await page.locator('section#amenity').getByRole('link', { name: /더보기/ }).click();
+    await expect(page).toHaveURL('/life/amenity');
+  });
+});
