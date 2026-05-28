@@ -22,7 +22,7 @@ export function SiblingTabs({ currentHref }: Props) {
         data-testid="sibling-tabs"
         className="mb-4 rounded-[18px] border border-[var(--color-line)] bg-white px-4 shadow-[var(--shadow-soft)]"
       >
-        <div className="flex gap-6 overflow-x-auto">
+        <nav aria-label="형제 카테고리" className="flex gap-6 overflow-x-auto">
           {tabs.items.map((item) => {
             const active = item.href === currentHref;
             const base = '-mb-px py-3 text-sm whitespace-nowrap';
@@ -30,21 +30,22 @@ export function SiblingTabs({ currentHref }: Props) {
               ? `${base} border-b-2 border-[var(--color-blue)] text-[var(--color-blue-dark)] font-extrabold`
               : `${base} border-b-2 border-transparent text-[var(--color-muted)] font-semibold hover:text-[var(--color-blue-dark)]`;
             if (item.live) {
+              if (active) {
+                return (
+                  <span key={item.href} aria-current="page" className={cls}>
+                    {item.label}
+                  </span>
+                );
+              }
               return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  onClick={(e) => { if (active) e.preventDefault(); }}
-                  aria-current={active ? 'page' : undefined}
-                  className={cls}
-                >
+                <Link key={item.href} href={item.href} className={cls}>
                   {item.label}
                 </Link>
               );
             }
             return (
               <button
-                key={item.label}
+                key={item.href}
                 type="button"
                 onClick={() => setSoonTopic(item.label)}
                 className={`${cls} inline-flex items-center gap-1.5`}
@@ -54,7 +55,7 @@ export function SiblingTabs({ currentHref }: Props) {
               </button>
             );
           })}
-        </div>
+        </nav>
       </div>
       <SoonModal open={!!soonTopic} topic={soonTopic} onClose={() => setSoonTopic(null)} />
     </>
