@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { PropertyType } from '@prisma/client';
+import type { AmenitySlug } from '@/lib/amenity/category';
 
 export interface NearbyEvCharger {
   id: bigint;
@@ -199,4 +200,65 @@ export async function getSchoolNearbyAmenities(lat: number, lng: number) {
     return ['G20405', 'G20404', 'G20402', 'I21201'].some((p) => c.startsWith(p));
   });
   return { parks, mart, chargers };
+}
+
+/**
+ * DETAIL "주변 상권 종합" — 현재 카테고리 **제외**한 나머지 카테고리의 가까운 항목들.
+ * Store(convenience/mart/cafe) + TraditionalMarket(market)를 단일 호출로.
+ */
+export async function getMixedNearbyForDetail(
+  currentSlug: AmenitySlug,
+  lat: number,
+  lng: number,
+): Promise<{
+  convenience: NearbyStore[];
+  mart: NearbyStore[];
+  cafe: NearbyStore[];
+  market: NearbyTraditionalMarket[];
+}> {
+  const [stores, markets] = await Promise.all([
+    getNearbyStores(lat, lng, 500),
+    getNearbyTraditionalMarkets(lat, lng, 1000),
+  ]);
+  const convenience = stores.filter((s) => (s.industryCode ?? '').startsWith('G20405'));
+  const mart = stores.filter((s) => {
+    const c = s.industryCode ?? '';
+    return c.startsWith('G20404') || c.startsWith('G20402');
+  });
+  const cafe = stores.filter((s) => (s.industryCode ?? '').startsWith('I21201'));
+  return {
+    convenience: currentSlug === 'convenience' ? [] : convenience.slice(0, 5),
+    mart: currentSlug === 'mart' ? [] : mart.slice(0, 5),
+    cafe: currentSlug === 'cafe' ? [] : cafe.slice(0, 5),
+    market: currentSlug === 'market' ? [] : markets.slice(0, 5),
+  };
+}
+
+/**
+ * "같은 카테고리 가까운 N건" — 현재 row(excludeId)는 제외.
+ * convenience/mart/cafe는 Store, market는 TraditionalMarket.
+ */
+export async function getSameCategoryNearby(
+  slug: AmenitySlug,
+  lat: number,
+  lng: number,
+  excludeId: bigint,
+  limit = 5,
+): Promise<Array<{ id: bigint; name: string; address: string; distanceMeters: number; sub: string | null }>> {
+  if (slug === 'market') {
+    const rows = await getNearbyTraditionalMarkets(lat, lng, 3000);
+    return rows
+      .filter((m) => m.id !== excludeId)
+      .slice(0, limit)
+      .map((m) => ({ id: m.id, name: m.name, address: m.address, distanceMeters: m.distanceMeters, sub: m.marketType }));
+  }
+  const prefixes = slug === 'convenience' ? ['G20405']
+    : slug === 'cafe' ? ['I21201']
+    : ['G20404', 'G20402'];
+  const stores = await getNearbyStores(lat, lng, 500);
+  return stores
+    .filter((s) => s.id !== excludeId)
+    .filter((s) => prefixes.some((p) => (s.industryCode ?? '').startsWith(p)))
+    .slice(0, limit)
+    .map((s) => ({ id: s.id, name: s.name, address: s.address, distanceMeters: s.distanceMeters, sub: s.industryName }));
 }
