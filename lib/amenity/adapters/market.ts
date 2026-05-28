@@ -26,6 +26,7 @@ function normalizeSub(sub: string | undefined): MarketSub {
 export function buildMarketWhere(f: AmenityListFilter): Prisma.TraditionalMarketWhereInput {
   const where: Prisma.TraditionalMarketWhereInput = {};
   if (f.sigunguCode) where.sigunguCode = f.sigunguCode;
+  else where.sigunguCode = { not: null }; // 시군구 미지정 LIST는 sigunguCode 있는 row만 (DETAIL URL 일관성)
   const sub = normalizeSub(f.sub);
   if (sub === 'permanent') where.marketType = { contains: '상설' };
   else if (sub === 'periodic')
@@ -55,8 +56,6 @@ function toItem(m: {
 
 async function getList(f: AmenityListFilter, page: number): Promise<AmenityListResult> {
   const where = buildMarketWhere(f);
-  // 시군구가 지정되지 않은 LIST는 sigunguCode가 있는 row만 노출 (DETAIL URL 일관성)
-  if (!f.sigunguCode) where.sigunguCode = { not: null };
   const [rows, total] = await Promise.all([
     prisma.traditionalMarket.findMany({
       where,

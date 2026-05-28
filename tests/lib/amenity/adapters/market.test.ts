@@ -13,6 +13,10 @@ describe('classifyMarketSub', () => {
     expect(classifyMarketSub(null)).toBe('unknown');
     expect(classifyMarketSub('')).toBe('unknown');
   });
+  it("상설장+N일장 같은 하이브리드는 '상설' 우선이라 permanent", () => {
+    expect(classifyMarketSub('상설장+5일장')).toBe('permanent');
+    expect(classifyMarketSub('상설장+3일장')).toBe('permanent');
+  });
 });
 
 describe('market adapter — buildMarketWhere', () => {
@@ -40,6 +44,15 @@ describe('market adapter — buildMarketWhere', () => {
   it('검색 q', () => {
     expect(buildMarketWhere({ sigunguCode: '11680', q: '강남' })).toEqual({
       sigunguCode: '11680',
+      name: { contains: '강남' },
+    });
+  });
+  it('시군구 미지정 LIST는 sigunguCode 있는 row만', () => {
+    expect(buildMarketWhere({})).toEqual({
+      sigunguCode: { not: null },
+    });
+    expect(buildMarketWhere({ q: '강남' })).toEqual({
+      sigunguCode: { not: null },
       name: { contains: '강남' },
     });
   });

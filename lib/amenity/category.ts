@@ -55,7 +55,11 @@ export interface AmenityCategoryDef {
   inferRowSummary(row: AmenityItem): string | null;
   /** DETAIL 기본정보 그리드 행 */
   detailFields(item: AmenityItem): Array<{ label: string; value: string }>;
-  /** 시군구 picker / 허브용 카운트 (groupBy 결과) */
+  /**
+   * 시군구 picker / 허브용 카운트 (groupBy 결과).
+   * sub-filter는 반영하지 않음 — 허브는 카테고리 전체 분포를 보여주는 게 목적.
+   * 향후 sub-aware 카운트가 필요해지면 인수에 sub?: string 추가.
+   */
   getCountsBySigungu(): Promise<Map<string, number>>;
 }
 
