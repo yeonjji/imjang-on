@@ -5,7 +5,7 @@ test.describe('amenity mart happy path', () => {
     await page.goto('/amenity/mart');
     await expect(page.getByRole('heading', { name: /마트 찾기/ })).toBeVisible();
 
-    await page.getByRole('link', { name: /지역별 마트 찾기/ }).click();
+    await page.getByRole('link', { name: /지역별 마트 찾기/ }).first().click();
     await expect(page).toHaveURL('/amenity/mart/regions');
 
     // 첫 번째 시군구 카드 클릭

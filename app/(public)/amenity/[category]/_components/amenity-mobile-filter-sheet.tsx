@@ -4,11 +4,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { AmenityFilterPanel } from './amenity-filter-panel';
-import type { AmenityCategoryDef } from '@/lib/amenity/category';
+import type { AmenityCategoryView } from '@/lib/amenity/category';
 
 interface SidoItem { code: string; sido: string; fullName: string; }
 
-export function AmenityMobileFilterSheet({ def, basePath, sidoList }: { def: AmenityCategoryDef; basePath: string; sidoList?: SidoItem[] }) {
+export function AmenityMobileFilterSheet({ def, basePath, sidoList }: { def: AmenityCategoryView; basePath: string; sidoList?: SidoItem[] }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const sp = useSearchParams();

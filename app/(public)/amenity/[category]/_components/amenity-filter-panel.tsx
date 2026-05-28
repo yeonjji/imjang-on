@@ -2,13 +2,13 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Chip } from '@/components/ui/chip';
-import type { AmenityCategoryDef } from '@/lib/amenity/category';
+import type { AmenityCategoryView } from '@/lib/amenity/category';
 
 interface SidoItem { code: string; sido: string; fullName: string; }
 interface SigunguItem { code: string; sigungu: string; fullName: string; sigunguCode: string; }
 
 interface Props {
-  def: AmenityCategoryDef;
+  def: AmenityCategoryView;
   basePath: string;
   sidoList?: SidoItem[];
   params?: URLSearchParams;

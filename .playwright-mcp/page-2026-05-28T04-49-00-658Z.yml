@@ -1,0 +1,280 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - navigation [ref=e4]:
+        - link "임 임장온" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e6]: 임
+          - generic [ref=e7]: 임장온
+        - generic [ref=e8]:
+          - link "홈" [ref=e9] [cursor=pointer]:
+            - /url: /
+          - link "실거래가" [ref=e10] [cursor=pointer]:
+            - /url: /list
+          - generic [ref=e11]:
+            - button "생활편의" [expanded] [active] [ref=e12]:
+              - text: 생활편의
+              - img [ref=e13]
+            - generic "생활편의 메뉴" [ref=e211]:
+              - generic [ref=e212]:
+                - paragraph [ref=e213]: 교육시설
+                - link "학교" [ref=e214] [cursor=pointer]:
+                  - /url: /school
+                - button "어린이집 Soon" [ref=e215]:
+                  - text: 어린이집
+                  - generic [ref=e216]: Soon
+              - generic [ref=e217]:
+                - paragraph [ref=e218]: 의료시설
+                - button "병원·의원" [ref=e219]
+                - button "약국" [ref=e220]
+                - button "보건소 Soon" [ref=e221]:
+                  - text: 보건소
+                  - generic [ref=e222]: Soon
+              - generic [ref=e223]:
+                - paragraph [ref=e224]: 상권·편의
+                - button "편의점" [ref=e225]
+                - button "마트" [ref=e226]
+                - button "카페" [ref=e227]
+                - button "전통시장" [ref=e228]
+              - generic [ref=e229]:
+                - paragraph [ref=e230]: 도시인프라
+                - button "공원" [ref=e231]
+                - button "충전소" [ref=e232]
+                - button "주차장 Soon" [ref=e233]:
+                  - text: 주차장
+                  - generic [ref=e234]: Soon
+          - button "청약 Soon" [ref=e15]:
+            - text: 청약
+            - generic [ref=e16]: Soon
+        - generic [ref=e19]:
+          - img [ref=e20]
+          - textbox "단지/지역명 검색" [ref=e23]
+    - main [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]: 공공데이터 기반 · 매일 갱신
+        - heading "실거래가, 한 번에 보세요" [level=1] [ref=e27]
+        - paragraph [ref=e28]: 아파트·오피스텔·연립다세대 매매와 전월세를 단지 단위로 정리해 보여드립니다.
+      - generic [ref=e29]:
+        - heading "인기 아파트 단지" [level=2] [ref=e30]
+        - generic [ref=e31]:
+          - link "더샵부평센트럴시티 인천광역시 부평구 · 2022년 준공 2584건 매매 평균 5.26억최근 4.75억 · 2026-05-23 전세 평균 3.19억최근 4억 · 2026-05-27 월세 보 1.26억 / 월 51만원" [ref=e32] [cursor=pointer]:
+            - /url: /apt/66951
+            - generic [ref=e33]:
+              - generic [ref=e34]:
+                - generic [ref=e35]:
+                  - paragraph [ref=e36]: 더샵부평센트럴시티
+                  - paragraph [ref=e37]: 인천광역시 부평구 · 2022년 준공
+                - generic [ref=e38]: 2584건
+              - generic [ref=e39]:
+                - paragraph [ref=e40]:
+                  - generic [ref=e41]: 매매
+                  - text: 평균 5.26억
+                  - generic [ref=e42]: 최근 4.75억 · 2026-05-23
+                - paragraph [ref=e43]:
+                  - generic [ref=e44]: 전세
+                  - text: 평균 3.19억
+                  - generic [ref=e45]: 최근 4억 · 2026-05-27
+                - paragraph [ref=e46]:
+                  - generic [ref=e47]: 월세
+                  - text: 보 1.26억 / 월
+                  - generic [ref=e48]: 51만원
+          - link "헬리오시티 서울특별시 송파구 · 2018년 준공 2022건 매매 평균 27.7억최근 28.7억 · 2026-05-23 전세 평균 10.82억최근 12.5억 · 2026-05-22 월세 보 3.12억 / 월 151만원" [ref=e49] [cursor=pointer]:
+            - /url: /apt/84658
+            - generic [ref=e50]:
+              - generic [ref=e51]:
+                - generic [ref=e52]:
+                  - paragraph [ref=e53]: 헬리오시티
+                  - paragraph [ref=e54]: 서울특별시 송파구 · 2018년 준공
+                - generic [ref=e55]: 2022건
+              - generic [ref=e56]:
+                - paragraph [ref=e57]:
+                  - generic [ref=e58]: 매매
+                  - text: 평균 27.7억
+                  - generic [ref=e59]: 최근 28.7억 · 2026-05-23
+                - paragraph [ref=e60]:
+                  - generic [ref=e61]: 전세
+                  - text: 평균 10.82억
+                  - generic [ref=e62]: 최근 12.5억 · 2026-05-22
+                - paragraph [ref=e63]:
+                  - generic [ref=e64]: 월세
+                  - text: 보 3.12억 / 월
+                  - generic [ref=e65]: 151만원
+          - link "다산센트럴파크 경기도 남양주시 · 2021년 준공 1563건 월세 보 3,526만원 / 월 16만원" [ref=e66] [cursor=pointer]:
+            - /url: /apt/41092
+            - generic [ref=e67]:
+              - generic [ref=e68]:
+                - generic [ref=e69]:
+                  - paragraph [ref=e70]: 다산센트럴파크
+                  - paragraph [ref=e71]: 경기도 남양주시 · 2021년 준공
+                - generic [ref=e72]: 1563건
+              - paragraph [ref=e74]:
+                - generic [ref=e75]: 월세
+                - text: 보 3,526만원 / 월
+                - generic [ref=e76]: 16만원
+          - link "다산지금A5경기행복주택 경기도 남양주시 · 2022년 준공 1335건 월세 보 6,708만원 / 월 16만원" [ref=e77] [cursor=pointer]:
+            - /url: /apt/37316
+            - generic [ref=e78]:
+              - generic [ref=e79]:
+                - generic [ref=e80]:
+                  - paragraph [ref=e81]: 다산지금A5경기행복주택
+                  - paragraph [ref=e82]: 경기도 남양주시 · 2022년 준공
+                - generic [ref=e83]: 1335건
+              - paragraph [ref=e85]:
+                - generic [ref=e86]: 월세
+                - text: 보 6,708만원 / 월
+                - generic [ref=e87]: 16만원
+          - link "고덕그라시움 서울특별시 강동구 · 2019년 준공 1299건 매매 평균 20.39억최근 25억 · 2026-05-15 전세 평균 7.92억최근 8.4억 · 2026-05-26 월세 보 3.3억 / 월 145만원" [ref=e88] [cursor=pointer]:
+            - /url: /apt/85728
+            - generic [ref=e89]:
+              - generic [ref=e90]:
+                - generic [ref=e91]:
+                  - paragraph [ref=e92]: 고덕그라시움
+                  - paragraph [ref=e93]: 서울특별시 강동구 · 2019년 준공
+                - generic [ref=e94]: 1299건
+              - generic [ref=e95]:
+                - paragraph [ref=e96]:
+                  - generic [ref=e97]: 매매
+                  - text: 평균 20.39억
+                  - generic [ref=e98]: 최근 25억 · 2026-05-15
+                - paragraph [ref=e99]:
+                  - generic [ref=e100]: 전세
+                  - text: 평균 7.92억
+                  - generic [ref=e101]: 최근 8.4억 · 2026-05-26
+                - paragraph [ref=e102]:
+                  - generic [ref=e103]: 월세
+                  - text: 보 3.3억 / 월
+                  - generic [ref=e104]: 145만원
+          - link "파크리오 서울특별시 송파구 · 2008년 준공 1278건 매매 평균 27.72억최근 36.4억 · 2026-05-25 전세 평균 10.25억최근 10.3억 · 2026-05-27 월세 보 4.35억 / 월 209만원" [ref=e105] [cursor=pointer]:
+            - /url: /apt/84653
+            - generic [ref=e106]:
+              - generic [ref=e107]:
+                - generic [ref=e108]:
+                  - paragraph [ref=e109]: 파크리오
+                  - paragraph [ref=e110]: 서울특별시 송파구 · 2008년 준공
+                - generic [ref=e111]: 1278건
+              - generic [ref=e112]:
+                - paragraph [ref=e113]:
+                  - generic [ref=e114]: 매매
+                  - text: 평균 27.72억
+                  - generic [ref=e115]: 최근 36.4억 · 2026-05-25
+                - paragraph [ref=e116]:
+                  - generic [ref=e117]: 전세
+                  - text: 평균 10.25억
+                  - generic [ref=e118]: 최근 10.3억 · 2026-05-27
+                - paragraph [ref=e119]:
+                  - generic [ref=e120]: 월세
+                  - text: 보 4.35억 / 월
+                  - generic [ref=e121]: 209만원
+          - link "상계주공15(고층,공무원임대) 서울특별시 노원구 · 1988년 준공 1241건 전세 평균 1.51억최근 1.71억 · 2026-05-26 월세 보 7,424만원 / 월 21만원" [ref=e122] [cursor=pointer]:
+            - /url: /apt/24016
+            - generic [ref=e123]:
+              - generic [ref=e124]:
+                - generic [ref=e125]:
+                  - paragraph [ref=e126]: 상계주공15(고층,공무원임대)
+                  - paragraph [ref=e127]: 서울특별시 노원구 · 1988년 준공
+                - generic [ref=e128]: 1241건
+              - generic [ref=e129]:
+                - paragraph [ref=e130]:
+                  - generic [ref=e131]: 전세
+                  - text: 평균 1.51억
+                  - generic [ref=e132]: 최근 1.71억 · 2026-05-26
+                - paragraph [ref=e133]:
+                  - generic [ref=e134]: 월세
+                  - text: 보 7,424만원 / 월
+                  - generic [ref=e135]: 21만원
+          - link "리센츠 서울특별시 송파구 · 2008년 준공 1176건 매매 평균 26.91억최근 39.6억 · 2026-05-22 전세 평균 10.71억최근 12.5억 · 2026-05-22 월세 보 4.32억 / 월 234만원" [ref=e136] [cursor=pointer]:
+            - /url: /apt/84673
+            - generic [ref=e137]:
+              - generic [ref=e138]:
+                - generic [ref=e139]:
+                  - paragraph [ref=e140]: 리센츠
+                  - paragraph [ref=e141]: 서울특별시 송파구 · 2008년 준공
+                - generic [ref=e142]: 1176건
+              - generic [ref=e143]:
+                - paragraph [ref=e144]:
+                  - generic [ref=e145]: 매매
+                  - text: 평균 26.91억
+                  - generic [ref=e146]: 최근 39.6억 · 2026-05-22
+                - paragraph [ref=e147]:
+                  - generic [ref=e148]: 전세
+                  - text: 평균 10.71억
+                  - generic [ref=e149]: 최근 12.5억 · 2026-05-22
+                - paragraph [ref=e150]:
+                  - generic [ref=e151]: 월세
+                  - text: 보 4.32억 / 월
+                  - generic [ref=e152]: 234만원
+          - link "잠실엘스 서울특별시 송파구 · 2008년 준공 1097건 매매 평균 32.25억최근 28.3억 · 2026-05-22 전세 평균 11.64억최근 11.5억 · 2026-05-26 월세 보 5.17억 / 월 243만원" [ref=e153] [cursor=pointer]:
+            - /url: /apt/84710
+            - generic [ref=e154]:
+              - generic [ref=e155]:
+                - generic [ref=e156]:
+                  - paragraph [ref=e157]: 잠실엘스
+                  - paragraph [ref=e158]: 서울특별시 송파구 · 2008년 준공
+                - generic [ref=e159]: 1097건
+              - generic [ref=e160]:
+                - paragraph [ref=e161]:
+                  - generic [ref=e162]: 매매
+                  - text: 평균 32.25억
+                  - generic [ref=e163]: 최근 28.3억 · 2026-05-22
+                - paragraph [ref=e164]:
+                  - generic [ref=e165]: 전세
+                  - text: 평균 11.64억
+                  - generic [ref=e166]: 최근 11.5억 · 2026-05-26
+                - paragraph [ref=e167]:
+                  - generic [ref=e168]: 월세
+                  - text: 보 5.17억 / 월
+                  - generic [ref=e169]: 243만원
+    - contentinfo [ref=e170]:
+      - generic [ref=e171]:
+        - generic [ref=e172]:
+          - paragraph [ref=e173]: 임장온
+          - paragraph [ref=e174]: 공공데이터 기반 부동산 실거래가 통합 정보
+        - generic [ref=e175]:
+          - paragraph [ref=e176]: 서비스
+          - list [ref=e177]:
+            - listitem [ref=e178]:
+              - link "홈" [ref=e179] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e180]:
+              - link "아파트" [ref=e181] [cursor=pointer]:
+                - /url: /apt
+            - listitem [ref=e182]:
+              - link "오피스텔" [ref=e183] [cursor=pointer]:
+                - /url: /officetel
+            - listitem [ref=e184]:
+              - link "다세대" [ref=e185] [cursor=pointer]:
+                - /url: /villa
+            - listitem [ref=e186]:
+              - link "지역" [ref=e187] [cursor=pointer]:
+                - /url: /region
+            - listitem [ref=e188]:
+              - link "생활편의" [ref=e189] [cursor=pointer]:
+                - /url: /life
+            - listitem [ref=e190]:
+              - link "학교찾기" [ref=e191] [cursor=pointer]:
+                - /url: /school
+        - generic [ref=e192]:
+          - paragraph [ref=e193]: 데이터 출처
+          - list [ref=e194]:
+            - listitem [ref=e195]: 국토교통부 실거래가
+            - listitem [ref=e196]: 행정안전부 법정동코드
+            - listitem [ref=e197]: 카카오 로컬
+        - generic [ref=e198]:
+          - paragraph [ref=e199]: 법적 안내
+          - list [ref=e200]:
+            - listitem [ref=e201]:
+              - link "서비스 소개" [ref=e202] [cursor=pointer]:
+                - /url: /about
+            - listitem [ref=e203]:
+              - link "데이터 안내" [ref=e204] [cursor=pointer]:
+                - /url: /data-source
+            - listitem [ref=e205]:
+              - link "이용약관" [ref=e206] [cursor=pointer]:
+                - /url: /terms
+            - listitem [ref=e207]:
+              - link "개인정보 처리방침" [ref=e208] [cursor=pointer]:
+                - /url: /privacy
+      - paragraph [ref=e210]: © 2026 임장온. 본 사이트는 공공데이터를 가공해 제공합니다. 실거래 신고 지연으로 최신성·정확성이 100% 보장되지 않습니다.
+  - button "Open Next.js Dev Tools" [ref=e240] [cursor=pointer]:
+    - img [ref=e241]
+  - alert [ref=e244]

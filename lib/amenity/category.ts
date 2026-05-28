@@ -84,3 +84,25 @@ export function getCategoryDef(slug: string): AmenityCategoryDef | null {
   }
   return null;
 }
+
+/**
+ * Client Component에 def를 넘길 때 사용하는 직렬화 가능한 뷰.
+ * AmenityCategoryDef는 함수(getList 등)를 포함하므로 그대로 'use client' 경계를 넘길 수 없다.
+ */
+export interface AmenityCategoryView {
+  slug: AmenitySlug;
+  label: string;
+  emoji: string;
+  breadcrumbLabel: string;
+  subFilters?: AmenitySubFilterDef;
+}
+
+export function toAmenityCategoryView(def: AmenityCategoryDef): AmenityCategoryView {
+  return {
+    slug: def.slug,
+    label: def.label,
+    emoji: def.emoji,
+    breadcrumbLabel: def.breadcrumbLabel,
+    subFilters: def.subFilters,
+  };
+}

@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { getSigunguByCode, getSidoList } from '@/lib/region';
-import { getCategoryDef } from '@/lib/amenity/category';
+import { getCategoryDef, toAmenityCategoryView } from '@/lib/amenity/category';
 import { getAmenityList, normalizePage } from '@/lib/amenity/list';
 import { AmenityFilterPanel } from '../_components/amenity-filter-panel';
 import { AmenityMobileFilterSheet } from '../_components/amenity-mobile-filter-sheet';
@@ -36,6 +36,7 @@ export default async function AmenitySigunguListPage({ params, searchParams }: P
   if (!region || !region.sigunguCode) notFound();
 
   const basePath = `/amenity/${def.slug}/${sigunguCode}`;
+  const defView = toAmenityCategoryView(def);
   const page = normalizePage(sp.page);
   const subKey = def.subFilters?.paramKey ?? 'sub';
 
@@ -63,13 +64,13 @@ export default async function AmenitySigunguListPage({ params, searchParams }: P
         <p className="mt-2 text-sm text-[var(--color-muted)]">전체 {total.toLocaleString('ko-KR')}개 · <Link href={`/amenity/${def.slug}`} className="font-semibold text-[var(--color-blue)]">전국에서 검색 →</Link></p>
       </div>
 
-      <Suspense><AmenityMobileFilterSheet def={def} basePath={basePath} sidoList={sidoList} /></Suspense>
+      <Suspense><AmenityMobileFilterSheet def={defView} basePath={basePath} sidoList={sidoList} /></Suspense>
 
       <div className="flex items-start gap-6">
         <aside className="sticky top-[88px] hidden w-[280px] shrink-0 md:block">
           <div className="rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
             <Suspense fallback={<div className="h-80 animate-pulse rounded-xl bg-[var(--color-soft)]" />}>
-              <AmenityFilterPanel def={def} basePath={basePath} sidoList={sidoList} />
+              <AmenityFilterPanel def={defView} basePath={basePath} sidoList={sidoList} />
             </Suspense>
           </div>
           <div className="mt-4 rounded-[22px] border border-dashed border-[#93c5fd] bg-white/65 p-5 text-center text-xs text-[var(--color-muted)]">광고 영역</div>
