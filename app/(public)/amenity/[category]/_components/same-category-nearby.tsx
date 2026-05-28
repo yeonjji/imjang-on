@@ -4,7 +4,7 @@ import type { AmenityCategoryDef } from '@/lib/amenity/category';
 
 interface Item { id: bigint; name: string; address: string; distanceMeters: number; sub: string | null; }
 
-export function SameCategoryNearby({ items, def, basePath }: { items: Item[]; def: AmenityCategoryDef; basePath: string }) {
+export function SameCategoryNearby({ items, def }: { items: Item[]; def: AmenityCategoryDef }) {
   if (items.length === 0) return null;
   return (
     <Card id="same">
@@ -12,7 +12,7 @@ export function SameCategoryNearby({ items, def, basePath }: { items: Item[]; de
       <ul className="divide-y divide-[var(--color-line)]">
         {items.map((it) => (
           <li key={String(it.id)}>
-            <Link href={`${basePath}/${it.id}`} className="flex items-center justify-between py-3">
+            <Link href={`/amenity/${def.slug}/${it.id}`} className="flex items-center justify-between py-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-[var(--color-blue-dark)]">{it.name}
                   <span className="ml-2 rounded-md bg-[var(--color-sky-soft)] px-1.5 py-0.5 text-[11px] font-bold text-[var(--color-blue)]">{it.distanceMeters}m</span>

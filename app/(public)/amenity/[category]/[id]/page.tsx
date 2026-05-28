@@ -9,11 +9,11 @@ import {
   getMixedNearbyForDetail,
   getSameCategoryNearby,
 } from '@/lib/amenity/nearby';
-import { AmenityHero } from '../../_components/amenity-hero';
-import { AmenityInfo } from '../../_components/amenity-info';
-import { AmenityDetailSidebar } from '../../_components/amenity-detail-sidebar';
-import { NearbyAmenitiesMixed } from '../../_components/nearby-amenities-mixed';
-import { SameCategoryNearby } from '../../_components/same-category-nearby';
+import { AmenityHero } from '../_components/amenity-hero';
+import { AmenityInfo } from '../_components/amenity-info';
+import { AmenityDetailSidebar } from '../_components/amenity-detail-sidebar';
+import { NearbyAmenitiesMixed } from '../_components/nearby-amenities-mixed';
+import { SameCategoryNearby } from '../_components/same-category-nearby';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { NaverMap } from '@/components/ui/naver-map';
 import { Card } from '@/components/ui/card';
@@ -23,10 +23,10 @@ import type { AmenitySlug } from '@/lib/amenity/category';
 
 export const revalidate = 86_400;
 
-interface Params { params: Promise<{ category: string; sigunguCode: string; id: string }>; }
+interface Params { params: Promise<{ category: string; id: string }>; }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const { category, sigunguCode, id } = await params;
+  const { category, id } = await params;
   const def = getCategoryDef(category);
   if (!def) return {};
   const item = await getAmenityById(def.slug, BigInt(id)).catch(() => null);
@@ -34,23 +34,23 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: `${item.name} — ${def.label} 정보·주변 아파트`,
     description: `${item.name}(${item.address}) ${def.label} 정보와 주변 아파트 실거래가.`,
-    alternates: { canonical: `/amenity/${def.slug}/${sigunguCode}/${id}` },
+    alternates: { canonical: `/amenity/${def.slug}/${id}` },
   };
 }
 
 export default async function AmenityDetailPage({ params }: Params) {
-  const { category, sigunguCode, id } = await params;
+  const { category, id } = await params;
   const def = getCategoryDef(category);
   if (!def) notFound();
 
   const itemId = BigInt(id);
-  const [item, region] = await Promise.all([
-    getAmenityById(def.slug, itemId),
-    getSigunguByCode(sigunguCode),
-  ]);
-  if (!item || !region || item.sigunguCode !== sigunguCode) notFound();
+  const item = await getAmenityById(def.slug, itemId);
+  if (!item) notFound();
 
-  const basePath = `/amenity/${def.slug}/${sigunguCode}`;
+  const region = item.sigunguCode
+    ? await getSigunguByCode(item.sigunguCode).catch(() => null)
+    : null;
+
   const coord = await getAmenityLatLng(def.slug, itemId);
 
   type MixedT = Awaited<ReturnType<typeof getMixedNearbyForDetail>>;
@@ -59,26 +59,36 @@ export default async function AmenityDetailPage({ params }: Params) {
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
     coord ? getMixedNearbyForDetail(def.slug as AmenitySlug, coord.lat, coord.lng) : Promise.resolve({ convenience: [], mart: [], cafe: [], market: [] } as MixedT),
     coord ? getSameCategoryNearby(def.slug as AmenitySlug, coord.lat, coord.lng, itemId) : Promise.resolve([] as SameT),
-    getAmenityList(def.slug, { sigunguCode }, 1),
+    item.sigunguCode
+      ? getAmenityList(def.slug, { sigunguCode: item.sigunguCode }, 1)
+      : Promise.resolve({ rows: [], total: 0, page: 1, perPage: 0, totalPages: 0 }),
   ]);
 
   const others = otherList.rows.filter((s) => s.id !== item.id).slice(0, 4);
+  const regionListPath = item.sigunguCode
+    ? `/amenity/${def.slug}?region=${item.sigunguCode}`
+    : `/amenity/${def.slug}`;
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10">
       <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
         <Link href="/">홈</Link><span>›</span>
         <Link href="/life">생활편의</Link><span>›</span>
+        <Link href="/life#amenity">상권·편의</Link><span>›</span>
         <Link href={`/amenity/${def.slug}`}>{def.breadcrumbLabel}</Link><span>›</span>
-        <Link href={basePath}>{region.fullName}</Link><span>›</span>
-        <span className="font-semibold text-[var(--color-blue-dark)]">{item.name}</span>
+        {region && (
+          <>
+            <Link href={regionListPath}>{region.fullName}</Link><span>›</span>
+          </>
+        )}
+        <span className="truncate font-semibold text-[var(--color-blue-dark)]">{item.name}</span>
       </nav>
 
       <AmenityHero item={item} def={def} />
 
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[1fr_320px]">
         <main className="flex flex-col gap-6">
-          <AmenityInfo item={item} def={def} regionFullName={region.fullName} />
+          <AmenityInfo item={item} def={def} regionFullName={region?.fullName ?? ''} />
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
@@ -92,9 +102,9 @@ export default async function AmenityDetailPage({ params }: Params) {
           )}
           <NearbyApartments items={apts} />
           {coord && <NearbyAmenitiesMixed {...mixed} />}
-          {coord && <SameCategoryNearby items={sameCat} def={def} basePath={basePath} />}
+          {coord && <SameCategoryNearby items={sameCat} def={def} />}
         </main>
-        <aside><AmenityDetailSidebar basePath={basePath} others={others} def={def} /></aside>
+        <aside><AmenityDetailSidebar others={others} def={def} sigunguCode={item.sigunguCode} /></aside>
       </div>
     </div>
   );

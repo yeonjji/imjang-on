@@ -14,10 +14,13 @@ export function AmenityMobileFilterSheet({ def, basePath, sidoList }: { def: Ame
   const sp = useSearchParams();
   const [pending, setPending] = useState(() => new URLSearchParams(sp.toString()));
 
-  const activeKeys = ['sido', 'q', ...(def.subFilters ? [def.subFilters.paramKey] : [])];
+  const activeKeys = ['sido', 'region', 'q', ...(def.subFilters ? [def.subFilters.paramKey] : [])];
   const activeCount = activeKeys.filter((k) => {
     const v = sp.get(k);
-    return v && v !== 'all';
+    if (!v || v === 'all') return false;
+    // 시드 기본값(sido=서울)은 사용자가 명시 변경한 게 아니므로 카운트 제외
+    if (k === 'sido' && v === '서울') return false;
+    return true;
   }).length;
 
   return (

@@ -7,13 +7,17 @@ export interface LifeSubItem {
   soon?: boolean;
 }
 
+export type LifeGroupSlug = 'education' | 'medical' | 'amenity' | 'urban';
+
 export interface LifeGroup {
+  slug: LifeGroupSlug;
   label: string;
   items: LifeSubItem[];
 }
 
 export const LIFE_GROUPS: LifeGroup[] = [
   {
+    slug: 'education',
     label: '교육시설',
     items: [
       { label: '학교', href: '/school', live: true },
@@ -21,6 +25,7 @@ export const LIFE_GROUPS: LifeGroup[] = [
     ],
   },
   {
+    slug: 'medical',
     label: '의료시설',
     items: [
       { label: '병원·의원', href: '/medical?type=hospital', live: false },
@@ -29,6 +34,7 @@ export const LIFE_GROUPS: LifeGroup[] = [
     ],
   },
   {
+    slug: 'amenity',
     label: '상권·편의',
     items: [
       { label: '편의점', href: '/amenity/convenience', live: true },
@@ -38,6 +44,7 @@ export const LIFE_GROUPS: LifeGroup[] = [
     ],
   },
   {
+    slug: 'urban',
     label: '도시인프라',
     items: [
       { label: '공원', href: '/urban?type=park', live: false },

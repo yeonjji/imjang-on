@@ -6,13 +6,19 @@ import type {
   AmenityListFilter,
   AmenityListResult,
 } from '@/lib/amenity/category';
+import { sidoPrefix } from '@/lib/region';
 
 const PER_PAGE = 30;
 const PREFIX = 'G20405';
 
 export function buildStoreWhere(f: AmenityListFilter): Prisma.StoreWhereInput {
   const where: Prisma.StoreWhereInput = { industryCode: { startsWith: PREFIX } };
-  if (f.sigunguCode) where.sigunguCode = f.sigunguCode;
+  if (f.sigunguCode) {
+    where.sigunguCode = f.sigunguCode;
+  } else if (f.sido) {
+    const prefix = sidoPrefix(f.sido);
+    if (prefix) where.sigunguCode = { startsWith: prefix };
+  }
   if (f.q) where.name = { contains: f.q };
   return where;
 }

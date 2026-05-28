@@ -56,4 +56,22 @@ describe('market adapter — buildMarketWhere', () => {
       name: { contains: '강남' },
     });
   });
+
+  it('sido 만 있을 때 sigunguCode prefix', () => {
+    expect(buildMarketWhere({ sido: '서울' })).toEqual({
+      sigunguCode: { startsWith: '11' },
+    });
+  });
+
+  it('sigunguCode 가 있으면 sido 는 무시', () => {
+    expect(buildMarketWhere({ sido: '서울', sigunguCode: '11680' })).toEqual({
+      sigunguCode: '11680',
+    });
+  });
+
+  it('sido 둘 다 없으면 sigunguCode is not null 만 (기존 동작)', () => {
+    expect(buildMarketWhere({})).toEqual({
+      sigunguCode: { not: null },
+    });
+  });
 });

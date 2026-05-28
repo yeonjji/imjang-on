@@ -8,6 +8,25 @@ const nextConfig = {
   images: {
     remotePatterns: [],
   },
+  async redirects() {
+    return [
+      {
+        source: '/amenity/:category/regions',
+        destination: '/amenity/:category',
+        permanent: true,
+      },
+      {
+        source: '/amenity/:category/:sigunguCode(\\d{5})',
+        destination: '/amenity/:category?region=:sigunguCode',
+        permanent: true,
+      },
+      {
+        source: '/amenity/:category/:sigunguCode(\\d{5})/:id(\\d+)',
+        destination: '/amenity/:category/:id',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default withSentryConfig(nextConfig, {

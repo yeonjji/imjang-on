@@ -41,4 +41,31 @@ describe('mart adapter — buildMartWhere', () => {
       name: { contains: '이마트' },
     });
   });
+
+  it('sido 만 있을 때 sigunguCode prefix + 마트 OR', () => {
+    expect(buildMartWhere({ sido: '서울' })).toEqual({
+      sigunguCode: { startsWith: '11' },
+      OR: [
+        { industryCode: { startsWith: 'G20404' } },
+        { industryCode: { startsWith: 'G20402' } },
+      ],
+    });
+  });
+
+  it('sigunguCode 가 있으면 sido 는 무시', () => {
+    expect(buildMartWhere({ sigunguCode: '11680', sido: '서울' })).toEqual({
+      sigunguCode: '11680',
+      OR: [
+        { industryCode: { startsWith: 'G20404' } },
+        { industryCode: { startsWith: 'G20402' } },
+      ],
+    });
+  });
+
+  it('sub=hyper + sido', () => {
+    expect(buildMartWhere({ sido: '서울', sub: 'hyper' })).toEqual({
+      sigunguCode: { startsWith: '11' },
+      industryCode: { startsWith: 'G20402' },
+    });
+  });
 });

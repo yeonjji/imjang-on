@@ -29,4 +29,24 @@ describe('convenience adapter — buildStoreWhere', () => {
       industryCode: { startsWith: 'G20405' },
     });
   });
+
+  it('sido 만 있으면 prefix startsWith', () => {
+    expect(buildStoreWhere({ sido: '서울' })).toEqual({
+      industryCode: { startsWith: 'G20405' },
+      sigunguCode: { startsWith: '11' },
+    });
+  });
+
+  it('sigunguCode 가 있으면 sido 는 무시', () => {
+    expect(buildStoreWhere({ sido: '서울', sigunguCode: '26110' })).toEqual({
+      industryCode: { startsWith: 'G20405' },
+      sigunguCode: '26110',
+    });
+  });
+
+  it('미존재 시도명은 무시 (전국 fallback)', () => {
+    expect(buildStoreWhere({ sido: '존재하지않음' })).toEqual({
+      industryCode: { startsWith: 'G20405' },
+    });
+  });
 });
