@@ -33,6 +33,8 @@ describe('adapter-childcare', () => {
     expect(a.cctvCount).toBe(7);
     expect(a.classCntTot).toBe(7);
     expect(a.emRoleDirector).toBe(1);
+    expect(a.emRoleTeacher).toBe(4);
+    expect(a.waitCnt01).toBe(4);
     expect(a.waitCntTot).toBe(18);
   });
 
