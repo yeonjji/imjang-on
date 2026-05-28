@@ -23,6 +23,7 @@ coverage/
 playwright-report/
 test-results/
 .vitest/
+.playwright-mcp/
 
 # Prisma
 prisma/*.db
