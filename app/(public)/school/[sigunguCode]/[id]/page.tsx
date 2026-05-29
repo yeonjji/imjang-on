@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { getSchoolById, getSchoolList } from '@/lib/school';
 import { getSigunguByCode } from '@/lib/region';
-import { getNearbyApartments, getSchoolNearbyAmenities } from '@/lib/amenity/nearby';
+import { getNearbyApartments, getSchoolNearbyAmenities, getNearbyChildcare } from '@/lib/amenity/nearby';
+import { NearbyChildcare } from '../../../childcare/[sigunguCode]/[id]/_components/nearby-childcare';
 import { SchoolHero } from './_components/school-hero';
 import { SchoolInfo } from './_components/school-info';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
@@ -49,11 +50,12 @@ export default async function SchoolDetailPage({ params }: Params) {
   const basePath = `/school/${sigunguCode}`;
   const coord = await getSchoolLatLng(schoolId);
 
-  const [apts, amenities, otherList] = await Promise.all([
+  const [apts, amenities, nearbyChildren, otherList] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
     coord
       ? getSchoolNearbyAmenities(coord.lat, coord.lng)
       : Promise.resolve({ parks: [], mart: [], chargers: [] } as Awaited<ReturnType<typeof getSchoolNearbyAmenities>>),
+    coord ? getNearbyChildcare(coord.lat, coord.lng, 1000, 5) : Promise.resolve([]),
     getSchoolList({ sigunguCode }, 1),
   ]);
 
@@ -81,6 +83,7 @@ export default async function SchoolDetailPage({ params }: Params) {
             </Card>
           )}
           <NearbyApartments items={apts} />
+          {coord && <NearbyChildcare items={nearbyChildren} />}
           {coord && <NearbyAmenities parks={amenities.parks} mart={amenities.mart} chargers={amenities.chargers} />}
         </main>
         <aside><SchoolDetailSidebar basePath={basePath} others={others} /></aside>

@@ -234,6 +234,44 @@ export async function getMixedNearbyForDetail(
   };
 }
 
+export interface NearbyChildcare {
+  id: bigint;
+  name: string;
+  address: string;
+  sigunguCode: string | null;
+  crType: string | null;
+  capacity: number | null;
+  distanceMeters: number;
+}
+
+export async function getNearbyChildcare(
+  lat: number,
+  lng: number,
+  radiusMeters = 1000,
+  limit = 5,
+  excludeId: bigint | null = null,
+): Promise<NearbyChildcare[]> {
+  const rows = await prisma.$queryRaw<NearbyChildcare[]>`
+    SELECT
+      id, name, address, "sigunguCode", "crType", capacity,
+      ROUND(ST_Distance(
+        location::geography,
+        ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
+      )::numeric)::int AS "distanceMeters"
+    FROM "Childcare"
+    WHERE location IS NOT NULL
+      AND ("status" IN ('정상', '재개') OR "status" IS NULL)
+      AND ST_DWithin(
+        location::geography,
+        ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
+        ${radiusMeters}
+      )
+    ORDER BY "distanceMeters"
+    LIMIT ${limit + 1}
+  `;
+  return rows.filter((r) => excludeId == null || r.id !== excludeId).slice(0, limit);
+}
+
 /**
  * "같은 카테고리 가까운 N건" — 현재 row(excludeId)는 제외.
  * convenience/mart/cafe는 Store, market는 TraditionalMarket.

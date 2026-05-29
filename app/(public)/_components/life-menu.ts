@@ -24,7 +24,7 @@ export const LIFE_GROUPS: LifeGroup[] = [
     intro: '아이의 통학 동선과 학군을 한 화면에서.',
     items: [
       { label: '학교', href: '/school', live: true },
-      { label: '어린이집', href: '/childcare', live: false, soon: true },
+      { label: '어린이집', href: '/childcare', live: true },
     ],
   },
   {

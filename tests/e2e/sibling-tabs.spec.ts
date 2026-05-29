@@ -32,19 +32,18 @@ test.describe('amenity LIST sibling 탭', () => {
 });
 
 test.describe('school LIST sibling 탭', () => {
-  test('학교 LIST에 학교/어린이집(Soon) 탭, 학교가 활성', async ({ page }) => {
+  test('학교 LIST에 학교/어린이집 탭, 학교가 활성', async ({ page }) => {
     await page.goto('/school');
     const tabs = page.getByTestId('sibling-tabs');
     await expect(tabs).toBeVisible();
     await expect(tabs.getByText('학교', { exact: true })).toBeVisible();
     await expect(tabs.getByText('어린이집')).toBeVisible();
-    await expect(tabs.getByText('Soon')).toBeVisible();
     await expect(tabs.getByText('학교', { exact: true })).toHaveAttribute('aria-current', 'page');
   });
 
-  test('어린이집(Soon) 탭 클릭 → SoonModal', async ({ page }) => {
+  test('어린이집 탭 클릭 → /childcare 이동 (Live)', async ({ page }) => {
     await page.goto('/school');
-    await page.getByTestId('sibling-tabs').getByRole('button', { name: /어린이집/ }).click();
-    await expect(page.getByText('어린이집 정보는 곧 만나요')).toBeVisible();
+    await page.getByTestId('sibling-tabs').getByRole('link', { name: /어린이집/ }).click();
+    await expect(page).toHaveURL(/\/childcare(\?|$)/);
   });
 });
