@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { prisma } from '@/lib/db';
 import { getSigunguByCode } from '@/lib/region';
 import { getSchoolList, getSchoolKindCounts, type SchoolKindSlug, type FoundSlug, type CoeduSlug } from '@/lib/school';
 import { SchoolFilterPanel } from '../_components/school-filter-panel';
@@ -27,8 +28,17 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function SchoolSigunguListPage({ params, searchParams }: Params) {
   const { sigunguCode } = await params;
   const sp = await searchParams;
-  const region = await getSigunguByCode(sigunguCode);
-  if (!region || !region.sigunguCode) notFound();
+  const [region, anySchool] = await Promise.all([
+    getSigunguByCode(sigunguCode),
+    prisma.school.findFirst({ where: { sigunguCode }, select: { region: true } }),
+  ]);
+  if (!region && !anySchool) notFound();
+  // Region 매핑 없으면 School.region(sido)으로 fallback.
+  const regionDisplay = region ?? {
+    fullName: anySchool?.region ? `${anySchool.region} (${sigunguCode})` : sigunguCode,
+    sigungu: sigunguCode,
+    sigunguCode,
+  };
 
   const basePath = `/school/${sigunguCode}`;
   const page = Math.max(1, Number(sp.page ?? '1'));
@@ -51,12 +61,12 @@ export default async function SchoolSigunguListPage({ params, searchParams }: Pa
         <Link href="/">홈</Link><span>›</span>
         <Link href="/life">생활편의</Link><span>›</span>
         <Link href="/school">학교찾기</Link><span>›</span>
-        <span className="font-semibold text-[var(--color-blue-dark)]">{region.fullName}</span>
+        <span className="font-semibold text-[var(--color-blue-dark)]">{regionDisplay.fullName}</span>
       </nav>
 
       <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
-        <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">학교찾기 · {region.fullName}</p>
-        <h1 className="text-3xl font-black tracking-tight text-[var(--color-blue-dark)]">{region.sigungu} 학교</h1>
+        <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">학교찾기 · {regionDisplay.fullName}</p>
+        <h1 className="text-3xl font-black tracking-tight text-[var(--color-blue-dark)]">{regionDisplay.sigungu} 학교</h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">전체 {kindCounts.total.toLocaleString('ko-KR')}개 · <Link href="/school" className="font-semibold text-[var(--color-blue)]">전국에서 검색 →</Link></p>
       </div>
 

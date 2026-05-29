@@ -45,7 +45,13 @@ export default async function SchoolDetailPage({ params }: Params) {
     getSchoolById(schoolId),
     getSigunguByCode(sigunguCode),
   ]);
-  if (!school || !region || school.sigunguCode !== sigunguCode) notFound();
+  if (!school || school.sigunguCode !== sigunguCode) notFound();
+  // Region 테이블에 sigunguCode가 없을 경우 School.region(sido)으로 fallback.
+  const regionDisplay = region ?? {
+    fullName: school.region ? `${school.region} (${sigunguCode})` : sigunguCode,
+    sigungu: '',
+    sigunguCode,
+  };
 
   const basePath = `/school/${sigunguCode}`;
   const coord = await getSchoolLatLng(schoolId);
@@ -67,7 +73,7 @@ export default async function SchoolDetailPage({ params }: Params) {
         <Link href="/">홈</Link><span>›</span>
         <Link href="/life">생활편의</Link><span>›</span>
         <Link href="/school">학교찾기</Link><span>›</span>
-        <Link href={basePath}>{region.fullName}</Link><span>›</span>
+        <Link href={basePath}>{regionDisplay.fullName}</Link><span>›</span>
         <span className="font-semibold text-[var(--color-blue-dark)]">{school.name}</span>
       </nav>
 
@@ -75,7 +81,7 @@ export default async function SchoolDetailPage({ params }: Params) {
 
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[1fr_320px]">
         <main className="flex flex-col gap-6">
-          <SchoolInfo school={school} regionFullName={region.fullName} />
+          <SchoolInfo school={school} regionFullName={regionDisplay.fullName} />
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
