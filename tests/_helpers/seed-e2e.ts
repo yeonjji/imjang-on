@@ -3,6 +3,34 @@ import { PropertyType, DealType } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { updatePropertyAggregates } from '@/scripts/ingest/aggregator';
 
+export async function seedChildcare() {
+  const SIGUNGU = '11710';
+  await prisma.childcare.deleteMany({ where: { sourceId: { startsWith: 'E2E_' } } });
+  await prisma.childcare.create({
+    data: {
+      sourceId: 'E2E_CC_0001',
+      name: 'E2E 천사어린이집',
+      crType: '국공립',
+      status: '정상',
+      sido: '서울특별시',
+      sigungu: '송파구',
+      sigunguCode: SIGUNGU,
+      address: '서울특별시 송파구 거마로24길 11',
+      tel: '02-409-1406',
+      capacity: 60,
+      currentCount: 40,
+      cctvCount: 7,
+      staffCount: 13,
+      classCntTot: 10,
+      childCntTot: 70,
+      emRoleDirector: 1,
+      emRoleTeacher: 4,
+      emRoleTot: 13,
+    },
+  });
+  await prisma.$executeRaw`UPDATE "Childcare" SET location = ST_SetSRID(ST_MakePoint(127.1043, 37.5045), 4326)::geography WHERE "sourceId" = 'E2E_CC_0001'`;
+}
+
 async function main() {
   await prisma.transaction.deleteMany();
   await prisma.property.deleteMany();
@@ -38,6 +66,33 @@ async function main() {
       sourceVersion: 'e2e',
     },
   });
+
+  // 송파구 region — /childcare/11710 · /school/11710 페이지용
+  await prisma.region.create({
+    data: {
+      code: '1171000000',
+      sido: '서울특별시',
+      sigungu: '송파구',
+      fullName: '서울특별시 송파구',
+      level: 2,
+      sourceVersion: 'e2e',
+    },
+  });
+
+  // 송파구 학교 시드 — school detail 근처 어린이집 테스트용
+  await prisma.school.deleteMany({ where: { sourceId: { startsWith: 'E2E_' } } });
+  await prisma.school.create({
+    data: {
+      sourceId: 'E2E_SCH_0001',
+      name: 'E2E 거마초등학교',
+      address: '서울특별시 송파구 거마로 1',
+      sigunguCode: '11710',
+      schoolKind: '초등학교',
+      region: '서울특별시',
+    },
+  });
+  // 시드 학교를 어린이집 바로 옆(~100m)에 위치
+  await prisma.$executeRaw`UPDATE "School" SET location = ST_SetSRID(ST_MakePoint(127.1040, 37.5048), 4326)::geography WHERE "sourceId" = 'E2E_SCH_0001'`;
 
   const p = await prisma.property.create({
     data: {
@@ -105,6 +160,8 @@ async function main() {
       sigunguCode: '11650',
     },
   });
+
+  await seedChildcare();
 
   console.log('e2e seed done. propertyId =', String(p.id));
   await prisma.$disconnect();
