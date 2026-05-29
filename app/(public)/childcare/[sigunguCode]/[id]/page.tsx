@@ -40,7 +40,14 @@ export default async function ChildcareDetailPage({ params }: Params) {
     getChildcareById(itemId),
     getSigunguByCode(sigunguCode),
   ]);
-  if (!item || !region || item.sigunguCode !== sigunguCode) notFound();
+  if (!item || item.sigunguCode !== sigunguCode) notFound();
+  // Region 테이블에 sigunguCode가 없는 경우(cpmsapi030 arcode와 Region 매핑 불일치)
+  // Childcare row의 sido/sigungu로 fallback해서 페이지를 그대로 노출한다.
+  const regionDisplay = region ?? {
+    fullName: [item.sido, item.sigungu].filter(Boolean).join(' ') || sigunguCode,
+    sigungu: item.sigungu ?? '',
+    sigunguCode,
+  };
 
   const basePath = `/childcare/${sigunguCode}`;
   const coord = await getChildcareLatLng(itemId);
@@ -64,7 +71,7 @@ export default async function ChildcareDetailPage({ params }: Params) {
         <Link href="/">홈</Link><span>›</span>
         <Link href="/life">생활편의</Link><span>›</span>
         <Link href="/childcare">어린이집찾기</Link><span>›</span>
-        <Link href={basePath}>{region.fullName}</Link><span>›</span>
+        <Link href={basePath}>{regionDisplay.fullName}</Link><span>›</span>
         <span className="font-semibold text-[var(--color-blue-dark)] truncate max-w-[40vw]">{item.name}</span>
       </nav>
 
@@ -72,7 +79,7 @@ export default async function ChildcareDetailPage({ params }: Params) {
 
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[1fr_320px]">
         <main className="flex flex-col gap-6">
-          <ChildcareInfo item={item} regionFullName={region.fullName} />
+          <ChildcareInfo item={item} regionFullName={regionDisplay.fullName} />
           <ChildcareFacility item={item} />
           <ChildcareAgeBreakdown item={item} />
           <ChildcareWaitList item={item} />
