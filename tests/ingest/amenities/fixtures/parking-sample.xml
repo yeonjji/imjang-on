@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <header><resultCode>00</resultCode><resultMsg>NORMAL SERVICE.</resultMsg></header>
+  <body>
+    <items>
+      <item>
+        <prkplceNo>PK-A001</prkplceNo>
+        <prkplceNm>산동우항공원 공영주차장</prkplceNm>
+        <prkplceSe>공영</prkplceSe>
+        <prkplceType>노외</prkplceType>
+        <rdnmadr>경상북도 구미시 신당4로1길 56</rdnmadr>
+        <lnmadr>경상북도 구미시 산동읍 신당리 2017</lnmadr>
+        <prkcmprt>233</prkcmprt>
+        <feedingSe>2</feedingSe>
+        <enforceSe>5부제</enforceSe>
+        <operDay>평일+토요일+공휴일</operDay>
+        <weekdayOperOpenHhmm>00:00</weekdayOperOpenHhmm>
+        <weekdayOperColseHhmm>23:59</weekdayOperColseHhmm>
+        <satOperOperOpenHhmm>00:00</satOperOperOpenHhmm>
+        <satOperCloseHhmm>23:59</satOperCloseHhmm>
+        <holidayOperOpenHhmm>00:00</holidayOperOpenHhmm>
+        <holidayCloseOpenHhmm>23:59</holidayCloseOpenHhmm>
+        <parkingchrgeInfo>유료</parkingchrgeInfo>
+        <basicTime>30</basicTime>
+        <basicCharge>300</basicCharge>
+        <addUnitTime>10</addUnitTime>
+        <addUnitCharge>100</addUnitCharge>
+        <dayCmmtkt>3000</dayCmmtkt>
+        <monthCmmtkt>0</monthCmmtkt>
+        <metpay>신용카드</metpay>
+        <spcmnt>요금면제 대상 다수</spcmnt>
+        <institutionNm>구미도시공사 주차시설팀</institutionNm>
+        <phoneNumber>054-480-2030</phoneNumber>
+        <latitude>36.15387449</latitude>
+        <longitude>128.4316946</longitude>
+        <pwdbsPpkZoneYn>Y</pwdbsPpkZoneYn>
+        <referenceDate>2026-04-17</referenceDate>
+        <insttCode>B555076</insttCode>
+        <insttNm>구미도시공사</insttNm>
+      </item>
+      <item>
+        <prkplceNo>PK-A002</prkplceNo>
+        <prkplceNm>사곡역 후문주차장</prkplceNm>
+        <prkplceSe>공영</prkplceSe>
+        <prkplceType>노외</prkplceType>
+        <rdnmadr>경상북도 구미시 박정희로 236</rdnmadr>
+        <lnmadr>경상북도 구미시 사곡동 603-349</lnmadr>
+        <prkcmprt>58</prkcmprt>
+        <feedingSe>1</feedingSe>
+        <enforceSe>미시행</enforceSe>
+        <operDay>평일+토요일+공휴일</operDay>
+        <parkingchrgeInfo>무료</parkingchrgeInfo>
+        <basicTime>0</basicTime>
+        <basicCharge>0</basicCharge>
+        <addUnitTime>0</addUnitTime>
+        <addUnitCharge>0</addUnitCharge>
+        <dayCmmtkt>0</dayCmmtkt>
+        <monthCmmtkt>0</monthCmmtkt>
+        <metpay>0</metpay>
+        <spcmnt>무료 운영중</spcmnt>
+        <institutionNm>구미도시공사 주차시설팀</institutionNm>
+        <phoneNumber>054-480-2030</phoneNumber>
+        <latitude>36.0995798</latitude>
+        <longitude>128.3554192</longitude>
+        <pwdbsPpkZoneYn>N</pwdbsPpkZoneYn>
+        <referenceDate>2026-04-17</referenceDate>
+        <insttCode>B555076</insttCode>
+        <insttNm>구미도시공사</insttNm>
+      </item>
+      <item>
+        <prkplceNo>PK-A003</prkplceNo>
+        <prkplceNm>좌표없는주차장</prkplceNm>
+        <prkplceSe>민영</prkplceSe>
+        <rdnmadr></rdnmadr>
+        <lnmadr>부산광역시 사하구 다대동 113-7</lnmadr>
+        <prkcmprt></prkcmprt>
+        <parkingchrgeInfo>유료</parkingchrgeInfo>
+        <latitude>0</latitude>
+        <longitude>0</longitude>
+        <pwdbsPpkZoneYn></pwdbsPpkZoneYn>
+        <referenceDate></referenceDate>
+      </item>
+    </items>
+    <numOfRows>3</numOfRows>
+    <pageNo>1</pageNo>
+    <totalCount>3</totalCount>
+  </body>
+</response>

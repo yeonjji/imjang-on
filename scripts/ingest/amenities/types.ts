@@ -141,13 +141,51 @@ export interface NormalizedChildcare {
   waitCntTot: number | null;
 }
 
+export interface NormalizedParking {
+  sourceId: string;
+  name: string;
+  prkplceSe: string | null;
+  prkplceType: string | null;
+  rdnmadr: string | null;
+  lnmadr: string | null;
+  address: string;
+  lat: number | null;
+  lng: number | null;
+  prkcmprt: number | null;
+  feedingSe: string | null;
+  enforceSe: string | null;
+  operDay: string | null;
+  weekdayOpenHhmm: string | null;
+  weekdayCloseHhmm: string | null;
+  satOpenHhmm: string | null;
+  satCloseHhmm: string | null;
+  holidayOpenHhmm: string | null;
+  holidayCloseHhmm: string | null;
+  chargeInfo: string | null;
+  basicTime: number | null;
+  basicCharge: number | null;
+  addUnitTime: number | null;
+  addUnitCharge: number | null;
+  dayCmmtkt: number | null;
+  monthCmmtkt: number | null;
+  metpay: string | null;
+  spcmnt: string | null;
+  pwdbsPpkZoneYn: boolean | null;
+  institutionNm: string | null;
+  phoneNumber: string | null;
+  insttCode: string | null;
+  insttNm: string | null;
+  referenceDate: Date | null;
+}
+
 export type AmenitySourceKey =
   | 'ev-charger'
   | 'traditional-market'
   | 'store'
   | 'park'
   | 'school'
-  | 'childcare';
+  | 'childcare'
+  | 'parking';
 
 export const AMENITY_INGEST_SOURCE: Record<AmenitySourceKey, string> = {
   'ev-charger': 'amenity-ev-charger',
@@ -156,4 +194,5 @@ export const AMENITY_INGEST_SOURCE: Record<AmenitySourceKey, string> = {
   'park': 'amenity-park',
   'school': 'amenity-school',
   'childcare': 'amenity-childcare',
+  'parking': 'amenity-parking',
 };
