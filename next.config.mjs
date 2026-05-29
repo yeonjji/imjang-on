@@ -15,11 +15,10 @@ const nextConfig = {
         destination: '/amenity/:category',
         permanent: true,
       },
-      {
-        source: '/amenity/:category/:sigunguCode(\\d{5})',
-        destination: '/amenity/:category?region=:sigunguCode',
-        permanent: true,
-      },
+      // ⚠️ '/amenity/:category/:sigunguCode(\\d{5})' → LIST redirect 룰은
+      // detail id 일부(5자리 BigInt: 19290, 54012, 54589 등)와 패턴 충돌해
+      // detail이 LIST로 잘못 308 redirect됨 → 제거.
+      // 옛 시군구+id 형태 URL(예: /amenity/conv/11710/54589)은 아래 룰로 detail로 정리.
       {
         source: '/amenity/:category/:sigunguCode(\\d{5})/:id(\\d+)',
         destination: '/amenity/:category/:id',
