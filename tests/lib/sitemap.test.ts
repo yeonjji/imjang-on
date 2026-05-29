@@ -15,4 +15,8 @@ describe('sitemap STATIC_ENTRIES', () => {
       ).toBe(true);
     }
   });
+
+  it('/urban/parking을 포함한다', () => {
+    expect(STATIC_ENTRIES.some((e) => e.url.endsWith('/urban/parking'))).toBe(true);
+  });
 });

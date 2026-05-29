@@ -27,6 +27,8 @@ export const STATIC_ENTRIES: MetadataRoute.Sitemap = [
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   })),
+  { url: `${SITE}/urban/parking`, changeFrequency: 'weekly', priority: 0.7 },
+  { url: `${SITE}/urban/parking?sido=${encodeURIComponent('서울')}`, changeFrequency: 'weekly', priority: 0.6 },
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

@@ -29,16 +29,23 @@ describe('LIFE_GROUPS', () => {
     ]);
   });
 
-  it('의료시설·도시인프라 그룹 하위는 아직 라이브가 아니다', () => {
-    const others = LIFE_GROUPS.filter(
-      (g) => g.label !== '교육시설' && g.label !== '상권·편의',
-    );
-    expect(others.flatMap((g) => g.items).every((i) => !i.live)).toBe(true);
+  it('의료시설 그룹 하위는 아직 라이브가 아니다', () => {
+    const medical = LIFE_GROUPS.find((g) => g.label === '의료시설')!;
+    expect(medical.items.every((i) => !i.live)).toBe(true);
   });
 
-  it('데이터 없는 항목(보건소·주차장)만 soon 배지를 가진다', () => {
+  it('도시인프라 그룹 — 주차장만 라이브이고 공원·충전소는 SoonModal', () => {
+    const urban = LIFE_GROUPS.find((g) => g.label === '도시인프라')!;
+    expect(urban.items).toEqual([
+      { label: '주차장', href: '/urban/parking', live: true },
+      { label: '공원',   href: '/urban/park',    live: false },
+      { label: '충전소', href: '/urban/charger', live: false },
+    ]);
+  });
+
+  it('데이터 없는 항목(보건소)만 soon 배지를 가진다', () => {
     const soon = LIFE_GROUPS.flatMap((g) => g.items).filter((i) => i.soon);
-    expect(soon.map((i) => i.label)).toEqual(['보건소', '주차장']);
+    expect(soon.map((i) => i.label)).toEqual(['보건소']);
   });
 
   it('모든 그룹은 비어있지 않은 intro(소개 1줄)를 가진다', () => {
