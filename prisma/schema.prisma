@@ -360,3 +360,51 @@ model Childcare {
   @@index([sigunguCode, status])
   @@index([crType])
 }
+
+model Parking {
+  id          BigInt                                @id @default(autoincrement())
+  sourceId    String                                @unique @db.VarChar(40)
+
+  name        String                                @db.VarChar(150)
+  prkplceSe   String?                               @db.VarChar(10)
+  prkplceType String?                               @db.VarChar(10)
+
+  rdnmadr     String?                               @db.VarChar(200)
+  lnmadr      String?                               @db.VarChar(200)
+  address     String                                @db.VarChar(200)
+  location    Unsupported("geography(Point,4326)")?
+
+  prkcmprt    Int?
+  feedingSe   String?                               @db.VarChar(4)
+  enforceSe   String?                               @db.VarChar(20)
+
+  operDay          String? @db.VarChar(60)
+  weekdayOpenHhmm  String? @db.VarChar(5)
+  weekdayCloseHhmm String? @db.VarChar(5)
+  satOpenHhmm      String? @db.VarChar(5)
+  satCloseHhmm     String? @db.VarChar(5)
+  holidayOpenHhmm  String? @db.VarChar(5)
+  holidayCloseHhmm String? @db.VarChar(5)
+
+  chargeInfo    String? @db.VarChar(10)
+  basicTime     Int?
+  basicCharge   Int?
+  addUnitTime   Int?
+  addUnitCharge Int?
+  dayCmmtkt     Int?
+  monthCmmtkt   Int?
+  metpay        String? @db.VarChar(60)
+  spcmnt        String? @db.Text
+
+  pwdbsPpkZoneYn Boolean?
+  institutionNm  String?   @db.VarChar(80)
+  phoneNumber    String?   @db.VarChar(30)
+  insttCode      String?   @db.VarChar(10)
+  insttNm        String?   @db.VarChar(80)
+  referenceDate  DateTime? @db.Date
+
+  updatedAt DateTime @updatedAt
+
+  @@index([prkplceSe])
+  @@index([chargeInfo])
+}
