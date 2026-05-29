@@ -11,11 +11,11 @@ describe('LIFE_GROUPS', () => {
     ]);
   });
 
-  it('교육시설 하위는 학교(live, /school)와 어린이집(soon, /childcare)이다', () => {
+  it('교육시설 하위는 학교(live, /school)와 어린이집(live, /childcare)이다', () => {
     const edu = LIFE_GROUPS.find((g) => g.label === '교육시설')!;
     expect(edu.items).toEqual([
       { label: '학교', href: '/school', live: true },
-      { label: '어린이집', href: '/childcare', live: false, soon: true },
+      { label: '어린이집', href: '/childcare', live: true },
     ]);
   });
 
@@ -36,9 +36,9 @@ describe('LIFE_GROUPS', () => {
     expect(others.flatMap((g) => g.items).every((i) => !i.live)).toBe(true);
   });
 
-  it('데이터 없는 항목(어린이집·보건소·주차장)만 soon 배지를 가진다', () => {
+  it('데이터 없는 항목(보건소·주차장)만 soon 배지를 가진다', () => {
     const soon = LIFE_GROUPS.flatMap((g) => g.items).filter((i) => i.soon);
-    expect(soon.map((i) => i.label)).toEqual(['어린이집', '보건소', '주차장']);
+    expect(soon.map((i) => i.label)).toEqual(['보건소', '주차장']);
   });
 
   it('모든 그룹은 비어있지 않은 intro(소개 1줄)를 가진다', () => {
