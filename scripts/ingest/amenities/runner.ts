@@ -8,6 +8,7 @@ import { fetchStoresByUpjong, STORE_UPJONG_TARGETS } from './adapter-store';
 import { fetchAllParks } from './adapter-park';
 import { fetchAllSchools } from './adapter-school';
 import { fetchAllChildcare } from './adapter-childcare';
+import { fetchAllParkings } from './adapter-parking';
 import { AMENITY_INGEST_SOURCE } from './types';
 import type {
   AmenitySourceKey,
@@ -18,6 +19,7 @@ import type {
   NormalizedPark,
   NormalizedSchool,
   NormalizedChildcare,
+  NormalizedParking,
 } from './types';
 
 // Pro Compute로 상향 후 청크를 키워 INSERT 횟수 감소
@@ -43,8 +45,8 @@ function locationSql(lat: number | null, lng: number | null) {
 function parseArgs(): { source: AmenitySourceKey } {
   const args = process.argv.slice(2);
   const raw = args.find((a) => a.startsWith('--source='))?.split('=')[1];
-  if (!raw || !['ev-charger', 'traditional-market', 'store', 'park', 'school', 'childcare'].includes(raw)) {
-    throw new Error(`--source must be one of: ev-charger, traditional-market, store, park, school, childcare. Got: ${raw}`);
+  if (!raw || !['ev-charger', 'traditional-market', 'store', 'park', 'school', 'childcare', 'parking'].includes(raw)) {
+    throw new Error(`--source must be one of: ev-charger, traditional-market, store, park, school, childcare, parking. Got: ${raw}`);
   }
   return { source: raw as AmenitySourceKey };
 }
@@ -72,6 +74,8 @@ async function main() {
       upserted = await ingestSchools();
     } else if (source === 'childcare') {
       upserted = await ingestChildcare();
+    } else if (source === 'parking') {
+      upserted = await ingestParkings();
     } else {
       upserted = await ingestStores();
     }
@@ -348,6 +352,97 @@ async function ingestStores(): Promise<number> {
     logger.info({ label: t.label, code: t.code, count: rows.length }, 'store upjong done');
   }
   return upserted;
+}
+
+const PARKING_CHUNK = 500;
+
+async function ingestParkings(): Promise<number> {
+  const rows = dedupeBySourceId(await fetchAllParkings());
+  await writeParkings(rows);
+  return rows.length;
+}
+
+async function writeParkings(rows: NormalizedParking[]): Promise<void> {
+  for (let i = 0; i < rows.length; i += PARKING_CHUNK) {
+    const chunk = rows.slice(i, i + PARKING_CHUNK);
+    const values = chunk.map((r: NormalizedParking) =>
+      Prisma.sql`(
+        ${r.sourceId}, ${r.name},
+        ${r.prkplceSe}, ${r.prkplceType},
+        ${r.rdnmadr}, ${r.lnmadr}, ${r.address},
+        ${locationSql(r.lat, r.lng)},
+        ${r.prkcmprt}, ${r.feedingSe}, ${r.enforceSe},
+        ${r.operDay},
+        ${r.weekdayOpenHhmm}, ${r.weekdayCloseHhmm},
+        ${r.satOpenHhmm}, ${r.satCloseHhmm},
+        ${r.holidayOpenHhmm}, ${r.holidayCloseHhmm},
+        ${r.chargeInfo},
+        ${r.basicTime}, ${r.basicCharge},
+        ${r.addUnitTime}, ${r.addUnitCharge},
+        ${r.dayCmmtkt}, ${r.monthCmmtkt},
+        ${r.metpay}, ${r.spcmnt},
+        ${r.pwdbsPpkZoneYn}, ${r.institutionNm}, ${r.phoneNumber},
+        ${r.insttCode}, ${r.insttNm}, ${r.referenceDate},
+        NOW()
+      )`,
+    );
+    await prisma.$executeRaw`
+      INSERT INTO "Parking" (
+        "sourceId", name,
+        "prkplceSe", "prkplceType",
+        rdnmadr, lnmadr, address,
+        location,
+        prkcmprt, "feedingSe", "enforceSe",
+        "operDay",
+        "weekdayOpenHhmm", "weekdayCloseHhmm",
+        "satOpenHhmm", "satCloseHhmm",
+        "holidayOpenHhmm", "holidayCloseHhmm",
+        "chargeInfo",
+        "basicTime", "basicCharge",
+        "addUnitTime", "addUnitCharge",
+        "dayCmmtkt", "monthCmmtkt",
+        metpay, spcmnt,
+        "pwdbsPpkZoneYn", "institutionNm", "phoneNumber",
+        "insttCode", "insttNm", "referenceDate",
+        "updatedAt"
+      )
+      VALUES ${Prisma.join(values)}
+      ON CONFLICT ("sourceId") DO UPDATE SET
+        name = EXCLUDED.name,
+        "prkplceSe" = EXCLUDED."prkplceSe",
+        "prkplceType" = EXCLUDED."prkplceType",
+        rdnmadr = EXCLUDED.rdnmadr,
+        lnmadr = EXCLUDED.lnmadr,
+        address = EXCLUDED.address,
+        location = EXCLUDED.location,
+        prkcmprt = EXCLUDED.prkcmprt,
+        "feedingSe" = EXCLUDED."feedingSe",
+        "enforceSe" = EXCLUDED."enforceSe",
+        "operDay" = EXCLUDED."operDay",
+        "weekdayOpenHhmm" = EXCLUDED."weekdayOpenHhmm",
+        "weekdayCloseHhmm" = EXCLUDED."weekdayCloseHhmm",
+        "satOpenHhmm" = EXCLUDED."satOpenHhmm",
+        "satCloseHhmm" = EXCLUDED."satCloseHhmm",
+        "holidayOpenHhmm" = EXCLUDED."holidayOpenHhmm",
+        "holidayCloseHhmm" = EXCLUDED."holidayCloseHhmm",
+        "chargeInfo" = EXCLUDED."chargeInfo",
+        "basicTime" = EXCLUDED."basicTime",
+        "basicCharge" = EXCLUDED."basicCharge",
+        "addUnitTime" = EXCLUDED."addUnitTime",
+        "addUnitCharge" = EXCLUDED."addUnitCharge",
+        "dayCmmtkt" = EXCLUDED."dayCmmtkt",
+        "monthCmmtkt" = EXCLUDED."monthCmmtkt",
+        metpay = EXCLUDED.metpay,
+        spcmnt = EXCLUDED.spcmnt,
+        "pwdbsPpkZoneYn" = EXCLUDED."pwdbsPpkZoneYn",
+        "institutionNm" = EXCLUDED."institutionNm",
+        "phoneNumber" = EXCLUDED."phoneNumber",
+        "insttCode" = EXCLUDED."insttCode",
+        "insttNm" = EXCLUDED."insttNm",
+        "referenceDate" = EXCLUDED."referenceDate",
+        "updatedAt" = NOW()
+    `;
+  }
 }
 
 main().catch((err) => {
