@@ -7,6 +7,7 @@ const regions: RegionRef[] = [
   { sido: '경기도', sigungu: '성남시 수정구', sigunguCode: '41131' },
   { sido: '부산광역시', sigungu: '해운대구', sigunguCode: '26350' },
   { sido: '강원특별자치도', sigungu: '춘천시', sigunguCode: '51110' },
+  { sido: '전북특별자치도', sigungu: '군산시', sigunguCode: '52130' },
 ];
 
 describe('matchSigunguCode', () => {
@@ -30,5 +31,8 @@ describe('matchSigunguCode', () => {
   });
   it('빈 문자열이면 null', () => {
     expect(matchSigunguCode('', regions)).toBeNull();
+  });
+  it('전국전통시장표준데이터 "전북특별차치도" 오타도 매칭한다', () => {
+    expect(matchSigunguCode('전북특별차치도 군산시 신금길 18', regions)).toBe('52130');
   });
 });

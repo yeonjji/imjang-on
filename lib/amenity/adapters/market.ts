@@ -122,6 +122,8 @@ export const marketDef: AmenityCategoryDef = {
   label: '전통시장',
   emoji: '🏬',
   breadcrumbLabel: '전통시장',
+  // 전국 1,400건 규모 — 시도 강제 없이 '전국' 기본 스코프로 페이징.
+  requiresSidoScope: false,
   subFilters: {
     paramKey: 'sub',
     defaultSlug: 'all',

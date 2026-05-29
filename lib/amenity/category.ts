@@ -49,6 +49,12 @@ export interface AmenityCategoryDef {
   emoji: string;
   breadcrumbLabel: string;
   subFilters?: AmenitySubFilterDef;
+  /**
+   * LIST 진입 시 시도(sido)가 없으면 '서울'로 강제 redirect할지 여부.
+   * 미지정·true: redirect (편의점/마트/카페처럼 전국 row가 수십만 단위인 경우).
+   * false: 전국을 기본 스코프로 사용 (전통시장처럼 row가 수천 단위인 경우).
+   */
+  requiresSidoScope?: boolean;
   getList(filter: AmenityListFilter, page: number): Promise<AmenityListResult>;
   getById(id: bigint): Promise<AmenityItem | null>;
   getLatLng(id: bigint): Promise<{ lat: number; lng: number } | null>;
