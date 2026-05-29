@@ -150,8 +150,9 @@ async function main() {
 
   // amenity LIST e2e용 — /amenity/mart 에 표시될 대형마트 1개
   // (industryCode 'G20402' = 대형마트, mart adapter PREFIX_HYPER)
-  await prisma.store.create({
-    data: {
+  await prisma.store.upsert({
+    where: { sourceId: 'e2e-mart-hyper-1' },
+    create: {
       sourceId: 'e2e-mart-hyper-1',
       name: 'e2e 대형마트',
       address: '서울특별시 서초구 서초동',
@@ -159,12 +160,45 @@ async function main() {
       industryName: '대형마트',
       sigunguCode: '11650',
     },
+    update: {},
   });
 
   await seedChildcare();
+  await seedParking();
 
   console.log('e2e seed done. propertyId =', String(p.id));
   await prisma.$disconnect();
+}
+
+async function seedParking() {
+  await prisma.parking.deleteMany({ where: { sourceId: { startsWith: 'E2E-PRK-' } } });
+  await prisma.$executeRaw`
+    INSERT INTO "Parking" (
+      "sourceId","name","prkplceSe","prkplceType","rdnmadr","lnmadr","address",
+      location,"prkcmprt","feedingSe","enforceSe","operDay",
+      "weekdayOpenHhmm","weekdayCloseHhmm","satOpenHhmm","satCloseHhmm","holidayOpenHhmm","holidayCloseHhmm",
+      "chargeInfo","basicTime","basicCharge","addUnitTime","addUnitCharge","dayCmmtkt","monthCmmtkt",
+      "metpay","spcmnt","pwdbsPpkZoneYn","institutionNm","phoneNumber","insttCode","insttNm",
+      "updatedAt"
+    )
+    VALUES
+      ('E2E-PRK-1','e2e 24시간 유료주차장','공영','노외','서울특별시 서초구 서초대로 100',NULL,'서울특별시 서초구 서초대로 100',
+       ST_SetSRID(ST_MakePoint(127.027,37.498),4326)::geography,120,'유료','단속중',
+       NULL,'0000','2400','0000','2400','0000','2400',
+       '유료',30,500,10,200,10000,80000,'카드,현금','시범운영 안내',true,'서초구청','02-2155-0000','1165000','서초구',
+       NOW()),
+      ('E2E-PRK-2','e2e 무료주차장','민영','노상','서울특별시 서초구 서초중앙로 1',NULL,'서울특별시 서초구 서초중앙로 1',
+       ST_SetSRID(ST_MakePoint(127.025,37.495),4326)::geography,20,'무료',NULL,
+       '월,화,수,목,금','0700','2000','0700','1800',NULL,NULL,
+       '무료',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,false,NULL,NULL,NULL,NULL,
+       NOW()),
+      ('E2E-PRK-3','e2e 일반 유료주차장','민영','부설','서울특별시 강남구 테헤란로 1',NULL,'서울특별시 강남구 테헤란로 1',
+       ST_SetSRID(ST_MakePoint(127.034,37.500),4326)::geography,50,'유료',NULL,
+       NULL,'0600','2200','0700','2000','0900','1800',
+       '유료',60,1000,30,500,NULL,NULL,'카드',NULL,false,NULL,NULL,NULL,NULL,
+       NOW())
+    ON CONFLICT ("sourceId") DO NOTHING;
+  `;
 }
 
 main().catch((e) => {
