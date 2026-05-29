@@ -36,3 +36,7 @@ jobs:
       - run: pnpm prisma generate
       - run: pnpm tsx scripts/ingest/amenities/runner.ts --source=${{ matrix.source }}
         timeout-minutes: 180
+      - name: Backfill TraditionalMarket.sigunguCode
+        if: matrix.source == 'traditional-market'
+        run: pnpm tsx scripts/ingest/amenities/market-region-backfill.ts
+        timeout-minutes: 30
