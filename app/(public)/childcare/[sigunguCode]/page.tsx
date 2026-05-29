@@ -1,8 +1,22 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { prisma } from '@/lib/db';
 import { getSigunguByCode } from '@/lib/region';
 import { getChildcareList, getChildcareTypeCounts, type ChildcareTypeSlug } from '@/lib/childcare';
+
+async function resolveRegionDisplay(sigunguCode: string) {
+  const region = await getSigunguByCode(sigunguCode).catch(() => null);
+  if (region) return { fullName: region.fullName, sigungu: region.sigungu, sigunguCode };
+  // Region 테이블에 매핑 없으면 Childcare row의 sido/sigungu로 fallback
+  const cc = await prisma.childcare.findFirst({
+    where: { sigunguCode },
+    select: { sido: true, sigungu: true },
+  });
+  if (!cc) return null;
+  const fullName = [cc.sido, cc.sigungu].filter(Boolean).join(' ') || sigunguCode;
+  return { fullName, sigungu: cc.sigungu ?? '', sigunguCode };
+}
 import { ChildcareFilterPanel } from '../_components/childcare-filter-panel';
 import { ChildcareMobileFilterSheet } from '../_components/childcare-mobile-filter-sheet';
 import { ChildcareCard } from '../_components/childcare-card';
@@ -15,7 +29,7 @@ interface Params { params: Promise<{ sigunguCode: string }>; searchParams: Promi
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { sigunguCode } = await params;
-  const r = await getSigunguByCode(sigunguCode).catch(() => null);
+  const r = await resolveRegionDisplay(sigunguCode);
   if (!r) return {};
   return {
     title: `${r.fullName} 어린이집 — 국공립·민간·가정`,
@@ -27,8 +41,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function ChildcareSigunguListPage({ params, searchParams }: Params) {
   const { sigunguCode } = await params;
   const sp = await searchParams;
-  const region = await getSigunguByCode(sigunguCode);
-  if (!region || !region.sigunguCode) notFound();
+  const region = await resolveRegionDisplay(sigunguCode);
+  if (!region) notFound();
 
   const basePath = `/childcare/${sigunguCode}`;
   const page = Math.max(1, Number(sp.page ?? '1'));
