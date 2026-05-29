@@ -1,5 +1,6 @@
 'use client';
 import type { ReactNode } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface Props {
   id?: string;
@@ -11,15 +12,26 @@ interface Props {
 
 /**
  * Mobile: native <details>로 접힘/펼침 (defaultOpenMobile=false면 닫힘).
- * Desktop(md:): summary는 제목만 보이는 정적 헤더가 되고, 본문 div는 항상 표시.
- *   - md:[&>div]:!block: 본문 div를 항상 display:block (open 상태와 무관)
- *   - md:[&>summary]:pointer-events-none: 클릭으로 토글되는 동작 차단
- *   - md:[&>summary]:cursor-default: 호버 시 손가락 커서 제거
- *   - 셰브론은 md:hidden으로 숨김
+ * Desktop(md:): useEffect로 open=true 강제 + summary pointer-events-none → 정적 헤더.
+ *
+ * CSS-only로 데스크톱 항상 펼침을 만들려는 시도(`md:!block` 등)는 Tailwind 컴파일
+ * 우선순위 문제로 작동하지 않았다. JS로 open 속성을 직접 토글하는 게 가장 신뢰성 있음.
  */
 export function DetailsCard({ id, title, summary, defaultOpenMobile = false, children }: Props) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const apply = () => {
+      if (ref.current) ref.current.open = mq.matches ? true : defaultOpenMobile;
+    };
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, [defaultOpenMobile]);
+
   return (
     <details
+      ref={ref}
       id={id}
       open={defaultOpenMobile}
       className="rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] md:p-7"
@@ -29,7 +41,7 @@ export function DetailsCard({ id, title, summary, defaultOpenMobile = false, chi
         {summary && <span className="truncate text-xs text-[var(--color-muted)] md:hidden">{summary}</span>}
         <span aria-hidden className="text-[var(--color-muted)] transition-transform [details[open]_&]:rotate-180 md:hidden">▾</span>
       </summary>
-      <div className="mt-4 md:!block hidden [details[open]_&]:block">{children}</div>
+      <div className="mt-4">{children}</div>
     </details>
   );
 }
