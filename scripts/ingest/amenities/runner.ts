@@ -22,6 +22,8 @@ import type {
 
 // Pro Compute로 상향 후 청크를 키워 INSERT 횟수 감소
 const CHUNK = 1000;
+// Childcare는 컬럼이 ~74개라 1000 청크 시 bind 변수가 PG 한도(32767)를 초과한다.
+const CHUNK_CHILDCARE = 400;
 
 // ON CONFLICT는 한 statement 안에서 같은 PK를 두 번 갱신하지 못해 21000 에러를 낸다.
 // 외부 API가 동일 sourceId를 중복 반환하는 경우가 있어 INSERT 전에 sourceId 단위로 dedupe.
@@ -299,8 +301,8 @@ async function ingestChildcare(): Promise<number> {
     .map((c) => `"${c}" = EXCLUDED."${c}"`)
     .join(', ');
 
-  for (let i = 0; i < rows.length; i += CHUNK) {
-    const chunk = rows.slice(i, i + CHUNK);
+  for (let i = 0; i < rows.length; i += CHUNK_CHILDCARE) {
+    const chunk = rows.slice(i, i + CHUNK_CHILDCARE);
     const values = chunk.map((r: NormalizedChildcare) => {
       const cells = CHILDCARE_COLUMNS.map((c) => Prisma.sql`${r[c] ?? null}`);
       return Prisma.sql`(${Prisma.join(cells)}, ${locationSql(r.lat, r.lng)}, NOW())`;
