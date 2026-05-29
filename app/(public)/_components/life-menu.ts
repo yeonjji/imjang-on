@@ -53,9 +53,9 @@ export const LIFE_GROUPS: LifeGroup[] = [
     label: '도시인프라',
     intro: '공원·충전소·주차장 — 동네 인프라 한눈에.',
     items: [
-      { label: '공원', href: '/urban?type=park', live: false },
-      { label: '충전소', href: '/urban?type=charger', live: false },
-      { label: '주차장', href: '/urban?type=parking', live: false, soon: true },
+      { label: '주차장', href: '/urban/parking', live: true },
+      { label: '공원', href: '/urban/park', live: false },
+      { label: '충전소', href: '/urban/charger', live: false },
     ],
   },
 ];
