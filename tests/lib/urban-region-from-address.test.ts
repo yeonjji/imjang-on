@@ -8,10 +8,10 @@ beforeAll(async () => {
   await prisma.region.upsert({
     where: { code: '1165000000' },
     create: {
+      // sigunguCode는 generated column (code 앞 5자리) — 명시 전달 시 CI 거부
       code: '1165000000',
       sido: '서울특별시',
       sigungu: '서초구',
-      sigunguCode: '11650',
       level: 2,
       isAbolished: false,
       fullName: '서울특별시 서초구',
