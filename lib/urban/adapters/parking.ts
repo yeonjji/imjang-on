@@ -122,7 +122,23 @@ export const parkingDef: UrbanCategoryDef<ParkingRaw> = {
   getList,
   getById,
   getLatLng,
-  inferRowSummary: () => null,
-  detailFields: () => [],
+  inferRowSummary: (item) => {
+    const r = item.raw;
+    const parts: string[] = [];
+    if (r.prkcmprt != null) parts.push(`${r.prkcmprt}면`);
+    if (r.chargeInfo) parts.push(r.chargeInfo);
+    return parts.length > 0 ? parts.join(' · ') : null;
+  },
+  detailFields: (item) => {
+    const r = item.raw;
+    return [
+      { label: '도로명 주소', value: r.rdnmadr ?? '-' },
+      { label: '지번 주소',   value: r.lnmadr ?? '-' },
+      { label: '운영기관',     value: r.institutionNm ?? r.insttNm ?? '-' },
+      { label: '전화',         value: r.phoneNumber ?? '-' },
+      { label: '기준일자',     value: r.referenceDate ? r.referenceDate.toISOString().slice(0, 10) : '-' },
+      { label: '결제수단',     value: r.metpay ?? '-' },
+    ];
+  },
   renderRichSections: () => null,
 };

@@ -105,3 +105,29 @@ describe('parkingDef.getList filters', () => {
     expect(r.rows.every((it) => it.name.includes('사설'))).toBe(true);
   });
 });
+
+describe('parkingDef.inferRowSummary', () => {
+  it('returns 구획수 + 요금 for paid', async () => {
+    const r = await parkingDef.getList({ sido: '서울', sub: '공영', q: '유닛테스트' }, 1);
+    expect(parkingDef.inferRowSummary(r.rows[0])).toBe('120면 · 유료');
+  });
+  it('returns 구획수 + 무료 for free', async () => {
+    const r = await parkingDef.getList({ sido: '서울', charge: '무료', q: '유닛테스트' }, 1);
+    expect(parkingDef.inferRowSummary(r.rows[0])).toBe('20면 · 무료');
+  });
+});
+
+describe('parkingDef.detailFields', () => {
+  it('emits address rows + 운영기관 + 전화 + 결제수단 + 지역', async () => {
+    const r = await parkingDef.getList({ sido: '서울', sub: '공영', q: '유닛테스트' }, 1);
+    const fields = parkingDef.detailFields(r.rows[0], { regionFullName: '서울 마포구' });
+    const labels = fields.map((f) => f.label);
+    expect(labels).toContain('도로명 주소');
+    expect(labels).toContain('지번 주소');
+    expect(labels).toContain('운영기관');
+    expect(labels).toContain('전화');
+    expect(labels).toContain('기준일자');
+    expect(labels).toContain('결제수단');
+    expect(fields.find((f) => f.label === '도로명 주소')?.value).toBe('서울특별시 마포구 신촌로 100');
+  });
+});
