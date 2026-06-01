@@ -1,5 +1,35 @@
 import { prisma } from '@/lib/db';
 
+export interface NearbyCharger {
+  id: bigint;
+  name: string;
+  address: string;
+  chargeSpeed: string;
+  chargerCount: number;
+  distanceMeters: number;
+}
+
+export async function getSameCategoryNearbyCharger(
+  lat: number,
+  lng: number,
+  excludeId: bigint,
+  radiusMeters = 1000,
+  limit = 6,
+): Promise<NearbyCharger[]> {
+  const rows = await prisma.$queryRaw<NearbyCharger[]>`
+    SELECT id, name, address, "chargeSpeed", "chargerCount",
+      ROUND(ST_Distance(
+        location, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
+      )::numeric)::int AS "distanceMeters"
+    FROM "EvCharger"
+    WHERE location IS NOT NULL
+      AND ST_DWithin(location, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography, ${radiusMeters})
+    ORDER BY "distanceMeters"
+    LIMIT ${limit + 1}
+  `;
+  return rows.filter((r) => r.id !== excludeId).slice(0, limit);
+}
+
 export interface NearbyParking {
   id: bigint;
   name: string;

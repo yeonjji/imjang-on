@@ -65,12 +65,12 @@ export function UrbanFilterPanel({ def, basePath, sidoList, params: ext, onParam
   return (
     <div className="flex flex-col gap-6">
       <section>
-        <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">주차장 이름</h3>
+        <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">{def.label} 이름</h3>
         <input
           defaultValue={p.get('q') ?? ''}
           onBlur={(e) => update({ q: e.target.value || null })}
           onKeyDown={(e) => { if (e.key === 'Enter') update({ q: (e.target as HTMLInputElement).value || null }); }}
-          placeholder="예) 마포공영주차장"
+          placeholder={`예) ${def.label} 검색`}
           className="mt-2 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-soft)] px-3 py-2 text-sm"
         />
       </section>
@@ -95,7 +95,7 @@ export function UrbanFilterPanel({ def, basePath, sidoList, params: ext, onParam
 
       {sub && (
         <section>
-          <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">운영 형태</h3>
+          <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">{sub.label ?? '운영 형태'}</h3>
           <div className="mt-2 flex flex-wrap gap-2">
             {sub.options.map((opt) => (
               <Chip key={opt.slug} active={subCur === opt.slug}
@@ -107,41 +107,45 @@ export function UrbanFilterPanel({ def, basePath, sidoList, params: ext, onParam
         </section>
       )}
 
-      <section>
-        <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">요금</h3>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {CHARGE_OPTS.map((opt) => (
-            <Chip key={opt.label} active={charge === opt.slug}
-              onClick={() => update({ charge: opt.slug || null })}>
-              {opt.label}
-            </Chip>
-          ))}
-        </div>
-      </section>
+      {def.slug === 'parking' && (
+        <>
+          <section>
+            <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">요금</h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {CHARGE_OPTS.map((opt) => (
+                <Chip key={opt.label} active={charge === opt.slug}
+                  onClick={() => update({ charge: opt.slug || null })}>
+                  {opt.label}
+                </Chip>
+              ))}
+            </div>
+          </section>
 
-      <section>
-        <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">주차장 종류</h3>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {TYPE_OPTS.map((opt) => (
-            <Chip key={opt.label} active={type === opt.slug}
-              onClick={() => update({ type: opt.slug || null })}>
-              {opt.label}
-            </Chip>
-          ))}
-        </div>
-      </section>
+          <section>
+            <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">주차장 종류</h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {TYPE_OPTS.map((opt) => (
+                <Chip key={opt.label} active={type === opt.slug}
+                  onClick={() => update({ type: opt.slug || null })}>
+                  {opt.label}
+                </Chip>
+              ))}
+            </div>
+          </section>
 
-      <section>
-        <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">부가</h3>
-        <label className="mt-2 flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={pwd} onChange={(e) => update({ pwd: e.target.checked ? 'on' : null })} />
-          ♿ 장애인전용 구획 있음
-        </label>
-        <label className="mt-1 flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={open24} onChange={(e) => update({ open24: e.target.checked ? 'on' : null })} />
-          ⏰ 24시간 운영 (평일 기준)
-        </label>
-      </section>
+          <section>
+            <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">부가</h3>
+            <label className="mt-2 flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={pwd} onChange={(e) => update({ pwd: e.target.checked ? 'on' : null })} />
+              ♿ 장애인전용 구획 있음
+            </label>
+            <label className="mt-1 flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={open24} onChange={(e) => update({ open24: e.target.checked ? 'on' : null })} />
+              ⏰ 24시간 운영 (평일 기준)
+            </label>
+          </section>
+        </>
+      )}
     </div>
   );
 }

@@ -207,7 +207,7 @@ export async function getSchoolNearbyAmenities(lat: number, lng: number) {
  * Store(convenience/mart/cafe) + TraditionalMarket(market)를 단일 호출로.
  */
 export async function getMixedNearbyForDetail(
-  currentSlug: AmenitySlug | 'parking',
+  currentSlug: AmenitySlug | 'parking' | 'charger',
   lat: number,
   lng: number,
 ): Promise<{

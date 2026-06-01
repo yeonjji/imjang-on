@@ -55,7 +55,7 @@ export const LIFE_GROUPS: LifeGroup[] = [
     items: [
       { label: '주차장', href: '/urban/parking', live: true },
       { label: '공원', href: '/urban/park', live: false },
-      { label: '충전소', href: '/urban/charger', live: false },
+      { label: '충전소', href: '/urban/charger', live: true },
     ],
   },
 ];
