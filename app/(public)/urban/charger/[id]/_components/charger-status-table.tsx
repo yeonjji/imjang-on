@@ -48,7 +48,7 @@ export function ChargerStatusTable({ units, statuses, lastUpdated }: Props) {
       )}
 
       {/* 데스크탑: 테이블 */}
-      <div className="hidden md:block">
+      {hasStatus && <div className="hidden md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[var(--color-line)] text-left text-xs text-[var(--color-muted)]">
@@ -75,10 +75,10 @@ export function ChargerStatusTable({ units, statuses, lastUpdated }: Props) {
             })}
           </tbody>
         </table>
-      </div>
+      </div>}
 
       {/* 모바일: 카드 */}
-      <div className="flex flex-col gap-3 md:hidden">
+      {hasStatus && <div className="flex flex-col gap-3 md:hidden">
         {units.map((unit) => {
           const s = statusMap.get(unit.chgerId);
           const statLabel = s?.statLabel ?? '미확인';
@@ -97,7 +97,7 @@ export function ChargerStatusTable({ units, statuses, lastUpdated }: Props) {
             </div>
           );
         })}
-      </div>
+      </div>}
     </Card>
   );
 }
