@@ -20,15 +20,17 @@ async function main() {
     const eupmyeondong = parts[2] ?? null;
     const ri = parts[3] ?? null;
     const level = (eupmyeondong ? (ri ? 4 : 3) : sigungu ? 2 : 1);
+    const trimmedCode = code.trim();
     return {
-      code: code.trim(),
+      code: trimmedCode,
       sido,
       sigungu,
       eupmyeondong,
       ri,
       fullName: fullName?.trim() ?? '',
       level,
-      parentCode: derivedParent(code, level),
+      parentCode: derivedParent(trimmedCode, level),
+      sigunguCode: level === 2 ? trimmedCode.slice(0, 5) : null,
       isAbolished: status?.trim() === '폐지',
       abolishedAt: abolishedDate?.trim() ? new Date(abolishedDate.trim()) : null,
       sourceVersion: SOURCE_VERSION,
