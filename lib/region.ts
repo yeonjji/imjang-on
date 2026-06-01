@@ -1,11 +1,28 @@
 import { prisma } from '@/lib/db';
 
-export async function getSidoList() {
-  return prisma.region.findMany({
-    where: { level: 1, isAbolished: false },
-    select: { code: true, sido: true, fullName: true },
-    orderBy: { sido: 'asc' },
-  });
+// 대한민국 17개 시도는 행정구역이 바뀌지 않으므로 정적 상수로 관리
+const SIDO_LIST: { code: string; sido: string; fullName: string }[] = [
+  { code: '5100000000', sido: '강원', fullName: '강원특별자치도' },
+  { code: '4100000000', sido: '경기', fullName: '경기도' },
+  { code: '4800000000', sido: '경남', fullName: '경상남도' },
+  { code: '4700000000', sido: '경북', fullName: '경상북도' },
+  { code: '2900000000', sido: '광주', fullName: '광주광역시' },
+  { code: '2700000000', sido: '대구', fullName: '대구광역시' },
+  { code: '3000000000', sido: '대전', fullName: '대전광역시' },
+  { code: '2600000000', sido: '부산', fullName: '부산광역시' },
+  { code: '1100000000', sido: '서울', fullName: '서울특별시' },
+  { code: '3600000000', sido: '세종', fullName: '세종특별자치시' },
+  { code: '3100000000', sido: '울산', fullName: '울산광역시' },
+  { code: '2800000000', sido: '인천', fullName: '인천광역시' },
+  { code: '4600000000', sido: '전남', fullName: '전라남도' },
+  { code: '5200000000', sido: '전북', fullName: '전북특별자치도' },
+  { code: '5000000000', sido: '제주', fullName: '제주특별자치도' },
+  { code: '4400000000', sido: '충남', fullName: '충청남도' },
+  { code: '4300000000', sido: '충북', fullName: '충청북도' },
+];
+
+export function getSidoList(): Promise<{ code: string; sido: string; fullName: string }[]> {
+  return Promise.resolve(SIDO_LIST);
 }
 
 export async function getSigunguByCode(sigunguCode: string) {
