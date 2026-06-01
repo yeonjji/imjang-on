@@ -40,3 +40,7 @@ jobs:
         if: matrix.source == 'traditional-market'
         run: pnpm tsx scripts/ingest/amenities/market-region-backfill.ts
         timeout-minutes: 30
+      - name: Backfill School.sigunguCode
+        if: matrix.source == 'school'
+        run: pnpm tsx scripts/ingest/amenities/school-region-backfill.ts
+        timeout-minutes: 30

@@ -33,8 +33,10 @@ export async function getSigunguByCode(sigunguCode: string) {
 }
 
 export async function getSigungusBySido(sido: string) {
+  const sidoInfo = SIDO_LIST.find(s => s.sido === sido);
+  const sidoQuery = sidoInfo?.fullName ?? sido;
   return prisma.region.findMany({
-    where: { sido, level: 2, isAbolished: false },
+    where: { sido: sidoQuery, level: 2, isAbolished: false },
     select: { code: true, sigungu: true, fullName: true, sigunguCode: true },
     orderBy: { sigungu: 'asc' },
   });
