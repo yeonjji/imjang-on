@@ -111,10 +111,18 @@ async function getCountsBySigungu(): Promise<Map<string, number>> {
 }
 
 function inferRowSummary(row: AmenityItem): string | null {
-  const k = classifyMarketSub(row.marketType ?? null);
-  if (k === 'permanent') return '상설시장';
-  if (k === 'periodic') return '정기시장';
-  return row.marketType ?? null;
+  const v = (row.marketType ?? '').trim();
+  if (!v) return null;
+  const hasPermanent = v.includes('상설');
+  const periodicMatch = v.match(/\d+일장/);
+  const hasPeriodic = periodicMatch !== null || v.includes('정기');
+  if (hasPermanent && hasPeriodic) {
+    return `상설·${periodicMatch ? periodicMatch[0] : '정기'}`;
+  }
+  if (hasPermanent) return '상설시장';
+  if (periodicMatch) return periodicMatch[0];
+  if (hasPeriodic) return '정기시장';
+  return v;
 }
 
 export const marketDef: AmenityCategoryDef = {
@@ -130,7 +138,7 @@ export const marketDef: AmenityCategoryDef = {
     options: [
       { slug: 'all', label: '전체' },
       { slug: 'permanent', label: '상설' },
-      { slug: 'periodic', label: '정기·N일장' },
+      { slug: 'periodic', label: '정기' },
     ],
   },
   getList,

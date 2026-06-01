@@ -1,5 +1,35 @@
 import { describe, it, expect } from 'vitest';
-import { buildMarketWhere, classifyMarketSub } from '@/lib/amenity/adapters/market';
+import { buildMarketWhere, classifyMarketSub, marketDef } from '@/lib/amenity/adapters/market';
+
+function fakeItem(marketType: string | null) {
+  return { id: 1n, name: '테스트시장', address: '서울', sigunguCode: '11680', marketType };
+}
+
+describe('inferRowSummary', () => {
+  it('상설만 → 상설시장', () => {
+    expect(marketDef.inferRowSummary(fakeItem('상설시장'))).toBe('상설시장');
+  });
+  it('3일장만 → 3일장', () => {
+    expect(marketDef.inferRowSummary(fakeItem('3일장'))).toBe('3일장');
+  });
+  it('5일장만 → 5일장', () => {
+    expect(marketDef.inferRowSummary(fakeItem('5일장'))).toBe('5일장');
+  });
+  it('정기만 → 정기시장', () => {
+    expect(marketDef.inferRowSummary(fakeItem('정기시장'))).toBe('정기시장');
+  });
+  it('상설+3일장 혼용 → 상설·3일장', () => {
+    expect(marketDef.inferRowSummary(fakeItem('상설/3일장'))).toBe('상설·3일장');
+    expect(marketDef.inferRowSummary(fakeItem('상설장+5일장'))).toBe('상설·5일장');
+  });
+  it('상설+정기 혼용(n일장 패턴 없음) → 상설·정기', () => {
+    expect(marketDef.inferRowSummary(fakeItem('상설/정기'))).toBe('상설·정기');
+  });
+  it('null/빈값 → null', () => {
+    expect(marketDef.inferRowSummary(fakeItem(null))).toBeNull();
+    expect(marketDef.inferRowSummary(fakeItem(''))).toBeNull();
+  });
+});
 
 describe('classifyMarketSub', () => {
   it('상설시장은 permanent', () => {
