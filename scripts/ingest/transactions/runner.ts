@@ -73,11 +73,11 @@ async function main() {
     where: { source: { in: sources }, status: 'OK' },
     select: { source: true, targetKey: true },
   });
-  // daily 모드에서 이번달은 항상 재처리 — 당월 신규 거래 누락 방지
-  const currentMonth = args.mode === 'daily' ? getDailyMonths()[0] : null;
+  // daily 모드에서 이번달·전달 모두 항상 재처리 — DB 복원 등으로 전달 데이터에 구멍이 생겨도 자동 보완
+  const reprocessMonths = args.mode === 'daily' ? new Set(getDailyMonths()) : null;
   const doneKeys = new Set(
     doneRuns
-      .filter((r) => !currentMonth || !r.targetKey.endsWith(`-${currentMonth}`))
+      .filter((r) => !reprocessMonths || !Array.from(reprocessMonths).some((m) => r.targetKey.endsWith(`-${m}`)))
       .map((r) => `${r.source}:${r.targetKey}`),
   );
   logger.info({ skippable: doneKeys.size }, 'resume: loaded completed keys');
