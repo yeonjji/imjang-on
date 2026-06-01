@@ -15,6 +15,7 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      PUBLIC_DATA_KEY: ${{ secrets.PUBLIC_DATA_KEY }}
       LOG_LEVEL: info
       REGION_SOURCE_VERSION: ${{ inputs.version }}
     steps:
@@ -24,8 +25,4 @@ jobs:
         with: { node-version: 20, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma generate
-      - name: Download regions data
-        run: |
-          curl -L -o data/regions.txt.zip "${{ secrets.REGIONS_DOWNLOAD_URL }}"
-          mkdir -p data && cd data && unzip -o regions.txt.zip
-      - run: pnpm tsx scripts/ingest/regions/seed.ts ./data/regions.txt
+      - run: pnpm tsx scripts/ingest/regions/seed-from-api.ts

@@ -105,6 +105,7 @@ async function main() {
           ri: parts[3] ?? null,
           fullName,
           level,
+          sigunguCode: r.sgg_cd ? r.sgg_cd : (level === 2 ? r.region_cd.slice(0, 5) : null),
           // parentCode는 2차 패스에서 채움 (FK 충돌 회피)
           parentCode: null,
           isAbolished: false,
