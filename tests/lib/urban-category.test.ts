@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { URBAN_SLUGS, getUrbanCategoryDef } from '@/lib/urban/category';
 
 describe('urban category registry', () => {
-  it('exposes parking as the only live slug', () => {
-    expect(URBAN_SLUGS).toEqual(['parking']);
+  it('exposes parking and charger as live slugs', () => {
+    expect(URBAN_SLUGS).toEqual(['parking', 'charger']);
   });
 
   it('returns parkingDef for "parking"', () => {

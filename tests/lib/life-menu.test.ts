@@ -34,12 +34,12 @@ describe('LIFE_GROUPS', () => {
     expect(medical.items.every((i) => !i.live)).toBe(true);
   });
 
-  it('도시인프라 그룹 — 주차장만 라이브이고 공원·충전소는 SoonModal', () => {
+  it('도시인프라 그룹 — 주차장·충전소는 라이브이고 공원은 SoonModal', () => {
     const urban = LIFE_GROUPS.find((g) => g.label === '도시인프라')!;
     expect(urban.items).toEqual([
       { label: '주차장', href: '/urban/parking', live: true },
       { label: '공원',   href: '/urban/park',    live: false },
-      { label: '충전소', href: '/urban/charger', live: false },
+      { label: '충전소', href: '/urban/charger', live: true },
     ]);
   });
 
