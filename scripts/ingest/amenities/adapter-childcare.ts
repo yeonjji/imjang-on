@@ -183,6 +183,7 @@ export async function fetchAllChildcare(): Promise<NormalizedChildcare[]> {
   let done = 0;
   for (const arcode of arcodes) {
     const body = await fetchAmenityPage(BASE_URL, { key, arcode, stcode: '' });
+    if (done === 0) logger.info({ arcode, preview: body.slice(0, 500) }, 'childcare first response');
     const errKind = detectChildcareError(body);
     if (errKind === 'key') throw new Error(`childcare 인증키 오류(INFO-100/400) arcode=${arcode}`);
     if (errKind === 'rate') throw new Error(`childcare 일 요청 한도 초과(INFO-300) arcode=${arcode} — 재실행 필요`);
