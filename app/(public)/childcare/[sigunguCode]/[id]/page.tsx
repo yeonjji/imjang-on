@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getChildcareById, getChildcareLatLng, getChildcareList } from '@/lib/childcare';
 import { getSigunguByCode } from '@/lib/region';
-import { getNearbyApartments, getNearbyChildcare, getSchoolNearbyAmenities } from '@/lib/amenity/nearby';
+import { getNearbyApartments, getNearbyChildcare, getNearbyInfra } from '@/lib/amenity/nearby';
 import { ChildcareHero } from './_components/childcare-hero';
 import { ChildcareInfo } from './_components/childcare-info';
 import { ChildcareFacility } from './_components/childcare-facility';
@@ -11,7 +11,7 @@ import { ChildcareWaitList } from './_components/childcare-wait-list';
 import { ChildcareStaff } from './_components/childcare-staff';
 import { ChildcareDetailSidebar } from './_components/childcare-detail-sidebar';
 import { NearbyChildcare } from './_components/nearby-childcare';
-import { NearbyAmenities } from '../../../school/[sigunguCode]/[id]/_components/nearby-amenities';
+import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { NaverMap } from '@/components/ui/naver-map';
 import { Card } from '@/components/ui/card';
@@ -52,11 +52,9 @@ export default async function ChildcareDetailPage({ params }: Params) {
   const basePath = `/childcare/${sigunguCode}`;
   const coord = await getChildcareLatLng(itemId);
 
-  const [apts, schoolAmenities, nearbyChildren, otherList] = await Promise.all([
+  const [apts, infra, nearbyChildren, otherList] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
-    coord
-      ? getSchoolNearbyAmenities(coord.lat, coord.lng)
-      : Promise.resolve({ parks: [], mart: [], chargers: [] } as Awaited<ReturnType<typeof getSchoolNearbyAmenities>>),
+    coord ? getNearbyInfra(coord.lat, coord.lng) : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
     coord ? getNearbyChildcare(coord.lat, coord.lng, 1000, 5, itemId) : Promise.resolve([]),
     getChildcareList({ sigunguCode }, 1),
   ]);
@@ -92,13 +90,7 @@ export default async function ChildcareDetailPage({ params }: Params) {
           )}
           <NearbyApartments items={apts} />
           {coord && <NearbyChildcare items={nearbyChildren} />}
-          {coord && (
-            <NearbyAmenities
-              parks={schoolAmenities.parks}
-              mart={schoolAmenities.mart}
-              chargers={schoolAmenities.chargers}
-            />
-          )}
+          {coord && <NearbyInfra categories={infra} />}
         </main>
         <aside><ChildcareDetailSidebar basePath={basePath} others={others} /></aside>
       </div>
