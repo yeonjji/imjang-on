@@ -178,6 +178,172 @@ export interface NormalizedParking {
   referenceDate: Date | null;
 }
 
+export interface NormalizedHospital {
+  sourceId: string;
+  name: string;
+  typeCode: string;
+  typeName: string;
+  sido: string | null;
+  sigungu: string | null;
+  sigunguCode: string | null;
+  eupmyeondong: string | null;
+  zipcode: string | null;
+  address: string;
+  tel: string | null;
+  homepage: string | null;
+  openedAt: Date | null;
+  totalDoctors: number | null;
+  drMedGeneral: number | null;
+  drMedIntern: number | null;
+  drMedResident: number | null;
+  drMedSpecialist: number | null;
+  drDentGeneral: number | null;
+  drDentIntern: number | null;
+  drDentResident: number | null;
+  drDentSpecialist: number | null;
+  drKorGeneral: number | null;
+  drKorIntern: number | null;
+  drKorResident: number | null;
+  drKorSpecialist: number | null;
+  midwifeCount: number | null;
+  lat: number | null;
+  lng: number | null;
+}
+
+export interface NormalizedHospitalFacility {
+  hospitalSourceId: string;
+  foundTypeCode: string | null;
+  foundTypeName: string | null;
+  generalBedPremium: number | null;
+  generalBedNormal: number | null;
+  icuAdultBed: number | null;
+  icuPediatricBed: number | null;
+  icuNeonatalBed: number | null;
+  deliveryBed: number | null;
+  operatingRoomBed: number | null;
+  erBed: number | null;
+  physicalTherapyBed: number | null;
+  psychiatryClosedPremium: number | null;
+  psychiatryClosedNormal: number | null;
+  psychiatryOpenPremium: number | null;
+  psychiatryOpenNormal: number | null;
+  isolationBed: number | null;
+  sterileRoomBed: number | null;
+}
+
+export interface NormalizedHospitalDetail {
+  hospitalSourceId: string;
+  locationBuilding: string | null;
+  locationDirection: string | null;
+  locationDistance: string | null;
+  parkingCapacity: number | null;
+  parkingFee: string | null;
+  parkingNote: string | null;
+  closedSunday: string | null;
+  closedHoliday: string | null;
+  erDayOpen: string | null;
+  erDayTel1: string | null;
+  erDayTel2: string | null;
+  erNightOpen: string | null;
+  erNightTel1: string | null;
+  erNightTel2: string | null;
+  lunchWeekday: string | null;
+  lunchSaturday: string | null;
+  receptionWeekday: string | null;
+  receptionSaturday: string | null;
+  openSun: number | null;
+  closeSun: number | null;
+  openMon: number | null;
+  closeMon: number | null;
+  openTue: number | null;
+  closeTue: number | null;
+  openWed: number | null;
+  closeWed: number | null;
+  openThu: number | null;
+  closeThu: number | null;
+  openFri: number | null;
+  closeFri: number | null;
+  openSat: number | null;
+  closeSat: number | null;
+}
+
+export interface NormalizedHospitalDept {
+  hospitalSourceId: string;
+  deptCode: string;
+  deptName: string;
+  specialistCount: number | null;
+  optionalDoctorCount: number | null;
+}
+
+export interface NormalizedHospitalTransit {
+  hospitalSourceId: string;
+  transitName: string | null;
+  routeNumber: string | null;
+  stopPoint: string | null;
+  direction: string | null;
+  distance: string | null;
+  note: string | null;
+}
+
+export interface NormalizedHospitalEquipment {
+  hospitalSourceId: string;
+  equipCode: string;
+  equipName: string;
+  equipCount: number | null;
+}
+
+export interface NormalizedHospitalMealSurcharge {
+  hospitalSourceId: string;
+  typeCode: string;
+  typeName: string;
+  hasGeneral: string | null;
+  staffCount: number | null;
+  treatmentGrade: string | null;
+}
+
+export interface NormalizedHospitalNursingGrade {
+  hospitalSourceId: string;
+  typeCode: string;
+  typeName: string;
+  nursingGrade: string | null;
+}
+
+export interface NormalizedHospitalSpecialTreatment {
+  hospitalSourceId: string;
+  searchCode: string;
+  searchName: string;
+}
+
+export interface NormalizedHospitalSpecialty {
+  hospitalSourceId: string;
+  searchCode: string;
+  searchName: string;
+}
+
+export interface NormalizedHospitalStaff {
+  hospitalSourceId: string;
+  staffCode: string;
+  staffName: string;
+  staffCount: number | null;
+}
+
+export interface NormalizedPharmacy {
+  sourceId: string;
+  name: string;
+  typeCode: string | null;
+  typeName: string | null;
+  sido: string | null;
+  sigungu: string | null;
+  sigunguCode: string | null;
+  eupmyeondong: string | null;
+  zipcode: string | null;
+  address: string;
+  tel: string | null;
+  openedAt: Date | null;
+  lat: number | null;
+  lng: number | null;
+}
+
 export type AmenitySourceKey =
   | 'ev-charger'
   | 'traditional-market'
