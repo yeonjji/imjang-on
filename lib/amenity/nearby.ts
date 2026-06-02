@@ -300,3 +300,35 @@ export async function getSameCategoryNearby(
     .slice(0, limit)
     .map((s) => ({ id: s.id, name: s.name, address: s.address, distanceMeters: s.distanceMeters, sub: s.industryName }));
 }
+
+export interface NearbyPharmacy {
+  id: bigint;
+  name: string;
+  address: string;
+  tel: string | null;
+  distanceMeters: number;
+}
+
+export async function getNearbyPharmacies(
+  lat: number,
+  lng: number,
+  radiusMeters = 500,
+): Promise<NearbyPharmacy[]> {
+  return prisma.$queryRaw<NearbyPharmacy[]>`
+    SELECT
+      id, name, address, tel,
+      ROUND(ST_Distance(
+        location::geography,
+        ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
+      )::numeric) AS "distanceMeters"
+    FROM "Pharmacy"
+    WHERE location IS NOT NULL
+      AND ST_DWithin(
+        location::geography,
+        ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
+        ${radiusMeters}
+      )
+    ORDER BY "distanceMeters"
+    LIMIT 5
+  `;
+}
