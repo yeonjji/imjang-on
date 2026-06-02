@@ -34,6 +34,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function HospitalDetailPage({ params }: Params) {
   const { sigunguCode, id } = await params;
+  if (!/^\d+$/.test(id)) notFound();
   const hospitalId = BigInt(id);
 
   const hospital = await getHospitalById(hospitalId);
