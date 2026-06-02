@@ -15,7 +15,7 @@ function NearbyCard({ title, icon, items }: { title: string; icon: string; items
               <p className="truncate text-sm font-semibold">
                 {it.name}
                 <span className="ml-2 rounded-md bg-[var(--color-sky-soft)] px-1.5 py-0.5 text-[11px] font-bold text-[var(--color-blue)]">
-                  {it.distanceMeters}m
+                  {Math.round(Number(it.distanceMeters))}m
                 </span>
               </p>
               {it.sub && <p className="truncate text-xs text-[var(--color-muted)]">{it.sub}</p>}
