@@ -33,7 +33,7 @@ export const LIFE_GROUPS: LifeGroup[] = [
     intro: '병원·약국·보건소까지, 우리 동네 의료 인프라.',
     items: [
       { label: '병원·의원', href: '/medical/hospital', live: true },
-      { label: '약국', href: '/medical?type=pharmacy', live: false },
+      { label: '약국', href: '/medical/pharmacy', live: true },
       { label: '보건소', href: '/medical?type=health-center', live: false, soon: true },
     ],
   },

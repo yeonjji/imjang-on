@@ -29,11 +29,13 @@ describe('LIFE_GROUPS', () => {
     ]);
   });
 
-  it('의료시설 그룹 — 병원·의원은 라이브, 약국·보건소는 미라이브이다', () => {
+  it('의료시설 그룹 — 병원·의원·약국은 라이브, 보건소는 미라이브이다', () => {
     const medical = LIFE_GROUPS.find((g) => g.label === '의료시설')!;
     expect(medical.items.find((i) => i.label === '병원·의원')?.live).toBe(true);
     expect(medical.items.find((i) => i.label === '병원·의원')?.href).toBe('/medical/hospital');
-    expect(medical.items.filter((i) => i.label !== '병원·의원').every((i) => !i.live)).toBe(true);
+    expect(medical.items.find((i) => i.label === '약국')?.live).toBe(true);
+    expect(medical.items.find((i) => i.label === '약국')?.href).toBe('/medical/pharmacy');
+    expect(medical.items.find((i) => i.label === '보건소')?.live).toBe(false);
   });
 
   it('도시인프라 그룹 — 주차장·공원·충전소 모두 라이브이다', () => {
