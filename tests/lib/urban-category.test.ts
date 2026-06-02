@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { URBAN_SLUGS, getUrbanCategoryDef } from '@/lib/urban/category';
 
 describe('urban category registry', () => {
-  it('exposes parking and charger as live slugs', () => {
-    expect(URBAN_SLUGS).toEqual(['parking', 'charger']);
+  it('exposes parking, charger, and park as live slugs', () => {
+    expect(URBAN_SLUGS).toEqual(['parking', 'charger', 'park']);
   });
 
   it('returns parkingDef for "parking"', () => {
@@ -16,6 +16,11 @@ describe('urban category registry', () => {
 
   it('returns null for unknown slug', () => {
     expect(getUrbanCategoryDef('foo')).toBeNull();
-    expect(getUrbanCategoryDef('park')).toBeNull();
+  });
+
+  it('returns parkDef for "park"', () => {
+    const def = getUrbanCategoryDef('park');
+    expect(def).not.toBeNull();
+    expect(def?.slug).toBe('park');
   });
 });
