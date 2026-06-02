@@ -20,8 +20,8 @@ function fullSidoName(s: string): string {
 
 async function resolveAddrPrefix(f: UrbanListFilter): Promise<string | null | '__NO_MATCH__'> {
   if (!f.sigunguCode) return null;
-  const region = await prisma.region.findUnique({
-    where: { code: f.sigunguCode },
+  const region = await prisma.region.findFirst({
+    where: { sigunguCode: f.sigunguCode, level: 2, isAbolished: false },
     select: { sido: true, sigungu: true },
   });
   if (!region?.sido || !region?.sigungu) return '__NO_MATCH__';
