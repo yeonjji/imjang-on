@@ -3,6 +3,9 @@ import type {
   NearbyTraditionalMarket, NearbyEvCharger, NearbyParking,
 } from '@/lib/amenity/nearby';
 
+/** 카테고리별 DB fetch 상한. 화면 cap(5)과 별개로, 이 수에 도달하면 개수 배지를 'N+'로 표기. */
+export const INFRA_FETCH_LIMIT = 12;
+
 export interface InfraItem {
   id: string;
   name: string;
@@ -20,6 +23,7 @@ export interface InfraCategory {
   icon: string;
   radiusLabel: string;
   items: InfraItem[];
+  capped: boolean;
 }
 
 export interface RawInfra {
@@ -58,7 +62,7 @@ export function buildInfraCategories(raw: RawInfra): InfraCategory[] {
   // 'medical' Store는 의도적으로 제외 — 병원/약국은 Hospital/Pharmacy 전용 카테고리로 노출됨.
   const etc = raw.stores.filter((s) => classifyStore(s.industryCode) === 'etc');
 
-  const cats: InfraCategory[] = [
+  const cats: Omit<InfraCategory, 'capped'>[] = [
     { key: 'store', label: '편의·마트', icon: '🛒', radiusLabel: '반경 500m 내',
       items: mart.map((s) => ({ id: String(s.id), name: s.name, sub: s.industryName ?? null, distanceMeters: s.distanceMeters })) },
     { key: 'hospital', label: '병원', icon: '🏥', radiusLabel: '반경 500m 내',
@@ -77,5 +81,7 @@ export function buildInfraCategories(raw: RawInfra): InfraCategory[] {
       items: etc.map((s) => ({ id: String(s.id), name: s.name, sub: s.industryName ?? null, distanceMeters: s.distanceMeters })) },
   ];
 
-  return cats.filter((c) => c.items.length > 0);
+  return cats
+    .filter((c) => c.items.length > 0)
+    .map((c) => ({ ...c, capped: c.items.length >= INFRA_FETCH_LIMIT }));
 }

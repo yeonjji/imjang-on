@@ -20,7 +20,7 @@ export function NearbyInfra({ categories }: { categories: InfraCategory[] }) {
           >
             <span>{c.icon}</span>
             {c.label}
-            <span className="text-[var(--color-blue)]">{c.items.length} · {c.items[0].distanceMeters}m</span>
+            <span className="text-[var(--color-blue)]">{c.items.length}{c.capped ? '+' : ''} · {c.items[0].distanceMeters}m</span>
           </span>
         ))}
       </div>
@@ -44,7 +44,7 @@ function InfraBlock({ category }: { category: InfraCategory }) {
       <div className="mb-1.5 text-sm font-bold text-[var(--color-blue-dark)]">
         <span className="mr-1">{category.icon}</span>
         {category.label}
-        <span className="ml-1 text-xs font-semibold text-[var(--color-muted)]">{category.items.length}곳</span>
+        <span className="ml-1 text-xs font-semibold text-[var(--color-muted)]">{category.items.length}{category.capped ? '+' : ''}곳</span>
       </div>
       <ul>
         {visible.map((it) => (
@@ -71,7 +71,7 @@ function InfraBlock({ category }: { category: InfraCategory }) {
         </button>
       ) : (
         <p className="mt-auto pt-2 text-[11px] text-[var(--color-muted)]">
-          {category.radiusLabel} {category.items.length}곳
+          {category.radiusLabel} {category.items.length}{category.capped ? '+' : ''}곳
         </p>
       )}
     </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyStore, buildInfraCategories, type RawInfra } from '@/lib/amenity/infra';
+import { classifyStore, buildInfraCategories, INFRA_FETCH_LIMIT, type RawInfra } from '@/lib/amenity/infra';
 
 describe('classifyStore', () => {
   it('편의점·마트·슈퍼 prefix는 mart', () => {
@@ -65,5 +65,21 @@ describe('buildInfraCategories', () => {
     });
     expect(cats.map((c) => c.key)).toEqual(['store', 'hospital', 'parking']);
     expect(cats.find((c) => c.key === 'parking')?.items[0].sub).toBe('공영 · 120면');
+  });
+
+  it('items가 fetch 한도에 도달하면 capped=true', () => {
+    const hospitals = Array.from({ length: INFRA_FETCH_LIMIT }, (_, i) => ({
+      id: BigInt(i + 1), name: `병원${i}`, typeName: '의원', address: '', distanceMeters: 100 + i,
+    }));
+    const cats = buildInfraCategories({ ...empty, hospitals });
+    expect(cats.find((c) => c.key === 'hospital')?.capped).toBe(true);
+  });
+
+  it('items가 한도 미만이면 capped=false', () => {
+    const cats = buildInfraCategories({
+      ...empty,
+      pharmacies: [{ id: 1n, name: '약국', address: '', tel: null, distanceMeters: 100 }],
+    });
+    expect(cats.find((c) => c.key === 'pharmacy')?.capped).toBe(false);
   });
 });

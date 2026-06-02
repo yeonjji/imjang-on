@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db';
 import { PropertyType } from '@prisma/client';
 import type { AmenitySlug } from '@/lib/amenity/category';
-import { buildInfraCategories, type InfraCategory } from '@/lib/amenity/infra';
+import { buildInfraCategories, INFRA_FETCH_LIMIT, type InfraCategory } from '@/lib/amenity/infra';
 
 export interface NearbyEvCharger {
   id: bigint;
@@ -403,16 +403,15 @@ export async function getNearbyParking(
 }
 
 // 학교 상세 "주변 생활 인프라" — 8개 카테고리를 정규화해 반환. 빈 카테고리는 제외됨.
-const INFRA_LIMIT = 12;
 export async function getSchoolNearbyInfra(lat: number, lng: number): Promise<InfraCategory[]> {
   const [stores, hospitals, pharmacies, parks, markets, chargers, parking] = await Promise.all([
-    getNearbyStores(lat, lng, 500, INFRA_LIMIT),
-    getNearbyHospitals(lat, lng, 500, INFRA_LIMIT),
-    getNearbyPharmacies(lat, lng, 500, INFRA_LIMIT),
-    getNearbyParks(lat, lng, 1000, INFRA_LIMIT),
-    getNearbyTraditionalMarkets(lat, lng, 1000, INFRA_LIMIT),
-    getNearbyEvChargers(lat, lng, 500, INFRA_LIMIT),
-    getNearbyParking(lat, lng, 500, INFRA_LIMIT),
+    getNearbyStores(lat, lng, 500, INFRA_FETCH_LIMIT),
+    getNearbyHospitals(lat, lng, 500, INFRA_FETCH_LIMIT),
+    getNearbyPharmacies(lat, lng, 500, INFRA_FETCH_LIMIT),
+    getNearbyParks(lat, lng, 1000, INFRA_FETCH_LIMIT),
+    getNearbyTraditionalMarkets(lat, lng, 1000, INFRA_FETCH_LIMIT),
+    getNearbyEvChargers(lat, lng, 500, INFRA_FETCH_LIMIT),
+    getNearbyParking(lat, lng, 500, INFRA_FETCH_LIMIT),
   ]);
   return buildInfraCategories({ stores, hospitals, pharmacies, parks, markets, chargers, parking });
 }
