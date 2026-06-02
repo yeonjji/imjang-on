@@ -1,55 +1,102 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 
 interface Region { sido: string; sigungu: string; sigunguCode: string; }
 interface TypeCode { typeCode: string; typeName: string; }
+
 interface Props {
   regions: Region[];
   typeCodes: TypeCode[];
-  currentSigunguCode?: string;
-  currentTypeCode?: string;
+  basePath?: string;
+  params?: URLSearchParams;
+  onParamsChange?: (next: URLSearchParams) => void;
 }
 
-export function HospitalFilterPanel({ regions, typeCodes, currentSigunguCode, currentTypeCode }: Props) {
+export function HospitalFilterPanel({
+  regions,
+  typeCodes,
+  basePath = '/medical/hospital',
+  params: ext,
+  onParamsChange,
+}: Props) {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const sp = useSearchParams();
+  const p = ext ?? sp;
   const [, startTransition] = useTransition();
 
   const sidos = [...new Set(regions.map(r => r.sido))].sort();
-  const [selectedSido, setSelectedSido] = useState(() =>
-    currentSigunguCode ? (regions.find(r => r.sigunguCode === currentSigunguCode)?.sido ?? '') : ''
-  );
+
+  const [selectedSido, setSelectedSido] = useState(() => {
+    const regionCode = p.get('region') ?? '';
+    return regionCode ? (regions.find(r => r.sigunguCode === regionCode)?.sido ?? '') : '';
+  });
+
+  useEffect(() => {
+    if (!ext) return;
+    const regionCode = ext.get('region') ?? '';
+    setSelectedSido(regionCode ? (regions.find(r => r.sigunguCode === regionCode)?.sido ?? '') : '');
+  }, [ext, regions]);
+
   const sigungus = selectedSido ? regions.filter(r => r.sido === selectedSido) : [];
 
-  function navigate(sigunguCode: string, typeCode: string) {
-    const p = new URLSearchParams(searchParams.toString());
-    sigunguCode ? p.set('region', sigunguCode) : p.delete('region');
-    typeCode ? p.set('type', typeCode) : p.delete('type');
-    p.delete('page');
-    startTransition(() => router.push(`/medical/hospital?${p.toString()}`));
+  function update(updates: Record<string, string | null>) {
+    const next = new URLSearchParams(p.toString());
+    for (const [k, v] of Object.entries(updates)) {
+      if (v === null || v === '') next.delete(k);
+      else next.set(k, v);
+    }
+    next.delete('page');
+    if (onParamsChange) {
+      onParamsChange(next);
+    } else {
+      startTransition(() => router.push(`${basePath}?${next.toString()}`));
+    }
   }
 
-  const selectClass =
-    'rounded-lg border border-[var(--color-line)] bg-white px-3 py-2 text-sm focus:border-[var(--color-blue)] focus:outline-none';
+  const selectCls = 'w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-blue-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--color-blue)]';
+  const curRegion = p.get('region') ?? '';
+  const curType = p.get('type') ?? '';
 
   return (
-    <div className="flex flex-wrap gap-3">
-      <select className={selectClass} value={selectedSido}
-        onChange={e => { setSelectedSido(e.target.value); navigate('', currentTypeCode ?? ''); }}>
-        <option value="">시도 전체</option>
-        {sidos.map(s => <option key={s} value={s}>{s}</option>)}
-      </select>
-      <select className={selectClass} value={currentSigunguCode ?? ''} disabled={!selectedSido}
-        onChange={e => navigate(e.target.value, currentTypeCode ?? '')}>
-        <option value="">시군구 전체</option>
-        {sigungus.map(r => <option key={r.sigunguCode} value={r.sigunguCode}>{r.sigungu}</option>)}
-      </select>
-      <select className={selectClass} value={currentTypeCode ?? ''}
-        onChange={e => navigate(currentSigunguCode ?? '', e.target.value)}>
-        <option value="">종류 전체</option>
-        {typeCodes.map(t => <option key={t.typeCode} value={t.typeCode}>{t.typeName}</option>)}
-      </select>
+    <div className="flex flex-col gap-6">
+      <section>
+        <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">지역</h3>
+        <div className="mt-2 flex flex-col gap-2">
+          <select
+            className={selectCls}
+            value={selectedSido}
+            onChange={e => { setSelectedSido(e.target.value); update({ region: null }); }}
+          >
+            <option value="">시도 전체</option>
+            {sidos.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          {sigungus.length > 0 && (
+            <select
+              className={selectCls}
+              value={curRegion}
+              onChange={e => update({ region: e.target.value || null })}
+            >
+              <option value="">시군구 전체</option>
+              {sigungus.map(r => <option key={r.sigunguCode} value={r.sigunguCode}>{r.sigungu}</option>)}
+            </select>
+          )}
+        </div>
+      </section>
+
+      <section>
+        <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">종류</h3>
+        <div className="mt-2">
+          <select
+            className={selectCls}
+            value={curType}
+            onChange={e => update({ type: e.target.value || null })}
+          >
+            <option value="">전체</option>
+            {typeCodes.map(t => <option key={t.typeCode} value={t.typeCode}>{t.typeName}</option>)}
+          </select>
+        </div>
+      </section>
     </div>
   );
 }

@@ -50,8 +50,6 @@ export default async function HospitalListPage({ searchParams }: Props) {
           <HospitalFilterPanel
             regions={regions}
             typeCodes={typeCodes}
-            currentSigunguCode={sigunguCode}
-            currentTypeCode={typeCode}
           />
         </Suspense>
       </div>
