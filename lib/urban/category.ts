@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { parkingDef } from './adapters/parking';
 import { chargerDef } from './adapters/charger';
+import { parkDef } from './adapters/park';
 
-export type UrbanSlug = 'parking' | 'charger';
+export type UrbanSlug = 'parking' | 'charger' | 'park';
 
 export interface UrbanItem<TRow = unknown> {
   id: bigint;
@@ -54,11 +55,12 @@ export interface UrbanCategoryDef<TRow = unknown> {
   renderRichSections(item: UrbanItem<TRow>): ReactNode;
 }
 
-export const URBAN_SLUGS = ['parking', 'charger'] as const satisfies readonly UrbanSlug[];
+export const URBAN_SLUGS = ['parking', 'charger', 'park'] as const satisfies readonly UrbanSlug[];
 
 export const URBAN_CATEGORIES: Record<UrbanSlug, UrbanCategoryDef> = {
   parking: parkingDef,
   charger: chargerDef,
+  park: parkDef,
 };
 
 export function getUrbanCategoryDef(slug: string): UrbanCategoryDef | null {

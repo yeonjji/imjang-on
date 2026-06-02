@@ -86,7 +86,7 @@ async function getLatLng(id: bigint): Promise<{ lat: number; lng: number } | nul
 }
 
 export const parkDef: UrbanCategoryDef<ParkRaw> = {
-  slug: 'park' as any,
+  slug: 'park',
   label: '공원',
   emoji: '🌳',
   breadcrumbLabel: '공원',
