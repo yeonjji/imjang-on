@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getUrbanCategoryDef } from '@/lib/urban/category';
+import type { UrbanItem } from '@/lib/urban/category';
 import { getUrbanById, getUrbanLatLng } from '@/lib/urban/detail';
 import { getUrbanList } from '@/lib/urban/list';
 import { getSameCategoryNearbyParking } from '@/lib/urban/nearby';
@@ -99,7 +100,7 @@ export default async function UrbanDetailPage({ params }: Params) {
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[1fr_320px]">
         <main className="flex flex-col gap-6">
           {def.slug === 'park' ? (
-            <ParkInfo item={item as import('@/lib/urban/category').UrbanItem<ParkRaw>} />
+            <ParkInfo item={item as UrbanItem<ParkRaw>} />
           ) : (
             <>
               <UrbanInfo item={item} def={def} regionFullName={region?.fullName ?? ''} />
