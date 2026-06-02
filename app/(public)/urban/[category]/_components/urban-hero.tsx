@@ -23,8 +23,8 @@ export function UrbanHero({ item, def }: { item: UrbanItem; def: UrbanCategoryDe
           {r.chargeInfo && <Badge tone={r.chargeInfo === '무료' ? 'green' : 'gray'}>{r.chargeInfo}</Badge>}
           {r.prkplceType && <Badge tone="gray">{r.prkplceType}</Badge>}
           {r.pwdbsPpkZoneYn && <Badge tone="orange">♿장애인전용</Badge>}
-          {allDay24 && <Badge tone="blue">⏰ 24시간</Badge>}
-          {noHours && <Badge tone="gray">운영시간 미상</Badge>}
+          {def.slug === 'parking' && allDay24 && <Badge tone="blue">⏰ 24시간</Badge>}
+          {def.slug === 'parking' && noHours && <Badge tone="gray">운영시간 미상</Badge>}
         </div>
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-muted)]">
           <span>📍 {item.address}</span>
