@@ -24,11 +24,11 @@ test.describe('생활편의 그룹 허브 /life/[group]', () => {
     await expect(grid.getByRole('link', { name: /학교/ }).or(grid.getByRole('button', { name: /학교/ }))).toHaveCount(0);
   });
 
-  test('medical: 병원·의원/약국/보건소만 노출', async ({ page }) => {
+  test('medical: 병원·의원/약국만 노출', async ({ page }) => {
     await page.goto('/life/medical');
     await expect(page.getByRole('heading', { level: 1, name: '의료시설' })).toBeVisible();
     const grid = page.getByTestId('life-group-cards');
-    for (const label of ['병원·의원', '약국', '보건소']) {
+    for (const label of ['병원·의원', '약국']) {
       await expect(
         grid.getByRole('link', { name: new RegExp(label) }).or(grid.getByRole('button', { name: new RegExp(label) }))
       ).toBeVisible();

@@ -4,6 +4,7 @@ import { getHospitalList, getHospitalRegions, getHospitalTypeCodes } from '@/lib
 import { HospitalCard } from './_components/hospital-card';
 import { HospitalFilterPanel } from './_components/hospital-filter-panel';
 import { HospitalMobileFilterSheet } from './_components/hospital-mobile-filter-sheet';
+import { SiblingTabs } from '../../_components/sibling-tabs';
 import type { Metadata } from 'next';
 
 export const revalidate = 86_400;
@@ -50,6 +51,8 @@ export default async function HospitalListPage({ searchParams }: Props) {
         </h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">전국 {total.toLocaleString('ko-KR')}개</p>
       </div>
+
+      <SiblingTabs currentHref="/medical/hospital" />
 
       <Suspense>
         <HospitalMobileFilterSheet regions={regions} typeCodes={typeCodes} />

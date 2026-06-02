@@ -29,13 +29,12 @@ describe('LIFE_GROUPS', () => {
     ]);
   });
 
-  it('의료시설 그룹 — 병원·의원·약국은 라이브, 보건소는 미라이브이다', () => {
+  it('의료시설 그룹 — 병원·의원·약국만 라이브로 노출된다', () => {
     const medical = LIFE_GROUPS.find((g) => g.label === '의료시설')!;
-    expect(medical.items.find((i) => i.label === '병원·의원')?.live).toBe(true);
-    expect(medical.items.find((i) => i.label === '병원·의원')?.href).toBe('/medical/hospital');
-    expect(medical.items.find((i) => i.label === '약국')?.live).toBe(true);
-    expect(medical.items.find((i) => i.label === '약국')?.href).toBe('/medical/pharmacy');
-    expect(medical.items.find((i) => i.label === '보건소')?.live).toBe(false);
+    expect(medical.items).toEqual([
+      { label: '병원·의원', href: '/medical/hospital', live: true },
+      { label: '약국',     href: '/medical/pharmacy',  live: true },
+    ]);
   });
 
   it('도시인프라 그룹 — 주차장·공원·충전소 모두 라이브이다', () => {
@@ -47,9 +46,9 @@ describe('LIFE_GROUPS', () => {
     ]);
   });
 
-  it('데이터 없는 항목(보건소)만 soon 배지를 가진다', () => {
+  it('soon 배지를 가진 항목이 더 이상 없다', () => {
     const soon = LIFE_GROUPS.flatMap((g) => g.items).filter((i) => i.soon);
-    expect(soon.map((i) => i.label)).toEqual(['보건소']);
+    expect(soon).toEqual([]);
   });
 
   it('모든 그룹은 비어있지 않은 intro(소개 1줄)를 가진다', () => {

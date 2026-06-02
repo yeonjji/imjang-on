@@ -30,11 +30,10 @@ export const LIFE_GROUPS: LifeGroup[] = [
   {
     slug: 'medical',
     label: '의료시설',
-    intro: '병원·약국·보건소까지, 우리 동네 의료 인프라.',
+    intro: '병원·약국까지, 우리 동네 의료 인프라.',
     items: [
       { label: '병원·의원', href: '/medical/hospital', live: true },
       { label: '약국', href: '/medical/pharmacy', live: true },
-      { label: '보건소', href: '/medical?type=health-center', live: false, soon: true },
     ],
   },
   {
@@ -63,7 +62,7 @@ export const LIFE_GROUPS: LifeGroup[] = [
 /** 하위 항목 label → emoji 매핑 (그룹 허브, /life 인덱스, sibling 탭 공용) */
 export const LIFE_ITEM_EMOJI: Record<string, string> = {
   '학교': '🏫', '어린이집': '👶',
-  '병원·의원': '🏥', '약국': '💊', '보건소': '🩺',
+  '병원·의원': '🏥', '약국': '💊',
   '편의점': '🏪', '마트': '🛒', '카페': '☕', '전통시장': '🏬',
   '공원': '🌳', '충전소': '⚡', '주차장': '🅿️',
 };
