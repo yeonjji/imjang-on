@@ -1,6 +1,6 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface Region { sido: string; sigungu: string; sigunguCode: string; }
 interface TypeCode { typeCode: string; typeName: string; }
@@ -29,13 +29,6 @@ export function HospitalFilterPanel({
     const regionCode = p.get('region') ?? '';
     return regionCode ? (regions.find(r => r.sigunguCode === regionCode)?.sido ?? '') : '';
   });
-
-  useEffect(() => {
-    if (!ext) return;
-    const regionCode = ext.get('region') ?? '';
-    setSelectedSido(regionCode ? (regions.find(r => r.sigunguCode === regionCode)?.sido ?? '') : '');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ext]);
 
   const sigungus = selectedSido ? regions.filter(r => r.sido === selectedSido) : [];
 
