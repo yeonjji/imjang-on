@@ -33,7 +33,7 @@ interface Props {
 }
 
 export function HospitalTabFacility({ facility, equipment, mealSurcharges }: Props) {
-  if (!facility && !equipment.length) {
+  if (!facility && !equipment.length && !mealSurcharges.length) {
     return <p className="py-8 text-center text-sm text-[var(--color-muted)]">시설·장비 정보가 등록되어 있지 않습니다.</p>;
   }
   return (
