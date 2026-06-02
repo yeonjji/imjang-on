@@ -24,8 +24,9 @@ export default async function SchoolListPage({ searchParams }: Props) {
   const sidoList = await getSidoList().catch(() => []);
   const basePath = '/school';
   const page = Math.max(1, Number(sp.page ?? '1'));
+  const sidoFull = sidoList.find(s => s.sido === sp.sido)?.fullName;
   const filter = {
-    sido: sp.sido,
+    sido: sidoFull,
     sigunguCode: sp.region,
     kind: (sp.kind ?? 'all') as SchoolKindSlug,
     found: (sp.found ?? 'all') as FoundSlug,

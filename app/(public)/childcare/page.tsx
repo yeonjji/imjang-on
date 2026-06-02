@@ -24,8 +24,9 @@ export default async function ChildcareListPage({ searchParams }: Props) {
   const sidoList = await getSidoList().catch(() => []);
   const basePath = '/childcare';
   const page = Math.max(1, Number(sp.page ?? '1'));
+  const sidoFull = sidoList.find(s => s.sido === sp.sido)?.fullName;
   const filter = {
-    sido: sp.sido,
+    sido: sidoFull,
     sigunguCode: sp.region,
     type: (sp.type ?? 'all') as ChildcareTypeSlug,
     q: sp.q,
