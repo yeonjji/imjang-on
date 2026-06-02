@@ -1,6 +1,6 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Region { sido: string; sigungu: string; sigunguCode: string; }
 interface TypeCode { typeCode: string; typeName: string; }
@@ -23,8 +23,6 @@ export function HospitalFilterPanel({
   const router = useRouter();
   const sp = useSearchParams();
   const p = ext ?? sp;
-  const [, startTransition] = useTransition();
-
   const sidos = [...new Set(regions.map(r => r.sido))].sort();
 
   const [selectedSido, setSelectedSido] = useState(() => {
@@ -36,21 +34,22 @@ export function HospitalFilterPanel({
     if (!ext) return;
     const regionCode = ext.get('region') ?? '';
     setSelectedSido(regionCode ? (regions.find(r => r.sigunguCode === regionCode)?.sido ?? '') : '');
-  }, [ext, regions]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ext]);
 
   const sigungus = selectedSido ? regions.filter(r => r.sido === selectedSido) : [];
 
   function update(updates: Record<string, string | null>) {
     const next = new URLSearchParams(p.toString());
     for (const [k, v] of Object.entries(updates)) {
-      if (v === null || v === '') next.delete(k);
+      if (v === null) next.delete(k);
       else next.set(k, v);
     }
     next.delete('page');
     if (onParamsChange) {
       onParamsChange(next);
     } else {
-      startTransition(() => router.push(`${basePath}?${next.toString()}`));
+      router.push(`${basePath}?${next.toString()}`);
     }
   }
 
