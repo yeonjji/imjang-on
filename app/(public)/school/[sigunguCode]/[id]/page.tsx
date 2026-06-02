@@ -8,7 +8,7 @@ import { NearbyChildcare } from '../../../childcare/[sigunguCode]/[id]/_componen
 import { SchoolHero } from './_components/school-hero';
 import { SchoolInfo } from './_components/school-info';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
-import { NearbyInfra } from './_components/nearby-infra';
+import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { SchoolDetailSidebar } from './_components/school-detail-sidebar';
 import { NaverMap } from '@/components/ui/naver-map';
 import { Card } from '@/components/ui/card';
