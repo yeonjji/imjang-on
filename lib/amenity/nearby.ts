@@ -332,3 +332,35 @@ export async function getNearbyPharmacies(
     LIMIT 5
   `;
 }
+
+export interface NearbyHospital {
+  id: bigint;
+  name: string;
+  typeName: string;
+  address: string;
+  distanceMeters: number;
+}
+
+export async function getNearbyHospitals(
+  lat: number,
+  lng: number,
+  radiusMeters = 500,
+): Promise<NearbyHospital[]> {
+  return prisma.$queryRaw<NearbyHospital[]>`
+    SELECT
+      id, name, "typeName", address,
+      ROUND(ST_Distance(
+        location::geography,
+        ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
+      )::numeric) AS "distanceMeters"
+    FROM "Hospital"
+    WHERE location IS NOT NULL
+      AND ST_DWithin(
+        location::geography,
+        ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
+        ${radiusMeters}
+      )
+    ORDER BY "distanceMeters"
+    LIMIT 5
+  `;
+}
