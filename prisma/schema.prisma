@@ -541,6 +541,7 @@ model HospitalTransit {
   direction    String? @db.VarChar(100)
   distance     String? @db.VarChar(50)
   note         String? @db.VarChar(200)
+  updatedAt    DateTime @updatedAt
   @@index([hospitalId])
 }
 
@@ -615,7 +616,7 @@ model Pharmacy {
   sourceId    String    @unique @db.VarChar(100)
   name        String    @db.VarChar(100)
   typeCode    String?   @db.VarChar(10)
-  typeName    String?   @db.VarChar(20)
+  typeName    String?   @db.VarChar(40)
   sido         String?  @db.VarChar(20)
   sigungu      String?  @db.VarChar(40)
   sigunguCode  String?  @db.VarChar(10)
