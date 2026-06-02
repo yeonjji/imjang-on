@@ -19,7 +19,10 @@ export function HospitalMobileFilterSheet({ regions, typeCodes }: Props) {
   const sp = useSearchParams();
   const [pending, setPending] = useState(() => new URLSearchParams(sp.toString()));
 
-  const activeCount = ['region', 'type'].filter(k => sp.get(k)).length;
+  const activeCount = ['region', 'type'].filter(k => {
+    const v = sp.get(k);
+    return v && v !== '';
+  }).length;
 
   return (
     <div className="mb-4 flex items-center gap-2 md:hidden">
