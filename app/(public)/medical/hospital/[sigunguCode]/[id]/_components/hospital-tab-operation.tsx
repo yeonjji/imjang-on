@@ -35,7 +35,9 @@ export function HospitalTabOperation({ detail, transits }: Props) {
                   <div key={d.label} className="flex items-center justify-between px-4 py-2.5 text-sm">
                     <span className="w-6 font-semibold text-[var(--color-blue-dark)]">{d.label}</span>
                     <span className="text-[var(--color-muted)]">
-                      {open != null ? `${formatHospitalTime(open)} ~ ${formatHospitalTime(close)}` : '휴진'}
+                      {open != null && close != null
+                        ? `${formatHospitalTime(open)} ~ ${formatHospitalTime(close)}`
+                        : '휴진'}
                     </span>
                   </div>
                 );
@@ -44,8 +46,14 @@ export function HospitalTabOperation({ detail, transits }: Props) {
             {detail.lunchWeekday && (
               <p className="mt-2 text-xs text-[var(--color-muted)]">점심(평일): {detail.lunchWeekday}</p>
             )}
+            {detail.lunchSaturday && (
+              <p className="mt-1 text-xs text-[var(--color-muted)]">점심(토요일): {detail.lunchSaturday}</p>
+            )}
             {detail.closedSunday && (
               <p className="mt-1 text-xs text-[var(--color-muted)]">일요일: {detail.closedSunday}</p>
+            )}
+            {detail.closedHoliday && (
+              <p className="mt-1 text-xs text-[var(--color-muted)]">공휴일: {detail.closedHoliday}</p>
             )}
           </section>
 
