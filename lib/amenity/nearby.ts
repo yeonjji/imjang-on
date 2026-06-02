@@ -193,20 +193,6 @@ export async function getNearbyParks(
   `;
 }
 
-// 학교 상세 "주변 생활 인프라" 탭(공원 / 마트·편의 / 충전소). 병원·약국은 보류(제외).
-export async function getSchoolNearbyAmenities(lat: number, lng: number) {
-  const [parks, stores, chargers] = await Promise.all([
-    getNearbyParks(lat, lng),
-    getNearbyStores(lat, lng),
-    getNearbyEvChargers(lat, lng),
-  ]);
-  const mart = stores.filter((s) => {
-    const c = s.industryCode ?? '';
-    return ['G20405', 'G20404', 'G20402', 'I21201'].some((p) => c.startsWith(p));
-  });
-  return { parks, mart, chargers };
-}
-
 /**
  * DETAIL "주변 상권 종합" — 현재 카테고리 **제외**한 나머지 카테고리의 가까운 항목들.
  * Store(convenience/mart/cafe) + TraditionalMarket(market)를 단일 호출로.
