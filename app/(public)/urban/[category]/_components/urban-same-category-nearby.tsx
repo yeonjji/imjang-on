@@ -1,9 +1,17 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import type { UrbanCategoryDef } from '@/lib/urban/category';
-import type { NearbyParking } from '@/lib/urban/nearby';
 
-export function UrbanSameCategoryNearby({ items, def }: { items: NearbyParking[]; def: UrbanCategoryDef }) {
+type NearbyItem = {
+  id: bigint;
+  name: string;
+  address: string;
+  distanceMeters: number;
+  prkplceSe?: string | null;
+  chargeInfo?: string | null;
+};
+
+export function UrbanSameCategoryNearby({ items, def }: { items: NearbyItem[]; def: UrbanCategoryDef }) {
   if (items.length === 0) return null;
   return (
     <Card id="same">
