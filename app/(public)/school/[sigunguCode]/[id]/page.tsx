@@ -3,12 +3,12 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { getSchoolById, getSchoolList } from '@/lib/school';
 import { getSigunguByCode } from '@/lib/region';
-import { getNearbyApartments, getSchoolNearbyAmenities, getNearbyChildcare } from '@/lib/amenity/nearby';
+import { getNearbyApartments, getSchoolNearbyInfra, getNearbyChildcare } from '@/lib/amenity/nearby';
 import { NearbyChildcare } from '../../../childcare/[sigunguCode]/[id]/_components/nearby-childcare';
 import { SchoolHero } from './_components/school-hero';
 import { SchoolInfo } from './_components/school-info';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
-import { NearbyAmenities } from './_components/nearby-amenities';
+import { NearbyInfra } from './_components/nearby-infra';
 import { SchoolDetailSidebar } from './_components/school-detail-sidebar';
 import { NaverMap } from '@/components/ui/naver-map';
 import { Card } from '@/components/ui/card';
@@ -56,11 +56,9 @@ export default async function SchoolDetailPage({ params }: Params) {
   const basePath = `/school/${sigunguCode}`;
   const coord = await getSchoolLatLng(schoolId);
 
-  const [apts, amenities, nearbyChildren, otherList] = await Promise.all([
+  const [apts, infra, nearbyChildren, otherList] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
-    coord
-      ? getSchoolNearbyAmenities(coord.lat, coord.lng)
-      : Promise.resolve({ parks: [], mart: [], chargers: [] } as Awaited<ReturnType<typeof getSchoolNearbyAmenities>>),
+    coord ? getSchoolNearbyInfra(coord.lat, coord.lng) : Promise.resolve([] as Awaited<ReturnType<typeof getSchoolNearbyInfra>>),
     coord ? getNearbyChildcare(coord.lat, coord.lng, 1000, 5) : Promise.resolve([]),
     getSchoolList({ sigunguCode }, 1),
   ]);
@@ -90,7 +88,7 @@ export default async function SchoolDetailPage({ params }: Params) {
           )}
           <NearbyApartments items={apts} />
           {coord && <NearbyChildcare items={nearbyChildren} />}
-          {coord && <NearbyAmenities parks={amenities.parks} mart={amenities.mart} chargers={amenities.chargers} />}
+          {coord && <NearbyInfra categories={infra} />}
         </main>
         <aside><SchoolDetailSidebar basePath={basePath} others={others} /></aside>
       </div>
