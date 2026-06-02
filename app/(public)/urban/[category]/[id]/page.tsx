@@ -21,6 +21,9 @@ import { NaverMap } from '@/components/ui/naver-map';
 import { Card } from '@/components/ui/card';
 import type { ParkingRaw } from '@/lib/urban/adapters/parking';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
+import { ParkInfo } from '../_components/park-info';
+import type { ParkRaw } from '@/lib/urban/adapters/park';
+import { getSameCategoryNearbyPark } from '@/lib/urban/nearby';
 
 export const revalidate = 86_400;
 
@@ -62,11 +65,23 @@ export default async function UrbanDetailPage({ params }: Params) {
   const [apts, mixed, sameCat, otherList] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
     coord ? getMixedNearbyForDetail('parking', coord.lat, coord.lng).catch(() => emptyMixed) : Promise.resolve(emptyMixed),
-    coord ? getSameCategoryNearbyParking(coord.lat, coord.lng, itemId) : Promise.resolve([]),
+    coord
+      ? def.slug === 'park'
+        ? getSameCategoryNearbyPark(coord.lat, coord.lng, itemId)
+        : getSameCategoryNearbyParking(coord.lat, coord.lng, itemId)
+      : Promise.resolve([]),
     sigunguCode ? getUrbanList(def.slug, { sigunguCode }, 1) : Promise.resolve(emptyList),
   ]);
 
   const others = otherList.rows.filter((s) => s.id !== item.id).slice(0, 4);
+
+  const PARK_ANCHORS = [
+    { href: '#info', label: '공원 정보' },
+    { href: '#map',  label: '위치' },
+    { href: '#apt',  label: '주변 아파트' },
+    { href: '#poi',  label: '주변 상권' },
+    { href: '#same', label: '가까운 공원' },
+  ];
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10">
@@ -83,10 +98,16 @@ export default async function UrbanDetailPage({ params }: Params) {
 
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[1fr_320px]">
         <main className="flex flex-col gap-6">
-          <UrbanInfo item={item} def={def} regionFullName={region?.fullName ?? ''} />
-          <ParkingHoursTable row={r} />
-          <ParkingFeeGrid row={r} />
-          <ParkingExtras row={r} />
+          {def.slug === 'park' ? (
+            <ParkInfo item={item as import('@/lib/urban/category').UrbanItem<ParkRaw>} />
+          ) : (
+            <>
+              <UrbanInfo item={item} def={def} regionFullName={region?.fullName ?? ''} />
+              <ParkingHoursTable row={r} />
+              <ParkingFeeGrid row={r} />
+              <ParkingExtras row={r} />
+            </>
+          )}
           {coord ? (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
@@ -101,7 +122,7 @@ export default async function UrbanDetailPage({ params }: Params) {
           {coord && <NearbyAmenitiesMixed {...mixed} />}
           {coord && <UrbanSameCategoryNearby items={sameCat} def={def} />}
         </main>
-        <aside><UrbanDetailSidebar others={others} def={def} sigunguCode={sigunguCode} /></aside>
+        <aside><UrbanDetailSidebar others={others} def={def} sigunguCode={sigunguCode} anchors={def.slug === 'park' ? PARK_ANCHORS : undefined} /></aside>
       </div>
     </div>
   );
