@@ -49,12 +49,16 @@ export function HospitalSummaryCards({ totalDoctors, facility, detail }: Props) 
   if (detail) {
     if (detail.erDayOpen != null) {
       const hasEr = detail.erDayOpen === 'Y' || detail.erNightOpen === 'Y';
-      cards.push({ icon: '🚑', label: '응급실', value: hasEr ? '운영' : '미운영', sub: hasEr ? '24시간' : undefined });
+      cards.push({
+        icon: '🚑', label: '응급실',
+        value: hasEr ? '운영' : '미운영',
+        sub: detail.erDayOpen === 'Y' && detail.erNightOpen === 'Y' ? '24시간' : undefined,
+      });
     }
     if (detail.parkingCapacity != null) {
       cards.push({
         icon: '🚗', label: '주차', value: `${detail.parkingCapacity}대`,
-        sub: detail.parkingFee === 'Y' ? '유료' : '무료',
+        sub: detail.parkingFee === 'Y' ? '유료' : detail.parkingFee === 'N' ? '무료' : undefined,
       });
     }
     const dayIdx = new Date().getDay();
