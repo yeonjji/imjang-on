@@ -48,7 +48,7 @@ export default async function HospitalListPage({ searchParams }: Props) {
         <h1 className="text-2xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-3xl">
           병원·의원
         </h1>
-        <p className="mt-2 text-sm text-[var(--color-muted)]">전국 {total.toLocaleString()}개</p>
+        <p className="mt-2 text-sm text-[var(--color-muted)]">전국 {total.toLocaleString('ko-KR')}개</p>
       </div>
 
       <Suspense>
@@ -67,7 +67,7 @@ export default async function HospitalListPage({ searchParams }: Props) {
         <main className="min-w-0 flex-1">
           <div className="mb-4 rounded-[18px] border border-[var(--color-line)] bg-white px-5 py-3 shadow-[var(--shadow-soft)]">
             <p className="text-base font-bold text-[var(--color-blue-dark)]">
-              <span className="text-[var(--color-blue)]">{total.toLocaleString()}</span>개 병원·의원
+              <span className="text-[var(--color-blue)]">{total.toLocaleString('ko-KR')}</span>개 병원·의원
             </p>
           </div>
 
