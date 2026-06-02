@@ -35,6 +35,7 @@ export interface HospitalListFilter {
 
 export async function getHospitalList(filter: HospitalListFilter, page: number, perPage = 20) {
   const where = {
+    sigunguCode: { not: null },
     ...(filter.sigunguCode && { sigunguCode: filter.sigunguCode }),
     ...(filter.typeCode && { typeCode: filter.typeCode }),
   };

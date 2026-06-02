@@ -46,7 +46,7 @@ export default async function HospitalListPage({ searchParams }: Props) {
       <p className="mb-6 text-sm text-[var(--color-muted)]">전국 {total.toLocaleString()}개 병원·의원 정보</p>
 
       <div className="mb-6">
-        <Suspense>
+        <Suspense fallback={<div className="h-10" />}>
           <HospitalFilterPanel
             regions={regions}
             typeCodes={typeCodes}
