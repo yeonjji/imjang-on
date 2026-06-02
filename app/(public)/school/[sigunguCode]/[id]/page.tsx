@@ -3,12 +3,12 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { getSchoolById, getSchoolList } from '@/lib/school';
 import { getSigunguByCode } from '@/lib/region';
-import { getNearbyApartments, getSchoolNearbyInfra, getNearbyChildcare } from '@/lib/amenity/nearby';
+import { getNearbyApartments, getNearbyInfra, getNearbyChildcare } from '@/lib/amenity/nearby';
 import { NearbyChildcare } from '../../../childcare/[sigunguCode]/[id]/_components/nearby-childcare';
 import { SchoolHero } from './_components/school-hero';
 import { SchoolInfo } from './_components/school-info';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
-import { NearbyInfra } from './_components/nearby-infra';
+import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { SchoolDetailSidebar } from './_components/school-detail-sidebar';
 import { NaverMap } from '@/components/ui/naver-map';
 import { Card } from '@/components/ui/card';
@@ -58,7 +58,7 @@ export default async function SchoolDetailPage({ params }: Params) {
 
   const [apts, infra, nearbyChildren, otherList] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
-    coord ? getSchoolNearbyInfra(coord.lat, coord.lng) : Promise.resolve([] as Awaited<ReturnType<typeof getSchoolNearbyInfra>>),
+    coord ? getNearbyInfra(coord.lat, coord.lng) : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
     coord ? getNearbyChildcare(coord.lat, coord.lng, 1000, 5) : Promise.resolve([]),
     getSchoolList({ sigunguCode }, 1),
   ]);
