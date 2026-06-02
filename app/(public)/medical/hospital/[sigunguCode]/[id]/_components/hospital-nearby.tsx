@@ -40,27 +40,27 @@ export function HospitalNearby({ apts, pharmacies, parks, stores, chargers }: Pr
     {
       show: apts.length > 0,
       node: <NearbyCard title="주변 아파트" icon="🏢"
-        items={apts.map(a => ({ id: a.id, name: a.name, sub: a.region, distanceMeters: a.distanceMeters }))} />,
+        items={apts.slice(0, 5).map(a => ({ id: a.id, name: a.name, sub: a.region, distanceMeters: a.distanceMeters }))} />,
     },
     {
       show: pharmacies.length > 0,
       node: <NearbyCard title="주변 약국" icon="💊"
-        items={pharmacies.map(p => ({ id: p.id, name: p.name, sub: p.tel ?? undefined, distanceMeters: p.distanceMeters }))} />,
+        items={pharmacies.slice(0, 5).map(p => ({ id: p.id, name: p.name, sub: p.tel ?? undefined, distanceMeters: p.distanceMeters }))} />,
     },
     {
       show: parks.length > 0,
       node: <NearbyCard title="주변 공원" icon="🌳"
-        items={parks.map(p => ({ id: p.id, name: p.name, sub: p.parkType ?? undefined, distanceMeters: p.distanceMeters }))} />,
+        items={parks.slice(0, 5).map(p => ({ id: p.id, name: p.name, sub: p.parkType ?? undefined, distanceMeters: p.distanceMeters }))} />,
     },
     {
       show: stores.length > 0,
       node: <NearbyCard title="편의점·마트" icon="🛒"
-        items={stores.map(s => ({ id: s.id, name: s.name, sub: s.industryName ?? undefined, distanceMeters: s.distanceMeters }))} />,
+        items={stores.slice(0, 5).map(s => ({ id: s.id, name: s.name, sub: s.industryName ?? undefined, distanceMeters: s.distanceMeters }))} />,
     },
     {
       show: chargers.length > 0,
       node: <NearbyCard title="전기차 충전소" icon="⚡"
-        items={chargers.map(c => ({ id: c.id, name: c.name, sub: `${c.chargeSpeed} · ${c.chargerCount}기`, distanceMeters: c.distanceMeters }))} />,
+        items={chargers.slice(0, 5).map(c => ({ id: c.id, name: c.name, sub: `${c.chargeSpeed} · ${c.chargerCount}기`, distanceMeters: c.distanceMeters }))} />,
     },
   ];
 
