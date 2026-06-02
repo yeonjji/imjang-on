@@ -402,8 +402,8 @@ export async function getNearbyParking(
   `;
 }
 
-// 학교 상세 "주변 생활 인프라" — 8개 카테고리를 정규화해 반환. 빈 카테고리는 제외됨.
-export async function getSchoolNearbyInfra(lat: number, lng: number): Promise<InfraCategory[]> {
+// 상세 "주변 생활 인프라" — 8개 카테고리를 정규화해 반환. 빈 카테고리는 제외됨. (좌표만 받는 범용)
+export async function getNearbyInfra(lat: number, lng: number): Promise<InfraCategory[]> {
   const [stores, hospitals, pharmacies, parks, markets, chargers, parking] = await Promise.all([
     getNearbyStores(lat, lng, 500, INFRA_FETCH_LIMIT),
     getNearbyHospitals(lat, lng, 500, INFRA_FETCH_LIMIT),
