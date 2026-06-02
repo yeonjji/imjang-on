@@ -62,9 +62,12 @@ export function HospitalSummaryCards({ totalDoctors, facility, detail }: Props) 
     const open = detail[openKey];
     const close = detail[closeKey];
     if (open != null || close != null) {
+      const timeStr = open != null && close != null
+        ? `${formatHospitalTime(open)} ~ ${formatHospitalTime(close)}`
+        : open != null ? formatHospitalTime(open) : formatHospitalTime(close);
       cards.push({
         icon: '🕐', label: '오늘 진료',
-        value: open != null ? `${formatHospitalTime(open)} ~ ${formatHospitalTime(close)}` : '휴진',
+        value: timeStr,
       });
     }
   }
