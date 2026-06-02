@@ -53,7 +53,7 @@ export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label="모바일 메뉴"
-        className={`fixed right-0 top-0 z-40 flex h-full w-[78%] max-w-[320px] flex-col gap-1 bg-white p-5 shadow-[var(--shadow-soft)] transition-transform ${
+        className={`fixed right-0 top-0 z-40 flex h-full w-[78%] max-w-[320px] flex-col gap-1 overflow-y-auto bg-white p-5 shadow-[var(--shadow-soft)] transition-transform ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
