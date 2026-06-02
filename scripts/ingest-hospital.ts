@@ -197,8 +197,9 @@ async function writeDepts(rows: NormalizedHospitalDept[], idMap: Map<string, big
     const hospitalId = idMap.get(r.hospitalSourceId);
     return hospitalId ? [{ ...r, hospitalId }] : [];
   });
-  for (let i = 0; i < mapped.length; i += CHUNK_LARGE) {
-    const chunk = mapped.slice(i, i + CHUNK_LARGE);
+  const deduped = [...new Map(mapped.map((r) => [`${r.hospitalId}-${r.deptCode}`, r])).values()];
+  for (let i = 0; i < deduped.length; i += CHUNK_LARGE) {
+    const chunk = deduped.slice(i, i + CHUNK_LARGE);
     const values = chunk.map((r) =>
       Prisma.sql`(${r.hospitalId}, ${r.deptCode}, ${r.deptName}, ${r.specialistCount}, ${r.optionalDoctorCount})`,
     );
@@ -240,8 +241,9 @@ async function writeEquipment(rows: NormalizedHospitalEquipment[], idMap: Map<st
     const hospitalId = idMap.get(r.hospitalSourceId);
     return hospitalId ? [{ ...r, hospitalId }] : [];
   });
-  for (let i = 0; i < mapped.length; i += CHUNK_LARGE) {
-    const chunk = mapped.slice(i, i + CHUNK_LARGE);
+  const deduped = [...new Map(mapped.map((r) => [`${r.hospitalId}-${r.equipCode}`, r])).values()];
+  for (let i = 0; i < deduped.length; i += CHUNK_LARGE) {
+    const chunk = deduped.slice(i, i + CHUNK_LARGE);
     const values = chunk.map((r) =>
       Prisma.sql`(${r.hospitalId}, ${r.equipCode}, ${r.equipName}, ${r.equipCount})`,
     );
@@ -260,8 +262,9 @@ async function writeMealSurcharges(rows: NormalizedHospitalMealSurcharge[], idMa
     const hospitalId = idMap.get(r.hospitalSourceId);
     return hospitalId ? [{ ...r, hospitalId }] : [];
   });
-  for (let i = 0; i < mapped.length; i += CHUNK_LARGE) {
-    const chunk = mapped.slice(i, i + CHUNK_LARGE);
+  const deduped = [...new Map(mapped.map((r) => [`${r.hospitalId}-${r.typeCode}`, r])).values()];
+  for (let i = 0; i < deduped.length; i += CHUNK_LARGE) {
+    const chunk = deduped.slice(i, i + CHUNK_LARGE);
     const values = chunk.map((r) =>
       Prisma.sql`(${r.hospitalId}, ${r.typeCode}, ${r.typeName}, ${r.hasGeneral}, ${r.staffCount}, ${r.treatmentGrade})`,
     );
@@ -282,8 +285,9 @@ async function writeNursingGrades(rows: NormalizedHospitalNursingGrade[], idMap:
     const hospitalId = idMap.get(r.hospitalSourceId);
     return hospitalId ? [{ ...r, hospitalId }] : [];
   });
-  for (let i = 0; i < mapped.length; i += CHUNK_LARGE) {
-    const chunk = mapped.slice(i, i + CHUNK_LARGE);
+  const deduped = [...new Map(mapped.map((r) => [`${r.hospitalId}-${r.typeCode}`, r])).values()];
+  for (let i = 0; i < deduped.length; i += CHUNK_LARGE) {
+    const chunk = deduped.slice(i, i + CHUNK_LARGE);
     const values = chunk.map((r) =>
       Prisma.sql`(${r.hospitalId}, ${r.typeCode}, ${r.typeName}, ${r.nursingGrade})`,
     );
@@ -302,8 +306,9 @@ async function writeSpecialTreatments(rows: NormalizedHospitalSpecialTreatment[]
     const hospitalId = idMap.get(r.hospitalSourceId);
     return hospitalId ? [{ ...r, hospitalId }] : [];
   });
-  for (let i = 0; i < mapped.length; i += CHUNK_LARGE) {
-    const chunk = mapped.slice(i, i + CHUNK_LARGE);
+  const deduped = [...new Map(mapped.map((r) => [`${r.hospitalId}-${r.searchCode}`, r])).values()];
+  for (let i = 0; i < deduped.length; i += CHUNK_LARGE) {
+    const chunk = deduped.slice(i, i + CHUNK_LARGE);
     const values = chunk.map((r) => Prisma.sql`(${r.hospitalId}, ${r.searchCode}, ${r.searchName})`);
     await prisma.$executeRaw`
       INSERT INTO "HospitalSpecialTreatment" ("hospitalId", "searchCode", "searchName")
@@ -318,8 +323,9 @@ async function writeSpecialties(rows: NormalizedHospitalSpecialty[], idMap: Map<
     const hospitalId = idMap.get(r.hospitalSourceId);
     return hospitalId ? [{ ...r, hospitalId }] : [];
   });
-  for (let i = 0; i < mapped.length; i += CHUNK_LARGE) {
-    const chunk = mapped.slice(i, i + CHUNK_LARGE);
+  const deduped = [...new Map(mapped.map((r) => [`${r.hospitalId}-${r.searchCode}`, r])).values()];
+  for (let i = 0; i < deduped.length; i += CHUNK_LARGE) {
+    const chunk = deduped.slice(i, i + CHUNK_LARGE);
     const values = chunk.map((r) => Prisma.sql`(${r.hospitalId}, ${r.searchCode}, ${r.searchName})`);
     await prisma.$executeRaw`
       INSERT INTO "HospitalSpecialty" ("hospitalId", "searchCode", "searchName")
@@ -334,8 +340,9 @@ async function writeStaff(rows: NormalizedHospitalStaff[], idMap: Map<string, bi
     const hospitalId = idMap.get(r.hospitalSourceId);
     return hospitalId ? [{ ...r, hospitalId }] : [];
   });
-  for (let i = 0; i < mapped.length; i += CHUNK_LARGE) {
-    const chunk = mapped.slice(i, i + CHUNK_LARGE);
+  const deduped = [...new Map(mapped.map((r) => [`${r.hospitalId}-${r.staffCode}`, r])).values()];
+  for (let i = 0; i < deduped.length; i += CHUNK_LARGE) {
+    const chunk = deduped.slice(i, i + CHUNK_LARGE);
     const values = chunk.map((r) => Prisma.sql`(${r.hospitalId}, ${r.staffCode}, ${r.staffName}, ${r.staffCount})`);
     await prisma.$executeRaw`
       INSERT INTO "HospitalStaff" ("hospitalId", "staffCode", "staffName", "staffCount")

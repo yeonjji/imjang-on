@@ -536,7 +536,7 @@ model HospitalTransit {
   hospitalId BigInt
   hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   transitName  String? @db.VarChar(50)
-  routeNumber  String? @db.VarChar(30)
+  routeNumber  String? @db.VarChar(100)
   stopPoint    String? @db.VarChar(100)
   direction    String? @db.VarChar(100)
   distance     String? @db.VarChar(50)
