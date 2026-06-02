@@ -3,8 +3,12 @@ import { Badge } from '@/components/ui/badge';
 import type { UrbanCategoryDef, UrbanItem } from '@/lib/urban/category';
 import type { ParkingRaw } from '@/lib/urban/adapters/parking';
 import { isOpen24 } from '@/lib/urban/parking-hours';
+import { ParkCard } from './park-card';
+import type { ParkRaw } from '@/lib/urban/adapters/park';
 
 export function UrbanCard({ item, def }: { item: UrbanItem; def: UrbanCategoryDef }) {
+  if (def.slug === 'park') return <ParkCard item={item as UrbanItem<ParkRaw>} />;
+
   const r = item.raw as ParkingRaw;
   const open24 = isOpen24(r.weekdayOpenHhmm, r.weekdayCloseHhmm);
   const summary = def.inferRowSummary(item);
