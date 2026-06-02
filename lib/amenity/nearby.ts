@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { PropertyType } from '@prisma/client';
 import type { AmenitySlug } from '@/lib/amenity/category';
+import { buildInfraCategories, type InfraCategory } from '@/lib/amenity/infra';
 
 export interface NearbyEvCharger {
   id: bigint;
@@ -33,6 +34,7 @@ export async function getNearbyEvChargers(
   lat: number,
   lng: number,
   radiusMeters = 500,
+  limit = 10,
 ): Promise<NearbyEvCharger[]> {
   return prisma.$queryRaw<NearbyEvCharger[]>`
     SELECT
@@ -53,7 +55,7 @@ export async function getNearbyEvChargers(
       ${radiusMeters}
     )
     ORDER BY "distanceMeters"
-    LIMIT 10
+    LIMIT ${limit}
   `;
 }
 
@@ -61,6 +63,7 @@ export async function getNearbyTraditionalMarkets(
   lat: number,
   lng: number,
   radiusMeters = 1000,
+  limit = 5,
 ): Promise<NearbyTraditionalMarket[]> {
   return prisma.$queryRaw<NearbyTraditionalMarket[]>`
     SELECT
@@ -79,7 +82,7 @@ export async function getNearbyTraditionalMarkets(
       ${radiusMeters}
     )
     ORDER BY "distanceMeters"
-    LIMIT 5
+    LIMIT ${limit}
   `;
 }
 
@@ -87,6 +90,7 @@ export async function getNearbyStores(
   lat: number,
   lng: number,
   radiusMeters = 300,
+  limit = 10,
 ): Promise<NearbyStore[]> {
   return prisma.$queryRaw<NearbyStore[]>`
     SELECT
@@ -106,7 +110,7 @@ export async function getNearbyStores(
       ${radiusMeters}
     )
     ORDER BY "distanceMeters"
-    LIMIT 10
+    LIMIT ${limit}
   `;
 }
 
@@ -173,6 +177,7 @@ export async function getNearbyParks(
   lat: number,
   lng: number,
   radiusMeters = 1000,
+  limit = 5,
 ): Promise<NearbyPark[]> {
   return prisma.$queryRaw<NearbyPark[]>`
     SELECT id, name, address, "parkType", area,
@@ -184,7 +189,7 @@ export async function getNearbyParks(
       location, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography, ${radiusMeters}
     )
     ORDER BY "distanceMeters"
-    LIMIT 5
+    LIMIT ${limit}
   `;
 }
 
@@ -313,6 +318,7 @@ export async function getNearbyPharmacies(
   lat: number,
   lng: number,
   radiusMeters = 500,
+  limit = 5,
 ): Promise<NearbyPharmacy[]> {
   return prisma.$queryRaw<NearbyPharmacy[]>`
     SELECT
@@ -329,7 +335,7 @@ export async function getNearbyPharmacies(
         ${radiusMeters}
       )
     ORDER BY "distanceMeters"
-    LIMIT 5
+    LIMIT ${limit}
   `;
 }
 
@@ -345,6 +351,7 @@ export async function getNearbyHospitals(
   lat: number,
   lng: number,
   radiusMeters = 500,
+  limit = 5,
 ): Promise<NearbyHospital[]> {
   return prisma.$queryRaw<NearbyHospital[]>`
     SELECT
@@ -361,6 +368,51 @@ export async function getNearbyHospitals(
         ${radiusMeters}
       )
     ORDER BY "distanceMeters"
-    LIMIT 5
+    LIMIT ${limit}
   `;
+}
+
+export interface NearbyParking {
+  id: bigint;
+  name: string;
+  address: string;
+  prkplceSe: string | null;
+  prkcmprt: number | null;
+  distanceMeters: number;
+}
+
+export async function getNearbyParking(
+  lat: number,
+  lng: number,
+  radiusMeters = 500,
+  limit = 5,
+): Promise<NearbyParking[]> {
+  return prisma.$queryRaw<NearbyParking[]>`
+    SELECT id, name, address, "prkplceSe", "prkcmprt",
+      ROUND(ST_Distance(
+        location, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
+      )::numeric) AS "distanceMeters"
+    FROM "Parking"
+    WHERE location IS NOT NULL
+      AND ST_DWithin(
+        location, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography, ${radiusMeters}
+      )
+    ORDER BY "distanceMeters"
+    LIMIT ${limit}
+  `;
+}
+
+// 학교 상세 "주변 생활 인프라" — 8개 카테고리를 정규화해 반환. 빈 카테고리는 제외됨.
+const INFRA_LIMIT = 12;
+export async function getSchoolNearbyInfra(lat: number, lng: number): Promise<InfraCategory[]> {
+  const [stores, hospitals, pharmacies, parks, markets, chargers, parking] = await Promise.all([
+    getNearbyStores(lat, lng, 500, INFRA_LIMIT),
+    getNearbyHospitals(lat, lng, 500, INFRA_LIMIT),
+    getNearbyPharmacies(lat, lng, 500, INFRA_LIMIT),
+    getNearbyParks(lat, lng, 1000, INFRA_LIMIT),
+    getNearbyTraditionalMarkets(lat, lng, 1000, INFRA_LIMIT),
+    getNearbyEvChargers(lat, lng, 500, INFRA_LIMIT),
+    getNearbyParking(lat, lng, 500, INFRA_LIMIT),
+  ]);
+  return buildInfraCategories({ stores, hospitals, pharmacies, parks, markets, chargers, parking });
 }
