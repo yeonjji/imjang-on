@@ -82,7 +82,7 @@ export default async function HospitalDetailPage({ params }: Params) {
       </div>
 
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[1fr_320px]">
-        <main className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6">
           <HospitalTabs hospital={hospital} />
           {coord && (
             <Card id="map">
@@ -97,7 +97,7 @@ export default async function HospitalDetailPage({ params }: Params) {
             stores={stores}
             chargers={chargers}
           />
-        </main>
+        </div>
         <aside>
           <HospitalSidebar hospitals={others} sigunguCode={sigunguCode} />
         </aside>
