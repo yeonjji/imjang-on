@@ -408,3 +408,223 @@ model Parking {
   @@index([prkplceSe])
   @@index([chargeInfo])
 }
+
+model Hospital {
+  id          BigInt    @id @default(autoincrement())
+  sourceId    String    @unique @db.VarChar(100)
+  name        String    @db.VarChar(100)
+  typeCode    String    @db.VarChar(10)
+  typeName    String    @db.VarChar(40)
+  sido         String?  @db.VarChar(20)
+  sigungu      String?  @db.VarChar(40)
+  sigunguCode  String?  @db.VarChar(10)
+  eupmyeondong String?  @db.VarChar(40)
+  zipcode      String?  @db.VarChar(10)
+  address      String   @db.VarChar(300)
+  tel          String?  @db.VarChar(30)
+  homepage     String?  @db.VarChar(200)
+  openedAt     DateTime? @db.Date
+  totalDoctors     Int?
+  drMedGeneral     Int?
+  drMedIntern      Int?
+  drMedResident    Int?
+  drMedSpecialist  Int?
+  drDentGeneral    Int?
+  drDentIntern     Int?
+  drDentResident   Int?
+  drDentSpecialist Int?
+  drKorGeneral     Int?
+  drKorIntern      Int?
+  drKorResident    Int?
+  drKorSpecialist  Int?
+  midwifeCount     Int?
+  location  Unsupported("geography(Point,4326)")?
+  updatedAt DateTime @updatedAt
+  facility          HospitalFacility?
+  detail            HospitalDetail?
+  depts             HospitalDept[]
+  transits          HospitalTransit[]
+  equipment         HospitalEquipment[]
+  mealSurcharges    HospitalMealSurcharge[]
+  nursingGrades     HospitalNursingGrade[]
+  specialTreatments HospitalSpecialTreatment[]
+  specialties       HospitalSpecialty[]
+  staff             HospitalStaff[]
+  @@index([typeCode])
+  @@index([sigunguCode])
+  @@index([sigunguCode, typeCode])
+}
+
+model HospitalFacility {
+  id         BigInt   @id @default(autoincrement())
+  hospitalId BigInt   @unique
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  foundTypeCode String? @db.VarChar(5)
+  foundTypeName String? @db.VarChar(20)
+  generalBedPremium       Int?
+  generalBedNormal        Int?
+  icuAdultBed             Int?
+  icuPediatricBed         Int?
+  icuNeonatalBed          Int?
+  deliveryBed             Int?
+  operatingRoomBed        Int?
+  erBed                   Int?
+  physicalTherapyBed      Int?
+  psychiatryClosedPremium Int?
+  psychiatryClosedNormal  Int?
+  psychiatryOpenPremium   Int?
+  psychiatryOpenNormal    Int?
+  isolationBed            Int?
+  sterileRoomBed          Int?
+  updatedAt DateTime @updatedAt
+}
+
+model HospitalDetail {
+  id         BigInt   @id @default(autoincrement())
+  hospitalId BigInt   @unique
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  locationBuilding  String? @db.VarChar(100)
+  locationDirection String? @db.VarChar(100)
+  locationDistance  String? @db.VarChar(50)
+  parkingCapacity Int?
+  parkingFee      String? @db.VarChar(4)
+  parkingNote     String? @db.Text
+  closedSunday  String? @db.VarChar(100)
+  closedHoliday String? @db.VarChar(100)
+  erDayOpen   String? @db.VarChar(4)
+  erDayTel1   String? @db.VarChar(30)
+  erDayTel2   String? @db.VarChar(30)
+  erNightOpen String? @db.VarChar(4)
+  erNightTel1 String? @db.VarChar(30)
+  erNightTel2 String? @db.VarChar(30)
+  lunchWeekday  String? @db.VarChar(50)
+  lunchSaturday String? @db.VarChar(50)
+  receptionWeekday  String? @db.VarChar(50)
+  receptionSaturday String? @db.VarChar(50)
+  openSun  Int?
+  closeSun Int?
+  openMon  Int?
+  closeMon Int?
+  openTue  Int?
+  closeTue Int?
+  openWed  Int?
+  closeWed Int?
+  openThu  Int?
+  closeThu Int?
+  openFri  Int?
+  closeFri Int?
+  openSat  Int?
+  closeSat Int?
+  updatedAt DateTime @updatedAt
+}
+
+model HospitalDept {
+  id         BigInt   @id @default(autoincrement())
+  hospitalId BigInt
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  deptCode   String   @db.VarChar(10)
+  deptName   String   @db.VarChar(40)
+  specialistCount     Int?
+  optionalDoctorCount Int?
+  @@unique([hospitalId, deptCode])
+  @@index([hospitalId])
+  @@index([deptCode])
+}
+
+model HospitalTransit {
+  id         BigInt   @id @default(autoincrement())
+  hospitalId BigInt
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  transitName  String? @db.VarChar(50)
+  routeNumber  String? @db.VarChar(30)
+  stopPoint    String? @db.VarChar(100)
+  direction    String? @db.VarChar(100)
+  distance     String? @db.VarChar(50)
+  note         String? @db.VarChar(200)
+  @@index([hospitalId])
+}
+
+model HospitalEquipment {
+  id         BigInt   @id @default(autoincrement())
+  hospitalId BigInt
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  equipCode  String   @db.VarChar(20)
+  equipName  String   @db.VarChar(60)
+  equipCount Int?
+  @@unique([hospitalId, equipCode])
+  @@index([hospitalId])
+}
+
+model HospitalMealSurcharge {
+  id         BigInt   @id @default(autoincrement())
+  hospitalId BigInt
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  typeCode       String  @db.VarChar(10)
+  typeName       String  @db.VarChar(40)
+  hasGeneral     String? @db.VarChar(4)
+  staffCount     Int?
+  treatmentGrade String? @db.VarChar(10)
+  @@unique([hospitalId, typeCode])
+  @@index([hospitalId])
+}
+
+model HospitalNursingGrade {
+  id         BigInt   @id @default(autoincrement())
+  hospitalId BigInt
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  typeCode     String  @db.VarChar(10)
+  typeName     String  @db.VarChar(40)
+  nursingGrade String? @db.VarChar(10)
+  @@unique([hospitalId, typeCode])
+  @@index([hospitalId])
+}
+
+model HospitalSpecialTreatment {
+  id         BigInt   @id @default(autoincrement())
+  hospitalId BigInt
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  searchCode String   @db.VarChar(20)
+  searchName String   @db.VarChar(60)
+  @@unique([hospitalId, searchCode])
+  @@index([hospitalId])
+}
+
+model HospitalSpecialty {
+  id         BigInt   @id @default(autoincrement())
+  hospitalId BigInt
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  searchCode String   @db.VarChar(20)
+  searchName String   @db.VarChar(60)
+  @@unique([hospitalId, searchCode])
+  @@index([hospitalId])
+}
+
+model HospitalStaff {
+  id         BigInt   @id @default(autoincrement())
+  hospitalId BigInt
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  staffCode  String   @db.VarChar(20)
+  staffName  String   @db.VarChar(60)
+  staffCount Int?
+  @@unique([hospitalId, staffCode])
+  @@index([hospitalId])
+}
+
+model Pharmacy {
+  id          BigInt    @id @default(autoincrement())
+  sourceId    String    @unique @db.VarChar(100)
+  name        String    @db.VarChar(100)
+  typeCode    String?   @db.VarChar(10)
+  typeName    String?   @db.VarChar(20)
+  sido         String?  @db.VarChar(20)
+  sigungu      String?  @db.VarChar(40)
+  sigunguCode  String?  @db.VarChar(10)
+  eupmyeondong String?  @db.VarChar(40)
+  zipcode      String?  @db.VarChar(10)
+  address      String   @db.VarChar(300)
+  tel          String?  @db.VarChar(30)
+  openedAt     DateTime? @db.Date
+  location  Unsupported("geography(Point,4326)")?
+  updatedAt DateTime @updatedAt
+  @@index([sigunguCode])
+}
