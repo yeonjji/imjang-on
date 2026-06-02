@@ -33,10 +33,14 @@ export interface RawInfra {
 }
 
 const MART_PREFIXES = ['G20405', 'G20404', 'G20402'];
+// 병원(Q101)·의원/한의원(Q102)·약국(G21501)은 전용 카테고리(병원/약국)로 노출되므로 기타에서 제외.
+const MEDICAL_PREFIXES = ['Q101', 'Q102', 'G21501'];
 
-export function classifyStore(industryCode: string | null): 'mart' | 'etc' {
+export function classifyStore(industryCode: string | null): 'mart' | 'medical' | 'etc' {
   const c = industryCode ?? '';
-  return MART_PREFIXES.some((p) => c.startsWith(p)) ? 'mart' : 'etc';
+  if (MART_PREFIXES.some((p) => c.startsWith(p))) return 'mart';
+  if (MEDICAL_PREFIXES.some((p) => c.startsWith(p))) return 'medical';
+  return 'etc';
 }
 
 function parkSub(p: NearbyPark): string | null {
@@ -51,6 +55,7 @@ function parkingSub(p: NearbyParking): string | null {
 
 export function buildInfraCategories(raw: RawInfra): InfraCategory[] {
   const mart = raw.stores.filter((s) => classifyStore(s.industryCode) === 'mart');
+  // 'medical' Store는 의도적으로 제외 — 병원/약국은 Hospital/Pharmacy 전용 카테고리로 노출됨.
   const etc = raw.stores.filter((s) => classifyStore(s.industryCode) === 'etc');
 
   const cats: InfraCategory[] = [

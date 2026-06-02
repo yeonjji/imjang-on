@@ -12,6 +12,11 @@ describe('classifyStore', () => {
       expect(classifyStore(c)).toBe('etc');
     }
   });
+  it('병원·의원·한의원·약국 코드는 medical', () => {
+    for (const c of ['Q10102', 'Q10211', 'Q10209', 'G21501']) {
+      expect(classifyStore(c)).toBe('medical');
+    }
+  });
 });
 
 const empty: RawInfra = {
@@ -36,6 +41,19 @@ describe('buildInfraCategories', () => {
     expect(store?.items.map((i) => i.name)).toEqual(['GS25']);
     expect(etc?.items.map((i) => i.name)).toEqual(['스타벅스']);
     expect(store?.items[0]).toMatchObject({ id: '1', sub: '편의점', distanceMeters: 80 });
+  });
+
+  it('의료·약국 Store는 기타(etc)에서 제외한다', () => {
+    const cats = buildInfraCategories({
+      ...empty,
+      stores: [
+        { id: 1n, name: '커피빈', address: '', industryCode: 'I21201', industryName: '카페', distanceMeters: 100 },
+        { id: 2n, name: '수서가정의학과의원', address: '', industryCode: 'Q10209', industryName: '기타 의원', distanceMeters: 120 },
+        { id: 3n, name: '국송약국', address: '', industryCode: 'G21501', industryName: '약국', distanceMeters: 130 },
+      ],
+    });
+    const etc = cats.find((c) => c.key === 'etc');
+    expect(etc?.items.map((i) => i.name)).toEqual(['커피빈']);
   });
 
   it('고정 순서로 반환한다(store→hospital→…→etc)', () => {
