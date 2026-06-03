@@ -372,6 +372,9 @@ export async function getNearbyInfra(
     excludePharmacyId?: bigint;
     excludeStoreId?: bigint;
     excludeMarketId?: bigint;
+    excludeParkId?: bigint;
+    excludeParkingId?: bigint;
+    excludeChargerId?: bigint;
     includeChildcare?: boolean;
   } = {},
 ): Promise<InfraCategory[]> {
@@ -391,14 +394,20 @@ export async function getNearbyInfra(
     opts.excludeStoreId != null ? stores.filter((s) => s.id !== opts.excludeStoreId) : stores;
   const filteredMarkets =
     opts.excludeMarketId != null ? markets.filter((m) => m.id !== opts.excludeMarketId) : markets;
+  const filteredParks =
+    opts.excludeParkId != null ? parks.filter((p) => p.id !== opts.excludeParkId) : parks;
+  const filteredParking =
+    opts.excludeParkingId != null ? parking.filter((p) => p.id !== opts.excludeParkingId) : parking;
+  const filteredChargers =
+    opts.excludeChargerId != null ? chargers.filter((c) => c.id !== opts.excludeChargerId) : chargers;
   return buildInfraCategories({
     stores: filteredStores,
     hospitals,
     pharmacies,
-    parks,
+    parks: filteredParks,
     markets: filteredMarkets,
-    chargers,
-    parking,
+    chargers: filteredChargers,
+    parking: filteredParking,
     childcare,
   });
 }

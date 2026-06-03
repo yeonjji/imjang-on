@@ -130,4 +130,27 @@ describe('buildInfraCategories', () => {
     });
     expect(cats.map((c) => c.key)).toEqual(['hospital', 'childcare', 'etc']);
   });
+
+  it('park/parking/charger 빈 카테고리는 결과에서 제외된다', () => {
+    const base = {
+      ...empty,
+      parks: [{ id: 1n, name: '서울숲', address: '', parkType: '근린공원', area: 1000, distanceMeters: 50 }],
+      parking: [{ id: 2n, name: '공영주차장', address: '', prkplceSe: '공영', prkcmprt: 100, distanceMeters: 60 }],
+      chargers: [{ id: 3n, name: '급속충전소', address: '', chargeSpeed: '급속', chargerCount: 2, operatorName: null, distanceMeters: 70 }],
+    };
+    const withAll = buildInfraCategories(base);
+    expect(withAll.find((c) => c.key === 'park')?.items.map((i) => i.id)).toEqual(['1']);
+    expect(withAll.find((c) => c.key === 'parking')?.items.map((i) => i.id)).toEqual(['2']);
+    expect(withAll.find((c) => c.key === 'charger')?.items.map((i) => i.id)).toEqual(['3']);
+
+    const excluded = buildInfraCategories({
+      ...base,
+      parks: base.parks.filter((p) => p.id !== 1n),
+      parking: base.parking.filter((p) => p.id !== 2n),
+      chargers: base.chargers.filter((c) => c.id !== 3n),
+    });
+    expect(excluded.find((c) => c.key === 'park')).toBeUndefined();
+    expect(excluded.find((c) => c.key === 'parking')).toBeUndefined();
+    expect(excluded.find((c) => c.key === 'charger')).toBeUndefined();
+  });
 });
