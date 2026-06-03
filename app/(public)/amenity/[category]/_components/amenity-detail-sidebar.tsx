@@ -6,8 +6,7 @@ const ANCHORS = [
   { href: '#info', label: '기본 정보' },
   { href: '#map', label: '위치' },
   { href: '#apt', label: '주변 아파트' },
-  { href: '#poi', label: '주변 상권 종합' },
-  { href: '#same', label: '같은 카테고리' },
+  { href: '#poi', label: '주변 생활 인프라' },
 ];
 
 export function AmenityDetailSidebar({
