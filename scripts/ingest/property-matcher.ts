@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { normalizeName } from '@/lib/slug';
-import { geocode } from '@/scripts/ingest/geocoder';
+import { geocode, buildGeocodeQuery } from '@/scripts/ingest/geocoder';
 import type { PropertyType } from '@prisma/client';
 
 export interface MatcherInput {
@@ -44,7 +44,11 @@ export async function findOrCreateProperty(input: MatcherInput) {
     return candidates[0];
   }
 
-  const coord = await geocode(input.address);
+  const region = await prisma.region.findUnique({
+    where: { code: input.regionCode },
+    select: { fullName: true },
+  });
+  const coord = await geocode(buildGeocodeQuery(region?.fullName, input.address));
   const created = await prisma.property.create({
     data: {
       propertyType: input.propertyType,

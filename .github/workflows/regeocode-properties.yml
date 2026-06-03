@@ -1,0 +1,43 @@
+name: regeocode-properties
+
+# 좌표가 잘못/누락된 Property를 탐지해 재지오코딩한다 (수동 트리거 전용).
+# 안전을 위해 기본은 dry-run(집계만). 실제 갱신은 apply=true 로 실행.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: '실제 갱신 여부 (false=dry-run 집계만)'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+        default: 'false'
+      limit:
+        description: '최대 처리 건수 (빈 값=제한 없음). 첫 실행은 50 정도로 검증 권장.'
+        default: ''
+
+jobs:
+  regeocode:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      KAKAO_REST_KEY: ${{ secrets.KAKAO_REST_KEY }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      LOG_LEVEL: info
+      PRISMA_INGEST: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma generate
+      - name: Regeocode suspect properties
+        run: |
+          ARGS=""
+          if [ "${{ inputs.apply }}" = "true" ]; then ARGS="$ARGS --apply"; fi
+          if [ -n "${{ inputs.limit }}" ]; then ARGS="$ARGS --limit=${{ inputs.limit }}"; fi
+          echo "Running: regeocode-suspect-properties.ts$ARGS"
+          pnpm tsx scripts/ops/regeocode-suspect-properties.ts $ARGS
+        timeout-minutes: 120

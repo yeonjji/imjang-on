@@ -1,18 +1,22 @@
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { geocode } from '@/scripts/ingest/geocoder';
+import { geocode, buildGeocodeQuery } from '@/scripts/ingest/geocoder';
 
 async function main() {
-  const targets = await prisma.$queryRaw<Array<{ id: bigint; address: string }>>`
-    SELECT id, address FROM "Property"
-    WHERE location IS NULL
-    ORDER BY "createdAt" DESC
+  const targets = await prisma.$queryRaw<
+    Array<{ id: bigint; address: string; full_name: string | null }>
+  >`
+    SELECT p.id, p.address, r."fullName" AS full_name
+    FROM "Property" p
+    LEFT JOIN "Region" r ON r.code = p."regionCode"
+    WHERE p.location IS NULL
+    ORDER BY p."createdAt" DESC
     LIMIT 500
   `;
   logger.info({ count: targets.length }, 'reconcile candidates');
 
   for (const t of targets) {
-    const coord = await geocode(t.address);
+    const coord = await geocode(buildGeocodeQuery(t.full_name, t.address));
     if (coord) {
       await prisma.$executeRaw`
         UPDATE "Property"
