@@ -46,7 +46,7 @@ export async function getNearbyEvChargers(
       ROUND(ST_Distance(
         location::geography,
         ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
-      )::numeric) AS "distanceMeters"
+      )::numeric)::int AS "distanceMeters"
     FROM "EvCharger"
     WHERE ST_DWithin(
       location::geography,
@@ -73,7 +73,7 @@ export async function getNearbyTraditionalMarkets(
       ROUND(ST_Distance(
         location::geography,
         ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
-      )::numeric) AS "distanceMeters"
+      )::numeric)::int AS "distanceMeters"
     FROM "TraditionalMarket"
     WHERE ST_DWithin(
       location::geography,
@@ -101,7 +101,7 @@ export async function getNearbyStores(
       ROUND(ST_Distance(
         location::geography,
         ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
-      )::numeric) AS "distanceMeters"
+      )::numeric)::int AS "distanceMeters"
     FROM "Store"
     WHERE ST_DWithin(
       location::geography,
@@ -147,7 +147,7 @@ export async function getNearbyApartments(
       ROUND(ST_Distance(
         p.location,
         ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
-      )::numeric) AS "distanceMeters"
+      )::numeric)::int AS "distanceMeters"
     FROM "Property" p
     JOIN "Region" r ON r.code = p."regionCode"
     WHERE p."propertyType" = ${PropertyType.APARTMENT}::"PropertyType"
@@ -182,7 +182,7 @@ export async function getNearbyParks(
     SELECT id, name, address, "parkType", area,
       ROUND(ST_Distance(
         location, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
-      )::numeric) AS "distanceMeters"
+      )::numeric)::int AS "distanceMeters"
     FROM "Park"
     WHERE ST_DWithin(
       location, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography, ${radiusMeters}
@@ -251,7 +251,7 @@ export async function getNearbyPharmacies(
       ROUND(ST_Distance(
         location::geography,
         ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
-      )::numeric) AS "distanceMeters"
+      )::numeric)::int AS "distanceMeters"
     FROM "Pharmacy"
     WHERE location IS NOT NULL
       AND ST_DWithin(
@@ -286,7 +286,7 @@ export async function getNearbyHospitals(
       ROUND(ST_Distance(
         location::geography,
         ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
-      )::numeric) AS "distanceMeters"
+      )::numeric)::int AS "distanceMeters"
     FROM "Hospital"
     WHERE location IS NOT NULL
       AND ST_DWithin(
@@ -319,7 +319,7 @@ export async function getNearbyParking(
     SELECT id, name, address, "prkplceSe", "prkcmprt",
       ROUND(ST_Distance(
         location, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
-      )::numeric) AS "distanceMeters"
+      )::numeric)::int AS "distanceMeters"
     FROM "Parking"
     WHERE location IS NOT NULL
       AND ST_DWithin(
