@@ -91,7 +91,7 @@ export default async function ChargerDetailPage({ params }: Params) {
 
       <ChargerHero item={item} />
 
-      <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[1fr_320px]">
+      <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-6">
           <ChargerStatusTable units={r.units} statuses={statuses} lastUpdated={lastUpdated} />
           <UrbanInfo item={item} def={chargerDef} regionFullName={region?.fullName ?? ''} />

@@ -97,7 +97,7 @@ export default async function UrbanDetailPage({ params }: Params) {
 
       <UrbanHero item={item} def={def} />
 
-      <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[1fr_320px]">
+      <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-6">
           {def.slug === 'park' ? (
             <ParkInfo item={item as UrbanItem<ParkRaw>} />

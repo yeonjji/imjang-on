@@ -46,7 +46,7 @@ export default async function AptDetailPage({ params }: Params) {
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
       <PropertyDetailHero property={property} region={property.region} />
-      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
+      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-8">
           <DealSummarySection id="summary" property={property} />
           <UnifiedTransactionTable
