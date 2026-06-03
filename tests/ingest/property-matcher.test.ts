@@ -4,9 +4,13 @@ import { findOrCreateProperty } from '@/scripts/ingest/property-matcher';
 import { PropertyType } from '@prisma/client';
 import { assertLocalDatabase } from '../_helpers/assert-local-db';
 
-vi.mock('@/scripts/ingest/geocoder', () => ({
-  geocode: vi.fn().mockResolvedValue({ lat: 37.5, lng: 127.0 }),
-}));
+vi.mock('@/scripts/ingest/geocoder', async (importActual) => {
+  const actual = await importActual<typeof import('@/scripts/ingest/geocoder')>();
+  return {
+    ...actual,
+    geocode: vi.fn().mockResolvedValue({ lat: 37.5, lng: 127.0, region1: null, region2: null }),
+  };
+});
 
 describe('property-matcher', () => {
   beforeEach(async () => {
