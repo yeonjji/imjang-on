@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getPropertyById } from '@/lib/property';
+import { getPropertyById, getPropertyLatLng } from '@/lib/property';
 import { getMonthlyChartData, getAreaSummary, getUnifiedTransactions } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
 import { PropertyType } from '@prisma/client';
@@ -10,6 +10,8 @@ import { PriceCharts } from './_components/price-charts';
 import { AreaComparison } from './_components/area-comparison';
 import { NearbyPriceComparison } from './_components/nearby-price-comparison';
 import { DetailSidebar } from './_components/detail-sidebar';
+import { getNearbyInfra } from '@/lib/amenity/nearby';
+import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { formatBillion } from '@/lib/format';
 import type { Metadata } from 'next';
 
@@ -36,11 +38,16 @@ export default async function AptDetailPage({ params }: Params) {
   const property = await getPropertyById(propId);
   if (!property || property.propertyType !== PropertyType.APARTMENT) notFound();
 
-  const [unified, chart, areaSummary, nearby] = await Promise.all([
+  const coord = await getPropertyLatLng(propId);
+
+  const [unified, chart, areaSummary, nearby, infra] = await Promise.all([
     getUnifiedTransactions(propId, { page: 1, perPage: 15 }),
     getMonthlyChartData(propId),
     getAreaSummary(propId),
     getNearbyProperties({ propertyId: propId, propertyType: PropertyType.APARTMENT }),
+    coord
+      ? getNearbyInfra(coord.lat, coord.lng, { includeChildcare: true })
+      : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
   ]);
 
   return (
@@ -63,6 +70,7 @@ export default async function AptDetailPage({ params }: Params) {
           </section>
           <AreaComparison id="area" areas={areaSummary} />
           <NearbyPriceComparison id="nearby" items={nearby} slug="apt" />
+          <NearbyInfra categories={infra} />
         </main>
         <aside>
           <DetailSidebar property={property} />

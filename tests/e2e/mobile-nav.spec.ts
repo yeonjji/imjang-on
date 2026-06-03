@@ -26,7 +26,9 @@ test.describe('모바일 햄버거 메뉴', () => {
     const drawer = page.getByTestId('mobile-drawer');
     await expect(drawer).toBeInViewport();
 
-    await page.getByTestId('mobile-drawer-overlay').click();
+    // 오버레이는 전체화면이지만 중앙은 서랍(오른쪽 78%)에 가려지므로
+    // 서랍 밖 좌상단을 눌러야 오버레이가 클릭을 받는다.
+    await page.getByTestId('mobile-drawer-overlay').click({ position: { x: 10, y: 10 } });
     await expect(drawer).not.toBeInViewport();
   });
 });

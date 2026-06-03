@@ -20,11 +20,11 @@ test.describe('데스크톱 생활편의 드롭다운', () => {
     await expect(page).toHaveURL('/school');
   });
 
-  test('미빌드 항목(약국) 클릭 시 Soon 모달이 뜬다', async ({ page }) => {
+  test('하위 항목(약국) 클릭 → /medical/pharmacy LIST', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: '생활편의' }).click();
-    await page.getByTestId('life-dropdown').getByRole('button', { name: '약국' }).click();
-    await expect(page.getByText('약국 정보는 곧 만나요')).toBeVisible();
+    await page.getByTestId('life-dropdown').getByRole('link', { name: '약국' }).click();
+    await expect(page).toHaveURL('/medical/pharmacy');
   });
 });
 

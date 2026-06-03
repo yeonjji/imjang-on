@@ -31,6 +31,60 @@ export async function seedChildcare() {
   await prisma.$executeRaw`UPDATE "Childcare" SET location = ST_SetSRID(ST_MakePoint(127.1043, 37.5045), 4326)::geography WHERE "sourceId" = 'E2E_CC_0001'`;
 }
 
+// 매물 1건 + 12개월치 매매/전세/월세 거래 + 좌표 부여 + 집계 갱신.
+// 주변 생활 인프라 e2e용으로 시드 주차장(E2E-PRK-1/2) 반경 500m 내에 위치시킨다.
+async function seedPropertyWithDeals(opts: {
+  propertyType: PropertyType;
+  name: string;
+  lng: number;
+  lat: number;
+  builtYear: number;
+}) {
+  const prop = await prisma.property.create({
+    data: {
+      propertyType: opts.propertyType,
+      name: opts.name,
+      nameNorm: opts.name,
+      regionCode: '1165010100', // sigunguCode는 generated column (앞 5자리 '11650')
+      address: '서울특별시 서초구 서초동',
+      builtYear: opts.builtYear,
+    },
+  });
+  await prisma.$executeRaw`
+    UPDATE "Property"
+    SET location = ST_SetSRID(ST_MakePoint(${opts.lng}, ${opts.lat}), 4326)::geography
+    WHERE id = ${prop.id}
+  `;
+
+  const types = [DealType.SALE, DealType.JEONSE, DealType.WOLSE];
+  const now = Date.now();
+  for (const dealType of types) {
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(now - i * 7 * 86_400_000);
+      const hash = createHash('sha256').update(`${prop.id}-${dealType}-${i}`).digest('hex');
+      await prisma.transaction.create({
+        data: {
+          propertyId: prop.id,
+          propertyType: opts.propertyType,
+          regionCode: '1165010100',
+          sigunguCode: '11650',
+          dealType,
+          contractDate: date,
+          exclusiveArea: 59.99,
+          floor: 8,
+          dealAmount: dealType === DealType.SALE ? 200_000 + i * 1000 : null,
+          deposit: dealType !== DealType.SALE ? 100_000 : null,
+          monthlyRent: dealType === DealType.WOLSE ? 90 : 0,
+          source: 'e2e',
+          rawHash: hash,
+        },
+      });
+    }
+  }
+  await updatePropertyAggregates([prop.id]);
+  return prop;
+}
+
 async function main() {
   await prisma.transaction.deleteMany();
   await prisma.property.deleteMany();
@@ -106,6 +160,13 @@ async function main() {
     },
   });
 
+  // 주변 생활 인프라 e2e용 — 시드 주차장(E2E-PRK-1/2) 반경 500m 내 좌표 부여
+  await prisma.$executeRaw`
+    UPDATE "Property"
+    SET location = ST_SetSRID(ST_MakePoint(127.026, 37.4965), 4326)::geography
+    WHERE id = ${p.id}
+  `;
+
   const types = [DealType.SALE, DealType.JEONSE, DealType.WOLSE];
   const now = Date.now();
   for (const dealType of types) {
@@ -163,10 +224,26 @@ async function main() {
     update: {},
   });
 
+  // 오피스텔·빌라 상세 주변 생활 인프라 e2e용 (시드 주차장 반경 500m 내)
+  const offi = await seedPropertyWithDeals({
+    propertyType: PropertyType.OFFICETEL,
+    name: '서초센트럴오피스텔',
+    lng: 127.0262,
+    lat: 37.4966,
+    builtYear: 2018,
+  });
+  const villa = await seedPropertyWithDeals({
+    propertyType: PropertyType.ROW_HOUSE,
+    name: '서초빌라하우스',
+    lng: 127.0258,
+    lat: 37.4964,
+    builtYear: 2015,
+  });
+
   await seedChildcare();
   await seedParking();
 
-  console.log('e2e seed done. propertyId =', String(p.id));
+  console.log('e2e seed done. propertyId =', String(p.id), 'officetelId =', String(offi.id), 'villaId =', String(villa.id));
   await prisma.$disconnect();
 }
 
