@@ -16,6 +16,10 @@ describe('kstMidnightUtc', () => {
     // 2026-06-02T14:59:59Z = KST 2026-06-02 23:59:59 → KST 자정 = 2026-06-01T15:00:00Z
     expect(kstMidnightUtc(new Date('2026-06-02T14:59:59Z')).toISOString()).toBe('2026-06-01T15:00:00.000Z');
   });
+
+  it('KST 자정 정각(UTC 15:00:00)은 그 날 자정 그대로', () => {
+    expect(kstMidnightUtc(new Date('2026-06-02T15:00:00Z')).toISOString()).toBe('2026-06-02T15:00:00.000Z');
+  });
 });
 
 describe('doneRunFilter', () => {
@@ -38,5 +42,13 @@ describe('buildDoneKeys', () => {
     expect(keys.has('apt-trade:11650-202606')).toBe(true);
     expect(keys.has('apt-rent:11650-202605')).toBe(true);
     expect(keys.size).toBe(2);
+  });
+
+  it('중복 source:targetKey는 하나로 축약', () => {
+    const keys = buildDoneKeys([
+      { source: 'apt-trade', targetKey: '11650-202606' },
+      { source: 'apt-trade', targetKey: '11650-202606' },
+    ]);
+    expect(keys.size).toBe(1);
   });
 });
