@@ -82,9 +82,12 @@
 - 탭 UI는 두 섹션 동일 스타일(가로 버튼 그룹). 유형 색상 팔레트(매매=파랑, 전세=초록, 월세=주황) 톤과 어울리게.
 - 변경 파일: `lib/transaction.ts`, `lib/nearby.ts`, `app/(public)/apt/[id]/actions.ts`, `app/(public)/apt/[id]/_components/unified-transaction-table.tsx`, `app/(public)/apt/[id]/_components/nearby-price-comparison.tsx`, `app/(public)/apt/[id]/page.tsx`.
 
+## 범위 메모
+
+- 오피스텔/빌라 상세 화면: `UnifiedTransactionTable`·`NearbyPriceComparison`를 공유하므로 두 페이지도 동일하게 탭이 적용됨(의도된 동작). 각 page.tsx에서 `getTransactionCounts`를 추가로 전달.
+
 ## 비범위 (Out of scope)
 
-- 오피스텔/빌라 상세 화면(동일 컴포넌트를 공유한다면 추후 별도 검토).
 - 평형별 비교(`area-comparison`)·가격 흐름 그래프(`price-charts`)는 변경 없음.
 - DB 스키마 변경 없음(필요한 컬럼 모두 존재).
 
