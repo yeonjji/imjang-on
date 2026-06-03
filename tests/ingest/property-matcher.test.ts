@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { prisma } from '@/lib/db';
 import { findOrCreateProperty } from '@/scripts/ingest/property-matcher';
 import { PropertyType } from '@prisma/client';
+import { assertLocalDatabase } from '../_helpers/assert-local-db';
 
 vi.mock('@/scripts/ingest/geocoder', () => ({
   geocode: vi.fn().mockResolvedValue({ lat: 37.5, lng: 127.0 }),
@@ -9,6 +10,7 @@ vi.mock('@/scripts/ingest/geocoder', () => ({
 
 describe('property-matcher', () => {
   beforeEach(async () => {
+    assertLocalDatabase();
     await prisma.transaction.deleteMany();
     await prisma.property.deleteMany();
   });
