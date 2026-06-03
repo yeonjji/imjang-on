@@ -30,7 +30,7 @@ export function ChildcareCard({ item }: { item: ChildcareCardItem }) {
           </div>
           <p className="mt-1.5 truncate text-sm text-[var(--color-muted)]">
             {item.address}
-            {item.capacity != null && <span className="ml-2 rounded-md bg-[var(--color-sky-soft)] px-1.5 py-0.5 text-[11px] font-bold text-[var(--color-blue)]">정원 {item.capacity}{fillPct != null ? ` · ${fillPct}%` : ''}</span>}
+            {item.capacity != null && <span className="ml-2 rounded-md bg-[var(--color-sky-soft)] px-1.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">정원 {item.capacity}{fillPct != null ? ` · ${fillPct}%` : ''}</span>}
           </p>
         </div>
         <span className="shrink-0 text-xs text-[var(--color-muted)]">상세 →</span>

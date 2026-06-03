@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import type { UrbanItem } from '@/lib/urban/category';
-import { PARK_TYPE_EMOJI, formatArea, type ParkRaw } from '@/lib/urban/adapters/park';
+import { PARK_TYPE_EMOJI, formatParkArea, type ParkRaw } from '@/lib/urban/adapters/park';
 
 export function ParkCard({ item }: { item: UrbanItem<ParkRaw> }) {
   const r = item.raw;
   const emoji = (r.parkType && PARK_TYPE_EMOJI[r.parkType]) ?? '🌳';
-  const area = formatArea(r.area);
+  const area = formatParkArea(r.area);
 
   return (
     <Link href={`/urban/park/${item.id}`}>

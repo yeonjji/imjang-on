@@ -54,9 +54,9 @@ function InfraBlock({ category }: { category: InfraCategory }) {
           >
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-[var(--color-text)]">{it.name}</p>
-              {it.sub && <p className="truncate text-[11px] text-[var(--color-muted)]">{it.sub}</p>}
+              {it.sub && <p className="truncate text-xs text-[var(--color-muted)]">{it.sub}</p>}
             </div>
-            <span className="shrink-0 rounded-full bg-[var(--color-sky-soft)] px-2 py-0.5 text-[11px] font-bold text-[var(--color-blue)]">
+            <span className="shrink-0 rounded-full bg-[var(--color-sky-soft)] px-2 py-0.5 text-xs font-bold text-[var(--color-blue)]">
               {it.distanceMeters}m
             </span>
           </li>
@@ -70,7 +70,7 @@ function InfraBlock({ category }: { category: InfraCategory }) {
           +{hiddenCount}곳 더보기 →
         </button>
       ) : (
-        <p className="mt-auto pt-2 text-[11px] text-[var(--color-muted)]">
+        <p className="mt-auto pt-2 text-xs text-[var(--color-muted)]">
           {category.radiusLabel} {category.items.length}{category.capped ? '+' : ''}곳
         </p>
       )}

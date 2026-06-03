@@ -7,8 +7,8 @@ import type {
   AmenityListResult,
 } from '@/lib/amenity/category';
 import { sidoPrefix } from '@/lib/region';
+import { AMENITY_PER_PAGE as PER_PAGE } from '@/lib/amenity/_shared';
 
-const PER_PAGE = 30;
 const PREFIX_SUPER = 'G20404';
 const PREFIX_HYPER = 'G20402';
 

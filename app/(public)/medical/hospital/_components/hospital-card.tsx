@@ -12,7 +12,7 @@ export function HospitalCard({ hospital }: Props) {
     >
       <div className="flex items-start justify-between gap-2">
         <p className="truncate font-bold text-[var(--color-blue-dark)]">{hospital.name}</p>
-        <span className="shrink-0 rounded-full bg-[var(--color-sky-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-blue)]">
+        <span className="shrink-0 rounded-full bg-[var(--color-sky-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--color-blue)]">
           {hospital.typeName}
         </span>
       </div>
