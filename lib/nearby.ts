@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import type { PropertyType } from '@prisma/client';
+import { formatBillion } from '@/lib/format';
 
 export interface NearbyProperty {
   id: string;
@@ -66,4 +67,27 @@ export async function getNearbyProperties(opts: {
     wolseLastDeposit: r.wolse_last_deposit,
     wolseLastRent: r.wolse_last_rent,
   }));
+}
+
+export type NearbyTab = 'ALL' | 'SALE' | 'JEONSE' | 'WOLSE';
+
+export function formatNearbyPrice(item: NearbyProperty, tab: NearbyTab): string {
+  const sale = item.saleLastPrice != null ? formatBillion(item.saleLastPrice) : '-';
+  const jeonse = item.jeonseLastDeposit != null ? formatBillion(item.jeonseLastDeposit) : '-';
+  const wolse =
+    item.wolseLastDeposit != null
+      ? `보 ${formatBillion(item.wolseLastDeposit)} / 월 ${(item.wolseLastRent ?? 0).toLocaleString('ko-KR')}만`
+      : '-';
+  switch (tab) {
+    case 'SALE':
+      return sale;
+    case 'JEONSE':
+      return jeonse;
+    case 'WOLSE':
+      return wolse;
+    case 'ALL':
+      return `매매 ${sale} · 전세 ${jeonse} · 월세 ${wolse}`;
+    default:
+      return tab satisfies never;
+  }
 }
