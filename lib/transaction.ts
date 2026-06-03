@@ -126,12 +126,16 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
 
 export async function getUnifiedTransactions(
   propertyId: bigint,
-  params: { page?: number; perPage?: number },
+  params: { page?: number; perPage?: number; dealType?: DealType },
 ): Promise<{ rows: UnifiedTxRow[]; totalCount: number }> {
-  const { page = 1, perPage = 15 } = params;
+  const { page = 1, perPage = 15, dealType } = params;
+  const where: Prisma.TransactionWhereInput = {
+    propertyId,
+    ...(dealType ? { dealType } : {}),
+  };
   const [rawRows, totalCount] = await Promise.all([
     prisma.transaction.findMany({
-      where: { propertyId },
+      where,
       orderBy: [{ contractDate: 'desc' }, { id: 'desc' }],
       skip: (page - 1) * perPage,
       take: perPage,
@@ -146,7 +150,7 @@ export async function getUnifiedTransactions(
         monthlyRent: true,
       },
     }),
-    prisma.transaction.count({ where: { propertyId } }),
+    prisma.transaction.count({ where }),
   ]);
   return {
     rows: rawRows.map((t) => ({
