@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation';
-import { getPropertyById } from '@/lib/property';
+import { getPropertyById, getPropertyLatLng } from '@/lib/property';
 import { getMonthlyChartData, getAreaSummary, getUnifiedTransactions } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
+import { getNearbyInfra } from '@/lib/amenity/nearby';
+import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { PropertyType } from '@prisma/client';
 import { PropertyDetailHero } from '../../apt/[id]/_components/property-detail-hero';
 import { DealSummarySection } from '../../apt/[id]/_components/deal-summary-section';
@@ -41,11 +43,16 @@ export default async function VillaDetailPage({ params }: Params) {
   )
     notFound();
 
-  const [unified, chart, areaSummary, nearby] = await Promise.all([
+  const coord = await getPropertyLatLng(propId);
+
+  const [unified, chart, areaSummary, nearby, infra] = await Promise.all([
     getUnifiedTransactions(propId, { page: 1, perPage: 15 }),
     getMonthlyChartData(propId),
     getAreaSummary(propId),
     getNearbyProperties({ propertyId: propId, propertyType: property.propertyType }),
+    coord
+      ? getNearbyInfra(coord.lat, coord.lng, { includeChildcare: true })
+      : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
   ]);
 
   return (
@@ -68,6 +75,7 @@ export default async function VillaDetailPage({ params }: Params) {
           </section>
           <AreaComparison id="area" areas={areaSummary} />
           <NearbyPriceComparison id="nearby" items={nearby} slug="villa" />
+          <NearbyInfra categories={infra} />
         </main>
         <aside>
           <DetailSidebar property={property} />
