@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** daily 인제스트가 매 실행마다 458개 타깃을 처음부터 전부 재처리해 2시간 타임아웃 나는 문제를, "오늘(KST) 완료분 스킵 + 하루 여러 패스 청크 분산"으로 해결한다.
+**Goal:** daily 인제스트가 매 실행마다 458개 타깃을 처음부터 전부 재처리해 2시간 타임아웃 나는 문제를, "오늘(KST) 완료분 스킵 resume + timeout 상향(단일 패스) + 하루 2회 백업 cron"으로 해결한다.
 
-**Architecture:** resume 결정 로직을 `runner.ts`의 `main()` 안 인라인에서 순수 함수 모듈(`resume.ts`)로 추출해 단위 테스트 가능하게 만든다. daily 모드는 `IngestionRun.finishedAt >= 오늘 0시(KST)` 인 완료분만 `doneKeys`로 스킵하고, 날짜가 바뀌면 전체 재처리(self-heal 유지). 워크플로는 `--limit=150` + 하루 5회 cron으로 청크를 누적 완주시킨다.
+**Architecture:** resume 결정 로직을 `runner.ts`의 `main()` 안 인라인에서 순수 함수 모듈(`resume.ts`)로 추출해 단위 테스트 가능하게 만든다. daily 모드는 `IngestionRun.finishedAt >= 오늘 0시(KST)` 인 완료분만 `doneKeys`로 스킵하고, 날짜가 바뀌면 전체 재처리(self-heal 유지). 워크플로는 `--limit` 없이 한 패스에서 전량 처리하되 `timeout-minutes: 300`으로 늘리고, cron을 하루 2회 두어 1차가 잘리면 2차가 같은 날 resume로 이어받게 한다.
 
 **Tech Stack:** TypeScript, Vitest, Prisma, GitHub Actions.
 
@@ -227,10 +227,12 @@ git commit -m "fix(ingest): daily가 오늘 완료분만 스킵하도록 resume 
 
 ---
 
-### Task 4: 워크플로 청크·스케줄 변경
+### Task 4: 워크플로 스케줄·timeout 변경 (단일 패스 + 하루 2회)
 
 **Files:**
 - Modify: `.github/workflows/ingest-transactions-daily.yml`
+
+방식: `--limit` 없이 한 패스에서 458개 전량 처리, `timeout-minutes: 300`(GitHub 6시간 캡 이내), cron 하루 2회(KST 00·04시). 2차 패스는 1차가 잘렸을 때만 resume로 이어받고, 정상 완주 시 즉시 스킵 종료.
 
 - [ ] **Step 1: cron + concurrency 변경**
 
@@ -239,7 +241,7 @@ git commit -m "fix(ingest): daily가 오늘 완료분만 스킵하도록 resume 
 ```yaml
 on:
   schedule:
-    - cron: '0 15,18,21,0,3 * * *'  # KST 00·03·06·09·12, 3시간 간격 5회
+    - cron: '0 15,19 * * *'  # KST 00·04시, 하루 2회 (2차는 1차 실패 시 resume 백업)
   workflow_dispatch:
 
 concurrency:
@@ -247,13 +249,13 @@ concurrency:
   cancel-in-progress: false
 ```
 
-- [ ] **Step 2: 실행 스텝의 limit + timeout 변경**
+- [ ] **Step 2: 실행 스텝의 timeout 변경**
 
-마지막 run 스텝을 아래로 교체:
+마지막 run 스텝을 아래로 교체(명령은 `--limit` 없이 그대로, `timeout-minutes`만 상향):
 
 ```yaml
-      - run: pnpm tsx scripts/ingest/transactions/runner.ts --api=${{ matrix.api }} --mode=daily --limit=150
-        timeout-minutes: 90
+      - run: pnpm tsx scripts/ingest/transactions/runner.ts --api=${{ matrix.api }} --mode=daily
+        timeout-minutes: 300
 ```
 
 - [ ] **Step 3: YAML 유효성 확인**

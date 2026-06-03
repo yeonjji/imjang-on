@@ -68,16 +68,20 @@ const kstMidnightUtc = new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth()
 
 ### 2. 워크플로 변경 (`ingest-transactions-daily.yml`)
 
+방식: **단일 패스(전량 처리) + 하루 2회 cron**. 청크 `--limit`을 쓰지 않고 한 패스에서 458개 전체를 처리하되, GitHub Actions job 6시간 하드 캡 안에서 끝나도록 timeout을 늘린다. 2회 cron은 복원력용 — 1차가 잘리면 같은 날 2차가 resume로 이어받고, 1차가 완주하면 2차는 즉시 스킵 종료.
+
 | 항목 | 현재 | 변경 |
 |---|---|---|
-| `--limit` | 없음 | `--limit=150` (90분 윈도우에 안전하게 들어가는 양) |
-| `timeout-minutes` | 120 | 90 (안전망. 실제 컨트롤은 limit) |
-| `cron` | `0 18 * * *` (KST 03시 1회) | `0 15,18,21,0,3 * * *` (KST 00·03·06·09·12, 3시간 간격 5회) |
+| `--limit` | 없음 | 사용 안 함(전량 1패스) |
+| `timeout-minutes` | 120 | 300 (느린 날 추정 ~3.4h + 여유. GitHub 캡 360분 이내) |
+| `cron` | `0 18 * * *` (KST 03시 1회) | `0 15,19 * * *` (KST 00·04시, 하루 2회) |
 | concurrency group | 없음 | 추가 (`group: ingest-transactions-daily`, `cancel-in-progress: false`) |
 
-**동작:** 고볼륨 458개 = 150씩 4패스면 완주, 5회 스케줄이라 느린 날도 여유. resume가 오늘 완료분을 스킵하므로 4패스 이후 남은 회차는 즉시 종료(전량 skipped). 저볼륨(offi)은 1패스로 끝.
+**동작:** 1차 패스(KST 00시)가 458개 전체를 처리. 느린 날 ~3.4시간이라 5시간 timeout 안에 완주. 2차 패스(KST 04시)는 resume가 오늘 완료분을 스킵하므로 즉시 종료. 1차가 6시간 캡 부근에서 잘려 일부만 OK된 경우에만 2차가 나머지를 이어받음. 저볼륨(offi)은 1차에서 끝.
 
-**겹침 방지:** 패스 90분 < 스케줄 간격 3시간이라 실제로는 안 겹치지만, concurrency group을 안전망으로 둔다. `cancel-in-progress: false`로 진행 중 패스를 죽이지 않는다.
+**겹침 방지:** 최악의 날 1차가 5시간 가까이 돌면 2차(4시간 뒤)와 겹칠 수 있어 concurrency group을 둔다. `cancel-in-progress: false`로 1차를 죽이지 않고 2차를 큐잉 → 동시 DB 부하 방지.
+
+**트레이드오프:** 단일 패스라 한 패스가 6시간 캡을 넘기면 그날은 실패(다음날 재처리). 관측된 느린 날(~3.4h)엔 충분하지만, 공공데이터 API가 평소의 ~1.8배 이상 느려지는 장애일엔 같은 날 복구가 2차 패스 1회로 제한됨. 더 강한 복원력이 필요하면 `--limit` 청크 분산(다회 cron)으로 전환 가능.
 
 ### 3. 검증
 
