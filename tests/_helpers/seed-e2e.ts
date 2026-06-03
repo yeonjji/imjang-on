@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { PropertyType, DealType } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { updatePropertyAggregates } from '@/scripts/ingest/aggregator';
+import { assertLocalDatabase } from './assert-local-db';
 
 export async function seedChildcare() {
   const SIGUNGU = '11710';
@@ -86,6 +87,8 @@ async function seedPropertyWithDeals(opts: {
 }
 
 async function main() {
+  assertLocalDatabase();
+
   await prisma.transaction.deleteMany();
   await prisma.property.deleteMany();
   await prisma.region.deleteMany();
