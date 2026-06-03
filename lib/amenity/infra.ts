@@ -91,5 +91,11 @@ export function buildInfraCategories(raw: RawInfra): InfraCategory[] {
 
   return cats
     .filter((c) => c.items.length > 0)
-    .map((c) => ({ ...c, capped: c.items.length >= INFRA_FETCH_LIMIT }));
+    .map((c) => ({
+      ...c,
+      capped: c.items.length >= INFRA_FETCH_LIMIT,
+      // distanceMeters는 raw 쿼리에서 Prisma Decimal로 올 수 있어, 클라이언트 컴포넌트
+      // 직렬화(Server→Client)를 위해 선언 타입(number)에 맞춰 정규화한다.
+      items: c.items.map((it) => ({ ...it, distanceMeters: Number(it.distanceMeters) })),
+    }));
 }
