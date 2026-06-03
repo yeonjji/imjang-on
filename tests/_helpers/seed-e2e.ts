@@ -106,6 +106,13 @@ async function main() {
     },
   });
 
+  // 주변 생활 인프라 e2e용 — 시드 주차장(E2E-PRK-1/2) 반경 500m 내 좌표 부여
+  await prisma.$executeRaw`
+    UPDATE "Property"
+    SET location = ST_SetSRID(ST_MakePoint(127.026, 37.4965), 4326)::geography
+    WHERE id = ${p.id}
+  `;
+
   const types = [DealType.SALE, DealType.JEONSE, DealType.WOLSE];
   const now = Date.now();
   for (const dealType of types) {

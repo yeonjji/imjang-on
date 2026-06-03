@@ -8,6 +8,7 @@ const ANCHORS = [
   { href: '#chart', label: '가격 그래프' },
   { href: '#area', label: '면적별 비교' },
   { href: '#nearby', label: '주변 단지 비교' },
+  { href: '#poi', label: '주변 생활 인프라' },
 ];
 
 export function DetailSidebar({ property }: { property: Property }) {

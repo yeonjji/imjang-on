@@ -167,3 +167,13 @@ export async function getTopPropertiesByVolume({ types, sigunguCode, limit = 10 
     take: limit,
   });
 }
+
+export async function getPropertyLatLng(
+  id: bigint,
+): Promise<{ lat: number; lng: number } | null> {
+  const rows = await prisma.$queryRaw<{ lat: number; lng: number }[]>`
+    SELECT ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng
+    FROM "Property" WHERE id = ${id} AND location IS NOT NULL
+  `;
+  return rows[0] ?? null;
+}
