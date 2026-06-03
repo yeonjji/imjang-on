@@ -112,9 +112,10 @@ describe('buildInfraCategories', () => {
   it('어린이집은 기타 앞, 마지막 직전에 배치된다', () => {
     const cats = buildInfraCategories({
       ...empty,
+      hospitals: [{ id: 9n, name: '내과', typeName: '의원', address: '', distanceMeters: 100 }],
       stores: [{ id: 1n, name: '무인문구', address: '', industryCode: 'Z999', industryName: '기타', distanceMeters: 200 }],
       childcare: [{ id: 5n, name: '햇살어린이집', address: '', sigunguCode: null, crType: '국공립', capacity: 60, distanceMeters: 90 }],
     });
-    expect(cats.map((c) => c.key)).toEqual(['childcare', 'etc']);
+    expect(cats.map((c) => c.key)).toEqual(['hospital', 'childcare', 'etc']);
   });
 });
