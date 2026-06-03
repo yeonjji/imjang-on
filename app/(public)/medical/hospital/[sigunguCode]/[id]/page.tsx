@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getHospitalById, getHospitalLatLng, getHospitalList } from '@/lib/hospital';
 import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
+import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { HospitalHero } from './_components/hospital-hero';
 import { HospitalSummaryCards } from './_components/hospital-summary-cards';
 import { HospitalTabs } from './_components/hospital-tabs';
@@ -38,7 +39,7 @@ export default async function HospitalDetailPage({ params }: Params) {
   const coord = await getHospitalLatLng(hospitalId);
 
   const [apts, infra, otherList] = await Promise.all([
-    coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([]),
+    coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
     coord
       ? getNearbyInfra(coord.lat, coord.lng, { excludeHospitalId: hospital.id, includeChildcare: true })
       : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
