@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/db';
 import { PropertyType } from '@prisma/client';
-import type { AmenitySlug } from '@/lib/amenity/category';
 import { buildInfraCategories, INFRA_FETCH_LIMIT, type InfraCategory } from '@/lib/amenity/infra';
 
 export interface NearbyEvCharger {
@@ -193,38 +192,6 @@ export async function getNearbyParks(
   `;
 }
 
-/**
- * DETAIL "주변 상권 종합" — 현재 카테고리 **제외**한 나머지 카테고리의 가까운 항목들.
- * Store(convenience/mart/cafe) + TraditionalMarket(market)를 단일 호출로.
- */
-export async function getMixedNearbyForDetail(
-  currentSlug: AmenitySlug | 'parking' | 'charger',
-  lat: number,
-  lng: number,
-): Promise<{
-  convenience: NearbyStore[];
-  mart: NearbyStore[];
-  cafe: NearbyStore[];
-  market: NearbyTraditionalMarket[];
-}> {
-  const [stores, markets] = await Promise.all([
-    getNearbyStores(lat, lng, 500),
-    getNearbyTraditionalMarkets(lat, lng, 1000),
-  ]);
-  const convenience = stores.filter((s) => (s.industryCode ?? '').startsWith('G20405'));
-  const mart = stores.filter((s) => {
-    const c = s.industryCode ?? '';
-    return c.startsWith('G20404') || c.startsWith('G20402');
-  });
-  const cafe = stores.filter((s) => (s.industryCode ?? '').startsWith('I21201'));
-  return {
-    convenience: currentSlug === 'convenience' ? [] : convenience.slice(0, 5),
-    mart: currentSlug === 'mart' ? [] : mart.slice(0, 5),
-    cafe: currentSlug === 'cafe' ? [] : cafe.slice(0, 5),
-    market: currentSlug === 'market' ? [] : markets.slice(0, 5),
-  };
-}
-
 export interface NearbyChildcare {
   id: bigint;
   name: string;
@@ -372,6 +339,9 @@ export async function getNearbyInfra(
     excludePharmacyId?: bigint;
     excludeStoreId?: bigint;
     excludeMarketId?: bigint;
+    excludeParkId?: bigint;
+    excludeParkingId?: bigint;
+    excludeChargerId?: bigint;
     includeChildcare?: boolean;
   } = {},
 ): Promise<InfraCategory[]> {
@@ -391,14 +361,20 @@ export async function getNearbyInfra(
     opts.excludeStoreId != null ? stores.filter((s) => s.id !== opts.excludeStoreId) : stores;
   const filteredMarkets =
     opts.excludeMarketId != null ? markets.filter((m) => m.id !== opts.excludeMarketId) : markets;
+  const filteredParks =
+    opts.excludeParkId != null ? parks.filter((p) => p.id !== opts.excludeParkId) : parks;
+  const filteredParking =
+    opts.excludeParkingId != null ? parking.filter((p) => p.id !== opts.excludeParkingId) : parking;
+  const filteredChargers =
+    opts.excludeChargerId != null ? chargers.filter((c) => c.id !== opts.excludeChargerId) : chargers;
   return buildInfraCategories({
     stores: filteredStores,
     hospitals,
     pharmacies,
-    parks,
+    parks: filteredParks,
     markets: filteredMarkets,
-    chargers,
-    parking,
+    chargers: filteredChargers,
+    parking: filteredParking,
     childcare,
   });
 }

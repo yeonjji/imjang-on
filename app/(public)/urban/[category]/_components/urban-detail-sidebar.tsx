@@ -9,8 +9,7 @@ const DEFAULT_ANCHORS = [
   { href: '#extras', label: '부대정보' },
   { href: '#map',    label: '위치' },
   { href: '#apt',    label: '주변 아파트' },
-  { href: '#poi',    label: '주변 상권' },
-  { href: '#same',   label: `가까운 주차장` },
+  { href: '#poi',    label: '주변 생활 인프라' },
 ];
 
 export function UrbanDetailSidebar({

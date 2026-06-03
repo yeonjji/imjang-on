@@ -79,9 +79,9 @@
 |---|---|---|---|
 | 병원 상세 | `app/(public)/medical/hospital/[sigunguCode]/[id]/page.tsx` | `_components/hospital-nearby.tsx` | **병원**에서 자기 id 제외 |
 | 약국 상세 | `app/(public)/medical/pharmacy/[sigunguCode]/[id]/page.tsx` | `_components/pharmacy-nearby.tsx` | **약국**에서 자기 제외 |
-| amenity 상세 | `app/(public)/amenity/[category]/[id]/page.tsx` | `_components/nearby-amenities-mixed.tsx` (탭) | 현재 category(편의/마트/카페/시장)를 해당 카테고리에서 제외 |
-| 충전소 상세 | `app/(public)/urban/charger/[id]/page.tsx` | `_components/charger-nearby.tsx` | **충전소**에서 자기 제외 |
-| 주차장(urban) 상세 | `app/(public)/urban/[category]/[id]/page.tsx` | `_components/urban-detail-sidebar.tsx`의 nearby 부분 | **주차장**에서 자기 제외 |
+| ✅ amenity 상세 (PR #24, 완료) | `app/(public)/amenity/[category]/[id]/page.tsx` | ~~`nearby-amenities-mixed.tsx`~~ 삭제됨 | 현재 category(편의/마트/카페/시장)를 해당 카테고리에서 제외 |
+| ✅ 충전소 상세 (완료) | `app/(public)/urban/charger/[id]/page.tsx` | ~~`charger-nearby.tsx`~~ 삭제됨 | **충전소**에서 자기 제외 |
+| ✅ 주차장·공원(urban) 상세 (완료) | `app/(public)/urban/[category]/[id]/page.tsx` | ~~`urban-same-category-nearby.tsx`~~ 삭제됨 | **주차장→parking / 공원→park** 자기 제외 |
 | 어린이집 상세 | `app/(public)/childcare/[sigunguCode]/[id]/page.tsx` | `NearbyAmenities`(옛 탭) — 교체 후 옛 컴포넌트·`getSchoolNearbyAmenities` **완전 제거 가능** | 어린이집은 인프라 8종에 없음 → 제외 불필요 |
 | 아파트 상세 | `app/(public)/apt/[id]/page.tsx` | (별도 인프라 섹션 없으면 신규 추가) | 없음 |
 | 오피스텔/빌라 | `app/(public)/officetel/[id]/page.tsx`, `app/(public)/villa/[id]/page.tsx` | (신규 추가) | 없음 |
