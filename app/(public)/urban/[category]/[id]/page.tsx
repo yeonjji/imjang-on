@@ -5,26 +5,23 @@ import { getUrbanCategoryDef } from '@/lib/urban/category';
 import type { UrbanItem } from '@/lib/urban/category';
 import { getUrbanById, getUrbanLatLng } from '@/lib/urban/detail';
 import { getUrbanList } from '@/lib/urban/list';
-import { getSameCategoryNearbyParking } from '@/lib/urban/nearby';
 import { resolveSigunguFromAddress } from '@/lib/urban/region-from-address';
-import { getNearbyApartments, getMixedNearbyForDetail } from '@/lib/amenity/nearby';
+import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
 import { getSigunguByCode } from '@/lib/region';
 import { UrbanHero } from '../_components/urban-hero';
 import { UrbanInfo } from '../_components/urban-info';
 import { ParkingHoursTable } from '../_components/parking-hours-table';
 import { ParkingFeeGrid } from '../_components/parking-fee-grid';
 import { ParkingExtras } from '../_components/parking-extras';
-import { UrbanSameCategoryNearby } from '../_components/urban-same-category-nearby';
 import { UrbanDetailSidebar } from '../_components/urban-detail-sidebar';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
-import { NearbyAmenitiesMixed } from '@/app/(public)/amenity/[category]/_components/nearby-amenities-mixed';
 import { NaverMap } from '@/components/ui/naver-map';
 import { Card } from '@/components/ui/card';
+import { NearbyInfra } from '@/components/ui/nearby-infra';
 import type { ParkingRaw } from '@/lib/urban/adapters/parking';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { ParkInfo } from '../_components/park-info';
 import type { ParkRaw } from '@/lib/urban/adapters/park';
-import { getSameCategoryNearbyPark } from '@/lib/urban/nearby';
 
 export const revalidate = 86_400;
 
@@ -60,17 +57,16 @@ export default async function UrbanDetailPage({ params }: Params) {
     getUrbanLatLng(def.slug, itemId),
   ]);
 
-  const emptyMixed = { convenience: [], mart: [], cafe: [], market: [] };
   const emptyList = { rows: [], total: 0, page: 1, perPage: 0, totalPages: 0 };
 
-  const [apts, mixed, sameCat, otherList] = await Promise.all([
+  const exclude =
+    def.slug === 'park' ? { excludeParkId: itemId } : { excludeParkingId: itemId };
+
+  const [apts, infra, otherList] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
-    coord ? getMixedNearbyForDetail('parking', coord.lat, coord.lng).catch(() => emptyMixed) : Promise.resolve(emptyMixed),
     coord
-      ? def.slug === 'park'
-        ? getSameCategoryNearbyPark(coord.lat, coord.lng, itemId)
-        : getSameCategoryNearbyParking(coord.lat, coord.lng, itemId)
-      : Promise.resolve([]),
+      ? getNearbyInfra(coord.lat, coord.lng, { ...exclude, includeChildcare: true })
+      : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
     sigunguCode ? getUrbanList(def.slug, { sigunguCode }, 1) : Promise.resolve(emptyList),
   ]);
 
@@ -80,8 +76,7 @@ export default async function UrbanDetailPage({ params }: Params) {
     { href: '#info', label: '공원 정보' },
     { href: '#map',  label: '위치' },
     { href: '#apt',  label: '주변 아파트' },
-    { href: '#poi',  label: '주변 상권' },
-    { href: '#same', label: '가까운 공원' },
+    { href: '#poi',  label: '주변 생활 인프라' },
   ];
 
   return (
@@ -120,8 +115,7 @@ export default async function UrbanDetailPage({ params }: Params) {
             </Card>
           )}
           {coord && <NearbyApartments items={apts} />}
-          {coord && <NearbyAmenitiesMixed {...mixed} />}
-          {coord && <UrbanSameCategoryNearby items={sameCat} def={def} />}
+          {coord && <NearbyInfra categories={infra} />}
         </main>
         <aside><UrbanDetailSidebar others={others} def={def} sigunguCode={sigunguCode} anchors={def.slug === 'park' ? PARK_ANCHORS : undefined} /></aside>
       </div>
