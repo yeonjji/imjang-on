@@ -263,7 +263,6 @@ export async function getNearbyChildcare(
   return rows.filter((r) => excludeId == null || r.id !== excludeId).slice(0, limit);
 }
 
-
 export interface NearbyPharmacy {
   id: bigint;
   name: string;

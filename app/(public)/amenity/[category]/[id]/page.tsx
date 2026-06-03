@@ -50,6 +50,7 @@ export default async function AmenityDetailPage({ params }: Params) {
 
   const coord = await getAmenityLatLng(def.slug, itemId);
 
+  // 'convenience' | 'mart' | 'cafe'는 Store 행, 'market'은 TraditionalMarket 행.
   const exclude =
     def.slug === 'market' ? { excludeMarketId: itemId } : { excludeStoreId: itemId };
   const [apts, infra, otherList] = await Promise.all([
