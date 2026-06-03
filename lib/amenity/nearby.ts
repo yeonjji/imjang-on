@@ -399,6 +399,8 @@ export async function getNearbyInfra(
   opts: {
     excludeHospitalId?: bigint;
     excludePharmacyId?: bigint;
+    excludeStoreId?: bigint;
+    excludeMarketId?: bigint;
     includeChildcare?: boolean;
   } = {},
 ): Promise<InfraCategory[]> {
@@ -414,5 +416,18 @@ export async function getNearbyInfra(
       ? getNearbyChildcare(lat, lng, 1000, INFRA_FETCH_LIMIT)
       : Promise.resolve([] as NearbyChildcare[]),
   ]);
-  return buildInfraCategories({ stores, hospitals, pharmacies, parks, markets, chargers, parking, childcare });
+  const filteredStores =
+    opts.excludeStoreId != null ? stores.filter((s) => s.id !== opts.excludeStoreId) : stores;
+  const filteredMarkets =
+    opts.excludeMarketId != null ? markets.filter((m) => m.id !== opts.excludeMarketId) : markets;
+  return buildInfraCategories({
+    stores: filteredStores,
+    hospitals,
+    pharmacies,
+    parks,
+    markets: filteredMarkets,
+    chargers,
+    parking,
+    childcare,
+  });
 }
