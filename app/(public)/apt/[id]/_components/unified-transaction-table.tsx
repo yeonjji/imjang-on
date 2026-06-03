@@ -77,7 +77,7 @@ export function UnifiedTransactionTable({
                 <tr key={r.id} className="border-t border-[var(--color-line)]">
                   <td className="px-4 py-3">
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-bold ${DEAL_COLOR[r.dealType]}`}
+                      className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-bold ${DEAL_COLOR[r.dealType]}`}
                     >
                       {DEAL_LABEL[r.dealType]}
                     </span>
