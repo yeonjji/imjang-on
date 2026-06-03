@@ -1,18 +1,13 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getHospitalById, getHospitalLatLng, getHospitalList } from '@/lib/hospital';
-import {
-  getNearbyApartments,
-  getNearbyPharmacies,
-  getNearbyParks,
-  getNearbyStores,
-  getNearbyEvChargers,
-} from '@/lib/amenity/nearby';
+import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
 import { HospitalHero } from './_components/hospital-hero';
 import { HospitalSummaryCards } from './_components/hospital-summary-cards';
 import { HospitalTabs } from './_components/hospital-tabs';
-import { HospitalNearby } from './_components/hospital-nearby';
 import { HospitalSidebar } from './_components/hospital-sidebar';
+import { NearbyApartments } from '@/components/ui/nearby-apartments';
+import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NaverMap } from '@/components/ui/naver-map';
 import { Card } from '@/components/ui/card';
 import type { Metadata } from 'next';
@@ -42,12 +37,11 @@ export default async function HospitalDetailPage({ params }: Params) {
 
   const coord = await getHospitalLatLng(hospitalId);
 
-  const [apts, pharmacies, parks, stores, chargers, otherList] = await Promise.all([
+  const [apts, infra, otherList] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([]),
-    coord ? getNearbyPharmacies(coord.lat, coord.lng) : Promise.resolve([]),
-    coord ? getNearbyParks(coord.lat, coord.lng) : Promise.resolve([]),
-    coord ? getNearbyStores(coord.lat, coord.lng, 500) : Promise.resolve([]),
-    coord ? getNearbyEvChargers(coord.lat, coord.lng) : Promise.resolve([]),
+    coord
+      ? getNearbyInfra(coord.lat, coord.lng, { excludeHospitalId: hospital.id, includeChildcare: true })
+      : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
     getHospitalList({ sigunguCode }, 1, 5),
   ]);
 
@@ -90,13 +84,8 @@ export default async function HospitalDetailPage({ params }: Params) {
               <NaverMap lat={coord.lat} lng={coord.lng} name={hospital.name} />
             </Card>
           )}
-          <HospitalNearby
-            apts={apts}
-            pharmacies={pharmacies}
-            parks={parks}
-            stores={stores}
-            chargers={chargers}
-          />
+          <NearbyApartments items={apts} />
+          {coord && <NearbyInfra categories={infra} />}
         </div>
         <aside>
           <HospitalSidebar hospitals={others} sigunguCode={sigunguCode} />
