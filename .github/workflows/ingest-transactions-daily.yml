@@ -1,8 +1,12 @@
 name: ingest-transactions-daily
 on:
   schedule:
-    - cron: '0 18 * * *'
+    - cron: '0 15,19 * * *'  # KST 00·04시, 하루 2회 (2차는 1차 실패 시 resume 백업)
   workflow_dispatch:
+
+concurrency:
+  group: ingest-transactions-daily
+  cancel-in-progress: false
 
 jobs:
   ingest:
@@ -29,4 +33,4 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma generate
       - run: pnpm tsx scripts/ingest/transactions/runner.ts --api=${{ matrix.api }} --mode=daily
-        timeout-minutes: 120
+        timeout-minutes: 300

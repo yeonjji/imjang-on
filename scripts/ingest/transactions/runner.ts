@@ -12,6 +12,7 @@ import { adapterOffiTrade } from './adapter-offi-trade';
 import { adapterOffiRent } from './adapter-offi-rent';
 import { adapterRhTrade } from './adapter-rh-trade';
 import { adapterRhRent } from './adapter-rh-rent';
+import { doneRunFilter, buildDoneKeys } from './resume';
 
 import type { Adapter, ApiType, Mode, NormalizedTransaction } from '@/scripts/ingest/types';
 import { createHash } from 'node:crypto';
@@ -70,16 +71,12 @@ async function main() {
 
   const sources = apis.map((a) => ADAPTERS[a].source);
   const doneRuns = await prisma.ingestionRun.findMany({
-    where: { source: { in: sources }, status: 'OK' },
+    where: { source: { in: sources }, status: 'OK', ...doneRunFilter(args.mode, new Date()) },
     select: { source: true, targetKey: true },
   });
-  // daily 모드에서 이번달·전달 모두 항상 재처리 — DB 복원 등으로 전달 데이터에 구멍이 생겨도 자동 보완
-  const reprocessMonths = args.mode === 'daily' ? new Set(getDailyMonths()) : null;
-  const doneKeys = new Set(
-    doneRuns
-      .filter((r) => !reprocessMonths || !Array.from(reprocessMonths).some((m) => r.targetKey.endsWith(`-${m}`)))
-      .map((r) => `${r.source}:${r.targetKey}`),
-  );
+  // daily: 오늘(KST) 완료분만 스킵 → 날짜가 바뀌면 이번달·전달 전체 재처리(self-heal 유지)
+  // backfill: 완료분 전체 스킵 (doneRunFilter가 {} 반환 → 날짜 제한 없음)
+  const doneKeys = buildDoneKeys(doneRuns);
   logger.info({ skippable: doneKeys.size }, 'resume: loaded completed keys');
 
   let totalUpserted = 0;
