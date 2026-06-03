@@ -15,7 +15,7 @@ export function NearbyApartments({ items }: { items: NearbyApartment[] }) {
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-[var(--color-blue-dark)]">
                   {a.name}
-                  <span className="ml-2 rounded-md bg-[var(--color-sky-soft)] px-1.5 py-0.5 text-[11px] font-bold text-[var(--color-blue)]">{a.distanceMeters}m</span>
+                  <span className="ml-2 rounded-md bg-[var(--color-sky-soft)] px-1.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">{a.distanceMeters}m</span>
                 </p>
                 <p className="mt-0.5 text-xs text-[var(--color-muted)]">{a.region}{a.builtYear ? ` · ${a.builtYear}년` : ''}{a.households ? ` · ${a.households.toLocaleString('ko-KR')}세대` : ''}</p>
               </div>

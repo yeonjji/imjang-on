@@ -14,7 +14,7 @@ export function NearbyChildcare({ items }: { items: Item[] }) {
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">
                 <Link href={`/childcare/${it.sigunguCode}/${it.id}`} className="hover:text-[var(--color-blue)]">{it.name}</Link>
-                <span className="ml-2 rounded-md bg-[var(--color-sky-soft)] px-1.5 py-0.5 text-[11px] font-bold text-[var(--color-blue)]">{it.distanceMeters}m</span>
+                <span className="ml-2 rounded-md bg-[var(--color-sky-soft)] px-1.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">{it.distanceMeters}m</span>
               </p>
               <p className="truncate text-xs text-[var(--color-muted)]">
                 {it.crType ?? ''}{it.capacity != null ? ` · 정원 ${it.capacity}` : ''}

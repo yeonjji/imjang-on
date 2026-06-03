@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/card';
 import type { UrbanItem } from '@/lib/urban/category';
-import { formatArea, type ParkRaw } from '@/lib/urban/adapters/park';
+import { formatParkArea, type ParkRaw } from '@/lib/urban/adapters/park';
 
 export function ParkInfo({ item }: { item: UrbanItem<ParkRaw> }) {
   const r = item.raw;
@@ -14,7 +14,7 @@ export function ParkInfo({ item }: { item: UrbanItem<ParkRaw> }) {
         </div>
         <div className="flex justify-between border-b border-[var(--color-line)] pb-2.5">
           <span className="text-sm text-[var(--color-muted)]">면적</span>
-          <span className="text-sm font-semibold text-[var(--color-text)]">{formatArea(r.area) ?? '-'}</span>
+          <span className="text-sm font-semibold text-[var(--color-text)]">{formatParkArea(r.area) ?? '-'}</span>
         </div>
         <div className="flex justify-between border-b border-[var(--color-line)] pb-2.5 sm:col-span-2">
           <span className="text-sm text-[var(--color-muted)]">주소</span>

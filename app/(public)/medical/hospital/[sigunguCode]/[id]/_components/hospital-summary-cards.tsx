@@ -27,7 +27,7 @@ function SummaryCard({ icon, label, value, sub }: { icon: string; label: string;
       <span className="text-2xl">{icon}</span>
       <p className="mt-1 text-xs text-[var(--color-muted)]">{label}</p>
       <p className="font-bold text-[var(--color-blue-dark)]">{value}</p>
-      {sub && <p className="text-[11px] text-[var(--color-muted)]">{sub}</p>}
+      {sub && <p className="text-xs text-[var(--color-muted)]">{sub}</p>}
     </div>
   );
 }

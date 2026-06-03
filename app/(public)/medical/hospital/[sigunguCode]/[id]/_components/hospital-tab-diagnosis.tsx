@@ -22,7 +22,7 @@ export function HospitalTabDiagnosis({ depts, staff, specialties, specialTreatme
               <div key={String(d.id)} className="flex items-center justify-between rounded-lg bg-[var(--color-soft)] px-3 py-2 text-sm">
                 <span>{d.deptName}</span>
                 {d.specialistCount != null && (
-                  <span className="rounded-full bg-[var(--color-sky-soft)] px-2 py-0.5 text-[11px] font-bold text-[var(--color-blue)]">
+                  <span className="rounded-full bg-[var(--color-sky-soft)] px-2 py-0.5 text-xs font-bold text-[var(--color-blue)]">
                     전문의 {d.specialistCount}명
                   </span>
                 )}
