@@ -75,6 +75,7 @@ async function main() {
     select: { source: true, targetKey: true },
   });
   // daily: 오늘(KST) 완료분만 스킵 → 날짜가 바뀌면 이번달·전달 전체 재처리(self-heal 유지)
+  // backfill: 완료분 전체 스킵 (doneRunFilter가 {} 반환 → 날짜 제한 없음)
   const doneKeys = buildDoneKeys(doneRuns);
   logger.info({ skippable: doneKeys.size }, 'resume: loaded completed keys');
 
