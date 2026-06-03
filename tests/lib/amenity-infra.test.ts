@@ -48,6 +48,7 @@ describe('buildInfraCategories', () => {
     expect(store?.items.map((i) => i.name)).toEqual(['GS25']);
     expect(cafe?.items.map((i) => i.name)).toEqual(['스타벅스']);
     expect(etc?.items.map((i) => i.name)).toEqual(['무인문구']);
+    expect(cafe?.items[0]).toMatchObject({ id: '2', sub: '카페', distanceMeters: 120 });
   });
 
   it('의료·약국 Store는 기타·카페에서 제외한다', () => {
@@ -66,11 +67,14 @@ describe('buildInfraCategories', () => {
   it('고정 순서로 반환한다(store→hospital→…→etc)', () => {
     const cats = buildInfraCategories({
       ...empty,
-      stores: [{ id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', distanceMeters: 80 }],
+      stores: [
+        { id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', distanceMeters: 80 },
+        { id: 2n, name: '스타벅스', address: '', industryCode: 'I21201', industryName: '카페', distanceMeters: 120 },
+      ],
       hospitals: [{ id: 9n, name: '내과', typeName: '의원', address: '', distanceMeters: 100 }],
       parking: [{ id: 7n, name: '공영주차장', address: '', prkplceSe: '공영', prkcmprt: 120, distanceMeters: 150 }],
     });
-    expect(cats.map((c) => c.key)).toEqual(['store', 'hospital', 'parking']);
+    expect(cats.map((c) => c.key)).toEqual(['store', 'cafe', 'hospital', 'parking']);
     expect(cats.find((c) => c.key === 'parking')?.items[0].sub).toBe('공영 · 120면');
   });
 
