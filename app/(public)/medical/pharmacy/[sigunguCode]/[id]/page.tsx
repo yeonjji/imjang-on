@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getPharmacyById, getPharmacyLatLng, getPharmacyList } from '@/lib/pharmacy';
 import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
+import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { PharmacyHero } from './_components/pharmacy-hero';
 import { PharmacyInfo } from './_components/pharmacy-info';
 import { PharmacySidebar } from './_components/pharmacy-sidebar';
@@ -10,7 +11,6 @@ import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NaverMap } from '@/components/ui/naver-map';
 import { Card } from '@/components/ui/card';
 import type { Metadata } from 'next';
-import type { NearbyApartment } from '@/lib/amenity/nearby';
 
 export const revalidate = 86_400;
 
