@@ -1,19 +1,13 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getPharmacyById, getPharmacyLatLng, getPharmacyList } from '@/lib/pharmacy';
-import {
-  getNearbyApartments,
-  getNearbyHospitals,
-  getNearbyParks,
-  getNearbyStores,
-  getNearbyTraditionalMarkets,
-  getNearbyEvChargers,
-  getNearbyChildcare,
-} from '@/lib/amenity/nearby';
+import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
+import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { PharmacyHero } from './_components/pharmacy-hero';
 import { PharmacyInfo } from './_components/pharmacy-info';
-import { PharmacyNearby } from './_components/pharmacy-nearby';
 import { PharmacySidebar } from './_components/pharmacy-sidebar';
+import { NearbyApartments } from '@/components/ui/nearby-apartments';
+import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NaverMap } from '@/components/ui/naver-map';
 import { Card } from '@/components/ui/card';
 import type { Metadata } from 'next';
@@ -44,23 +38,14 @@ export default async function PharmacyDetailPage({ params }: Params) {
 
   const coord = await getPharmacyLatLng(pharmacyId);
 
-  const [apts, hospitals, parks, stores, markets, chargers, childcare, otherList] = await Promise.all([
-    coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([]),
-    coord ? getNearbyHospitals(coord.lat, coord.lng) : Promise.resolve([]),
-    coord ? getNearbyParks(coord.lat, coord.lng) : Promise.resolve([]),
-    coord ? getNearbyStores(coord.lat, coord.lng, 500) : Promise.resolve([]),
-    coord ? getNearbyTraditionalMarkets(coord.lat, coord.lng) : Promise.resolve([]),
-    coord ? getNearbyEvChargers(coord.lat, coord.lng) : Promise.resolve([]),
-    coord ? getNearbyChildcare(coord.lat, coord.lng) : Promise.resolve([]),
+  const [apts, infra, otherList] = await Promise.all([
+    coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
+    coord
+      ? getNearbyInfra(coord.lat, coord.lng, { excludePharmacyId: pharmacy.id, includeChildcare: true })
+      : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
     getPharmacyList({ sigunguCode }, 1, 5),
   ]);
 
-  const convenience = stores.filter(s => (s.industryCode ?? '').startsWith('G20405'));
-  const mart = stores.filter(s => {
-    const c = s.industryCode ?? '';
-    return c.startsWith('G20404') || c.startsWith('G20402');
-  });
-  const cafe = stores.filter(s => (s.industryCode ?? '').startsWith('I21201'));
   const others = otherList.rows.filter(p => p.id !== pharmacy.id).slice(0, 4);
 
   return (
@@ -92,17 +77,8 @@ export default async function PharmacyDetailPage({ params }: Params) {
               <NaverMap lat={coord.lat} lng={coord.lng} name={pharmacy.name} />
             </Card>
           )}
-          <PharmacyNearby
-            apts={apts}
-            hospitals={hospitals}
-            parks={parks}
-            convenience={convenience}
-            mart={mart}
-            cafe={cafe}
-            markets={markets}
-            chargers={chargers}
-            childcare={childcare}
-          />
+          <NearbyApartments items={apts} />
+          {coord && <NearbyInfra categories={infra} />}
         </div>
         <aside>
           <PharmacySidebar pharmacies={others} sigunguCode={sigunguCode} />
