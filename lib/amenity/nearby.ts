@@ -263,35 +263,6 @@ export async function getNearbyChildcare(
   return rows.filter((r) => excludeId == null || r.id !== excludeId).slice(0, limit);
 }
 
-/**
- * "같은 카테고리 가까운 N건" — 현재 row(excludeId)는 제외.
- * convenience/mart/cafe는 Store, market는 TraditionalMarket.
- */
-export async function getSameCategoryNearby(
-  slug: AmenitySlug,
-  lat: number,
-  lng: number,
-  excludeId: bigint,
-  limit = 5,
-): Promise<Array<{ id: bigint; name: string; address: string; distanceMeters: number; sub: string | null }>> {
-  if (slug === 'market') {
-    const rows = await getNearbyTraditionalMarkets(lat, lng, 3000);
-    return rows
-      .filter((m) => m.id !== excludeId)
-      .slice(0, limit)
-      .map((m) => ({ id: m.id, name: m.name, address: m.address, distanceMeters: m.distanceMeters, sub: m.marketType }));
-  }
-  const prefixes = slug === 'convenience' ? ['G20405']
-    : slug === 'cafe' ? ['I21201']
-    : ['G20404', 'G20402'];
-  const stores = await getNearbyStores(lat, lng, 500);
-  return stores
-    .filter((s) => s.id !== excludeId)
-    .filter((s) => prefixes.some((p) => (s.industryCode ?? '').startsWith(p)))
-    .slice(0, limit)
-    .map((s) => ({ id: s.id, name: s.name, address: s.address, distanceMeters: s.distanceMeters, sub: s.industryName }));
-}
-
 export interface NearbyPharmacy {
   id: bigint;
   name: string;
@@ -399,6 +370,8 @@ export async function getNearbyInfra(
   opts: {
     excludeHospitalId?: bigint;
     excludePharmacyId?: bigint;
+    excludeStoreId?: bigint;
+    excludeMarketId?: bigint;
     includeChildcare?: boolean;
   } = {},
 ): Promise<InfraCategory[]> {
@@ -414,5 +387,18 @@ export async function getNearbyInfra(
       ? getNearbyChildcare(lat, lng, 1000, INFRA_FETCH_LIMIT)
       : Promise.resolve([] as NearbyChildcare[]),
   ]);
-  return buildInfraCategories({ stores, hospitals, pharmacies, parks, markets, chargers, parking, childcare });
+  const filteredStores =
+    opts.excludeStoreId != null ? stores.filter((s) => s.id !== opts.excludeStoreId) : stores;
+  const filteredMarkets =
+    opts.excludeMarketId != null ? markets.filter((m) => m.id !== opts.excludeMarketId) : markets;
+  return buildInfraCategories({
+    stores: filteredStores,
+    hospitals,
+    pharmacies,
+    parks,
+    markets: filteredMarkets,
+    chargers,
+    parking,
+    childcare,
+  });
 }

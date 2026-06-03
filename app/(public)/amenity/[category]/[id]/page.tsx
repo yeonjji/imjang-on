@@ -6,20 +6,17 @@ import { getAmenityList } from '@/lib/amenity/list';
 import { getSigunguByCode } from '@/lib/region';
 import {
   getNearbyApartments,
-  getMixedNearbyForDetail,
-  getSameCategoryNearby,
+  getNearbyInfra,
 } from '@/lib/amenity/nearby';
 import { AmenityHero } from '../_components/amenity-hero';
 import { AmenityInfo } from '../_components/amenity-info';
 import { AmenityDetailSidebar } from '../_components/amenity-detail-sidebar';
-import { NearbyAmenitiesMixed } from '../_components/nearby-amenities-mixed';
-import { SameCategoryNearby } from '../_components/same-category-nearby';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
+import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NaverMap } from '@/components/ui/naver-map';
 import { Card } from '@/components/ui/card';
 import type { Metadata } from 'next';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
-import type { AmenitySlug } from '@/lib/amenity/category';
 
 export const revalidate = 86_400;
 
@@ -53,12 +50,14 @@ export default async function AmenityDetailPage({ params }: Params) {
 
   const coord = await getAmenityLatLng(def.slug, itemId);
 
-  type MixedT = Awaited<ReturnType<typeof getMixedNearbyForDetail>>;
-  type SameT = Awaited<ReturnType<typeof getSameCategoryNearby>>;
-  const [apts, mixed, sameCat, otherList] = await Promise.all([
+  // 'convenience' | 'mart' | 'cafe'는 Store 행, 'market'은 TraditionalMarket 행.
+  const exclude =
+    def.slug === 'market' ? { excludeMarketId: itemId } : { excludeStoreId: itemId };
+  const [apts, infra, otherList] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
-    coord ? getMixedNearbyForDetail(def.slug as AmenitySlug, coord.lat, coord.lng) : Promise.resolve({ convenience: [], mart: [], cafe: [], market: [] } as MixedT),
-    coord ? getSameCategoryNearby(def.slug as AmenitySlug, coord.lat, coord.lng, itemId) : Promise.resolve([] as SameT),
+    coord
+      ? getNearbyInfra(coord.lat, coord.lng, { ...exclude, includeChildcare: true })
+      : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
     item.sigunguCode
       ? getAmenityList(def.slug, { sigunguCode: item.sigunguCode }, 1)
       : Promise.resolve({ rows: [], total: 0, page: 1, perPage: 0, totalPages: 0 }),
@@ -101,8 +100,7 @@ export default async function AmenityDetailPage({ params }: Params) {
             </Card>
           )}
           <NearbyApartments items={apts} />
-          {coord && <NearbyAmenitiesMixed {...mixed} />}
-          {coord && <SameCategoryNearby items={sameCat} def={def} />}
+          {coord && <NearbyInfra categories={infra} />}
         </main>
         <aside><AmenityDetailSidebar others={others} def={def} sigunguCode={item.sigunguCode} /></aside>
       </div>

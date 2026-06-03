@@ -109,6 +109,18 @@ describe('buildInfraCategories', () => {
     expect(buildInfraCategories(empty).find((c) => c.key === 'childcare')).toBeUndefined();
   });
 
+  it('distanceMeters를 number로 정규화한다(Decimal 등 비원시 입력 방어)', () => {
+    // raw 쿼리는 distanceMeters를 Prisma Decimal(객체)로 줄 수 있다. 클라이언트 직렬화를 위해 number여야 한다.
+    const decimalLike = { valueOf: () => 80, toString: () => '80' } as unknown as number;
+    const cats = buildInfraCategories({
+      ...empty,
+      stores: [{ id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', distanceMeters: decimalLike }],
+    });
+    const item = cats.find((c) => c.key === 'store')?.items[0];
+    expect(typeof item?.distanceMeters).toBe('number');
+    expect(item?.distanceMeters).toBe(80);
+  });
+
   it('어린이집은 기타 앞, 마지막 직전에 배치된다', () => {
     const cats = buildInfraCategories({
       ...empty,
