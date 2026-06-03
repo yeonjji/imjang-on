@@ -1,6 +1,6 @@
 import type {
   NearbyStore, NearbyHospital, NearbyPharmacy, NearbyPark,
-  NearbyTraditionalMarket, NearbyEvCharger, NearbyParking,
+  NearbyTraditionalMarket, NearbyEvCharger, NearbyParking, NearbyChildcare,
 } from '@/lib/amenity/nearby';
 
 /** 카테고리별 DB fetch 상한. 화면 cap(5)과 별개로, 이 수에 도달하면 개수 배지를 'N+'로 표기. */
@@ -15,7 +15,7 @@ export interface InfraItem {
 
 export type InfraCategoryKey =
   | 'store' | 'cafe' | 'hospital' | 'pharmacy' | 'park'
-  | 'market' | 'charger' | 'parking' | 'etc';
+  | 'market' | 'charger' | 'parking' | 'childcare' | 'etc';
 
 export interface InfraCategory {
   key: InfraCategoryKey;
@@ -34,6 +34,7 @@ export interface RawInfra {
   markets: NearbyTraditionalMarket[];
   chargers: NearbyEvCharger[];
   parking: NearbyParking[];
+  childcare?: NearbyChildcare[];
 }
 
 const MART_PREFIXES = ['G20405', 'G20404', 'G20402'];
@@ -82,6 +83,8 @@ export function buildInfraCategories(raw: RawInfra): InfraCategory[] {
       items: raw.chargers.map((c) => ({ id: String(c.id), name: c.name, sub: `${c.chargeSpeed} · ${c.chargerCount}기`, distanceMeters: c.distanceMeters })) },
     { key: 'parking', label: '주차장', icon: '🅿️', radiusLabel: '반경 500m 내',
       items: raw.parking.map((p) => ({ id: String(p.id), name: p.name, sub: parkingSub(p), distanceMeters: p.distanceMeters })) },
+    { key: 'childcare', label: '어린이집', icon: '👶', radiusLabel: '반경 1km 내',
+      items: (raw.childcare ?? []).map((c) => ({ id: String(c.id), name: c.name, sub: c.crType ?? null, distanceMeters: c.distanceMeters })) },
     { key: 'etc', label: '기타 생활편의', icon: '🏪', radiusLabel: '반경 500m 내',
       items: etc.map((s) => ({ id: String(s.id), name: s.name, sub: s.industryName ?? null, distanceMeters: s.distanceMeters })) },
   ];

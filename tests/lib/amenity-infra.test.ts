@@ -93,4 +93,28 @@ describe('buildInfraCategories', () => {
     });
     expect(cats.find((c) => c.key === 'pharmacy')?.capped).toBe(false);
   });
+
+  it('childcare가 전달되면 어린이집 카테고리를, 미전달/빈배열이면 카테고리 없음', () => {
+    const withCare = buildInfraCategories({
+      ...empty,
+      childcare: [
+        { id: 5n, name: '햇살어린이집', address: '', sigunguCode: null, crType: '국공립', capacity: 60, distanceMeters: 90 },
+      ],
+    });
+    const care = withCare.find((c) => c.key === 'childcare');
+    expect(care?.items.map((i) => i.name)).toEqual(['햇살어린이집']);
+    expect(care?.items[0]).toMatchObject({ id: '5', sub: '국공립', distanceMeters: 90 });
+
+    expect(buildInfraCategories({ ...empty, childcare: [] }).find((c) => c.key === 'childcare')).toBeUndefined();
+    expect(buildInfraCategories(empty).find((c) => c.key === 'childcare')).toBeUndefined();
+  });
+
+  it('어린이집은 기타 앞, 마지막 직전에 배치된다', () => {
+    const cats = buildInfraCategories({
+      ...empty,
+      stores: [{ id: 1n, name: '무인문구', address: '', industryCode: 'Z999', industryName: '기타', distanceMeters: 200 }],
+      childcare: [{ id: 5n, name: '햇살어린이집', address: '', sigunguCode: null, crType: '국공립', capacity: 60, distanceMeters: 90 }],
+    });
+    expect(cats.map((c) => c.key)).toEqual(['childcare', 'etc']);
+  });
 });
