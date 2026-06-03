@@ -17,6 +17,10 @@ const DEAL_COLOR: Record<DealType, string> = {
   WOLSE: 'bg-orange-100 text-orange-700',
 };
 
+function dealBadgeClass(dealType: DealType): string {
+  return `inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-bold ${DEAL_COLOR[dealType]}`;
+}
+
 function formatPrice(row: UnifiedTxRow): string {
   if (row.dealType === 'SALE') return formatBillion(row.dealAmount);
   if (row.dealType === 'JEONSE') return formatBillion(row.deposit);
@@ -62,7 +66,8 @@ export function UnifiedTransactionTable({
         </Card>
       ) : (
         <Card className="!p-0 overflow-hidden">
-          <table className="w-full text-sm">
+          {/* 태블릿 이상: 표 */}
+          <table className="hidden w-full text-sm sm:table">
             <thead className="bg-[var(--color-soft)]">
               <tr className="text-left text-xs font-bold uppercase text-[var(--color-muted)]">
                 <th className="px-4 py-3">유형</th>
@@ -76,20 +81,35 @@ export function UnifiedTransactionTable({
               {rows.map((r) => (
                 <tr key={r.id} className="border-t border-[var(--color-line)]">
                   <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-bold ${DEAL_COLOR[r.dealType]}`}
-                    >
-                      {DEAL_LABEL[r.dealType]}
-                    </span>
+                    <span className={dealBadgeClass(r.dealType)}>{DEAL_LABEL[r.dealType]}</span>
                   </td>
-                  <td className="px-4 py-3">{r.contractDate}</td>
-                  <td className="px-4 py-3">{formatPyeong(r.exclusiveArea)}</td>
-                  <td className="px-4 py-3">{r.floor ? `${r.floor}층` : '-'}</td>
+                  <td className="whitespace-nowrap px-4 py-3">{r.contractDate}</td>
+                  <td className="whitespace-nowrap px-4 py-3">{formatPyeong(r.exclusiveArea)}</td>
+                  <td className="whitespace-nowrap px-4 py-3">{r.floor ? `${r.floor}층` : '-'}</td>
                   <td className="px-4 py-3 text-right font-semibold">{formatPrice(r)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {/* 모바일: 카드 리스트 */}
+          <ul className="divide-y divide-[var(--color-line)] sm:hidden">
+            {rows.map((r) => (
+              <li key={r.id} className="px-4 py-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className={dealBadgeClass(r.dealType)}>{DEAL_LABEL[r.dealType]}</span>
+                  <span className="whitespace-nowrap text-xs text-[var(--color-muted)]">
+                    {r.contractDate}
+                  </span>
+                </div>
+                <div className="mt-1.5 text-sm text-[var(--color-muted)]">
+                  {formatPyeong(r.exclusiveArea)} · {r.floor ? `${r.floor}층` : '-'}
+                </div>
+                <div className="mt-0.5 font-semibold">{formatPrice(r)}</div>
+              </li>
+            ))}
+          </ul>
+
           <div className="border-t border-[var(--color-line)] px-4">
             <Pagination
               current={page}
