@@ -16,6 +16,16 @@ test.afterAll(async () => {
   await prisma.$disconnect();
 });
 
+test('apt detail: 주변 생활 인프라 블록이 렌더된다', async ({ page }) => {
+  await page.goto(`/apt/${propertyId}`);
+
+  const poi = page.locator('#poi');
+  await expect(poi).toBeVisible();
+  await expect(poi.getByRole('heading', { name: '주변 생활 인프라' })).toBeVisible();
+  // 시드 주차장 2곳이 반경 500m 내 → '주차장' 카테고리가 노출되어야 함
+  await expect(poi.getByText('주차장').first()).toBeVisible();
+});
+
 test('apt detail: unified transaction table + page 2', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto(`/apt/${propertyId}`);
