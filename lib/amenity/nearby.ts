@@ -305,8 +305,9 @@ export async function getNearbyPharmacies(
   lng: number,
   radiusMeters = 500,
   limit = 5,
+  excludeId: bigint | null = null,
 ): Promise<NearbyPharmacy[]> {
-  return prisma.$queryRaw<NearbyPharmacy[]>`
+  const rows = await prisma.$queryRaw<NearbyPharmacy[]>`
     SELECT
       id, name, address, tel,
       ROUND(ST_Distance(
@@ -321,8 +322,9 @@ export async function getNearbyPharmacies(
         ${radiusMeters}
       )
     ORDER BY "distanceMeters"
-    LIMIT ${limit}
+    LIMIT ${limit + 1}
   `;
+  return rows.filter((r) => excludeId == null || r.id !== excludeId).slice(0, limit);
 }
 
 export interface NearbyHospital {
@@ -338,8 +340,9 @@ export async function getNearbyHospitals(
   lng: number,
   radiusMeters = 500,
   limit = 5,
+  excludeId: bigint | null = null,
 ): Promise<NearbyHospital[]> {
-  return prisma.$queryRaw<NearbyHospital[]>`
+  const rows = await prisma.$queryRaw<NearbyHospital[]>`
     SELECT
       id, name, "typeName", address,
       ROUND(ST_Distance(
@@ -354,8 +357,9 @@ export async function getNearbyHospitals(
         ${radiusMeters}
       )
     ORDER BY "distanceMeters"
-    LIMIT ${limit}
+    LIMIT ${limit + 1}
   `;
+  return rows.filter((r) => excludeId == null || r.id !== excludeId).slice(0, limit);
 }
 
 export interface NearbyParking {
@@ -388,16 +392,27 @@ export async function getNearbyParking(
   `;
 }
 
-// 상세 "주변 생활 인프라" — 8개 카테고리를 정규화해 반환. 빈 카테고리는 제외됨. (좌표만 받는 범용)
-export async function getNearbyInfra(lat: number, lng: number): Promise<InfraCategory[]> {
-  const [stores, hospitals, pharmacies, parks, markets, chargers, parking] = await Promise.all([
+// 상세 "주변 생활 인프라" — 카테고리를 정규화해 반환. 빈 카테고리는 제외됨. (좌표만 받는 범용)
+export async function getNearbyInfra(
+  lat: number,
+  lng: number,
+  opts: {
+    excludeHospitalId?: bigint;
+    excludePharmacyId?: bigint;
+    includeChildcare?: boolean;
+  } = {},
+): Promise<InfraCategory[]> {
+  const [stores, hospitals, pharmacies, parks, markets, chargers, parking, childcare] = await Promise.all([
     getNearbyStores(lat, lng, 500, INFRA_FETCH_LIMIT),
-    getNearbyHospitals(lat, lng, 500, INFRA_FETCH_LIMIT),
-    getNearbyPharmacies(lat, lng, 500, INFRA_FETCH_LIMIT),
+    getNearbyHospitals(lat, lng, 500, INFRA_FETCH_LIMIT, opts.excludeHospitalId ?? null),
+    getNearbyPharmacies(lat, lng, 500, INFRA_FETCH_LIMIT, opts.excludePharmacyId ?? null),
     getNearbyParks(lat, lng, 1000, INFRA_FETCH_LIMIT),
     getNearbyTraditionalMarkets(lat, lng, 1000, INFRA_FETCH_LIMIT),
     getNearbyEvChargers(lat, lng, 500, INFRA_FETCH_LIMIT),
     getNearbyParking(lat, lng, 500, INFRA_FETCH_LIMIT),
+    opts.includeChildcare
+      ? getNearbyChildcare(lat, lng, 1000, INFRA_FETCH_LIMIT)
+      : Promise.resolve([] as NearbyChildcare[]),
   ]);
-  return buildInfraCategories({ stores, hospitals, pharmacies, parks, markets, chargers, parking });
+  return buildInfraCategories({ stores, hospitals, pharmacies, parks, markets, chargers, parking, childcare });
 }
