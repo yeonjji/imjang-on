@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
-import { formatNearbyPrice, type NearbyProperty, type NearbyTab } from '@/lib/nearby';
+import { formatNearbyPrice, formatNearbyParts, type NearbyProperty, type NearbyTab } from '@/lib/nearby';
 
 const TABS: { key: NearbyTab; label: string }[] = [
   { key: 'ALL', label: '전체' },
@@ -56,9 +56,29 @@ export function NearbyPriceComparison({
                   {it.region} · {it.distKm.toFixed(2)}km
                 </p>
               </div>
-              <p className="shrink-0 text-right text-sm font-bold text-[var(--color-blue-dark)]">
-                {formatNearbyPrice(it, tab)}
-              </p>
+              {tab === 'ALL' ? (
+                <div className="shrink-0 text-right text-sm font-bold text-[var(--color-blue-dark)]">
+                  {/* 데스크톱: 한 줄 */}
+                  <span className="hidden whitespace-nowrap sm:inline">
+                    {formatNearbyPrice(it, 'ALL')}
+                  </span>
+                  {/* 모바일: 세로 분리 */}
+                  <span className="flex flex-col items-end gap-0.5 sm:hidden">
+                    {formatNearbyParts(it).map((p) => (
+                      <span key={p.label} className="whitespace-nowrap">
+                        <span className="text-xs font-medium text-[var(--color-muted)]">
+                          {p.label}{' '}
+                        </span>
+                        {p.value}
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              ) : (
+                <p className="shrink-0 whitespace-nowrap text-right text-sm font-bold text-[var(--color-blue-dark)]">
+                  {formatNearbyPrice(it, tab)}
+                </p>
+              )}
             </Link>
           </li>
         ))}

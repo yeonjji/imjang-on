@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatNearbyPrice, type NearbyProperty } from '@/lib/nearby';
+import { formatNearbyPrice, formatNearbyParts, type NearbyProperty } from '@/lib/nearby';
 
 const base: NearbyProperty = {
   id: '1',
@@ -42,5 +42,26 @@ describe('formatNearbyPrice', () => {
     expect(formatNearbyPrice(empty, 'JEONSE')).toBe('-');
     expect(formatNearbyPrice(empty, 'WOLSE')).toBe('-');
     expect(formatNearbyPrice(empty, 'ALL')).toBe('매매 - · 전세 - · 월세 -');
+  });
+});
+
+describe('formatNearbyParts', () => {
+  it('매매·전세·월세 라벨/값 3개 반환', () => {
+    expect(formatNearbyParts(base)).toEqual([
+      { label: '매매', value: '12억' },
+      { label: '전세', value: '7억' },
+      { label: '월세', value: '보 5,000만원 / 월 90만' },
+    ]);
+  });
+
+  it('데이터 없으면 값이 -', () => {
+    const empty: NearbyProperty = {
+      ...base,
+      saleLastPrice: null,
+      jeonseLastDeposit: null,
+      wolseLastDeposit: null,
+      wolseLastRent: null,
+    };
+    expect(formatNearbyParts(empty).map((p) => p.value)).toEqual(['-', '-', '-']);
   });
 });

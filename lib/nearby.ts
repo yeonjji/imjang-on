@@ -71,13 +71,27 @@ export async function getNearbyProperties(opts: {
 
 export type NearbyTab = 'ALL' | 'SALE' | 'JEONSE' | 'WOLSE';
 
-export function formatNearbyPrice(item: NearbyProperty, tab: NearbyTab): string {
+export interface NearbyPricePart {
+  label: string;
+  value: string;
+}
+
+export function formatNearbyParts(item: NearbyProperty): NearbyPricePart[] {
   const sale = item.saleLastPrice != null ? formatBillion(item.saleLastPrice) : '-';
   const jeonse = item.jeonseLastDeposit != null ? formatBillion(item.jeonseLastDeposit) : '-';
   const wolse =
     item.wolseLastDeposit != null
       ? `보 ${formatBillion(item.wolseLastDeposit)} / 월 ${(item.wolseLastRent ?? 0).toLocaleString('ko-KR')}만`
       : '-';
+  return [
+    { label: '매매', value: sale },
+    { label: '전세', value: jeonse },
+    { label: '월세', value: wolse },
+  ];
+}
+
+export function formatNearbyPrice(item: NearbyProperty, tab: NearbyTab): string {
+  const [sale, jeonse, wolse] = formatNearbyParts(item).map((p) => p.value);
   switch (tab) {
     case 'SALE':
       return sale;
