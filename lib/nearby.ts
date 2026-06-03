@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import type { PropertyType } from '@prisma/client';
+import { formatBillion } from '@/lib/format';
 
 export interface NearbyProperty {
   id: string;
@@ -9,6 +10,8 @@ export interface NearbyProperty {
   distKm: number;
   saleLastPrice: number | null;
   jeonseLastDeposit: number | null;
+  wolseLastDeposit: number | null;
+  wolseLastRent: number | null;
 }
 
 export async function getNearbyProperties(opts: {
@@ -27,6 +30,8 @@ export async function getNearbyProperties(opts: {
       dist_km: number;
       sale_last_price: number | null;
       jeonse_last_deposit: number | null;
+      wolse_last_deposit: number | null;
+      wolse_last_rent: number | null;
     }>
   >`
     WITH center AS (
@@ -36,7 +41,9 @@ export async function getNearbyProperties(opts: {
       p.id, p.name, p.address, r."fullName" AS full_name,
       (ST_Distance(p.location, c.location) / 1000.0) AS dist_km,
       p."saleLastPrice"::float AS sale_last_price,
-      p."jeonseLastDeposit"::float AS jeonse_last_deposit
+      p."jeonseLastDeposit"::float AS jeonse_last_deposit,
+      p."wolseLastDeposit"::float AS wolse_last_deposit,
+      p."wolseLastRent"::int AS wolse_last_rent
     FROM "Property" p
     JOIN "Region" r ON r.code = p."regionCode"
     JOIN center c ON true
@@ -57,5 +64,44 @@ export async function getNearbyProperties(opts: {
     distKm: r.dist_km,
     saleLastPrice: r.sale_last_price,
     jeonseLastDeposit: r.jeonse_last_deposit,
+    wolseLastDeposit: r.wolse_last_deposit,
+    wolseLastRent: r.wolse_last_rent,
   }));
+}
+
+export type NearbyTab = 'ALL' | 'SALE' | 'JEONSE' | 'WOLSE';
+
+export interface NearbyPricePart {
+  label: string;
+  value: string;
+}
+
+export function formatNearbyParts(item: NearbyProperty): NearbyPricePart[] {
+  const sale = item.saleLastPrice != null ? formatBillion(item.saleLastPrice) : '-';
+  const jeonse = item.jeonseLastDeposit != null ? formatBillion(item.jeonseLastDeposit) : '-';
+  const wolse =
+    item.wolseLastDeposit != null
+      ? `보 ${formatBillion(item.wolseLastDeposit)} / 월 ${(item.wolseLastRent ?? 0).toLocaleString('ko-KR')}만`
+      : '-';
+  return [
+    { label: '매매', value: sale },
+    { label: '전세', value: jeonse },
+    { label: '월세', value: wolse },
+  ];
+}
+
+export function formatNearbyPrice(item: NearbyProperty, tab: NearbyTab): string {
+  const [sale, jeonse, wolse] = formatNearbyParts(item).map((p) => p.value);
+  switch (tab) {
+    case 'SALE':
+      return sale;
+    case 'JEONSE':
+      return jeonse;
+    case 'WOLSE':
+      return wolse;
+    case 'ALL':
+      return `매매 ${sale} · 전세 ${jeonse} · 월세 ${wolse}`;
+    default:
+      return tab satisfies never;
+  }
 }

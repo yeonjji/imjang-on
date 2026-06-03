@@ -24,6 +24,6 @@ export async function fetchTxPage(
   }));
 }
 
-export async function fetchUnifiedTxPage(propertyId: bigint, page: number) {
-  return getUnifiedTransactions(propertyId, { page, perPage: 15 });
+export async function fetchUnifiedTxPage(propertyId: bigint, page: number, dealType?: DealType) {
+  return getUnifiedTransactions(propertyId, { page, perPage: 15, dealType });
 }

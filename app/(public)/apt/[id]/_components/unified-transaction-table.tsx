@@ -29,25 +29,52 @@ function formatPrice(row: UnifiedTxRow): string {
   return '-';
 }
 
+type DealTab = 'ALL' | DealType;
+
+const TABS: { key: DealTab; label: string }[] = [
+  { key: 'ALL', label: '전체' },
+  { key: 'SALE', label: '매매' },
+  { key: 'JEONSE', label: '전세' },
+  { key: 'WOLSE', label: '월세' },
+];
+
 export function UnifiedTransactionTable({
   propertyId,
   initialRows,
-  totalCount,
+  counts,
   id,
 }: {
   propertyId: string;
   initialRows: UnifiedTxRow[];
-  totalCount: number;
+  counts: Record<DealType, number>;
   id?: string;
 }) {
+  const [tab, setTab] = useState<DealTab>('ALL');
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState<UnifiedTxRow[]>(initialRows);
   const [pending, startTransition] = useTransition();
   const ref = useRef<HTMLElement>(null);
 
+  const totalCount = tab === 'ALL' ? counts.SALE + counts.JEONSE + counts.WOLSE : counts[tab];
+  const activeLabel = TABS.find((t) => t.key === tab)!.label;
+
+  function changeTab(next: DealTab) {
+    if (next === tab) return;
+    setTab(next);
+    startTransition(async () => {
+      const data = await fetchUnifiedTxPage(BigInt(propertyId), 1, next === 'ALL' ? undefined : next);
+      setRows(data.rows);
+      setPage(1);
+    });
+  }
+
   async function goTo(newPage: number) {
     startTransition(async () => {
-      const data = await fetchUnifiedTxPage(BigInt(propertyId), newPage);
+      const data = await fetchUnifiedTxPage(
+        BigInt(propertyId),
+        newPage,
+        tab === 'ALL' ? undefined : tab,
+      );
       setRows(data.rows);
       setPage(newPage);
       ref.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
@@ -56,10 +83,31 @@ export function UnifiedTransactionTable({
 
   return (
     <section ref={ref} id={id}>
-      <h2 className="mb-4 text-xl font-bold text-[var(--color-blue-dark)]">
-        최근 실거래 내역{' '}
-        <span className="text-sm font-medium text-[var(--color-muted)]">(전체 {totalCount}건)</span>
-      </h2>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-bold text-[var(--color-blue-dark)]">
+          최근 실거래 내역{' '}
+          <span className="text-sm font-medium text-[var(--color-muted)]">
+            ({activeLabel} {totalCount}건)
+          </span>
+        </h2>
+        <div className="flex gap-1 rounded-lg bg-[var(--color-soft)] p-1">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => changeTab(t.key)}
+              disabled={pending}
+              className={`rounded-md px-3 py-1 text-sm font-semibold transition-colors ${
+                tab === t.key
+                  ? 'bg-white text-[var(--color-blue-dark)] shadow-sm'
+                  : 'text-[var(--color-muted)] hover:text-[var(--color-blue-dark)]'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
       {totalCount === 0 ? (
         <Card>
           <p className="text-sm text-[var(--color-muted)]">거래 내역이 없습니다.</p>

@@ -1,6 +1,11 @@
 import { notFound } from 'next/navigation';
 import { getPropertyById, getPropertyLatLng } from '@/lib/property';
-import { getMonthlyChartData, getAreaSummary, getUnifiedTransactions } from '@/lib/transaction';
+import {
+  getMonthlyChartData,
+  getAreaSummary,
+  getUnifiedTransactions,
+  getTransactionCounts,
+} from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
 import { PropertyType } from '@prisma/client';
 import { PropertyDetailHero } from './_components/property-detail-hero';
@@ -40,8 +45,9 @@ export default async function AptDetailPage({ params }: Params) {
 
   const coord = await getPropertyLatLng(propId);
 
-  const [unified, chart, areaSummary, nearby, infra] = await Promise.all([
+  const [unified, counts, chart, areaSummary, nearby, infra] = await Promise.all([
     getUnifiedTransactions(propId, { page: 1, perPage: 15 }),
+    getTransactionCounts(propId),
     getMonthlyChartData(propId),
     getAreaSummary(propId),
     getNearbyProperties({ propertyId: propId, propertyType: PropertyType.APARTMENT }),
@@ -60,7 +66,7 @@ export default async function AptDetailPage({ params }: Params) {
             id="transactions"
             propertyId={String(propId)}
             initialRows={unified.rows}
-            totalCount={unified.totalCount}
+            counts={counts}
           />
           <section id="chart">
             <h2 className="mb-4 text-xl font-bold text-[var(--color-blue-dark)]">
