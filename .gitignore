@@ -52,3 +52,6 @@ logs/
 .claude/projects/
 .claude/cache/
 .vercel
+
+# QA 시각 검증 스크린샷 (로컬 산출물)
+qa-*.png
