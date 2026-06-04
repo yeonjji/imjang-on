@@ -2,6 +2,7 @@ import { MainSearchFilter } from './_components/main-search-filter';
 import { TypeHub } from './_components/type-hub';
 import { HeroSection } from './_components/hero-section';
 import { StatsBar } from './_components/stats-bar';
+import { AmenityHub } from './_components/amenity-hub';
 import { getSidoList } from '@/lib/region';
 import { getHomeStats } from '@/lib/stats';
 import type { Metadata } from 'next';
@@ -29,6 +30,8 @@ export default async function HomePage() {
           <TypeHub />
         </aside>
       </div>
+
+      <AmenityHub />
     </section>
   );
 }
