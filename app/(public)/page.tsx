@@ -1,6 +1,9 @@
 import { MainSearchFilter } from './_components/main-search-filter';
 import { TypeHub } from './_components/type-hub';
+import { HeroSection } from './_components/hero-section';
+import { StatsBar } from './_components/stats-bar';
 import { getSidoList } from '@/lib/region';
+import { getHomeStats } from '@/lib/stats';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -11,15 +14,18 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function HomePage() {
-  const sidoList = await getSidoList();
+  const [sidoList, stats] = await Promise.all([getSidoList(), getHomeStats()]);
 
   return (
     <section className="mx-auto max-w-[1180px] px-6 py-12">
-      <div className="flex flex-col gap-6 md:flex-row md:items-stretch">
-        <div className="w-full md:w-[360px] md:shrink-0">
+      <HeroSection />
+      <StatsBar stats={stats} />
+
+      <div className="mt-10 flex flex-col gap-6 md:flex-row md:items-stretch">
+        <div id="search-filter" className="min-w-0 flex-1 scroll-mt-24">
           <MainSearchFilter sidoList={sidoList} />
         </div>
-        <aside className="min-w-0 flex-1">
+        <aside className="w-full md:w-[380px] md:shrink-0">
           <TypeHub />
         </aside>
       </div>
