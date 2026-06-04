@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
 const HUB_ITEMS = [
-  { type: 'apt', label: '아파트', desc: '단지별 매매·전세·월세 실거래가', icon: '🏢' },
-  { type: 'officetel', label: '오피스텔', desc: '오피스텔 실거래가 한눈에', icon: '🏬' },
-  { type: 'villa', label: '다세대', desc: '연립·다세대 실거래가', icon: '🏘️' },
+  { type: 'apt', label: '아파트 실거래가', desc: '단지별 매매·전세·월세 실거래가', icon: '🏢', tint: 'bg-[var(--color-sky-soft)]' },
+  { type: 'officetel', label: '오피스텔 실거래가', desc: '오피스텔 실거래가 한눈에', icon: '🏬', tint: 'bg-[#ede9fe]' },
+  { type: 'villa', label: '다세대 실거래가', desc: '연립·다세대 실거래가', icon: '🏘️', tint: 'bg-[#dcfce7]' },
 ] as const;
 
 export function TypeHub() {
@@ -19,9 +19,11 @@ export function TypeHub() {
           <Link
             key={item.type}
             href={`/list?type=${item.type}`}
-            className="group flex flex-1 items-center gap-4 rounded-[18px] border border-[var(--color-line)] p-4 transition hover:border-[var(--color-blue)] hover:bg-[var(--color-soft)]"
+            className="group flex min-h-[84px] flex-1 items-center gap-4 rounded-[18px] border border-[var(--color-line)] p-4 transition hover:border-[var(--color-blue)] hover:bg-[var(--color-soft)]"
           >
-            <span className="text-3xl" aria-hidden>{item.icon}</span>
+            <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-full text-2xl ${item.tint}`} aria-hidden>
+              {item.icon}
+            </span>
             <span className="min-w-0">
               <span className="block text-base font-bold text-[var(--color-blue-dark)]">
                 {item.label}
