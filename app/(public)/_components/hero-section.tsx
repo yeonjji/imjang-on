@@ -23,6 +23,7 @@ export function HeroSection() {
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <button
+            type="button"
             onClick={scrollToFilter}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-blue)] px-6 py-3.5 font-extrabold text-white"
           >

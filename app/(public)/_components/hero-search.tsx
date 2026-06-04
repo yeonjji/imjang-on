@@ -59,6 +59,7 @@ export function HeroSearch() {
           className="min-w-0 flex-1 bg-transparent px-1 py-3 text-base text-[var(--color-text)] outline-none"
         />
         <button
+          type="button"
           onClick={submit}
           className="shrink-0 rounded-xl bg-[var(--color-blue)] px-6 py-3 font-bold text-white"
         >
