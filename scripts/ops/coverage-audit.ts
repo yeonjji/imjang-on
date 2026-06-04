@@ -6,6 +6,8 @@
 import { prisma } from '@/lib/db';
 import { KOREA_BBOX } from '@/lib/geo/korea-bbox';
 
+// 하드코딩된 컴파일타임 상수 — SQL에 직접 보간된다. 외부 입력(--table 등)을
+// 이 목록에 연결하려면 반드시 화이트리스트 검증을 먼저 추가할 것 (인젝션 방지).
 const TABLES = [
   'Property', 'School', 'Park', 'Store', 'TraditionalMarket',
   'EvCharger', 'Childcare', 'Parking', 'Hospital', 'Pharmacy',

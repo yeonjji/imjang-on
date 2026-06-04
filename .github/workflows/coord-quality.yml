@@ -40,12 +40,19 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma generate
       - name: Coord quality detect/fix
+        # 입력은 env로 받아 run 스크립트에 ${{ }} 직접 보간을 피하고(주입 방지),
+        # bash 배열로 모아 공백 포함 값의 단어분리도 방지한다.
+        env:
+          IN_APPLY: ${{ inputs.apply }}
+          IN_TABLE: ${{ inputs.table }}
+          IN_REASON: ${{ inputs.reason }}
+          IN_LIMIT: ${{ inputs.limit }}
         run: |
-          ARGS=""
-          if [ "${{ inputs.apply }}" = "true" ]; then ARGS="$ARGS --apply"; fi
-          if [ -n "${{ inputs.table }}" ]; then ARGS="$ARGS --table=${{ inputs.table }}"; fi
-          if [ -n "${{ inputs.reason }}" ]; then ARGS="$ARGS --reason=${{ inputs.reason }}"; fi
-          if [ -n "${{ inputs.limit }}" ]; then ARGS="$ARGS --limit=${{ inputs.limit }}"; fi
-          echo "Running: coord-quality.ts$ARGS"
-          pnpm tsx scripts/ops/coord-quality.ts $ARGS
+          ARGS=()
+          [ "$IN_APPLY" = "true" ] && ARGS+=(--apply)
+          [ -n "$IN_TABLE" ] && ARGS+=("--table=$IN_TABLE")
+          [ -n "$IN_REASON" ] && ARGS+=("--reason=$IN_REASON")
+          [ -n "$IN_LIMIT" ] && ARGS+=("--limit=$IN_LIMIT")
+          echo "Running: coord-quality.ts ${ARGS[*]}"
+          pnpm tsx scripts/ops/coord-quality.ts "${ARGS[@]}"
         timeout-minutes: 120

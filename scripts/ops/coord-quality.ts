@@ -25,7 +25,8 @@ if (REASON && !(VALID_REASONS as readonly string[]).includes(REASON))
   throw new Error(`--reason=${REASON} 은 알 수 없는 사유 (null | bbox | sigungu)`);
 const limitArg = process.argv.find((a) => a.startsWith('--limit='));
 const LIMIT = limitArg ? parseInt(limitArg.split('=')[1], 10) : null;
-if (LIMIT !== null && !Number.isInteger(LIMIT)) throw new Error('--limit 은 정수여야 합니다');
+if (LIMIT !== null && !Number.isInteger(LIMIT))
+  throw new Error(`--limit=${limitArg?.split('=')[1]} 은(는) 정수여야 합니다`);
 const PROXIMITY_M = 50;
 
 type Reason = 'null' | 'bbox' | 'sigungu';
