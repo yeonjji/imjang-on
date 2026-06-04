@@ -6,6 +6,7 @@ import { logger } from '@/lib/logger';
 import { readXlsxRows } from '@/scripts/ingest/amenities/xlsx-parse';
 import { parsePharmacyRows } from '@/scripts/ingest/amenities/adapter-pharmacy';
 import type { NormalizedPharmacy } from '@/scripts/ingest/amenities/types';
+import { enrichWithGeocode } from '@/scripts/ingest/amenities/geocode-fill';
 
 const CHUNK = 1000;
 
@@ -82,6 +83,7 @@ async function main() {
   try {
     logger.info('pharmacy: 파일2 파싱 중...');
     const rows = dedupeBySourceId(parsePharmacyRows(readXlsxRows(findXlsx(dir, 2))));
+    await enrichWithGeocode(rows); // 소스 좌표 누락 행을 주소로 폴백 지오코딩
     const upserted = await writePharmacies(rows);
 
     await prisma.ingestionRun.update({

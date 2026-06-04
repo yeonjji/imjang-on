@@ -1,0 +1,58 @@
+name: coord-quality
+
+# 좌표 NULL/bbox이탈/시군구충돌을 검출해 주소로 재지오코딩한다 (수동 트리거 전용).
+# 기본 dry-run(집계만). 실제 갱신은 apply=true.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: '실제 갱신 여부 (false=dry-run 집계만)'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+        default: 'false'
+      table:
+        description: '대상 테이블 1개 (빈 값=전체). 예: School, Property'
+        default: ''
+      reason:
+        description: '사유 필터 (빈 값=전체). null | bbox | sigungu'
+        default: ''
+      limit:
+        description: '최대 처리 건수 (빈 값=제한 없음). 첫 apply는 50 권장.'
+        default: ''
+
+jobs:
+  coord-quality:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      KAKAO_REST_KEY: ${{ secrets.KAKAO_REST_KEY }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      LOG_LEVEL: info
+      PRISMA_INGEST: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma generate
+      - name: Coord quality detect/fix
+        # 입력은 env로 받아 run 스크립트에 ${{ }} 직접 보간을 피하고(주입 방지),
+        # bash 배열로 모아 공백 포함 값의 단어분리도 방지한다.
+        env:
+          IN_APPLY: ${{ inputs.apply }}
+          IN_TABLE: ${{ inputs.table }}
+          IN_REASON: ${{ inputs.reason }}
+          IN_LIMIT: ${{ inputs.limit }}
+        run: |
+          ARGS=()
+          [ "$IN_APPLY" = "true" ] && ARGS+=(--apply)
+          [ -n "$IN_TABLE" ] && ARGS+=("--table=$IN_TABLE")
+          [ -n "$IN_REASON" ] && ARGS+=("--reason=$IN_REASON")
+          [ -n "$IN_LIMIT" ] && ARGS+=("--limit=$IN_LIMIT")
+          echo "Running: coord-quality.ts ${ARGS[*]}"
+          pnpm tsx scripts/ops/coord-quality.ts "${ARGS[@]}"
+        timeout-minutes: 120

@@ -30,6 +30,7 @@ import type {
   NormalizedHospitalSpecialty,
   NormalizedHospitalStaff,
 } from '@/scripts/ingest/amenities/types';
+import { enrichWithGeocode } from '@/scripts/ingest/amenities/geocode-fill';
 
 const CHUNK = 500;
 const CHUNK_DETAIL = 300;
@@ -363,6 +364,7 @@ async function main() {
   try {
     logger.info('hospital: 파일1 파싱 중...');
     const hospitalRows = dedupeBySourceId(parseHospitalRows(readXlsxRows(findXlsx(dir, 1))));
+    await enrichWithGeocode(hospitalRows); // 소스 좌표 누락 행을 주소로 폴백 지오코딩
     const upserted = await writeHospitals(hospitalRows);
     logger.info({ upserted }, 'hospital: Hospital upsert 완료');
 
