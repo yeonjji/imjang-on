@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatBillion, formatArea, formatDate, formatPyeong, sqmToPyeong } from '@/lib/format';
+import { formatBillion, formatArea, formatDate, formatPyeong, sqmToPyeong, formatStatCount } from '@/lib/format';
 
 describe('formatBillion (만원 → 한국식 표기)', () => {
   it.each([
@@ -35,5 +35,17 @@ describe('formatDate', () => {
   });
   it('returns "-" for null', () => {
     expect(formatDate(null)).toBe('-');
+  });
+});
+
+describe('formatStatCount (큰 카운트 → "N만+" 표기)', () => {
+  it.each([
+    [256_000, '25.6만+'],
+    [160_000, '16만+'],
+    [10_000, '1만+'],
+    [12_345, '1.2만+'],
+    [5_000, '5,000+'],
+  ])('formats %s → %s', (input, expected) => {
+    expect(formatStatCount(input as number)).toBe(expected);
   });
 });
