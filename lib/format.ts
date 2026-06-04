@@ -31,3 +31,12 @@ export function formatDate(date: Date | null | undefined): string {
 export function formatPyeong(sqm: number): string {
   return `${Math.round(sqmToPyeong(sqm))}평`;
 }
+
+/** 큰 카운트를 "16만+" / "25.6만+" / "5,000+" 형태로 표기 */
+export function formatStatCount(n: number): string {
+  if (n >= 10_000) {
+    const man = Math.round((n / 10_000) * 10) / 10;
+    return `${man}만+`;
+  }
+  return `${n.toLocaleString('ko-KR')}+`;
+}
