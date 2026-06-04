@@ -48,10 +48,12 @@
 |---|---|---|---|
 | School | ❌ 소스에 없음 | ✅ enrichWithGeocode | 100% 지오코딩 의존 |
 | Store / Park / TraditionalMarket / Parking | ✅ 소스 | ✅ | |
-| EvCharger | ✅ 소스 | ❌ **폴백 없음** | 미래 NULL 방치 |
-| Childcare | ✅ 소스 | ❌ **폴백 없음** | 〃 |
-| Hospital / Pharmacy | ✅ 소스 | ❌ **폴백 없음** (별도 ingest 스크립트) | 〃 |
+| EvCharger | ✅ 소스 | ✅ (`adapter-ev-charger.ts:115`) | 이미 있음 |
+| Childcare | ✅ 소스 | ✅ (`adapter-childcare.ts:200`) | 이미 있음 |
+| Hospital / Pharmacy | ✅ 소스 | ❌ **폴백 없음** (별도 ingest 스크립트) | 미래 NULL 방치 |
 | Property | 지오코딩 | ✅ matcher + ops | |
+
+> **정정(2026-06-04 구현 직전 재확인):** 초기엔 EV·어린이집도 폴백이 없다고 봤으나, 두 어댑터 모두 이미 `enrichWithGeocode`를 호출한다. 따라서 **폴백 구멍은 Hospital·Pharmacy 2개뿐.**
 
 ## 5. 설계
 
@@ -85,11 +87,10 @@ bbox 범위는 보수적으로 잡아(33.0–38.7 / 124.0–132.0) 도서·접�
    - 옵션: `--table=<name>`, `--reason=<null|bbox|sigungu>`, `--limit=N`, 카카오 레이트리밋 `sleep(50ms)`.
    - 기존 `geocoder.ts`/`buildGeocodeQuery` 재사용. **새 npm 의존성 없음.**
 
-2. **폴백 구멍 4개 메우기** — 다른 어댑터가 이미 쓰는 `enrichWithGeocode` 호출 추가:
-   - `scripts/ingest/amenities/adapter-ev-charger.ts` — return 전 `enrichWithGeocode(all)`.
-   - `scripts/ingest/amenities/adapter-childcare.ts` — return 전 `enrichWithGeocode(all)`.
-   - `scripts/ingest-hospital.ts` — upsert 전 rows에 적용. 행 shape `{address, lat, lng}` 확인 후.
-   - `scripts/ingest-pharmacy.ts` — 〃.
+2. **폴백 구멍 2개 메우기** — 다른 어댑터가 이미 쓰는 `enrichWithGeocode` 호출 추가:
+   - `scripts/ingest-hospital.ts` — `main()`에서 `parseHospitalRows`+dedupe 후 `writeHospitals` 전에 `await enrichWithGeocode(hospitalRows)`. `NormalizedHospital`은 `{address, lat, lng}`를 가져 `Coordable` 충족.
+   - `scripts/ingest-pharmacy.ts` — `main()`에서 `parsePharmacyRows`+dedupe 후 `writePharmacies` 전에 `await enrichWithGeocode(rows)`.
+   - (EV·어린이집은 이미 폴백 보유 → 변경 없음.)
 
 3. **`scripts/ops/coverage-audit.ts`** — 임시 → 정식 ops 스크립트로 커밋. 테이블별 total / NULL / bbox이탈 카운트 집계. 백필 전후 검증 + 향후 모니터링용.
 
@@ -109,7 +110,7 @@ bbox 범위는 보수적으로 잡아(33.0–38.7 / 124.0–132.0) 도서·접�
 2. `coord-quality.ts` **DRY-RUN** (Actions, `apply=false`) → 테이블·사유별 의심 건수 리포트로 규모 파악.
 3. `coord-quality.ts` **`--apply`** (Actions, `apply=true`) → 재지오코딩. 첫 실행은 `limit` 작게(예: 50) 검증 권장.
 4. `coverage-audit.ts` 재실행 → NULL·bbox이탈이 "지오코딩 불가 잔여"만 남고 급감 확인.
-5. 폴백 4개 어댑터/ingest 수정 후 다음 인제스트 주기부터 NULL 자가치유.
+5. 폴백 2개(병원·약국) ingest 수정 후 다음 인제스트 주기부터 NULL 자가치유.
 
 ## 6. 성능 / 비용
 
@@ -120,7 +121,7 @@ bbox 범위는 보수적으로 잡아(33.0–38.7 / 124.0–132.0) 도서·접�
 ## 7. 성공 기준
 
 1. `coord-quality.ts --apply` 후 `coverage-audit.ts`에서 NULL·bbox이탈이 지오코딩 불가 잔여만 남는다.
-2. 폴백 4개 추가 후 재인제스트 시 주소가 풀리는 행은 NULL을 남기지 않는다.
+2. 폴백 2개(병원·약국) 추가 후 재인제스트 시 주소가 풀리는 행은 NULL을 남기지 않는다.
 3. `pnpm typecheck` + `pnpm lint` 통과. 기존 ingest 테스트 회귀 없음.
 
 ## 8. 범위 밖 (명시)
