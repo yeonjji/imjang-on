@@ -8,25 +8,32 @@ const HUB_ITEMS = [
 
 export function TypeHub() {
   return (
-    <div className="flex h-full flex-col gap-4">
-      {HUB_ITEMS.map((item) => (
-        <Link
-          key={item.type}
-          href={`/list?type=${item.type}`}
-          className="group flex flex-1 items-center gap-4 rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow)] transition hover:-translate-y-0.5 hover:shadow-lg"
-        >
-          <span className="text-3xl" aria-hidden>{item.icon}</span>
-          <span className="min-w-0">
-            <span className="block text-base font-bold text-[var(--color-blue-dark)]">
-              {item.label}
+    <div className="flex h-full flex-col rounded-[26px] border border-[var(--color-line)] bg-white p-6 shadow-[var(--shadow)]">
+      <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">유형별</p>
+      <h2 className="mb-4 text-2xl font-black tracking-tight text-[var(--color-blue-dark)]">
+        실거래가 보러가기
+      </h2>
+
+      <div className="flex flex-1 flex-col gap-3">
+        {HUB_ITEMS.map((item) => (
+          <Link
+            key={item.type}
+            href={`/list?type=${item.type}`}
+            className="group flex flex-1 items-center gap-4 rounded-[18px] border border-[var(--color-line)] p-4 transition hover:border-[var(--color-blue)] hover:bg-[var(--color-soft)]"
+          >
+            <span className="text-3xl" aria-hidden>{item.icon}</span>
+            <span className="min-w-0">
+              <span className="block text-base font-bold text-[var(--color-blue-dark)]">
+                {item.label}
+              </span>
+              <span className="block text-xs text-[var(--color-muted)]">{item.desc}</span>
             </span>
-            <span className="block text-xs text-[var(--color-muted)]">{item.desc}</span>
-          </span>
-          <span className="ml-auto text-[var(--color-blue)] transition group-hover:translate-x-0.5" aria-hidden>
-            →
-          </span>
-        </Link>
-      ))}
+            <span className="ml-auto text-[var(--color-blue)] transition group-hover:translate-x-0.5" aria-hidden>
+              →
+            </span>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

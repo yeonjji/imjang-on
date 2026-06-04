@@ -16,10 +16,10 @@ export default async function HomePage() {
   return (
     <section className="mx-auto max-w-[1180px] px-6 py-12">
       <div className="flex flex-col gap-6 md:flex-row md:items-stretch">
-        <div className="min-w-0 flex-1">
+        <div className="w-full md:w-[360px] md:shrink-0">
           <MainSearchFilter sidoList={sidoList} />
         </div>
-        <aside className="w-full md:w-[300px] md:shrink-0">
+        <aside className="min-w-0 flex-1">
           <TypeHub />
         </aside>
       </div>
