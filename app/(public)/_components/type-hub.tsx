@@ -8,12 +8,12 @@ const HUB_ITEMS = [
 
 export function TypeHub() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex h-full flex-col gap-4">
       {HUB_ITEMS.map((item) => (
         <Link
           key={item.type}
           href={`/list?type=${item.type}`}
-          className="group flex items-center gap-4 rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow)] transition hover:-translate-y-0.5 hover:shadow-lg"
+          className="group flex flex-1 items-center gap-4 rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow)] transition hover:-translate-y-0.5 hover:shadow-lg"
         >
           <span className="text-3xl" aria-hidden>{item.icon}</span>
           <span className="min-w-0">

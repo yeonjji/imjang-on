@@ -15,7 +15,7 @@ export default async function HomePage() {
 
   return (
     <section className="mx-auto max-w-[1180px] px-6 py-12">
-      <div className="flex flex-col gap-6 md:flex-row md:items-start">
+      <div className="flex flex-col gap-6 md:flex-row md:items-stretch">
         <div className="min-w-0 flex-1">
           <MainSearchFilter sidoList={sidoList} />
         </div>

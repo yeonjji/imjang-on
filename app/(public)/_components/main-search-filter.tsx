@@ -109,13 +109,13 @@ export function MainSearchFilter({ sidoList }: Props) {
     'w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-blue-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--color-blue)]';
 
   return (
-    <div className="rounded-[26px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow)]">
+    <div className="flex h-full flex-col rounded-[26px] border border-[var(--color-line)] bg-white p-6 shadow-[var(--shadow)]">
       <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">실거래가 통합검색</p>
-      <h2 className="mb-6 text-2xl font-black tracking-tight text-[var(--color-blue-dark)]">
+      <h2 className="mb-4 text-2xl font-black tracking-tight text-[var(--color-blue-dark)]">
         조건으로 실거래가 찾기
       </h2>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-1 flex-col gap-5">
         {/* 유형 */}
         <section>
           <h3 className="mb-2 text-sm font-bold text-[var(--color-blue-dark)]">유형</h3>
