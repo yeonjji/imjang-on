@@ -140,6 +140,7 @@ model Transaction {
   source      String  @db.VarChar(30)
   externalKey String? @db.VarChar(80)
   rawHash     String  @db.Char(64)
+  createdAt    DateTime @default(now())
 
   @@unique([rawHash])
   @@index([propertyId, dealType, contractDate(sort: Desc)])
@@ -147,6 +148,7 @@ model Transaction {
   @@index([sigunguCode, propertyType, dealType, contractDate(sort: Desc)])
   @@index([regionCode, contractDate(sort: Desc)])
   @@index([propertyType, contractDate(sort: Desc)])
+  @@index([dealType, createdAt(sort: Desc)])
 }
 
 enum IngestionStatus {
