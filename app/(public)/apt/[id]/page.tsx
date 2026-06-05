@@ -18,6 +18,9 @@ import { DetailSidebar } from './_components/detail-sidebar';
 import { getNearbyInfra } from '@/lib/amenity/nearby';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { formatBillion } from '@/lib/format';
+import { getNearbySubscriptions } from '@/lib/subscription';
+import { shortSidoFromRegionCode } from '@/lib/region';
+import { NearbySubscriptions } from './_components/nearby-subscriptions';
 import type { Metadata } from 'next';
 
 export const revalidate = 21_600;
@@ -44,8 +47,9 @@ export default async function AptDetailPage({ params }: Params) {
   if (!property || property.propertyType !== PropertyType.APARTMENT) notFound();
 
   const coord = await getPropertyLatLng(propId);
+  const shortSido = shortSidoFromRegionCode(property.region.code);
 
-  const [unified, counts, chart, areaSummary, nearby, infra] = await Promise.all([
+  const [unified, counts, chart, areaSummary, nearby, infra, nearbySubs] = await Promise.all([
     getUnifiedTransactions(propId, { page: 1, perPage: 15 }),
     getTransactionCounts(propId),
     getMonthlyChartData(propId),
@@ -54,6 +58,9 @@ export default async function AptDetailPage({ params }: Params) {
     coord
       ? getNearbyInfra(coord.lat, coord.lng, { includeChildcare: true })
       : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
+    shortSido
+      ? getNearbySubscriptions({ sido: shortSido, sigungu: property.region.sigungu })
+      : Promise.resolve(null),
   ]);
 
   return (
@@ -76,6 +83,14 @@ export default async function AptDetailPage({ params }: Params) {
           </section>
           <AreaComparison id="area" areas={areaSummary} />
           <NearbyPriceComparison id="nearby" items={nearby} slug="apt" />
+          {shortSido && nearbySubs && (
+            <NearbySubscriptions
+              id="subscriptions-nearby"
+              items={nearbySubs.items}
+              scopeLabel={nearbySubs.scopeLabel}
+              sido={shortSido}
+            />
+          )}
           <NearbyInfra categories={infra} />
         </main>
         <aside>
