@@ -62,17 +62,6 @@ export function SubscriptionFilterPanel({ sidoList, params: externalParams, onPa
   return (
     <div className="flex flex-col gap-6">
       <section>
-        <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">청약 유형</h3>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {SUBSCRIPTION_CATEGORIES.map((c) => (
-            <Chip key={c.slug} active={selectedCats.has(c.slug)} onClick={() => toggleCategory(c.slug)}>
-              {c.label}
-            </Chip>
-          ))}
-        </div>
-      </section>
-
-      <section>
         <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">지역</h3>
         <div className="mt-2">
           <select
@@ -87,6 +76,17 @@ export function SubscriptionFilterPanel({ sidoList, params: externalParams, onPa
               </option>
             ))}
           </select>
+        </div>
+      </section>
+
+      <section>
+        <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">청약 유형</h3>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {SUBSCRIPTION_CATEGORIES.map((c) => (
+            <Chip key={c.slug} active={selectedCats.has(c.slug)} onClick={() => toggleCategory(c.slug)}>
+              {c.label}
+            </Chip>
+          ))}
         </div>
       </section>
 
