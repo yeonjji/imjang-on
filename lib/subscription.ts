@@ -1,4 +1,7 @@
+import { Prisma } from '@prisma/client';
+import { prisma } from '@/lib/db';
 import type { SubscriptionCategory } from '@prisma/client';
+import type { SubscriptionNotice, SubscriptionUnit } from '@prisma/client';
 import { formatBillion, formatPyeong } from '@/lib/format';
 
 // ---- 카테고리 ----
@@ -94,4 +97,149 @@ export function formatAreaRange(min: number | null, max: number | null): string 
   const a = formatPyeong(min);
   const b = formatPyeong(max);
   return a === b ? a : `${a}~${b}`;
+}
+
+// ---- 조회 ----
+export interface SubscriptionListItem {
+  id: string;
+  name: string;
+  category: SubscriptionCategory;
+  regionName: string | null;
+  receiptBegin: Date | null;
+  receiptEnd: Date | null;
+  totalSupply: number | null;
+  unitCount: number;
+  minPrice: number | null;
+  maxPrice: number | null;
+  minArea: number | null;
+  maxArea: number | null;
+}
+
+export interface SubscriptionListResult {
+  rows: SubscriptionListItem[];
+  total: number;
+  totalPages: number;
+  page: number;
+  perPage: number;
+}
+
+interface ListRow {
+  id: bigint;
+  name: string;
+  category: SubscriptionCategory;
+  region_name: string | null;
+  receipt_begin: Date | null;
+  receipt_end: Date | null;
+  total_supply: number | null;
+  unit_count: number;
+  min_price: number | null;
+  max_price: number | null;
+  min_area: number | null;
+  max_area: number | null;
+}
+
+export async function getSubscriptionList(opts: {
+  categories?: SubscriptionCategory[];
+  sido?: string;
+  status?: SubscriptionStatus;
+  sort?: 'recent' | 'notice';
+  page?: number;
+  perPage?: number;
+}): Promise<SubscriptionListResult> {
+  const { categories, sido, status, sort = 'recent', page = 1, perPage = 20 } = opts;
+  const offset = (page - 1) * perPage;
+
+  const where = Prisma.sql`
+    WHERE 1 = 1
+    ${
+      categories && categories.length > 0
+        ? Prisma.sql`AND n.category IN (${Prisma.join(
+            categories.map((c) => Prisma.sql`${c}::"SubscriptionCategory"`),
+          )})`
+        : Prisma.empty
+    }
+    ${sido ? Prisma.sql`AND n."regionName" = ${sido}` : Prisma.empty}
+    ${
+      status === 'OPEN'
+        ? Prisma.sql`AND n."receiptBegin" <= CURRENT_DATE AND n."receiptEnd" >= CURRENT_DATE`
+        : Prisma.empty
+    }
+    ${status === 'UPCOMING' ? Prisma.sql`AND n."receiptBegin" > CURRENT_DATE` : Prisma.empty}
+    ${
+      status === 'CLOSED'
+        ? Prisma.sql`AND (n."receiptEnd" < CURRENT_DATE OR n."receiptEnd" IS NULL)`
+        : Prisma.empty
+    }
+  `;
+
+  const orderBy =
+    sort === 'notice'
+      ? Prisma.sql`ORDER BY n."noticeDate" DESC NULLS LAST, n.id DESC`
+      : Prisma.sql`ORDER BY n."receiptEnd" DESC NULLS LAST, n."noticeDate" DESC NULLS LAST, n.id DESC`;
+
+  const rows = await prisma.$queryRaw<ListRow[]>(Prisma.sql`
+    SELECT
+      n.id, n.name, n.category,
+      n."regionName" AS region_name,
+      n."receiptBegin" AS receipt_begin,
+      n."receiptEnd" AS receipt_end,
+      n."totalSupply" AS total_supply,
+      COUNT(u.id)::int AS unit_count,
+      MIN(u."topAmount")::int AS min_price,
+      MAX(u."topAmount")::int AS max_price,
+      MIN(u.area)::float AS min_area,
+      MAX(u.area)::float AS max_area
+    FROM "SubscriptionNotice" n
+    LEFT JOIN "SubscriptionUnit" u ON u."noticeId" = n.id
+    ${where}
+    GROUP BY n.id
+    ${orderBy}
+    LIMIT ${perPage} OFFSET ${offset}
+  `);
+
+  const totalRows = await prisma.$queryRaw<Array<{ count: number }>>(Prisma.sql`
+    SELECT COUNT(*)::int AS count FROM "SubscriptionNotice" n ${where}
+  `);
+  const total = totalRows[0]?.count ?? 0;
+
+  return {
+    rows: rows.map((r) => ({
+      id: String(r.id),
+      name: r.name,
+      category: r.category,
+      regionName: r.region_name,
+      receiptBegin: r.receipt_begin,
+      receiptEnd: r.receipt_end,
+      totalSupply: r.total_supply,
+      unitCount: r.unit_count,
+      minPrice: r.min_price,
+      maxPrice: r.max_price,
+      minArea: r.min_area,
+      maxArea: r.max_area,
+    })),
+    total,
+    totalPages: Math.max(1, Math.ceil(total / perPage)),
+    page,
+    perPage,
+  };
+}
+
+export type SubscriptionDetail = SubscriptionNotice & { units: SubscriptionUnit[] };
+
+export async function getSubscriptionById(id: bigint): Promise<SubscriptionDetail | null> {
+  return prisma.subscriptionNotice.findUnique({
+    where: { id },
+    include: { units: { orderBy: [{ area: 'asc' }, { id: 'asc' }] } },
+  });
+}
+
+export async function getSubscriptionLatLng(
+  id: bigint,
+): Promise<{ lat: number; lng: number } | null> {
+  const rows = await prisma.$queryRaw<Array<{ lat: number; lng: number }>>`
+    SELECT ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng
+    FROM "SubscriptionNotice"
+    WHERE id = ${id} AND location IS NOT NULL
+  `;
+  return rows[0] ?? null;
 }
