@@ -46,3 +46,18 @@ export function formatStatCount(n: number): string {
   }
   return `${n.toLocaleString('ko-KR')}+`;
 }
+
+/** 접수기간 Date 두 개를 "MM.DD~MM.DD"로 압축 표기. 둘 다 없으면 "일정 미정". */
+export function formatReceiptPeriodShort(
+  begin: Date | null | undefined,
+  end: Date | null | undefined,
+): string {
+  if (!begin && !end) return '일정 미정';
+  const md = (d: Date | null | undefined): string => {
+    if (!d) return '-';
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${m}.${day}`;
+  };
+  return `${md(begin)}~${md(end)}`;
+}
