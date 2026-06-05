@@ -101,7 +101,7 @@ const SURGE_MIN_RECENT = 30; // 급증 후보 최소 최근거래 건수(노이�
 /** sigunguCode 집합 → { sigunguCode: {code, label} } 매핑 */
 async function resolveRegions(codes: string[]): Promise<Map<string, { code: string; label: string }>> {
   const rows = await prisma.region.findMany({
-    where: { sigunguCode: { in: codes }, level: 2 },
+    where: { sigunguCode: { in: codes }, level: 2, isAbolished: false },
     select: { sigunguCode: true, code: true, fullName: true },
   });
   const map = new Map<string, { code: string; label: string }>();
