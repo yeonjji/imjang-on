@@ -284,7 +284,7 @@ export async function getNearbySubscriptions(opts: {
       WHERE n."regionName" = ${sido}
       ${extraWhere}
       GROUP BY n.id
-      ORDER BY (CASE WHEN n."receiptEnd" >= CURRENT_DATE THEN 0 ELSE 1 END),
+      ORDER BY (CASE WHEN n."receiptBegin" > CURRENT_DATE OR n."receiptEnd" >= CURRENT_DATE THEN 0 ELSE 1 END),
                n."receiptEnd" DESC NULLS LAST,
                n.id DESC
       LIMIT ${limit}
@@ -293,7 +293,7 @@ export async function getNearbySubscriptions(opts: {
   };
 
   if (sigungu) {
-    const items = await run(Prisma.sql`AND n.address ILIKE ${`%${sigungu}%`}`);
+    const items = await run(Prisma.sql`AND n.address ILIKE ${`% ${sigungu} %`}`);
     if (items.length > 0) return { items, scope: 'sigungu', scopeLabel: sigungu };
   }
 
