@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>오늘의 부동산 한입 브리핑 — 목업</title>
+<style>
+  :root {
+    --bg: #f7fbff;
+    --card: #ffffff;
+    --text: #172033;
+    --muted: #64748b;
+    --line: #dbeafe;
+    --blue: #2563eb;
+    --blue-dark: #1e3a8a;
+    --sky: #38bdf8;
+    --sky-soft: #e0f2fe;
+    --soft: #f1f7ff;
+    --green: #0f9f6e;
+    --red: #ef4444;
+    --shadow: 0 14px 34px rgba(37, 99, 235, 0.10);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", "Noto Sans KR", sans-serif;
+    background: var(--bg); color: var(--text);
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  /* 섹션 헤더 */
+  .sec-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .sec-head h2 { font-size: 22px; font-weight: 900; letter-spacing: -0.03em; margin: 0; }
+  .sec-head .ref { font-size: 13px; color: var(--muted); }
+  .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .tag {
+    font-size: 12px; font-weight: 700; color: var(--blue);
+    background: var(--sky-soft); border: 1px solid var(--line);
+    padding: 6px 11px; border-radius: 999px;
+  }
+
+  .grid { display: grid; gap: 16px; margin-top: 18px; grid-template-columns: 1fr; }
+  @media (min-width: 760px) {
+    .grid { grid-template-columns: 1fr 1fr; }
+    .card-summary { grid-column: 1 / -1; }
+  }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 20px; box-shadow: var(--shadow); padding: 20px;
+  }
+  .card h3 { margin: 0 0 14px; font-size: 15px; font-weight: 800; letter-spacing: -0.02em; }
+  .card h3 .em { color: var(--blue); }
+
+  /* 카드1: 한눈에 — 타일 그리드 */
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border-radius: 16px; overflow: hidden; }
+  @media (min-width: 760px) { .tiles { grid-template-columns: repeat(5, 1fr); } }
+  .tile { background: #fff; padding: 16px 14px; }
+  .tile .k { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+  .tile .v { font-size: 22px; font-weight: 900; letter-spacing: -0.03em; color: var(--blue-dark); margin-top: 6px; line-height: 1.1; }
+  .tile .sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .tile.link .v { color: var(--blue); }
+
+  /* 카드2: 인기 동네 TOP5 */
+  .rank { list-style: none; margin: 0; padding: 0; }
+  .rank li { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px dashed var(--line); }
+  .rank li:last-child { border-bottom: 0; }
+  .rank .no { width: 22px; height: 22px; border-radius: 7px; background: var(--soft); color: var(--blue-dark); font-weight: 900; font-size: 12px; display: grid; place-items: center; flex: none; }
+  .rank .no.top { background: var(--blue); color: #fff; }
+  .rank .nm { font-weight: 700; font-size: 14px; flex: none; width: 84px; }
+  .rank .bar { flex: 1; height: 8px; border-radius: 999px; background: var(--sky-soft); overflow: hidden; }
+  .rank .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #2563eb, #38bdf8); border-radius: 999px; }
+  .rank .cnt { font-size: 13px; font-weight: 800; color: var(--blue-dark); width: 46px; text-align: right; }
+
+  /* 카드3: 급증 동네 */
+  .find { list-style: none; margin: 0; padding: 0; }
+  .find li { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px dashed var(--line); }
+  .find li:last-child { border-bottom: 0; }
+  .find .loc { font-weight: 700; font-size: 14px; }
+  .find .loc small { display: block; color: var(--muted); font-weight: 500; font-size: 12px; margin-top: 2px; }
+  .find .up { font-size: 15px; font-weight: 900; color: var(--green); background: #e8f8f1; padding: 5px 11px; border-radius: 999px; }
+  .find .hint { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="sec-head">
+    <h2>📈 오늘의 부동산 한입 브리핑</h2>
+    <span class="ref">6월 5일 수집 기준 · 매매</span>
+  </div>
+  <div class="tags">
+    <span class="tag">#오늘의실거래</span>
+    <span class="tag">#매매 2,431건</span>
+    <span class="tag">#최고가 강남구</span>
+    <span class="tag">#84㎡대 최다</span>
+    <span class="tag">#화성시 핫플</span>
+  </div>
+
+  <div class="grid">
+    <!-- 카드1: 오늘의 실거래 한눈에 -->
+    <section class="card card-summary">
+      <h3>오늘 시장에서 무슨 일이 <span class="em">있었나</span></h3>
+      <div class="tiles">
+        <div class="tile">
+          <div class="k">🧾 오늘 등록된 실거래</div>
+          <div class="v">2,431건</div>
+          <div class="sub">전국 매매 신고분</div>
+        </div>
+        <div class="tile link">
+          <div class="k">🔥 최고가 거래</div>
+          <div class="v">54.2억</div>
+          <div class="sub">서울 강남구 · 래미안</div>
+        </div>
+        <div class="tile link">
+          <div class="k">📉 최저가 거래</div>
+          <div class="v">2,100만</div>
+          <div class="sub">전남 고흥군</div>
+        </div>
+        <div class="tile link">
+          <div class="k">🚀 가장 많이 거래된 지역</div>
+          <div class="v">화성시</div>
+          <div class="sub">84건</div>
+        </div>
+        <div class="tile">
+          <div class="k">💡 최다 거래 평형</div>
+          <div class="v">84㎡대</div>
+          <div class="sub">전용 60–85㎡</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 카드2: 인기 동네 TOP5 -->
+    <section class="card">
+      <h3>오늘 가장 <span class="em">인기있는 동네</span></h3>
+      <ul class="rank">
+        <li><span class="no top">1</span><span class="nm">화성시</span><span class="bar"><i style="width:100%"></i></span><span class="cnt">84건</span></li>
+        <li><span class="no">2</span><span class="nm">강서구</span><span class="bar"><i style="width:74%"></i></span><span class="cnt">62건</span></li>
+        <li><span class="no">3</span><span class="nm">수원 영통구</span><span class="bar"><i style="width:65%"></i></span><span class="cnt">55건</span></li>
+        <li><span class="no">4</span><span class="nm">인천 연수구</span><span class="bar"><i style="width:56%"></i></span><span class="cnt">47건</span></li>
+        <li><span class="no">5</span><span class="nm">인천 서구</span><span class="bar"><i style="width:50%"></i></span><span class="cnt">42건</span></li>
+      </ul>
+    </section>
+
+    <!-- 카드3: 거래량 급증 동네 -->
+    <section class="card">
+      <h3>오늘의 <span class="em">발견</span></h3>
+      <p class="hint">최근 30일 거래량이 직전 30일보다 급증한 지역</p>
+      <ul class="find">
+        <li><span class="loc">📍 하남시<small>최근 30일 138건 (직전 76건)</small></span><span class="up">+82%</span></li>
+        <li><span class="loc">📍 인천 서구<small>최근 30일 211건 (직전 123건)</small></span><span class="up">+71%</span></li>
+        <li><span class="loc">📍 평택시<small>최근 30일 164건 (직전 106건)</small></span><span class="up">+55%</span></li>
+      </ul>
+    </section>
+  </div>
+</div>
+</body>
+</html>
