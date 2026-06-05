@@ -124,8 +124,8 @@ describe('contractDateWindows', () => {
 
 describe('areaBandLabel', () => {
   it('전용면적 구간을 라벨로 매핑', () => {
-    expect(areaBandLabel(45)).toBe('전용 60㎡ 이하');
-    expect(areaBandLabel(59.99)).toBe('전용 60㎡ 이하');
+    expect(areaBandLabel(45)).toBe('전용 60㎡ 미만');
+    expect(areaBandLabel(59.99)).toBe('전용 60㎡ 미만');
     expect(areaBandLabel(84.9)).toBe('전용 60~85㎡');
     expect(areaBandLabel(101)).toBe('전용 85~102㎡');
     expect(areaBandLabel(120)).toBe('전용 102~135㎡');
@@ -195,7 +195,7 @@ export function contractDateWindows(now: Date): {
 }
 
 const AREA_BANDS: { max: number; label: string }[] = [
-  { max: 60, label: '전용 60㎡ 이하' },
+  { max: 60, label: '전용 60㎡ 미만' }, // 예측 술어가 strict `<` 60이므로 "미만"으로 표기(리뷰 반영)
   { max: 85, label: '전용 60~85㎡' },
   { max: 102, label: '전용 85~102㎡' },
   { max: 135, label: '전용 102~135㎡' },
