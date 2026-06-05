@@ -17,16 +17,18 @@ export function kstDayStartUtc(now: Date): Date {
 /** 급증 동네용 계약일 윈도우(최근 30일 / 직전 30일)의 경계.
  *  contractDate는 @db.Date(자정 UTC)이므로 KST 달력 날짜를 자정 UTC로 환산해 계산. */
 export function contractDateWindows(now: Date): {
-  recentStart: Date; // 최근 30일 시작(포함): [recentStart, 오늘+1)  → 30일
-  prevStart: Date; // 직전 30일 시작(포함): [prevStart, prevEnd)   → 30일
-  prevEnd: Date; // = recentStart (인접·비중첩)
+  recentStart: Date; // 최근 30일 시작(포함)
+  recentEnd: Date; // 최근 30일 끝(미포함) = 오늘+1
+  prevStart: Date; // 직전 30일 시작(포함)
+  prevEnd: Date; // 직전 30일 끝(미포함) = recentStart
 } {
   const kst = new Date(now.getTime() + KST_OFFSET_MS);
   const todayUtcMidnight = Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate());
   const day = 24 * 60 * 60 * 1000;
   const recentStart = new Date(todayUtcMidnight - 29 * day);
+  const recentEnd = new Date(todayUtcMidnight + day);
   const prevStart = new Date(todayUtcMidnight - 59 * day);
-  return { recentStart, prevStart, prevEnd: recentStart };
+  return { recentStart, recentEnd, prevStart, prevEnd: recentStart };
 }
 
 const AREA_BANDS: { max: number; label: string }[] = [
@@ -171,11 +173,11 @@ export async function getMarketBriefing(now: Date = new Date()): Promise<MarketB
   ]);
 
   // 3) 급증 동네: 계약일 창 비교
-  const { recentStart, prevStart, prevEnd } = contractDateWindows(now);
+  const { recentStart, recentEnd, prevStart, prevEnd } = contractDateWindows(now);
   const [recentGroups, prevGroups] = await Promise.all([
     prisma.transaction.groupBy({
       by: ['sigunguCode'],
-      where: { dealType: DealType.SALE, contractDate: { gte: recentStart } },
+      where: { dealType: DealType.SALE, contractDate: { gte: recentStart, lt: recentEnd } },
       _count: { _all: true },
     }),
     prisma.transaction.groupBy({

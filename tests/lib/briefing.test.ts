@@ -27,6 +27,10 @@ describe('contractDateWindows', () => {
     expect(w.prevStart.toISOString().slice(0, 10)).toBe('2026-04-07');
     expect(w.recentStart > w.prevStart).toBe(true);
     expect(w.prevEnd.toISOString()).toBe(w.recentStart.toISOString());
+    expect(w.recentEnd.toISOString().slice(0, 10)).toBe('2026-06-06');
+    const DAY = 24 * 60 * 60 * 1000;
+    expect((w.recentEnd.getTime() - w.recentStart.getTime()) / DAY).toBe(30);
+    expect((w.prevEnd.getTime() - w.prevStart.getTime()) / DAY).toBe(30);
   });
 });
 

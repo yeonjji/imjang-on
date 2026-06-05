@@ -149,6 +149,7 @@ model Transaction {
   @@index([regionCode, contractDate(sort: Desc)])
   @@index([propertyType, contractDate(sort: Desc)])
   @@index([dealType, createdAt(sort: Desc)])
+  @@index([dealType, contractDate(sort: Desc)])
 }
 
 enum IngestionStatus {
