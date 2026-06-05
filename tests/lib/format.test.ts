@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatBillion, formatArea, formatDate, formatPyeong, sqmToPyeong, formatStatCount } from '@/lib/format';
+import { formatBillion, formatArea, formatDate, formatPyeong, sqmToPyeong, formatStatCount, formatReceiptPeriodShort } from '@/lib/format';
 
 describe('formatBillion (만원 → 한국식 표기)', () => {
   it.each([
@@ -47,5 +47,22 @@ describe('formatStatCount (큰 카운트 → "N만+" 표기)', () => {
     [5_000, '5,000+'],
   ])('formats %s → %s', (input, expected) => {
     expect(formatStatCount(input as number)).toBe(expected);
+  });
+});
+
+const RD = (s: string) => new Date(`${s}T00:00:00.000Z`);
+
+describe('formatReceiptPeriodShort', () => {
+  it('시작·마감을 MM.DD~MM.DD로 표기', () => {
+    expect(formatReceiptPeriodShort(RD('2026-06-10'), RD('2026-06-16'))).toBe('06.10~06.16');
+  });
+  it('둘 다 없으면 일정 미정', () => {
+    expect(formatReceiptPeriodShort(null, null)).toBe('일정 미정');
+  });
+  it('시작만 없으면 -~MM.DD', () => {
+    expect(formatReceiptPeriodShort(null, RD('2026-06-16'))).toBe('-~06.16');
+  });
+  it('마감만 없으면 MM.DD~-', () => {
+    expect(formatReceiptPeriodShort(RD('2026-06-10'), null)).toBe('06.10~-');
   });
 });

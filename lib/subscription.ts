@@ -138,6 +138,23 @@ interface ListRow {
   max_area: number | null;
 }
 
+function mapListRow(r: ListRow): SubscriptionListItem {
+  return {
+    id: String(r.id),
+    name: r.name,
+    category: r.category,
+    regionName: r.region_name,
+    receiptBegin: r.receipt_begin,
+    receiptEnd: r.receipt_end,
+    totalSupply: r.total_supply,
+    unitCount: r.unit_count,
+    minPrice: r.min_price,
+    maxPrice: r.max_price,
+    minArea: r.min_area,
+    maxArea: r.max_area,
+  };
+}
+
 export async function getSubscriptionList(opts: {
   categories?: SubscriptionCategory[];
   sido?: string;
@@ -203,20 +220,7 @@ export async function getSubscriptionList(opts: {
   const total = totalRows[0]?.count ?? 0;
 
   return {
-    rows: rows.map((r) => ({
-      id: String(r.id),
-      name: r.name,
-      category: r.category,
-      regionName: r.region_name,
-      receiptBegin: r.receipt_begin,
-      receiptEnd: r.receipt_end,
-      totalSupply: r.total_supply,
-      unitCount: r.unit_count,
-      minPrice: r.min_price,
-      maxPrice: r.max_price,
-      minArea: r.min_area,
-      maxArea: r.max_area,
-    })),
+    rows: rows.map(mapListRow),
     total,
     totalPages: Math.max(1, Math.ceil(total / perPage)),
     page,
@@ -242,4 +246,59 @@ export async function getSubscriptionLatLng(
     WHERE id = ${id} AND location IS NOT NULL
   `;
   return rows[0] ?? null;
+}
+
+export interface NearbySubscriptionsResult {
+  items: SubscriptionListItem[];
+  scopeLabel: string;
+}
+
+/**
+ * 같은 구/군(부족 시 시·도)에서 진행 중·예정 우선, 그다음 최근 마감순으로 청약을 조회.
+ * @param sido    단축 시도 (예: "서울") — SubscriptionNotice.regionName과 동일 표기
+ * @param sigungu 구/군 (예: "강서구"). null이면 곧바로 시·도 범위로 조회
+ */
+export async function getNearbySubscriptions(opts: {
+  sido: string;
+  sigungu: string | null;
+  limit?: number;
+}): Promise<NearbySubscriptionsResult> {
+  const { sido, sigungu, limit = 3 } = opts;
+
+  const run = async (extraWhere: Prisma.Sql): Promise<SubscriptionListItem[]> => {
+    const rows = await prisma.$queryRaw<ListRow[]>(Prisma.sql`
+      SELECT
+        n.id, n.name, n.category,
+        n."regionName" AS region_name,
+        n."receiptBegin" AS receipt_begin,
+        n."receiptEnd" AS receipt_end,
+        n."totalSupply" AS total_supply,
+        COUNT(u.id)::int AS unit_count,
+        MIN(u."topAmount")::int AS min_price,
+        MAX(u."topAmount")::int AS max_price,
+        MIN(u.area)::float AS min_area,
+        MAX(u.area)::float AS max_area
+      FROM "SubscriptionNotice" n
+      LEFT JOIN "SubscriptionUnit" u ON u."noticeId" = n.id
+      WHERE n."regionName" = ${sido}
+      ${extraWhere}
+      GROUP BY n.id
+      ORDER BY (CASE WHEN n."receiptBegin" > CURRENT_DATE OR n."receiptEnd" >= CURRENT_DATE THEN 0 ELSE 1 END),
+               n."receiptEnd" DESC NULLS LAST,
+               n.id DESC
+      LIMIT ${limit}
+    `);
+    return rows.map(mapListRow);
+  };
+
+  // LH 사전청약 공고는 address가 null이라 구/군 매칭에서 빠지고 시·도 폴백으로만 잡힌다.
+  if (sigungu) {
+    const items = await run(
+      Prisma.sql`AND (n.address ILIKE ${`% ${sigungu} %`} OR n.address ILIKE ${`% ${sigungu}`})`,
+    );
+    if (items.length > 0) return { items, scopeLabel: sigungu };
+  }
+
+  const items = await run(Prisma.empty);
+  return { items, scopeLabel: sido };
 }

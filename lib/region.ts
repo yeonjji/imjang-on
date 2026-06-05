@@ -21,6 +21,14 @@ const SIDO_LIST: { code: string; sido: string; fullName: string }[] = [
   { code: '4300000000', sido: '충북', fullName: '충청북도' },
 ];
 
+/** 행정구역 코드 앞 2자리로 시·도 단축명(SubscriptionNotice.regionName과 동일 표기)을 반환. */
+export function shortSidoFromRegionCode(
+  regionCode: string | null | undefined,
+): string | null {
+  if (!regionCode || regionCode.length < 2) return null;
+  return PREFIX_TO_SIDO[regionCode.slice(0, 2)] ?? null;
+}
+
 export function getSidoList(): Promise<{ code: string; sido: string; fullName: string }[]> {
   return Promise.resolve(SIDO_LIST);
 }
