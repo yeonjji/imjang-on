@@ -629,3 +629,78 @@ model Pharmacy {
   updatedAt DateTime @updatedAt
   @@index([sigunguCode])
 }
+
+enum SubscriptionSource {
+  APPLYHOME
+  LH_PRESUB
+}
+
+enum SubscriptionCategory {
+  APT
+  OFFICETEL_ETC
+  REMNANT
+  PUB_PRIV_RENT
+  ARBITRARY
+  LH_PRESUB
+}
+
+model SubscriptionNotice {
+  id       BigInt               @id @default(autoincrement())
+  source   SubscriptionSource
+  category SubscriptionCategory
+  sourceKey String              @db.VarChar(120)
+
+  houseManageNo String? @db.VarChar(40)
+  pblancNo      String? @db.VarChar(40)
+  panId         String? @db.VarChar(30)
+  origNoticeKey String? @db.VarChar(30)
+
+  name        String  @db.VarChar(200)
+  status      String? @db.VarChar(20)
+  regionCode  String? @db.VarChar(10)
+  regionName  String? @db.VarChar(60)
+  address     String? @db.VarChar(256)
+  totalSupply Int?
+
+  noticeDate    DateTime? @db.Date
+  receiptBegin  DateTime? @db.Date
+  receiptEnd    DateTime? @db.Date
+  winnerDate    DateTime? @db.Date
+  contractBegin DateTime? @db.Date
+  contractEnd   DateTime? @db.Date
+  moveInYm      String?   @db.VarChar(6)
+
+  homepage    String? @db.VarChar(256)
+  noticeUrl   String? @db.VarChar(300)
+  developer   String? @db.VarChar(200)
+  constructor String? @db.VarChar(200)
+  tel         String? @db.VarChar(30)
+
+  location Unsupported("geography(Point,4326)")?
+  rawJson  Json
+
+  updatedAt DateTime @updatedAt
+  units     SubscriptionUnit[]
+
+  @@unique([source, sourceKey])
+  @@index([category, noticeDate(sort: Desc)])
+  @@index([source, status])
+  @@index([regionCode])
+}
+
+model SubscriptionUnit {
+  id       BigInt @id @default(autoincrement())
+  noticeId BigInt
+  notice   SubscriptionNotice @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+
+  modelNo       String?  @db.VarChar(4)
+  houseType     String?  @db.VarChar(20)
+  area          Decimal? @db.Decimal(10, 4)
+  generalSupply Int?
+  specialSupply Int?
+  topAmount     Int?
+  rawJson       Json
+
+  @@unique([noticeId, modelNo, houseType])
+  @@index([noticeId])
+}
