@@ -20,7 +20,9 @@ export function parseFlexibleDate(raw: string | null | undefined): Date | null {
   const m = Number(digits.slice(4, 6));
   const d = Number(digits.slice(6, 8));
   if (m < 1 || m > 12 || d < 1 || d > 31) return null;
-  return new Date(Date.UTC(y, m - 1, d));
+  const result = new Date(Date.UTC(y, m - 1, d));
+  if (result.getUTCMonth() !== m - 1 || result.getUTCDate() !== d) return null;
+  return result;
 }
 
 // "2023.10.16 10:00 ~ 2023.10.17 17:00" → { begin, end }

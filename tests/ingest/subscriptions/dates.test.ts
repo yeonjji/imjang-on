@@ -19,6 +19,9 @@ describe('parseFlexibleDate', () => {
   it('오타 포맷 "202306.29" 는 null (방어)', () => {
     expect(parseFlexibleDate('202306.29')).toBeNull();
   });
+  it('불가능한 날짜(2월 30일)는 null', () => {
+    expect(parseFlexibleDate('20230230')).toBeNull();
+  });
 });
 
 describe('parseScheduleRange', () => {
@@ -31,5 +34,10 @@ describe('parseScheduleRange', () => {
     const r = parseScheduleRange('');
     expect(r.begin).toBeNull();
     expect(r.end).toBeNull();
+  });
+  it('구분자 없는 단일 날짜는 begin과 end가 같다', () => {
+    const r = parseScheduleRange('2023.10.16 10:00');
+    expect(r.begin?.toISOString().slice(0, 10)).toBe('2023-10-16');
+    expect(r.end?.toISOString().slice(0, 10)).toBe('2023-10-16');
   });
 });
