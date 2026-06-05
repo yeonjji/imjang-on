@@ -17,6 +17,7 @@
 | 항목 | 결정 |
 |---|---|
 | "오늘" 정의 | **수집일 = `Transaction.createdAt`이 오늘(KST)** 인 거래. 당일 0건이면 `createdAt` 최신 날짜로 폴백하고 기준일을 "○월 ○일 수집 기준"으로 표기 |
+| 스키마 전제 | `Transaction`에 `createdAt` 없음 → **신규 컬럼 추가 필요**(방향 A 확정). `createdAt DateTime @default(now())` + 기존 행은 `COALESCE(registerDate, contractDate)`로 백필. upsert는 create 시에만 now()를 찍고 update 시 유지 → "최초 수집일" = 수집일. 데이터는 누적 보관(일일 리셋 없음) |
 | 거래 유형 | **매매(`dealType = 'SALE'`)만** |
 | 지역 단위 | **시군구**(`Region.level = 2`), `sigunguCode`로 그룹핑 |
 | v1 위젯 | ① 오늘의 실거래 한눈에 ② 인기 동네 TOP5 ③ 거래량 급증 동네 |
