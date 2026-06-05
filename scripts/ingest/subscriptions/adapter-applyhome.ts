@@ -91,6 +91,10 @@ export async function fetchApplyhomeCategory(
     const { data, totalCount } = await fetchOdcloud(cfg.detailOp, { page, perPage: PER });
     for (const row of data) {
       const notice = normalizeNotice(row as Record<string, unknown>, cfg);
+      if (!notice.houseManageNo || !notice.pblancNo) {
+        logger.warn({ category: cfg.category, sourceKey: notice.sourceKey }, 'skip notice missing id');
+        continue;
+      }
       const units = await fetchUnits(cfg, notice.houseManageNo, notice.pblancNo);
       out.push({ notice, units });
     }
@@ -107,17 +111,18 @@ async function fetchUnits(
   pblancNo: string | null,
 ): Promise<NormalizedUnit[]> {
   if (!houseManageNo || !pblancNo) return [];
+  const PER = 100;
   const units: NormalizedUnit[] = [];
   let page = 1;
   while (true) {
     const { data, totalCount } = await fetchOdcloud(cfg.mdlOp, {
       page,
-      perPage: 100,
+      perPage: PER,
       'cond[HOUSE_MANAGE_NO::EQ]': houseManageNo,
       'cond[PBLANC_NO::EQ]': pblancNo,
     });
     for (const row of data) units.push(normalizeUnit(row as Record<string, unknown>));
-    if (page * 100 >= totalCount || data.length === 0) break;
+    if (page * PER >= totalCount || data.length === 0) break;
     page++;
   }
   return units;

@@ -55,5 +55,6 @@ describe('normalizeUnit (APT vs urbty 필드 차이)', () => {
     expect(u.area).toBeCloseTo(Number(row.EXCLUSE_AR));
     expect(u.generalSupply).toBe(Number(row.SUPLY_HSHLDCO));
     expect(u.topAmount).toBe(Number(String(row.SUPLY_AMOUNT).replace(/,/g, '')));
+    expect(u.specialSupply).toBeNull();
   });
 });
