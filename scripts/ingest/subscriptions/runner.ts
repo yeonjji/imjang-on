@@ -65,22 +65,25 @@ async function runOne(key: SubscriptionSourceKey): Promise<number> {
 }
 
 async function main() {
-  const { sources } = parseArgs();
-  logger.info({ sources }, 'subscription ingest start');
-  let total = 0;
-  let failed = 0;
-  for (const key of sources) {
-    try {
-      total += await runOne(key);
-    } catch (err) {
-      failed++;
-      logger.error({ err, key }, 'subscription source failed');
+  try {
+    const { sources } = parseArgs();
+    logger.info({ sources }, 'subscription ingest start');
+    let total = 0;
+    let failed = 0;
+    for (const key of sources) {
+      try {
+        total += await runOne(key);
+      } catch (err) {
+        failed++;
+        logger.error({ err, key }, 'subscription source failed');
+      }
     }
+    const summary = { total, failed, sources };
+    logger.info(summary, 'subscription ingest done');
+    await notify(failed === 0 ? 'info' : 'warn', 'subscription ingest complete', summary);
+  } finally {
+    await prisma.$disconnect();
   }
-  const summary = { total, failed, sources };
-  logger.info(summary, 'subscription ingest done');
-  await notify(failed === 0 ? 'info' : 'warn', 'subscription ingest complete', summary);
-  await prisma.$disconnect();
 }
 
 main().catch((err) => {
