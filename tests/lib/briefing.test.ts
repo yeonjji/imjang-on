@@ -1,11 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import {
   kstDayStartUtc,
   contractDateWindows,
   areaBandLabel,
   regionLabel,
   buildHashtags,
+  getMarketBriefing,
 } from '@/lib/briefing';
+import { prisma } from '@/lib/db';
+import { PropertyType, DealType } from '@prisma/client';
+import { createHash } from 'node:crypto';
 
 describe('kstDayStartUtc', () => {
   it('KST 자정의 UTC 시각(전날 15:00Z)을 반환', () => {
@@ -61,5 +65,71 @@ describe('buildHashtags', () => {
       '#전용60~85㎡ 최다',
       '#화성시',
     ]);
+  });
+});
+
+const SGG_HOT = '99901';
+const SGG_LOW = '99902';
+const RC_HOT = '9990100000';
+const RC_LOW = '9990200000';
+let hotPropId: bigint;
+let lowPropId: bigint;
+const NOW = new Date(); // createdAt = now() → '오늘' 창에 잡힘
+
+beforeAll(async () => {
+  await prisma.region.upsert({
+    where: { code: RC_HOT },
+    update: {},
+    create: { code: RC_HOT, sido: '경기', sigungu: '시드시', fullName: '경기도 시드시', level: 2, sourceVersion: 'test' },
+  });
+  await prisma.region.upsert({
+    where: { code: RC_LOW },
+    update: {},
+    create: { code: RC_LOW, sido: '전남', sigungu: '저가군', fullName: '전라남도 저가군', level: 2, sourceVersion: 'test' },
+  });
+  const hot = await prisma.property.create({ data: { propertyType: PropertyType.APARTMENT, name: '시드아파트', nameNorm: '시드아파트', regionCode: RC_HOT, address: '경기도 시드시 1' } });
+  const low = await prisma.property.create({ data: { propertyType: PropertyType.APARTMENT, name: '저가아파트', nameNorm: '저가아파트', regionCode: RC_LOW, address: '전라남도 저가군 1' } });
+  hotPropId = hot.id;
+  lowPropId = low.id;
+
+  const base = (over: Record<string, unknown>, key: string) => ({
+    propertyType: PropertyType.APARTMENT,
+    dealType: DealType.SALE,
+    contractDate: new Date(),
+    exclusiveArea: 84.5, // → '전용 60~85㎡'
+    source: 'test',
+    rawHash: createHash('sha256').update(`brief-${key}`).digest('hex'),
+    ...over,
+  });
+
+  await prisma.transaction.createMany({
+    data: [
+      base({ propertyId: hotPropId, regionCode: RC_HOT, sigunguCode: SGG_HOT, dealAmount: 542_000 }, 'h1') as any,
+      base({ propertyId: hotPropId, regionCode: RC_HOT, sigunguCode: SGG_HOT, dealAmount: 100_000 }, 'h2') as any,
+      base({ propertyId: hotPropId, regionCode: RC_HOT, sigunguCode: SGG_HOT, dealAmount: 120_000 }, 'h3') as any,
+      base({ propertyId: lowPropId, regionCode: RC_LOW, sigunguCode: SGG_LOW, dealAmount: 2_100 }, 'l1') as any,
+    ],
+  });
+});
+
+afterAll(async () => {
+  await prisma.transaction.deleteMany({ where: { sigunguCode: { in: [SGG_HOT, SGG_LOW] } } });
+  await prisma.property.deleteMany({ where: { id: { in: [hotPropId, lowPropId] } } });
+  await prisma.region.deleteMany({ where: { code: { in: [RC_HOT, RC_LOW] } } });
+  await prisma.$disconnect();
+});
+
+describe('getMarketBriefing 집계', () => {
+  it('오늘 수집된 매매를 집계하고 최고가/최저가/최다지역을 반환', async () => {
+    const b = await getMarketBriefing(NOW);
+    expect(b).not.toBeNull();
+    expect(b!.summary.txCount).toBeGreaterThanOrEqual(4);
+    expect(b!.summary.highest?.amountManwon).toBe(542_000);
+    expect(b!.summary.highest?.regionLabel).toBe('시드시');
+    expect(b!.summary.lowest?.amountManwon).toBe(2_100);
+    expect(b!.summary.topRegion?.label).toBe('시드시');
+    expect(b!.summary.topAreaBand?.label).toBe('전용 60~85㎡');
+    expect(b!.popularRegions.some((r) => r.label === '시드시')).toBe(true);
+    expect(b!.hashtags).toContain('#오늘의실거래');
   });
 });
