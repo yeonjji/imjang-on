@@ -293,7 +293,9 @@ export async function getNearbySubscriptions(opts: {
   };
 
   if (sigungu) {
-    const items = await run(Prisma.sql`AND n.address ILIKE ${`% ${sigungu} %`}`);
+    const items = await run(
+      Prisma.sql`AND (n.address ILIKE ${`% ${sigungu} %`} OR n.address ILIKE ${`% ${sigungu}`})`,
+    );
     if (items.length > 0) return { items, scope: 'sigungu', scopeLabel: sigungu };
   }
 
