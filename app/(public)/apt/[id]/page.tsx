@@ -83,7 +83,7 @@ export default async function AptDetailPage({ params }: Params) {
           </section>
           <AreaComparison id="area" areas={areaSummary} />
           <NearbyPriceComparison id="nearby" items={nearby} slug="apt" />
-          {shortSido && nearbySubs && (
+          {shortSido && nearbySubs && nearbySubs.items.length > 0 && (
             <NearbySubscriptions
               id="subscriptions-nearby"
               items={nearbySubs.items}
