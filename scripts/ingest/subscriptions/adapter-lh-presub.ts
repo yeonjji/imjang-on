@@ -97,6 +97,10 @@ export async function fetchLhPresub(): Promise<NoticeWithUnits[]> {
     const total = Number(rows[0]?.TOTALCOUNT ?? rows.length);
     for (const row of rows) {
       let notice = normalizeLhNotice(row);
+      if (!notice.panId) {
+        logger.warn({ name: notice.name }, 'skip LH notice missing PAN_ID');
+        continue;
+      }
       try {
         if (notice.panId) {
           const detail = await fetchLh(DETAIL_PATH, DETAIL_OP, { PAN_ID: notice.panId });
