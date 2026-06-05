@@ -38,12 +38,12 @@ export function NearbySubscriptions({ id, items, scopeLabel, sido }: NearbySubsc
                 href={`/subscription/${item.id}`}
                 className="flex flex-col gap-1 py-3 transition hover:opacity-80"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 items-center gap-2">
                   <Badge tone={STATUS_TONE[st.status]} className="whitespace-nowrap">
                     {STATUS_LABEL[st.status]}
-                    {dday ? ` ${dday}` : ''}
+                    {dday ? ` · ${dday}` : ''}
                   </Badge>
-                  <span className="break-keep font-bold text-[var(--color-blue-dark)]">
+                  <span className="min-w-0 truncate font-bold text-[var(--color-blue-dark)]">
                     {item.name}
                   </span>
                 </div>
