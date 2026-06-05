@@ -1,0 +1,36 @@
+name: ingest-subscriptions
+
+on:
+  schedule:
+    - cron: '30 18 * * *'
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'apt | urbty | remndr | pblpvt | opt | lh | all'
+        required: true
+        default: 'all'
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        source: ${{ github.event_name == 'workflow_dispatch' && fromJson(format('["{0}"]', inputs.source)) || fromJson('["apt","urbty","remndr","pblpvt","opt","lh"]') }}
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      PUBLIC_DATA_KEY: ${{ secrets.PUBLIC_DATA_KEY }}
+      KAKAO_REST_KEY: ${{ secrets.KAKAO_REST_KEY }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      LOG_LEVEL: info
+      PRISMA_INGEST: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma generate
+      - run: pnpm tsx scripts/ingest/subscriptions/runner.ts --source=${{ matrix.source }}
+        timeout-minutes: 120
