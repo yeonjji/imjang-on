@@ -56,6 +56,12 @@ describe('deriveStatus', () => {
       dday: 0,
     });
   });
+  it('시작일이 미래면 마감일이 없어도 예정', () => {
+    expect(deriveStatus(D('2026-07-01'), null, today).status).toBe('UPCOMING');
+  });
+  it('시작일은 과거인데 마감일이 없으면 마감(보수적)', () => {
+    expect(deriveStatus(D('2026-05-01'), null, today)).toEqual({ status: 'CLOSED', dday: null });
+  });
 });
 
 describe('ddayLabel', () => {

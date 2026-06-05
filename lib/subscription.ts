@@ -161,13 +161,13 @@ export async function getSubscriptionList(opts: {
     ${sido ? Prisma.sql`AND n."regionName" = ${sido}` : Prisma.empty}
     ${
       status === 'OPEN'
-        ? Prisma.sql`AND n."receiptBegin" <= CURRENT_DATE AND n."receiptEnd" >= CURRENT_DATE`
+        ? Prisma.sql`AND (n."receiptBegin" IS NULL OR n."receiptBegin" <= CURRENT_DATE) AND n."receiptEnd" >= CURRENT_DATE`
         : Prisma.empty
     }
     ${status === 'UPCOMING' ? Prisma.sql`AND n."receiptBegin" > CURRENT_DATE` : Prisma.empty}
     ${
       status === 'CLOSED'
-        ? Prisma.sql`AND (n."receiptEnd" < CURRENT_DATE OR n."receiptEnd" IS NULL)`
+        ? Prisma.sql`AND (n."receiptBegin" IS NULL OR n."receiptBegin" <= CURRENT_DATE) AND (n."receiptEnd" < CURRENT_DATE OR n."receiptEnd" IS NULL)`
         : Prisma.empty
     }
   `;
