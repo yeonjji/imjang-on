@@ -10,26 +10,23 @@ export function kstDayStartUtc(now: Date): Date {
   return new Date(Date.UTC(y, m, d) - KST_OFFSET_MS);
 }
 
-/** 급증 동네용 계약일 윈도우(최근 30일 / 직전 30일)의 KST 날짜 경계.
- *  기준점: 오늘 KST 자정 + 1일 (= 오늘 KST 끝, 미포함 상한)
- *  최근 30일: [기준 - 29일, 기준)  → recentStart
- *  직전 30일: [기준 - 59일, 기준 - 29일)  → prevStart
- */
+/** 급증 동네용 계약일 윈도우(최근 30일 / 직전 30일)의 경계.
+ *  contractDate는 @db.Date(자정 UTC)이므로 KST 달력 날짜를 자정 UTC로 환산해 계산. */
 export function contractDateWindows(now: Date): {
-  recentStart: Date; // 최근 30일 시작(포함)
-  prevStart: Date; // 직전 30일 시작(포함)
-  prevEnd: Date; // 직전 30일 끝(= recentStart, 미포함)
+  recentStart: Date; // 최근 30일 시작(포함): [recentStart, 오늘+1)  → 30일
+  prevStart: Date; // 직전 30일 시작(포함): [prevStart, prevEnd)   → 30일
+  prevEnd: Date; // = recentStart (인접·비중첩)
 } {
+  const kst = new Date(now.getTime() + KST_OFFSET_MS);
+  const todayUtcMidnight = Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate());
   const day = 24 * 60 * 60 * 1000;
-  // 오늘 KST 자정 + 1일 = 내일 KST 자정 = 오늘 KST 전체를 포함하는 상한
-  const tomorrowKstStart = new Date(kstDayStartUtc(now).getTime() + day);
-  const recentStart = new Date(tomorrowKstStart.getTime() - 29 * day);
-  const prevStart = new Date(tomorrowKstStart.getTime() - 59 * day);
+  const recentStart = new Date(todayUtcMidnight - 29 * day);
+  const prevStart = new Date(todayUtcMidnight - 59 * day);
   return { recentStart, prevStart, prevEnd: recentStart };
 }
 
 const AREA_BANDS: { max: number; label: string }[] = [
-  { max: 60, label: '전용 60㎡ 이하' },
+  { max: 60, label: '전용 60㎡ 미만' },
   { max: 85, label: '전용 60~85㎡' },
   { max: 102, label: '전용 85~102㎡' },
   { max: 135, label: '전용 102~135㎡' },
@@ -37,7 +34,9 @@ const AREA_BANDS: { max: number; label: string }[] = [
 ];
 
 export function areaBandLabel(sqm: number): string {
-  return AREA_BANDS.find((b) => sqm < b.max)!.label;
+  const band = AREA_BANDS.find((b) => sqm < b.max);
+  if (!band) throw new Error(`areaBandLabel: unexpected sqm value ${sqm}`);
+  return band.label;
 }
 
 /** "경기도 수원시 영통구" → "수원시 영통구" (시·도 토큰 제거). 단일 토큰은 그대로. */

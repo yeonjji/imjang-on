@@ -22,13 +22,14 @@ describe('contractDateWindows', () => {
     expect(w.recentStart.toISOString().slice(0, 10)).toBe('2026-05-07');
     expect(w.prevStart.toISOString().slice(0, 10)).toBe('2026-04-07');
     expect(w.recentStart > w.prevStart).toBe(true);
+    expect(w.prevEnd.toISOString()).toBe(w.recentStart.toISOString());
   });
 });
 
 describe('areaBandLabel', () => {
   it('전용면적 구간을 라벨로 매핑', () => {
-    expect(areaBandLabel(45)).toBe('전용 60㎡ 이하');
-    expect(areaBandLabel(59.99)).toBe('전용 60㎡ 이하');
+    expect(areaBandLabel(45)).toBe('전용 60㎡ 미만');
+    expect(areaBandLabel(59.99)).toBe('전용 60㎡ 미만');
     expect(areaBandLabel(84.9)).toBe('전용 60~85㎡');
     expect(areaBandLabel(101)).toBe('전용 85~102㎡');
     expect(areaBandLabel(120)).toBe('전용 102~135㎡');
@@ -53,9 +54,12 @@ describe('buildHashtags', () => {
       topAreaLabel: '전용 60~85㎡',
       highestRegionLabel: '강남구',
     });
-    expect(tags).toContain('#오늘의실거래');
-    expect(tags).toContain('#매매 2,431건');
-    expect(tags).toContain('#최고가 강남구');
-    expect(tags).toContain('#화성시');
+    expect(tags).toEqual([
+      '#오늘의실거래',
+      '#매매 2,431건',
+      '#최고가 강남구',
+      '#전용60~85㎡ 최다',
+      '#화성시',
+    ]);
   });
 });
