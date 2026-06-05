@@ -76,7 +76,7 @@ URL 쿼리 기반(서버 컴포넌트), 필터 변경 시 `router.push`. `/list`
 구조: Hero → 2컬럼(본문 + 320px 사이드바).
 
 ### Hero (`subscription-hero`)
-공고명 · 유형 배지 · 지역 · 상태/D-day · 시행(`developer`)/시공(`constructor`).
+공고명 · 유형 배지 · 지역 · 상태/D-day · 시행사(`developer`). (`constructor`는 원천 데이터가 항상 null이라 미노출.)
 
 ### 본문 섹션
 1. **공고 개요 + 일정 타임라인** (`schedule-timeline`): 공고일 → 접수시작 → 접수마감 → 당첨발표 → 계약(시작~종료) → 입주예정(`moveInYm`). 날짜 없는 단계는 `-`/숨김.
