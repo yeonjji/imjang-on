@@ -1,4 +1,5 @@
 import type { SubscriptionCategory } from '@prisma/client';
+import { formatBillion, formatPyeong } from '@/lib/format';
 
 // ---- 카테고리 ----
 export interface CategoryMeta {
@@ -80,4 +81,17 @@ export function ddayLabel(d: DerivedStatus): string | null {
   if (d.status === 'OPEN') return d.dday === 0 ? '오늘 마감' : `D-${d.dday}`;
   if (d.status === 'UPCOMING') return d.dday === 0 ? '오늘 시작' : `${d.dday}일 후`;
   return null;
+}
+
+// ---- 카드 집계 포맷 ----
+export function formatPriceRange(min: number | null, max: number | null): string {
+  if (min == null || max == null) return '-';
+  return min === max ? formatBillion(min) : `${formatBillion(min)}~${formatBillion(max)}`;
+}
+
+export function formatAreaRange(min: number | null, max: number | null): string {
+  if (min == null || max == null) return '-';
+  const a = formatPyeong(min);
+  const b = formatPyeong(max);
+  return a === b ? a : `${a}~${b}`;
 }

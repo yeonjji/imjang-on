@@ -4,6 +4,8 @@ import {
   slugsToCategories,
   deriveStatus,
   ddayLabel,
+  formatPriceRange,
+  formatAreaRange,
 } from '@/lib/subscription';
 
 const D = (s: string) => new Date(`${s}T00:00:00.000Z`);
@@ -67,5 +69,30 @@ describe('ddayLabel', () => {
   });
   it('마감은 라벨 없음', () => {
     expect(ddayLabel({ status: 'CLOSED', dday: null })).toBeNull();
+  });
+});
+
+describe('formatPriceRange (만원 단위 topAmount)', () => {
+  it('동일 값이면 단일 표기', () => {
+    expect(formatPriceRange(50000, 50000)).toBe('5억');
+  });
+  it('범위면 최소~최대', () => {
+    expect(formatPriceRange(50000, 90000)).toBe('5억~9억');
+  });
+  it('null이 섞이면 -', () => {
+    expect(formatPriceRange(null, 90000)).toBe('-');
+    expect(formatPriceRange(null, null)).toBe('-');
+  });
+});
+
+describe('formatAreaRange (㎡ → 평)', () => {
+  it('동일 값이면 단일 표기', () => {
+    expect(formatAreaRange(84.5, 84.5)).toBe('26평');
+  });
+  it('범위면 최소~최대', () => {
+    expect(formatAreaRange(59, 114)).toBe('18평~34평');
+  });
+  it('null이 섞이면 -', () => {
+    expect(formatAreaRange(null, 84)).toBe('-');
   });
 });
