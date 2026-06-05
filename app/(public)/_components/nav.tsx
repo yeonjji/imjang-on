@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { Menu } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { SearchInput } from './search-input';
 import { useState } from 'react';
 import { SoonModal } from './soon-modal';
@@ -29,10 +28,8 @@ export function Nav() {
           <div className="hidden gap-6 text-[15px] font-semibold text-[var(--color-muted)] md:flex md:items-center">
             <Link href="/">홈</Link>
             <Link href="/list">실거래가</Link>
+            <Link href="/subscription">청약</Link>
             <LifeDropdown onSoon={(topic) => setSoonOpen(topic)} />
-            <button onClick={() => setSoonOpen('청약')} className="inline-flex items-center gap-1.5">
-              청약 <Badge tone="gray">Soon</Badge>
-            </button>
           </div>
 
           <div className="ml-auto hidden w-48 md:block lg:w-64">
