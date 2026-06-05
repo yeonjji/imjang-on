@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sidoPrefix, sidoFromPrefix } from '@/lib/region';
+import { sidoPrefix, sidoFromPrefix, shortSidoFromRegionCode } from '@/lib/region';
 
 describe('sidoPrefix', () => {
   it('짧은 시도명', () => {
@@ -32,5 +32,21 @@ describe('sidoFromPrefix', () => {
   it('미존재 prefix', () => {
     expect(sidoFromPrefix('99')).toBeUndefined();
     expect(sidoFromPrefix('')).toBeUndefined();
+  });
+});
+
+describe('shortSidoFromRegionCode', () => {
+  it('서울 코드(11..)를 서울로 매핑', () => {
+    expect(shortSidoFromRegionCode('1168010100')).toBe('서울');
+  });
+  it('경기 코드(41..)를 경기로 매핑', () => {
+    expect(shortSidoFromRegionCode('4113510300')).toBe('경기');
+  });
+  it('null/undefined는 null', () => {
+    expect(shortSidoFromRegionCode(null)).toBeNull();
+    expect(shortSidoFromRegionCode(undefined)).toBeNull();
+  });
+  it('매칭 안 되는 prefix는 null', () => {
+    expect(shortSidoFromRegionCode('9900000000')).toBeNull();
   });
 });
