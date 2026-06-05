@@ -49,4 +49,7 @@ describe('shortSidoFromRegionCode', () => {
   it('매칭 안 되는 prefix는 null', () => {
     expect(shortSidoFromRegionCode('9900000000')).toBeNull();
   });
+  it('빈 문자열은 null', () => {
+    expect(shortSidoFromRegionCode('')).toBeNull();
+  });
 });

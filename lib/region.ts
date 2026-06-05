@@ -26,9 +26,7 @@ export function shortSidoFromRegionCode(
   regionCode: string | null | undefined,
 ): string | null {
   if (!regionCode || regionCode.length < 2) return null;
-  const prefix = regionCode.slice(0, 2);
-  const found = SIDO_LIST.find((s) => s.code.slice(0, 2) === prefix);
-  return found?.sido ?? null;
+  return PREFIX_TO_SIDO[regionCode.slice(0, 2)] ?? null;
 }
 
 export function getSidoList(): Promise<{ code: string; sido: string; fullName: string }[]> {
