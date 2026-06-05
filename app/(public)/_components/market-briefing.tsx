@@ -4,7 +4,7 @@ import type { MarketBriefing } from '@/lib/briefing';
 
 export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }) {
   if (!briefing) return null;
-  const { summary, popularRegions, surgeRegions, hashtags, refDate } = briefing;
+  const { summary, popularRegions, surgeRegions, hashtags, refDate, isFallback } = briefing;
   const maxCount = popularRegions[0]?.count ?? 1;
   const [, mm, dd] = refDate.split('-');
 
@@ -13,7 +13,7 @@ export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <h2 className="text-xl font-black tracking-tight md:text-[22px]">📈 오늘의 부동산 한입 브리핑</h2>
         <span className="text-[13px] text-[var(--color-muted)]">
-          {Number(mm)}월 {Number(dd)}일 수집 기준 · 매매
+          {Number(mm)}월 {Number(dd)}일{isFallback ? ' 최근' : ''} 수집 기준 · 매매
         </span>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -55,7 +55,7 @@ export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }
               {popularRegions.map((r, i) => (
                 <li key={r.code} className="flex items-center gap-3 border-b border-dashed border-[var(--color-line)] py-2.5 last:border-0">
                   <span className={`grid h-[22px] w-[22px] flex-none place-items-center rounded-md text-xs font-black ${i === 0 ? 'bg-[var(--color-blue)] text-white' : 'bg-[var(--color-soft)] text-[var(--color-blue-dark)]'}`}>{i + 1}</span>
-                  <Link href={`/region/${r.code}`} className="w-[88px] flex-none text-sm font-bold hover:underline">{r.label}</Link>
+                  <Link href={`/region/${r.code}`} className="w-[88px] flex-none truncate text-sm font-bold hover:underline">{r.label}</Link>
                   <span className="h-2 flex-1 overflow-hidden rounded-full bg-[var(--color-sky-soft)]">
                     <span className="block h-full rounded-full bg-gradient-to-r from-[var(--color-blue)] to-[var(--color-sky)]" style={{ width: `${Math.max(8, (r.count / maxCount) * 100)}%` }} />
                   </span>
