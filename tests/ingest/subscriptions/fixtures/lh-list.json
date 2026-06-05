@@ -1,0 +1,85 @@
+[
+  {
+    "dsSch": [
+      {
+        "PAN_ED_DT": "20241231",
+        "PG_SZ": "10",
+        "PAN_ST_DT": "20231001",
+        "PAGE": "1"
+      }
+    ]
+  },
+  {
+    "dsList": [
+      {
+        "PAN_NT_ST_DT": "2024.01.04",
+        "PAN_ID": "0000000061",
+        "UPD_DTTM": "2024-01-03 14:51:14.0",
+        "AIS_TP_CD_NM": "선택형(6년) 공공임대주택",
+        "CNP_CD_NM": "전국",
+        "AIS_TP_CD": "50",
+        "RNUM": "1",
+        "DTL_URL": "https://apply.lh.or.kr/lhapply/apply/bfh/slpa/slpaInfo.do?panId=0000000061&aisTpCd=50&mi=1349",
+        "PAN_KD_CD": "01",
+        "CLSG_DT": "2024.01.25",
+        "OTXT_PAN_ID": "0000000061",
+        "UPP_AIS_TP_CD": "45",
+        "PAN_NM": "뉴:홈 4차 사전청약 선택형(6년) 공공임대주택 입주자모집공고",
+        "PAN_KD_CD_NM": "일반공고",
+        "CNP_CD": "",
+        "PAN_SS": "접수마감",
+        "UPP_AIS_TP_NM": "사전청약",
+        "DTL_URL_MOB": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancInfo.do?panId=0000000061&aisTpCd=50&mi=1349",
+        "TOTALCOUNT": "3"
+      },
+      {
+        "PAN_NT_ST_DT": "2023.12.29",
+        "PAN_ID": "0000000059",
+        "UPD_DTTM": "2024-01-02 11:48:13.0",
+        "AIS_TP_CD_NM": "일반형 공공분양주택",
+        "CNP_CD_NM": "전국",
+        "AIS_TP_CD": "46",
+        "RNUM": "3",
+        "DTL_URL": "https://apply.lh.or.kr/lhapply/apply/bfh/slpa/slpaInfo.do?panId=0000000059&aisTpCd=46&mi=1349",
+        "PAN_KD_CD": "01",
+        "CLSG_DT": "2024.01.25",
+        "OTXT_PAN_ID": "0000000059",
+        "UPP_AIS_TP_CD": "45",
+        "PAN_NM": "뉴:홈 4차 사전청약 일반형 공공분양주택 입주자모집공고",
+        "PAN_KD_CD_NM": "일반공고",
+        "CNP_CD": "",
+        "PAN_SS": "접수마감",
+        "UPP_AIS_TP_NM": "사전청약",
+        "DTL_URL_MOB": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancInfo.do?panId=0000000059&aisTpCd=46&mi=1349",
+        "TOTALCOUNT": "3"
+      },
+      {
+        "PAN_NT_ST_DT": "2023.09.26",
+        "PAN_ID": "0000000054",
+        "UPD_DTTM": "2023-09-26 11:12:12.0",
+        "AIS_TP_CD_NM": "선택형(6년) 공공임대주택",
+        "CNP_CD_NM": "전국",
+        "AIS_TP_CD": "50",
+        "RNUM": "5",
+        "DTL_URL": "https://apply.lh.or.kr/lhapply/apply/bfh/slpa/slpaInfo.do?panId=0000000054&aisTpCd=50&mi=1349",
+        "PAN_KD_CD": "02",
+        "CLSG_DT": "2023.10.19",
+        "OTXT_PAN_ID": "0000000053",
+        "UPP_AIS_TP_CD": "45",
+        "PAN_NM": "[정정공고]2023년 9월 사전청약 선택형(6년) 공공임대주택 입주자모집공고",
+        "PAN_KD_CD_NM": "정정공고",
+        "CNP_CD": "",
+        "PAN_SS": "접수마감",
+        "UPP_AIS_TP_NM": "사전청약",
+        "DTL_URL_MOB": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancInfo.do?panId=0000000054&aisTpCd=50&mi=1349",
+        "TOTALCOUNT": "9"
+      }
+    ],
+    "resHeader": [
+      {
+        "RS_DTTM": "20260605023623",
+        "SS_CODE": "Y"
+      }
+    ]
+  }
+]
