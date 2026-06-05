@@ -1,0 +1,143 @@
+[
+  {
+    "dsSch": [
+      {
+        "PAN_ID": "0000000061"
+      }
+    ]
+  },
+  {
+    "dsCtrtPlcNm": [
+      {
+        "ACP_TRG_DST_CTS": "접수대상 지구",
+        "ETC_GUD_CTS": "접수처안내사항",
+        "SIL_OFC_NM": "접수처",
+        "SIL_OFC_TLNO": "접수처 전화번호",
+        "ADR": "주소",
+        "TOTALCOUNT": "전체결과수"
+      }
+    ],
+    "dsEtcInfoNm": [
+      {
+        "ETC_FCTS": "기타사항",
+        "PAN_DTL_CTS": "공고내용",
+        "TOTALCOUNT": "전체결과수"
+      }
+    ],
+    "dsAhflInfoNm": [
+      {
+        "AHFL_URL": "다운로드",
+        "SL_PAN_AHFL_DS_CD_NM": "파일구분명",
+        "CMN_AHFL_NM": "첨부파일명",
+        "TOTALCOUNT": "전체결과수"
+      }
+    ],
+    "dsCtrtPlc": [
+      {
+        "ACP_TRG_DST_CTS": "고양창릉",
+        "ETC_GUD_CTS": "* 단, 인터넷 대행 접수는 사전에 방문 예약을 신청한 인터넷 사용 취약자(만65세 이상 고령자 및 장애인)를 대상으로 제한적으로 운영",
+        "SIL_OFC_NM": "고양 현장접수처",
+        "SIL_OFC_TLNO": "고양 현장접수처\n02-381-4007",
+        "ADR": "경기도 고양시 덕양구 삼송동",
+        "TOTALCOUNT": "3"
+      },
+      {
+        "ACP_TRG_DST_CTS": "부천대장",
+        "ETC_GUD_CTS": "* 단, 인터넷 대행 접수는 사전에 방문 예약을 신청한 인터넷 사용 취약자(만65세 이상 고령자 및 장애인)를 대상으로 제한적으로 운영",
+        "SIL_OFC_NM": "가정 현장접수처",
+        "SIL_OFC_TLNO": "가정 현장접수처\n032-566-1810",
+        "ADR": "인천광역시 서구 봉수대로 643",
+        "TOTALCOUNT": "3"
+      },
+      {
+        "ACP_TRG_DST_CTS": "화성동탄2",
+        "ETC_GUD_CTS": "* 단, 인터넷 대행 접수는 사전에 방문 예약을 신청한 인터넷 사용 취약자(만65세 이상 고령자 및 장애인)를 대상으로 제한적으로 운영",
+        "SIL_OFC_NM": "동탄 현장접수처",
+        "SIL_OFC_TLNO": "동탄 현장접수처\n031-8077-7979",
+        "ADR": "경기도 화성시 청계동",
+        "TOTALCOUNT": "3"
+      }
+    ],
+    "dsSplScdl": [
+      {
+        "PRAA_YN": "O",
+        "RMK": "인터넷접수",
+        "PZWR_ANC_DT": "2024.03.22",
+        "HS_SBSC_ACP_TRG_CD_NM": "기관추천 특별공급",
+        "ACP_DTTM": "2024.01.22 10:00 ~ 2024.01.23 17:00",
+        "SPL_SCD_GUD_FCTS": "",
+        "OARA_YN": "O",
+        "GYN_YN": "O",
+        "TOTALCOUNT": "8"
+      },
+      {
+        "PRAA_YN": "O",
+        "RMK": "인터넷접수",
+        "PZWR_ANC_DT": "2024.03.22",
+        "HS_SBSC_ACP_TRG_CD_NM": "신혼부부 특별공급",
+        "ACP_DTTM": "2024.01.22 10:00 ~ 2024.01.23 17:00",
+        "SPL_SCD_GUD_FCTS": "",
+        "OARA_YN": "O",
+        "GYN_YN": "O",
+        "TOTALCOUNT": "8"
+      },
+      {
+        "PRAA_YN": "O",
+        "RMK": "인터넷접수",
+        "PZWR_ANC_DT": "2024.03.22",
+        "HS_SBSC_ACP_TRG_CD_NM": "일반공급(우선)",
+        "ACP_DTTM": "2024.01.24 10:00 ~ 2024.01.25 17:00",
+        "SPL_SCD_GUD_FCTS": "",
+        "OARA_YN": "O",
+        "GYN_YN": "O",
+        "TOTALCOUNT": "8"
+      }
+    ],
+    "dsEtcInfo": [
+      {
+        "ETC_FCTS": "",
+        "PAN_DTL_CTS": "* 금회 사전청약 입주자모집공고일은 2023.01.04.이며, 이는 청약자격(청약신청, 자격조건의 기간, 나이, 세대구성원, 지역우선, 주택소유 등)의 판단기준일이 됩니다.",
+        "TOTALCOUNT": "1"
+      }
+    ],
+    "dsSplScdlNm": [
+      {
+        "PRAA_YN": "해당지역접수여부",
+        "RMK": "신청방법",
+        "PZWR_ANC_DT": "당첨자발표일자",
+        "HS_SBSC_ACP_TRG_CD_NM": "구분",
+        "ACP_DTTM": "신청일시",
+        "SPL_SCD_GUD_FCTS": "공급일정안내사항",
+        "OARA_YN": "타지역접수여부",
+        "GYN_YN": "경기도접수여부",
+        "TOTALCOUNT": "전체결과수"
+      }
+    ],
+    "resHeader": [
+      {
+        "RS_DTTM": "20260605023625",
+        "SS_CODE": "Y"
+      }
+    ],
+    "dsAhflInfo": [
+      {
+        "AHFL_URL": "https://apply.lh.or.kr/lhapply/lhFile.do?fileid=55767014",
+        "SL_PAN_AHFL_DS_CD_NM": "카탈로그",
+        "CMN_AHFL_NM": "뉴홈4차_사전청약_팸플릿_통합형.pdf",
+        "TOTALCOUNT": "3"
+      },
+      {
+        "AHFL_URL": "https://apply.lh.or.kr/lhapply/lhFile.do?fileid=55767004",
+        "SL_PAN_AHFL_DS_CD_NM": "공고문(hwp)",
+        "CMN_AHFL_NM": "뉴홈4차사전청약선택형공공임대주택입주자모집공고문.hwp",
+        "TOTALCOUNT": "3"
+      },
+      {
+        "AHFL_URL": "https://apply.lh.or.kr/lhapply/lhFile.do?fileid=55767003",
+        "SL_PAN_AHFL_DS_CD_NM": "공고문(PDF)",
+        "CMN_AHFL_NM": "뉴홈4차사전청약선택형공공임대주택입주자모집공고문.pdf",
+        "TOTALCOUNT": "3"
+      }
+    ]
+  }
+]

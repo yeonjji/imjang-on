@@ -1,0 +1,37 @@
+{
+  "data": [
+    {
+      "EXCLUSE_AR": "64.2943",
+      "GP": "-",
+      "HOUSE_MANAGE_NO": "2026950052",
+      "MODEL_NO": "01",
+      "PBLANC_NO": "2026950052",
+      "SUBSCRPT_REQST_AMOUNT": "100",
+      "SUPLY_AMOUNT": "47530",
+      "SUPLY_HSHLDCO": 1,
+      "TP": "64A"
+    },
+    {
+      "EXCLUSE_AR": "82.3959",
+      "GP": "-",
+      "HOUSE_MANAGE_NO": "2026950052",
+      "MODEL_NO": "04",
+      "PBLANC_NO": "2026950052",
+      "SUBSCRPT_REQST_AMOUNT": "100",
+      "SUPLY_AMOUNT": "63110",
+      "SUPLY_HSHLDCO": 1,
+      "TP": "82A"
+    },
+    {
+      "EXCLUSE_AR": "67.5546",
+      "GP": "-",
+      "HOUSE_MANAGE_NO": "2026950052",
+      "MODEL_NO": "03",
+      "PBLANC_NO": "2026950052",
+      "SUBSCRPT_REQST_AMOUNT": "100",
+      "SUPLY_AMOUNT": "49540",
+      "SUPLY_HSHLDCO": 1,
+      "TP": "67B"
+    }
+  ]
+}
