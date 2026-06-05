@@ -250,7 +250,6 @@ export async function getSubscriptionLatLng(
 
 export interface NearbySubscriptionsResult {
   items: SubscriptionListItem[];
-  scope: 'sigungu' | 'sido';
   scopeLabel: string;
 }
 
@@ -292,13 +291,14 @@ export async function getNearbySubscriptions(opts: {
     return rows.map(mapListRow);
   };
 
+  // LH 사전청약 공고는 address가 null이라 구/군 매칭에서 빠지고 시·도 폴백으로만 잡힌다.
   if (sigungu) {
     const items = await run(
       Prisma.sql`AND (n.address ILIKE ${`% ${sigungu} %`} OR n.address ILIKE ${`% ${sigungu}`})`,
     );
-    if (items.length > 0) return { items, scope: 'sigungu', scopeLabel: sigungu };
+    if (items.length > 0) return { items, scopeLabel: sigungu };
   }
 
   const items = await run(Prisma.empty);
-  return { items, scope: 'sido', scopeLabel: sido };
+  return { items, scopeLabel: sido };
 }
