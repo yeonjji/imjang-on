@@ -81,6 +81,8 @@ async function main() {
     const summary = { total, failed, sources };
     logger.info(summary, 'subscription ingest done');
     await notify(failed === 0 ? 'info' : 'warn', 'subscription ingest complete', summary);
+    // 소스별 실패는 격리하되, 하나라도 실패하면 잡을 실패로 종료해 CI(Actions)가 잡아내도록 한다.
+    if (failed > 0) process.exitCode = 1;
   } finally {
     await prisma.$disconnect();
   }
