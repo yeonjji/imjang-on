@@ -40,6 +40,19 @@ describe('normalizeLhNotice', () => {
     expect(n.lat).toBeNull();
     expect(n.lng).toBeNull();
   });
+  it('빈 CNP_CD 는 regionCode 를 null 로 둔다', () => {
+    expect(rows[0].CNP_CD).toBe('');
+    expect(n.regionCode).toBeNull();
+  });
+
+  it('정정공고는 origNoticeKey 가 원본 PAN_ID 를 가리킨다(자기 PAN_ID 와 다름)', () => {
+    const correction = rows.find((r) => r.PAN_KD_CD === '02');
+    expect(correction).toBeTruthy();
+    const c = normalizeLhNotice(correction!);
+    expect(c.panId).toBe(correction!.PAN_ID);
+    expect(c.origNoticeKey).toBe(correction!.OTXT_PAN_ID);
+    expect(c.origNoticeKey).not.toBe(c.panId);
+  });
 });
 
 describe('applyLhDetail', () => {
