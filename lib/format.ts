@@ -32,6 +32,12 @@ export function formatPyeong(sqm: number): string {
   return `${Math.round(sqmToPyeong(sqm))}평`;
 }
 
+/** 입주예정월 "YYYYMM" → "YYYY.MM" (없거나 형식 불일치면 "-") */
+export function formatMoveInYm(ym: string | null | undefined): string {
+  if (!ym || ym.length !== 6) return '-';
+  return `${ym.slice(0, 4)}.${ym.slice(4, 6)}`;
+}
+
 /** 큰 카운트를 "16만+" / "25.6만+" / "5,000+" 형태로 표기 */
 export function formatStatCount(n: number): string {
   if (n >= 10_000) {

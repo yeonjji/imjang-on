@@ -16,6 +16,7 @@ interface Props {
 const links = [
   { href: '/', label: '홈' },
   { href: '/list', label: '실거래가' },
+  { href: '/subscription', label: '청약' },
 ];
 
 export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
@@ -132,12 +133,6 @@ export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
           </div>
         )}
 
-        <button
-          onClick={() => onSoonClick('청약')}
-          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-3 text-left text-[15px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-soft)]"
-        >
-          청약 <Badge tone="gray">Soon</Badge>
-        </button>
       </div>
     </div>
   );
