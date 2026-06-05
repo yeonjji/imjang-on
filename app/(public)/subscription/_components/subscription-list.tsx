@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import {
   getSubscriptionList,
   type SubscriptionStatus,
@@ -46,12 +47,14 @@ export async function SubscriptionList({ categories, sido, status, sort, page }:
 
       {totalPages > 1 && (
         <div className="mt-6">
-          <SubscriptionPagination
-            current={page}
-            totalPages={totalPages}
-            totalItems={total}
-            perPage={perPage}
-          />
+          <Suspense>
+            <SubscriptionPagination
+              current={page}
+              totalPages={totalPages}
+              totalItems={total}
+              perPage={perPage}
+            />
+          </Suspense>
         </div>
       )}
     </>

@@ -1,12 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatMoveInYm } from '@/lib/format';
 import type { SubscriptionDetail } from '@/lib/subscription';
-
-function moveIn(ym: string | null): string {
-  if (!ym || ym.length !== 6) return '-';
-  return `${ym.slice(0, 4)}.${ym.slice(4, 6)}`;
-}
 
 export function SubscriptionSidebar({ notice }: { notice: SubscriptionDetail }) {
   const info: { label: string; value: string }[] = [
@@ -19,7 +14,7 @@ export function SubscriptionSidebar({ notice }: { notice: SubscriptionDetail }) 
           : '-',
     },
     { label: '당첨발표', value: formatDate(notice.winnerDate) },
-    { label: '입주예정', value: moveIn(notice.moveInYm) },
+    { label: '입주예정', value: formatMoveInYm(notice.moveInYm) },
   ];
 
   return (

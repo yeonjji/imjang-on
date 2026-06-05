@@ -54,10 +54,10 @@ export function SubscriptionCard({ item }: { item: SubscriptionListItem }) {
           </div>
           <div className="rounded-[14px] bg-[var(--color-soft)] px-4 py-3">
             <span className="mb-1 block text-xs text-[var(--color-muted)]">
-              {item.totalSupply ? '총 공급' : '전용면적'}
+              {item.totalSupply != null ? '총 공급' : '전용면적'}
             </span>
             <strong className="block whitespace-nowrap text-sm font-bold text-[var(--color-blue-dark)]">
-              {item.totalSupply
+              {item.totalSupply != null
                 ? `${item.totalSupply.toLocaleString('ko-KR')}세대`
                 : formatAreaRange(item.minArea, item.maxArea)}
             </strong>

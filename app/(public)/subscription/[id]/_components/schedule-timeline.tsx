@@ -1,11 +1,6 @@
 import { Card } from '@/components/ui/card';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatMoveInYm } from '@/lib/format';
 import type { SubscriptionDetail } from '@/lib/subscription';
-
-function moveInLabel(ym: string | null): string {
-  if (!ym || ym.length !== 6) return '-';
-  return `${ym.slice(0, 4)}.${ym.slice(4, 6)}`;
-}
 
 export function ScheduleTimeline({ notice }: { notice: SubscriptionDetail }) {
   const steps: { label: string; value: string }[] = [
@@ -20,7 +15,7 @@ export function ScheduleTimeline({ notice }: { notice: SubscriptionDetail }) {
           ? `${formatDate(notice.contractBegin)} ~ ${formatDate(notice.contractEnd)}`
           : '-',
     },
-    { label: '입주 예정', value: moveInLabel(notice.moveInYm) },
+    { label: '입주 예정', value: formatMoveInYm(notice.moveInYm) },
   ];
 
   return (
