@@ -17,14 +17,14 @@ async function upsertNotice(n: NormalizedNotice): Promise<bigint> {
       "name", "status", "regionCode", "regionName", "address", "totalSupply",
       "noticeDate", "receiptBegin", "receiptEnd", "winnerDate", "contractBegin", "contractEnd", "moveInYm",
       "homepage", "noticeUrl", "developer", "constructor", "tel",
-      "location", "rawJson", "updatedAt"
+      "location", "rawJson", "contentHash", "updatedAt"
     ) VALUES (
       ${n.source}::"SubscriptionSource", ${n.category}::"SubscriptionCategory", ${n.sourceKey},
       ${n.houseManageNo}, ${n.pblancNo}, ${n.panId}, ${n.origNoticeKey},
       ${n.name}, ${n.status}, ${n.regionCode}, ${n.regionName}, ${n.address}, ${n.totalSupply},
       ${n.noticeDate}, ${n.receiptBegin}, ${n.receiptEnd}, ${n.winnerDate}, ${n.contractBegin}, ${n.contractEnd}, ${n.moveInYm},
       ${n.homepage}, ${n.noticeUrl}, ${n.developer}, ${n.constructor}, ${n.tel},
-      ${locationSql(n.lat, n.lng)}, ${JSON.stringify(n.rawJson)}::jsonb, NOW()
+      ${locationSql(n.lat, n.lng)}, ${JSON.stringify(n.rawJson)}::jsonb, ${n.contentHash ?? null}, NOW()
     )
     ON CONFLICT ("source", "sourceKey") DO UPDATE SET
       "category" = EXCLUDED."category",
@@ -52,6 +52,7 @@ async function upsertNotice(n: NormalizedNotice): Promise<bigint> {
       "tel" = EXCLUDED."tel",
       "location" = EXCLUDED."location",
       "rawJson" = EXCLUDED."rawJson",
+      "contentHash" = EXCLUDED."contentHash",
       "updatedAt" = NOW()
     RETURNING "id"
   `;

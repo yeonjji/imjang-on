@@ -1,12 +1,15 @@
+import { SubscriptionCategory, SubscriptionSource } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { notify } from '@/scripts/ingest/notify';
 import { geocode } from '@/scripts/ingest/geocoder';
-import { APPLYHOME_CONFIG, fetchApplyhomeCategory } from './adapter-applyhome';
+import { APPLYHOME_CONFIG, fetchApplyhomeNotices, fetchUnits } from './adapter-applyhome';
 import { fetchLhPresub } from './adapter-lh-presub';
+import { computeContentHash } from './content-hash';
+import { diffByHash } from './diff';
 import { upsertNoticeWithUnits } from './upsert';
 import { SUBSCRIPTION_INGEST_SOURCE } from './types';
-import type { NoticeWithUnits, SubscriptionSourceKey } from './types';
+import type { ExistingNotice, NoticeWithUnits, SubscriptionSourceKey } from './types';
 
 const ALL_KEYS: SubscriptionSourceKey[] = ['apt', 'urbty', 'remndr', 'pblpvt', 'opt', 'lh'];
 
@@ -19,20 +22,54 @@ function parseArgs(): { sources: SubscriptionSourceKey[] } {
   return { sources: [raw as SubscriptionSourceKey] };
 }
 
-async function collect(key: SubscriptionSourceKey): Promise<NoticeWithUnits[]> {
-  if (key === 'lh') return fetchLhPresub();
-  return fetchApplyhomeCategory(APPLYHOME_CONFIG[key]);
+// key → SubscriptionNotice 의 (source, category) 스코프
+function noticeScope(key: SubscriptionSourceKey): {
+  source: SubscriptionSource;
+  category: SubscriptionCategory;
+} {
+  if (key === 'lh') {
+    return { source: SubscriptionSource.LH_PRESUB, category: SubscriptionCategory.LH_PRESUB };
+  }
+  return { source: SubscriptionSource.APPLYHOME, category: APPLYHOME_CONFIG[key].category };
 }
 
-// 청약홈 공고: address 로 지오코딩 (LH 는 address 없음 → 스킵)
-async function geocodeItems(items: NoticeWithUnits[]): Promise<void> {
-  for (const { notice } of items) {
-    if (!notice.address || (notice.lat != null && notice.lng != null)) continue;
-    const coord = await geocode(notice.address);
-    if (coord) {
-      notice.lat = coord.lat;
-      notice.lng = coord.lng;
-    }
+// 해당 스코프의 기존 공고를 diff 비교용으로 가볍게 로드(rawJson 제외, 좌표는 lat/lng 로 환산)
+async function loadExisting(
+  source: SubscriptionSource,
+  category: SubscriptionCategory,
+): Promise<Map<string, ExistingNotice>> {
+  const rows = await prisma.$queryRaw<
+    { sourceKey: string; contentHash: string | null; address: string | null; lat: number | null; lng: number | null }[]
+  >`
+    SELECT "sourceKey", "contentHash", "address",
+           ST_Y("location"::geometry) AS lat,
+           ST_X("location"::geometry) AS lng
+    FROM "SubscriptionNotice"
+    WHERE "source" = ${source}::"SubscriptionSource"
+      AND "category" = ${category}::"SubscriptionCategory"
+  `;
+  const map = new Map<string, ExistingNotice>();
+  for (const r of rows) {
+    map.set(r.sourceKey, { contentHash: r.contentHash, address: r.address, lat: r.lat, lng: r.lng });
+  }
+  return map;
+}
+
+// 신규/주소변경일 때만 카카오 호출, 주소 동일하면 기존 좌표 재사용
+async function geocodeNotice(
+  notice: NoticeWithUnits['notice'],
+  prev: ExistingNotice | undefined,
+): Promise<void> {
+  if (!notice.address) return;
+  if (prev && prev.lat != null && prev.lng != null && prev.address === notice.address) {
+    notice.lat = prev.lat;
+    notice.lng = prev.lng;
+    return;
+  }
+  const coord = await geocode(notice.address);
+  if (coord) {
+    notice.lat = coord.lat;
+    notice.lng = coord.lng;
   }
 }
 
@@ -42,18 +79,41 @@ async function runOne(key: SubscriptionSourceKey): Promise<number> {
     data: { source, targetKey: 'all', status: 'RUNNING' },
   });
   try {
-    const items = await collect(key);
-    await geocodeItems(items);
-    let upserted = 0;
+    const isLh = key === 'lh';
+    const items: NoticeWithUnits[] = isLh
+      ? await fetchLhPresub()
+      : (await fetchApplyhomeNotices(APPLYHOME_CONFIG[key])).map((notice) => ({ notice, units: [] }));
     for (const item of items) {
+      item.notice.contentHash = computeContentHash(item.notice);
+    }
+    logger.info({ key, fetched: items.length }, 'notices fetched');
+
+    const { source: noticeSource, category } = noticeScope(key);
+    const existing = await loadExisting(noticeSource, category);
+    const { changed, skipped } = diffByHash(items, existing);
+    logger.info({ key, changed: changed.length, skipped }, 'change diff');
+
+    let upserted = 0;
+    for (const item of changed) {
+      if (!isLh) {
+        item.units = await fetchUnits(
+          APPLYHOME_CONFIG[key],
+          item.notice.houseManageNo,
+          item.notice.pblancNo,
+        );
+      }
+      await geocodeNotice(item.notice, existing.get(item.notice.sourceKey));
       await upsertNoticeWithUnits(item);
       upserted++;
+      if (upserted % 50 === 0) {
+        logger.info({ key, upserted, total: changed.length }, 'upsert progress');
+      }
     }
     await prisma.ingestionRun.update({
       where: { id: run.id },
       data: { status: 'OK', rowsUpserted: upserted, finishedAt: new Date() },
     });
-    logger.info({ key, upserted }, 'subscription source done');
+    logger.info({ key, upserted, skipped }, 'subscription source done');
     return upserted;
   } catch (err) {
     await prisma.ingestionRun.update({

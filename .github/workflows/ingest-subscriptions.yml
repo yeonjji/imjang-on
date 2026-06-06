@@ -33,4 +33,4 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma generate
       - run: pnpm tsx scripts/ingest/subscriptions/runner.ts --source=${{ matrix.source }}
-        timeout-minutes: 120
+        timeout-minutes: 300 # TEMP: 최초 backfill(전건 재처리) 대비. 정상화 후 120 으로 원복

@@ -2,7 +2,7 @@ import { SubscriptionCategory, SubscriptionSource } from '@prisma/client';
 import { logger } from '@/lib/logger';
 import { fetchOdcloud } from './http';
 import { parseFlexibleDate } from './dates';
-import type { NormalizedNotice, NormalizedUnit, NoticeWithUnits } from './types';
+import type { NormalizedNotice, NormalizedUnit } from './types';
 
 export interface ApplyhomeCategoryConfig {
   category: SubscriptionCategory;
@@ -81,10 +81,11 @@ export function normalizeUnit(row: Record<string, unknown>): NormalizedUnit {
   };
 }
 
-export async function fetchApplyhomeCategory(
+// detail 페이징만 수행. units 는 받지 않는다(변경 감지 후 대상만 fetchUnits).
+export async function fetchApplyhomeNotices(
   cfg: ApplyhomeCategoryConfig,
-): Promise<NoticeWithUnits[]> {
-  const out: NoticeWithUnits[] = [];
+): Promise<NormalizedNotice[]> {
+  const out: NormalizedNotice[] = [];
   const PER = 100;
   let page = 1;
   while (true) {
@@ -95,17 +96,16 @@ export async function fetchApplyhomeCategory(
         logger.warn({ category: cfg.category, sourceKey: notice.sourceKey }, 'skip notice missing id');
         continue;
       }
-      const units = await fetchUnits(cfg, notice.houseManageNo, notice.pblancNo);
-      out.push({ notice, units });
+      out.push(notice);
     }
-    logger.info({ category: cfg.category, page, fetched: out.length, totalCount }, 'applyhome page');
+    logger.info({ category: cfg.category, page, fetched: out.length, totalCount }, 'applyhome notice page');
     if (page * PER >= totalCount || data.length === 0) break;
     page++;
   }
   return out;
 }
 
-async function fetchUnits(
+export async function fetchUnits(
   cfg: ApplyhomeCategoryConfig,
   houseManageNo: string | null,
   pblancNo: string | null,

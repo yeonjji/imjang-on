@@ -30,6 +30,7 @@ export interface NormalizedNotice {
   lat: number | null;
   lng: number | null;
   rawJson: unknown;
+  contentHash?: string;
 }
 
 // 정규화된 주택형별 1건 (notice 와 함께 묶여 전달됨)
@@ -47,6 +48,14 @@ export interface NormalizedUnit {
 export interface NoticeWithUnits {
   notice: NormalizedNotice;
   units: NormalizedUnit[];
+}
+
+// DB에서 diff 비교용으로 가볍게 로드한 기존 공고 상태
+export interface ExistingNotice {
+  contentHash: string | null;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 // runner --source 값
