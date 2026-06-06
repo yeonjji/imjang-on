@@ -40,3 +40,38 @@ test('apt detail: unified transaction table + page 2', async ({ page }) => {
   await page.getByRole('button', { name: '2' }).click();
   await expect(page.getByText(/36건 중 16–30/)).toBeVisible();
 });
+
+test('apt detail: 가격 흐름 그래프 — 헤더 숫자 + 유형 탭 전환', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`/apt/${propertyId}`);
+
+  const chart = page.locator('#chart');
+  await expect(chart.getByRole('heading', { name: '가격 흐름 그래프' })).toBeVisible();
+
+  // 헤더 풀세트 숫자
+  await expect(chart.getByText('현재 시세')).toBeVisible();
+  await expect(chart.getByText('최고가')).toBeVisible();
+  await expect(chart.getByText('최저가')).toBeVisible();
+  await expect(chart.getByText('거래건수')).toBeVisible();
+
+  // recharts SVG 렌더 확인
+  await expect(chart.locator('svg.recharts-surface').first()).toBeVisible();
+
+  // 전세 탭 전환 → 클릭 후에도 헤더 영역 유지
+  await chart.getByRole('button', { name: '전세', exact: true }).click();
+  await expect(chart.getByText('현재 시세')).toBeVisible();
+});
+
+test('apt detail: 가격 그래프 모바일 폭 — 가로 오버플로우 없음', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto(`/apt/${propertyId}`);
+
+  const chart = page.locator('#chart');
+  await expect(chart.locator('svg.recharts-surface').first()).toBeVisible();
+
+  // 문서 가로 스크롤(가로 오버플로우) 없어야 함
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+});
