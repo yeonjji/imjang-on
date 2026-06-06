@@ -14,6 +14,12 @@ export function kstDayStartUtc(now: Date): Date {
   return new Date(Date.UTC(y, m, d) - KST_OFFSET_MS);
 }
 
+/** kstDayStartUtc가 돌려준 start(KST 자정의 UTC 표현)에서 KST 달력 날짜 문자열(YYYY-MM-DD)을 반환.
+ *  formatDate(start)는 UTC 날짜를 읽어 KST보다 하루 빠르게 나오므로, KST 오프셋을 더해 보정한다. */
+export function refDateFromStart(start: Date): string {
+  return formatDate(new Date(start.getTime() + KST_OFFSET_MS));
+}
+
 /** 급증 동네용 계약일 윈도우(최근 30일 / 직전 30일)의 경계.
  *  contractDate는 @db.Date(자정 UTC)이므로 KST 달력 날짜를 자정 UTC로 환산해 계산. */
 export function contractDateWindows(now: Date): {
@@ -120,7 +126,7 @@ export async function getMarketBriefing(now: Date = new Date()): Promise<MarketB
   const saleWhere = (gte: Date): Prisma.TransactionWhereInput => ({ dealType: DealType.SALE, createdAt: { gte } });
 
   let txCount = await prisma.transaction.count({ where: saleWhere(start) });
-  let refDate = formatDate(start);
+  let refDate = refDateFromStart(start);
   if (txCount === 0) {
     const latest = await prisma.transaction.findFirst({
       where: { dealType: DealType.SALE },
@@ -131,7 +137,7 @@ export async function getMarketBriefing(now: Date = new Date()): Promise<MarketB
     start = kstDayStartUtc(latest.createdAt);
     isFallback = true;
     txCount = await prisma.transaction.count({ where: saleWhere(start) });
-    refDate = formatDate(start);
+    refDate = refDateFromStart(start);
     if (txCount === 0) return null;
   }
   const where = saleWhere(start);
