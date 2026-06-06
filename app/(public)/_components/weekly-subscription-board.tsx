@@ -48,7 +48,7 @@ function DayItems({ day }: { day: WeeklyBoardDay }) {
 export function WeeklySubscriptionBoard({ board }: { board: WeeklyBoard }) {
   return (
     <section className="mt-10">
-      <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">📅 이번주 청약</p>
+      <p className="mb-1 text-xs font-bold text-[var(--color-blue)]"><span aria-hidden>📅</span> 이번주 청약</p>
       <div className="mb-4 flex items-end justify-between gap-3">
         <div>
           <h2 className="mb-1 text-2xl font-black tracking-tight text-[var(--color-blue-dark)]">

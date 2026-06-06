@@ -17,7 +17,7 @@ export function SubscriptionBoardItem({ item }: { item: WeeklyBoardItem }) {
           {item.regionShort}
         </span>
       )}
-      <span className="shrink-0 text-[var(--color-muted)] transition group-hover:translate-x-0.5">›</span>
+      <span aria-hidden className="shrink-0 text-[var(--color-muted)] transition group-hover:translate-x-0.5">›</span>
     </Link>
   );
 }
