@@ -8,12 +8,12 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: ['/', '/apt/', '/officetel/', '/villa/', '/region/'],
-        disallow: ['/search', '/list', '/api/', '/admin'],
+        disallow: ['/list', '/api/', '/admin'],
       },
       {
         userAgent: 'Yeti',
         allow: ['/', '/apt/', '/officetel/', '/villa/', '/region/'],
-        disallow: ['/search', '/list', '/api/', '/admin'],
+        disallow: ['/list', '/api/', '/admin'],
       },
     ],
     sitemap: `${SITE}/sitemap.xml`,
