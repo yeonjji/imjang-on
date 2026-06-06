@@ -96,7 +96,7 @@ export function HeroSearch({ popularRegions }: { popularRegions: PopularRegion[]
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold text-[var(--color-muted)]">인기 지역</span>
           {popularRegions.map((r) => (
-            <Link key={r.sigunguCode} href={`/list?sido=${encodeURIComponent(r.sido)}&region=${r.sigunguCode}`} className="rounded-full border border-[var(--color-line)] bg-white px-3 py-2 text-xs font-bold text-[var(--color-blue-dark)] hover:border-[var(--color-blue)]">
+            <Link key={r.sigunguCode} href={`/list?sido=${encodeURIComponent(r.sido)}&region=${encodeURIComponent(r.sigunguCode)}`} className="rounded-full border border-[var(--color-line)] bg-white px-3 py-2 text-xs font-bold text-[var(--color-blue-dark)] hover:border-[var(--color-blue)]">
               # {r.sigungu}
             </Link>
           ))}
