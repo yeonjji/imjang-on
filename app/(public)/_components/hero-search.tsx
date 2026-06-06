@@ -10,11 +10,6 @@ interface Result {
   regions: Array<{ code: string; fullName: string }>;
 }
 
-function typeToHref(type: string, id: string): string {
-  if (type === 'APARTMENT') return `/apt/${id}`;
-  if (type === 'OFFICETEL') return `/officetel/${id}`;
-  return `/villa/${id}`;
-}
 
 export function HeroSearch({ popularRegions }: { popularRegions: PopularRegion[] }) {
   const router = useRouter();
@@ -42,7 +37,7 @@ export function HeroSearch({ popularRegions }: { popularRegions: PopularRegion[]
 
   function submit() {
     const term = q.trim();
-    if (term) router.push(`/search?q=${encodeURIComponent(term)}`);
+    if (term) router.push(`/list?q=${encodeURIComponent(term)}`);
   }
 
   return (
@@ -72,7 +67,7 @@ export function HeroSearch({ popularRegions }: { popularRegions: PopularRegion[]
             <>
               <p className="px-3 py-1 text-xs font-bold text-[var(--color-muted)]">단지</p>
               {results.properties.map((p) => (
-                <Link key={p.id} href={typeToHref(p.type, p.id)} className="block rounded-lg px-3 py-2 hover:bg-[var(--color-soft)]" onClick={() => setOpen(false)}>
+                <Link key={p.id} href={`/list?q=${encodeURIComponent(p.name)}`} className="block rounded-lg px-3 py-2 hover:bg-[var(--color-soft)]" onClick={() => setOpen(false)}>
                   <p className="text-sm font-semibold">{p.name}</p>
                   <p className="text-xs text-[var(--color-muted)]">{p.region}</p>
                 </Link>
@@ -83,7 +78,7 @@ export function HeroSearch({ popularRegions }: { popularRegions: PopularRegion[]
             <>
               <p className="mt-2 px-3 py-1 text-xs font-bold text-[var(--color-muted)]">지역</p>
               {results.regions.map((r) => (
-                <Link key={r.code} href={`/region/${r.code.slice(0, 5)}`} className="block rounded-lg px-3 py-2 hover:bg-[var(--color-soft)]" onClick={() => setOpen(false)}>
+                <Link key={r.code} href={`/list?region=${r.code.slice(0, 5)}`} className="block rounded-lg px-3 py-2 hover:bg-[var(--color-soft)]" onClick={() => setOpen(false)}>
                   <p className="text-sm">{r.fullName}</p>
                 </Link>
               ))}
