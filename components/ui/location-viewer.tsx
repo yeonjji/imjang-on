@@ -40,38 +40,53 @@ export function LocationViewer({ lat, lng, name, height = 280 }: Props) {
       }
     }
 
-    // 로드뷰(파노라마). 모듈 미로딩/커버리지 없음 등은 폴백으로 처리하고 throw하지 않는다.
-    if (!panoRef.current || typeof naver.maps.Panorama !== 'function') {
-      setRoadview(false);
-      return;
-    }
+    // 로드뷰(파노라마). submodules=panorama는 maps.js onLoad 이후 비동기로 붙으므로
+    // Panorama가 함수가 될 때까지 폴링한 뒤 생성한다.
+    let cancelled = false;
     let settled = false;
-    const markAvailable = () => {
-      if (!settled) {
+    let coverageTimer: ReturnType<typeof setTimeout> | undefined;
+    const settle = (available: boolean) => {
+      if (!settled && !cancelled) {
         settled = true;
-        setRoadview(true);
+        setRoadview(available);
       }
     };
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    try {
-      const pano = new naver.maps.Panorama(panoRef.current, {
-        position: center,
-        pov: { pan: 0, tilt: 0, fov: 100 },
-      });
-      // 근처 파노라마가 로드되면 pano_changed가 발생한다. 일정 시간 내 없으면 미제공으로 본다.
-      naver.maps.Event.addListener(pano, 'pano_changed', markAvailable);
-      naver.maps.Event.addListener(pano, 'init', markAvailable);
-      timer = setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          setRoadview(false);
-        }
-      }, 3000);
-    } catch {
-      setRoadview(false);
-    }
+
+    const initPanorama = () => {
+      if (cancelled || !panoRef.current) return;
+      try {
+        const pano = new naver.maps.Panorama(panoRef.current, {
+          position: center,
+          pov: { pan: 0, tilt: 0, fov: 100 },
+        });
+        // 근처 파노라마가 로드되면 pano_changed/init이 발생한다. 일정 시간 내 없으면 미제공.
+        naver.maps.Event.addListener(pano, 'pano_changed', () => settle(true));
+        naver.maps.Event.addListener(pano, 'init', () => settle(true));
+        coverageTimer = setTimeout(() => settle(false), 6000);
+      } catch {
+        settle(false);
+      }
+    };
+
+    let waited = 0;
+    const poll = setInterval(() => {
+      if (cancelled) {
+        clearInterval(poll);
+        return;
+      }
+      if (typeof naver.maps.Panorama === 'function') {
+        clearInterval(poll);
+        initPanorama();
+      } else if ((waited += 200) >= 6000) {
+        clearInterval(poll);
+        settle(false);
+      }
+    }, 200);
+
     return () => {
-      if (timer) clearTimeout(timer);
+      cancelled = true;
+      clearInterval(poll);
+      if (coverageTimer) clearTimeout(coverageTimer);
     };
   }, [ready, lat, lng, name]);
 
