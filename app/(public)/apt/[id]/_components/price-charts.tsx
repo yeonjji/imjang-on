@@ -159,7 +159,9 @@ export function PriceCharts({ data }: { data: ChartData }) {
                   strokeWidth={2.5}
                   fill={`url(#avgGrad-${deal})`}
                   isAnimationActive={false}
-                  dot={(props) => <EndDot {...props} color={color} lastIdx={lastIdx} />}
+                  dot={({ key, ...props }) => (
+                    <EndDot key={key} {...props} color={color} lastIdx={lastIdx} />
+                  )}
                   activeDot={{ r: 4 }}
                 />
               </ComposedChart>
