@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db';
 import { DealType, Prisma } from '@prisma/client';
 import { formatDate } from '@/lib/format';
-import type { AreaRange } from '@/lib/property';
+import { typeToSlug, type AreaRange, type PropertyTypeSlug } from '@/lib/property';
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
@@ -89,6 +89,7 @@ export function buildHashtags(input: {
 // ---- 타입 + DB 집계 (Task 3) ----
 export interface TxHighlight {
   propertyId: string;
+  slug: PropertyTypeSlug;
   propertyName: string;
   regionLabel: string;
   amountManwon: number;
@@ -167,12 +168,12 @@ export async function getMarketBriefing(now: Date = new Date()): Promise<MarketB
     prisma.transaction.findFirst({
       where: { ...where, dealAmount: { not: null } },
       orderBy: { dealAmount: 'desc' },
-      select: { propertyId: true, dealAmount: true, sigunguCode: true, property: { select: { name: true } } },
+      select: { propertyId: true, dealAmount: true, sigunguCode: true, property: { select: { name: true, propertyType: true } } },
     }),
     prisma.transaction.findFirst({
       where: { ...where, dealAmount: { gt: 0 } },
       orderBy: { dealAmount: 'asc' },
-      select: { propertyId: true, dealAmount: true, sigunguCode: true, property: { select: { name: true } } },
+      select: { propertyId: true, dealAmount: true, sigunguCode: true, property: { select: { name: true, propertyType: true } } },
     }),
     prisma.transaction.groupBy({
       by: ['sigunguCode'],
@@ -249,10 +250,10 @@ export async function getMarketBriefing(now: Date = new Date()): Promise<MarketB
     .slice(0, 3);
 
   const highest: TxHighlight | null = highestRow
-    ? { propertyId: String(highestRow.propertyId), propertyName: highestRow.property.name, regionLabel: labelOf(highestRow.sigunguCode), amountManwon: highestRow.dealAmount! }
+    ? { propertyId: String(highestRow.propertyId), slug: typeToSlug(highestRow.property.propertyType), propertyName: highestRow.property.name, regionLabel: labelOf(highestRow.sigunguCode), amountManwon: highestRow.dealAmount! }
     : null;
   const lowest: TxHighlight | null = lowestRow
-    ? { propertyId: String(lowestRow.propertyId), propertyName: lowestRow.property.name, regionLabel: labelOf(lowestRow.sigunguCode), amountManwon: lowestRow.dealAmount! }
+    ? { propertyId: String(lowestRow.propertyId), slug: typeToSlug(lowestRow.property.propertyType), propertyName: lowestRow.property.name, regionLabel: labelOf(lowestRow.sigunguCode), amountManwon: lowestRow.dealAmount! }
     : null;
 
   const hashtags = buildHashtags({

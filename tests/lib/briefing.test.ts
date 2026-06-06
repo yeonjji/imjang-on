@@ -151,6 +151,7 @@ describe('getMarketBriefing 집계', () => {
     expect(b!.summary.txCount).toBeGreaterThanOrEqual(4);
     expect(b!.summary.highest?.amountManwon).toBe(542_000);
     expect(b!.summary.highest?.regionLabel).toBe('시드시');
+    expect(b!.summary.highest?.slug).toBe('apt');
     expect(b!.summary.lowest?.amountManwon).toBe(2_100);
     expect(b!.summary.topRegion?.label).toBe('시드시');
     expect(b!.summary.topRegion?.sigunguCode).toBe(SGG_HOT);

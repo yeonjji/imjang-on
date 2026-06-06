@@ -40,10 +40,10 @@ export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-[var(--color-line)] md:grid-cols-5">
             <Tile k="🧾 오늘 등록된 실거래" v={`${summary.txCount.toLocaleString('ko-KR')}건`} sub="전국 매매 신고분" href="/list" />
             {summary.highest && (
-              <Tile k="🔥 최고가 거래" v={formatBillion(summary.highest.amountManwon)} sub={`${summary.highest.regionLabel} · ${summary.highest.propertyName}`} href={`/apt/${summary.highest.propertyId}`} />
+              <Tile k="🔥 최고가 거래" v={formatBillion(summary.highest.amountManwon)} sub={`${summary.highest.regionLabel} · ${summary.highest.propertyName}`} href={`/${summary.highest.slug}/${summary.highest.propertyId}`} />
             )}
             {summary.lowest && (
-              <Tile k="📉 최저가 거래" v={formatBillion(summary.lowest.amountManwon)} sub={`${summary.lowest.regionLabel} · ${summary.lowest.propertyName}`} href={`/apt/${summary.lowest.propertyId}`} />
+              <Tile k="📉 최저가 거래" v={formatBillion(summary.lowest.amountManwon)} sub={`${summary.lowest.regionLabel} · ${summary.lowest.propertyName}`} href={`/${summary.lowest.slug}/${summary.lowest.propertyId}`} />
             )}
             {summary.topRegion && (
               <Tile k="🚀 가장 많이 거래된 지역" v={summary.topRegion.label} sub={`${summary.topRegion.count}건`} href={listRegionHref(summary.topRegion)} />
