@@ -40,3 +40,44 @@ jobs:
       - if: ${{ steps.check.outputs.pending != '0' }}
         run: pnpm tsx scripts/ingest/transactions/runner.ts --api=${{ matrix.api }} --mode=backfill --from=${{ env.BACKFILL_FROM }} --to=${{ env.BACKFILL_TO }} --limit=${{ env.BACKFILL_LIMIT }}
         timeout-minutes: 350
+
+  # 6종 API의 pending 합계가 0이면(=백필 완주) 이 워크플로의 schedule을 스스로 비활성화.
+  # 일회성 백필이므로 완주 후 매시간 빈 실행이 Actions 분을 계속 먹는 것을 막는다.
+  # 재가동이 필요하면 `gh workflow enable backfill-transactions-loop.yml`.
+  finalize:
+    needs: backfill
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      PUBLIC_DATA_KEY: ${{ secrets.PUBLIC_DATA_KEY }}
+      KAKAO_REST_KEY: ${{ secrets.KAKAO_REST_KEY }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      LOG_LEVEL: info
+      PRISMA_INGEST: '1'
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma generate
+      - id: total
+        run: |
+          total=0
+          for api in apt-trade apt-rent offi-trade offi-rent rh-trade rh-rent; do
+            line=$(pnpm tsx scripts/ingest/transactions/backfill-status.ts --api="$api" --from="$BACKFILL_FROM" --to="$BACKFILL_TO")
+            echo "$line"
+            p=$(echo "$line" | sed -n 's/.*pending=\([0-9]\{1,\}\).*/\1/p')
+            total=$((total + p))
+          done
+          echo "Total pending across all APIs: $total"
+          echo "total_pending=$total" >> "$GITHUB_OUTPUT"
+      - if: ${{ steps.total.outputs.total_pending == '0' }}
+        run: |
+          echo "Backfill complete (total pending=0) — disabling scheduled workflow."
+          gh workflow disable backfill-transactions-loop.yml
