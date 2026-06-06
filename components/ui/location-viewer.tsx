@@ -25,6 +25,12 @@ export function LocationViewer({ lat, lng, name, height = 280 }: Props) {
   // null=확인중, true=로드뷰 있음, false=로드뷰 없음
   const [roadview, setRoadview] = useState<boolean | null>(null);
 
+  // 클라이언트 네비게이션 시 같은 src 스크립트는 재로드되지 않아 onLoad/onReady가
+  // 늦거나 안 올 수 있다. SDK가 이미 떠 있으면 mount 즉시 준비 완료로 본다.
+  useEffect(() => {
+    if (window.naver?.maps) setReady(true);
+  }, []);
+
   useEffect(() => {
     if (!ready || !window.naver?.maps) return;
     const { naver } = window;
@@ -106,7 +112,7 @@ export function LocationViewer({ lat, lng, name, height = 280 }: Props) {
       <Script
         src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}&submodules=panorama`}
         strategy="afterInteractive"
-        onLoad={() => setReady(true)}
+        onReady={() => setReady(true)}
       />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div
