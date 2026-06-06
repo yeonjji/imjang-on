@@ -189,10 +189,17 @@ export async function getSubscriptionList(opts: {
     }
   `;
 
+  // 기본(마감임박순): 진행중·예정 공고를 마감일 가까운 순으로 먼저, 마감된 공고는 최근 마감순으로 뒤에.
   const orderBy =
     sort === 'notice'
       ? Prisma.sql`ORDER BY n."noticeDate" DESC NULLS LAST, n.id DESC`
-      : Prisma.sql`ORDER BY n."receiptEnd" DESC NULLS LAST, n."noticeDate" DESC NULLS LAST, n.id DESC`;
+      : Prisma.sql`
+          ORDER BY
+            (CASE WHEN n."receiptEnd" >= CURRENT_DATE OR n."receiptBegin" > CURRENT_DATE THEN 0 ELSE 1 END),
+            CASE WHEN n."receiptEnd" >= CURRENT_DATE OR n."receiptBegin" > CURRENT_DATE THEN n."receiptEnd" END ASC NULLS LAST,
+            n."receiptEnd" DESC NULLS LAST,
+            n.id DESC
+        `;
 
   const rows = await prisma.$queryRaw<ListRow[]>(Prisma.sql`
     SELECT
