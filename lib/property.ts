@@ -37,6 +37,7 @@ export interface PropertyListParams {
   sort?: SortOption;
   sigunguCode?: string;
   sido?: string;
+  q?: string;
   page?: number;
   perPage?: number;
 }
@@ -82,6 +83,7 @@ export async function getPropertyList({
   sort = 'recent',
   sigunguCode,
   sido,
+  q,
   page = 1,
   perPage = 30,
 }: PropertyListParams) {
@@ -132,6 +134,11 @@ export async function getPropertyList({
             ? rangeArray(26, 35)
             : rangeArray(35, 100);
     where.areaTypes = { hasSome: areas };
+  }
+
+  const keywordCond = buildKeywordCondition(q);
+  if (keywordCond) {
+    where.AND = [keywordCond];
   }
 
   // deal + sort → orderBy
