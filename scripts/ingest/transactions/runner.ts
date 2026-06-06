@@ -16,6 +16,8 @@ import { doneRunFilter, buildDoneKeys } from './resume';
 
 import type { Adapter, ApiType, Mode, NormalizedTransaction } from '@/scripts/ingest/types';
 import { createHash } from 'node:crypto';
+import { getRangeMonths } from './months';
+import { parseXml, assertNormalResponse } from '@/scripts/ingest/xml-parse';
 
 const ADAPTERS: Record<ApiType, Adapter> = {
   'apt-trade': adapterAptTrade,
@@ -32,6 +34,8 @@ interface RunArgs {
   months: number;
   monthOffset?: number;
   limit?: number;
+  from?: string;
+  to?: string;
 }
 
 function parseArgs(): RunArgs {
@@ -42,7 +46,9 @@ function parseArgs(): RunArgs {
   const months = Number(get('months') ?? '1');
   const monthOffset = get('month-offset') !== undefined ? Number(get('month-offset')) : undefined;
   const limit = get('limit') !== undefined ? Number(get('limit')) : undefined;
-  return { api, mode, months, monthOffset, limit };
+  const from = get('from');
+  const to = get('to');
+  return { api, mode, months, monthOffset, limit, from, to };
 }
 
 async function main() {
@@ -51,9 +57,11 @@ async function main() {
   const months =
     args.mode === 'daily'
       ? getDailyMonths()
-      : args.monthOffset !== undefined
-        ? [getMonthByOffset(args.monthOffset)]
-        : getBackfillMonths(args.months);
+      : args.from && args.to
+        ? getRangeMonths(args.from, args.to)
+        : args.monthOffset !== undefined
+          ? [getMonthByOffset(args.monthOffset)]
+          : getBackfillMonths(args.months);
 
   logger.info({ apis, months, mode: args.mode }, 'runner start');
 
@@ -254,6 +262,7 @@ async function fetchAll(adapter: Adapter, sigungu: string, yyyymm: string): Prom
       pageNo,
       numOfRows: 1000,
     });
+    assertNormalResponse(parseXml(xml));
     const { rows, totalCount } = adapter.parseRows(xml, sigungu);
     all.push(...rows);
     if (all.length >= totalCount || rows.length < 1000 || pageNo > 10) break;
