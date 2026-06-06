@@ -8,7 +8,7 @@ import { PharmacyInfo } from './_components/pharmacy-info';
 import { PharmacySidebar } from './_components/pharmacy-sidebar';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
-import { NaverMap } from '@/components/ui/naver-map';
+import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import type { Metadata } from 'next';
 
@@ -74,7 +74,7 @@ export default async function PharmacyDetailPage({ params }: Params) {
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
-              <NaverMap lat={coord.lat} lng={coord.lng} name={pharmacy.name} />
+              <LocationViewer lat={coord.lat} lng={coord.lng} name={pharmacy.name} />
             </Card>
           )}
           <NearbyApartments items={apts} />

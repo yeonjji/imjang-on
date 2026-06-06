@@ -17,6 +17,8 @@ import { NearbyPriceComparison } from './_components/nearby-price-comparison';
 import { DetailSidebar } from './_components/detail-sidebar';
 import { getNearbyInfra } from '@/lib/amenity/nearby';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
+import { LocationViewer } from '@/components/ui/location-viewer';
+import { Card } from '@/components/ui/card';
 import { formatBillion } from '@/lib/format';
 import { getNearbySubscriptions } from '@/lib/subscription';
 import { shortSidoFromRegionCode } from '@/lib/region';
@@ -69,6 +71,14 @@ export default async function AptDetailPage({ params }: Params) {
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-8">
           <DealSummarySection id="summary" property={property} />
+          {coord && (
+            <Card id="map">
+              <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">
+                위치 · 로드뷰
+              </h2>
+              <LocationViewer lat={coord.lat} lng={coord.lng} name={property.name} />
+            </Card>
+          )}
           <UnifiedTransactionTable
             id="transactions"
             propertyId={String(propId)}

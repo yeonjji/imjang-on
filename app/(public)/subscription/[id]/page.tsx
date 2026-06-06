@@ -5,7 +5,7 @@ import {
   categoryLabel,
 } from '@/lib/subscription';
 import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
-import { NaverMap } from '@/components/ui/naver-map';
+import { LocationViewer } from '@/components/ui/location-viewer';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { SubscriptionHero } from './_components/subscription-hero';
@@ -57,7 +57,7 @@ export default async function SubscriptionDetailPage({ params }: Params) {
             <>
               <section id="map">
                 <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
-                <NaverMap lat={coord.lat} lng={coord.lng} name={notice.name} />
+                <LocationViewer lat={coord.lat} lng={coord.lng} name={notice.name} />
               </section>
               <NearbyApartments items={nearbyApts} />
               <NearbyInfra categories={infra} />

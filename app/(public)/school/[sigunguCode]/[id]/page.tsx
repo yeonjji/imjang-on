@@ -10,7 +10,7 @@ import { SchoolInfo } from './_components/school-info';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { SchoolDetailSidebar } from './_components/school-detail-sidebar';
-import { NaverMap } from '@/components/ui/naver-map';
+import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import type { Metadata } from 'next';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
@@ -83,7 +83,7 @@ export default async function SchoolDetailPage({ params }: Params) {
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
-              <NaverMap lat={coord.lat} lng={coord.lng} name={school.name} />
+              <LocationViewer lat={coord.lat} lng={coord.lng} name={school.name} />
             </Card>
           )}
           <NearbyApartments items={apts} />
