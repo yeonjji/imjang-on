@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { PropertyType } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
+import { normalizeName } from '@/lib/slug';
 
 export type PropertyTypeSlug = 'apt' | 'officetel' | 'villa';
 
@@ -53,6 +54,19 @@ export function buildPriceCondition(
     cond.lte = BigInt(priceMax) * 10000n;
   }
   return cond;
+}
+
+export function buildKeywordCondition(
+  q: string | undefined,
+): Prisma.PropertyWhereInput | undefined {
+  const term = q?.trim();
+  if (!term) return undefined;
+  return {
+    OR: [
+      { nameNorm: { contains: normalizeName(term) } },
+      { region: { is: { fullName: { contains: term } } } },
+    ],
+  };
 }
 
 function rangeArray(start: number, end: number): number[] {
