@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import {
   kstDayStartUtc,
+  refDateFromStart,
   contractDateWindows,
   areaBandLabel,
   regionLabel,
@@ -16,6 +17,15 @@ describe('kstDayStartUtc', () => {
     // 2026-06-05 02:00 KST = 2026-06-04 17:00Z
     const now = new Date('2026-06-04T17:00:00.000Z');
     expect(kstDayStartUtc(now).toISOString()).toBe('2026-06-04T15:00:00.000Z');
+  });
+});
+
+describe('refDateFromStart', () => {
+  it('KST 자정(UTC 표현)에서 KST 달력 날짜를 반환 (UTC 기준 off-by-one 보정)', () => {
+    // 2026-06-06 00:00 KST = 2026-06-05T15:00Z → KST 날짜는 06-06 (UTC면 06-05로 하루 빠름)
+    expect(refDateFromStart(new Date('2026-06-05T15:00:00.000Z'))).toBe('2026-06-06');
+    // 연말 경계: 2026-01-01 00:00 KST = 2025-12-31T15:00Z
+    expect(refDateFromStart(new Date('2025-12-31T15:00:00.000Z'))).toBe('2026-01-01');
   });
 });
 
