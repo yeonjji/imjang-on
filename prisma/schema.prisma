@@ -681,6 +681,7 @@ model SubscriptionNotice {
 
   location Unsupported("geography(Point,4326)")?
   rawJson  Json
+  contentHash String? @db.VarChar(64)
 
   updatedAt DateTime @updatedAt
   units     SubscriptionUnit[]
