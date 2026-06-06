@@ -2,6 +2,13 @@ import Link from 'next/link';
 import { formatBillion } from '@/lib/format';
 import type { MarketBriefing } from '@/lib/briefing';
 
+/** 시군구로 필터된 실거래가 목록 링크. sido가 있으면 필터 패널에서 선택 상태로 표시된다. */
+function listRegionHref({ sigunguCode, sido }: { sigunguCode: string; sido: string }): string {
+  const qs = new URLSearchParams({ region: sigunguCode });
+  if (sido) qs.set('sido', sido);
+  return `/list?${qs.toString()}`;
+}
+
 export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }) {
   if (!briefing) return null;
   const { summary, popularRegions, surgeRegions, hashtags, refDate, isFallback } = briefing;
@@ -31,7 +38,7 @@ export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }
             오늘 시장에서 무슨 일이 <span className="text-[var(--color-blue)]">있었나</span>
           </h3>
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-[var(--color-line)] md:grid-cols-5">
-            <Tile k="🧾 오늘 등록된 실거래" v={`${summary.txCount.toLocaleString('ko-KR')}건`} sub="전국 매매 신고분" />
+            <Tile k="🧾 오늘 등록된 실거래" v={`${summary.txCount.toLocaleString('ko-KR')}건`} sub="전국 매매 신고분" href="/list" />
             {summary.highest && (
               <Tile k="🔥 최고가 거래" v={formatBillion(summary.highest.amountManwon)} sub={`${summary.highest.regionLabel} · ${summary.highest.propertyName}`} href={`/apt/${summary.highest.propertyId}`} />
             )}
@@ -39,9 +46,9 @@ export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }
               <Tile k="📉 최저가 거래" v={formatBillion(summary.lowest.amountManwon)} sub={`${summary.lowest.regionLabel} · ${summary.lowest.propertyName}`} href={`/apt/${summary.lowest.propertyId}`} />
             )}
             {summary.topRegion && (
-              <Tile k="🚀 가장 많이 거래된 지역" v={summary.topRegion.label} sub={`${summary.topRegion.count}건`} href={`/region/${summary.topRegion.code}`} />
+              <Tile k="🚀 가장 많이 거래된 지역" v={summary.topRegion.label} sub={`${summary.topRegion.count}건`} href={listRegionHref(summary.topRegion)} />
             )}
-            {summary.topAreaBand && <Tile k="💡 최다 거래 평형" v={summary.topAreaBand.label.replace('전용 ', '')} sub="전용면적 기준" />}
+            {summary.topAreaBand && <Tile k="💡 최다 거래 평형" v={summary.topAreaBand.label.replace('전용 ', '')} sub="전용면적 기준" href={`/list?area=${summary.topAreaBand.areaRange}`} />}
           </div>
         </section>
 
@@ -55,7 +62,7 @@ export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }
               {popularRegions.map((r, i) => (
                 <li key={r.code} className="flex items-center gap-3 border-b border-dashed border-[var(--color-line)] py-2.5 last:border-0">
                   <span className={`grid h-[22px] w-[22px] flex-none place-items-center rounded-md text-xs font-black ${i === 0 ? 'bg-[var(--color-blue)] text-white' : 'bg-[var(--color-soft)] text-[var(--color-blue-dark)]'}`}>{i + 1}</span>
-                  <Link href={`/region/${r.code}`} className="w-[88px] flex-none truncate text-sm font-bold hover:underline">{r.label}</Link>
+                  <Link href={listRegionHref(r)} className="w-[88px] flex-none truncate text-sm font-bold hover:underline">{r.label}</Link>
                   <span className="h-2 flex-1 overflow-hidden rounded-full bg-[var(--color-sky-soft)]">
                     <span className="block h-full rounded-full bg-gradient-to-r from-[var(--color-blue)] to-[var(--color-sky)]" style={{ width: `${Math.max(8, (r.count / maxCount) * 100)}%` }} />
                   </span>
@@ -74,7 +81,7 @@ export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }
             <ul>
               {surgeRegions.map((s) => (
                 <li key={s.code} className="flex items-center justify-between border-b border-dashed border-[var(--color-line)] py-2.5 last:border-0">
-                  <Link href={`/region/${s.code}`} className="text-sm font-bold hover:underline">
+                  <Link href={listRegionHref(s)} className="text-sm font-bold hover:underline">
                     📍 {s.label}
                     <small className="mt-0.5 block font-medium text-[var(--color-muted)]">최근 30일 {s.recent}건 (직전 {s.prev}건)</small>
                   </Link>

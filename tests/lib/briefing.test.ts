@@ -4,6 +4,7 @@ import {
   refDateFromStart,
   contractDateWindows,
   areaBandLabel,
+  areaBandToRange,
   regionLabel,
   buildHashtags,
   getMarketBriefing,
@@ -52,6 +53,16 @@ describe('areaBandLabel', () => {
     expect(areaBandLabel(101)).toBe('전용 85~102㎡');
     expect(areaBandLabel(120)).toBe('전용 102~135㎡');
     expect(areaBandLabel(140)).toBe('전용 135㎡ 초과');
+  });
+});
+
+describe('areaBandToRange', () => {
+  it('브리핑 평형 라벨을 목록 면적 구간으로 매핑 (가장 가까운 구간)', () => {
+    expect(areaBandToRange('전용 60㎡ 미만')).toBe('small');
+    expect(areaBandToRange('전용 60~85㎡')).toBe('medium');
+    expect(areaBandToRange('전용 85~102㎡')).toBe('large');
+    expect(areaBandToRange('전용 102~135㎡')).toBe('xlarge');
+    expect(areaBandToRange('전용 135㎡ 초과')).toBe('xlarge');
   });
 });
 
@@ -142,8 +153,11 @@ describe('getMarketBriefing 집계', () => {
     expect(b!.summary.highest?.regionLabel).toBe('시드시');
     expect(b!.summary.lowest?.amountManwon).toBe(2_100);
     expect(b!.summary.topRegion?.label).toBe('시드시');
+    expect(b!.summary.topRegion?.sigunguCode).toBe(SGG_HOT);
+    expect(b!.summary.topRegion?.sido).toBe('경기');
     expect(b!.summary.topAreaBand?.label).toBe('전용 60~85㎡');
-    expect(b!.popularRegions.some((r) => r.label === '시드시')).toBe(true);
+    expect(b!.summary.topAreaBand?.areaRange).toBe('medium');
+    expect(b!.popularRegions.some((r) => r.label === '시드시' && r.sigunguCode === SGG_HOT)).toBe(true);
     expect(b!.hashtags).toContain('#오늘의실거래');
   });
 });

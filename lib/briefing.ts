@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { DealType, Prisma } from '@prisma/client';
 import { formatDate } from '@/lib/format';
+import type { AreaRange } from '@/lib/property';
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
@@ -51,6 +52,21 @@ export function areaBandLabel(sqm: number): string {
   return band.label;
 }
 
+/** 브리핑 평형 라벨 → 실거래가 목록(/list)의 면적 구간(가장 가까운 구간). */
+const AREA_BAND_TO_RANGE: Record<string, AreaRange> = {
+  '전용 60㎡ 미만': 'small',
+  '전용 60~85㎡': 'medium',
+  '전용 85~102㎡': 'large',
+  '전용 102~135㎡': 'xlarge',
+  '전용 135㎡ 초과': 'xlarge',
+};
+
+export function areaBandToRange(label: string): AreaRange {
+  const range = AREA_BAND_TO_RANGE[label];
+  if (!range) throw new Error(`areaBandToRange: unexpected label ${label}`);
+  return range;
+}
+
 /** "경기도 수원시 영통구" → "수원시 영통구" (시·도 토큰 제거). 단일 토큰은 그대로. */
 export function regionLabel(fullName: string): string {
   const parts = fullName.trim().split(/\s+/);
@@ -79,11 +95,15 @@ export interface TxHighlight {
 }
 export interface RegionCount {
   code: string;
+  sigunguCode: string;
+  sido: string;
   label: string;
   count: number;
 }
 export interface SurgeRegion {
   code: string;
+  sigunguCode: string;
+  sido: string;
   label: string;
   recent: number;
   prev: number;
@@ -97,7 +117,7 @@ export interface MarketBriefing {
     highest: TxHighlight | null;
     lowest: TxHighlight | null;
     topRegion: RegionCount | null;
-    topAreaBand: { label: string; count: number } | null;
+    topAreaBand: { label: string; count: number; areaRange: AreaRange } | null;
   };
   popularRegions: RegionCount[];
   surgeRegions: SurgeRegion[];
@@ -107,14 +127,14 @@ export interface MarketBriefing {
 const SURGE_MIN_RECENT = 30; // 급증 후보 최소 최근거래 건수(노이즈 필터)
 
 /** sigunguCode 집합 → { sigunguCode: {code, label} } 매핑 */
-async function resolveRegions(codes: string[]): Promise<Map<string, { code: string; label: string }>> {
+async function resolveRegions(codes: string[]): Promise<Map<string, { code: string; sido: string; label: string }>> {
   const rows = await prisma.region.findMany({
     where: { sigunguCode: { in: codes }, level: 2, isAbolished: false },
-    select: { sigunguCode: true, code: true, fullName: true },
+    select: { sigunguCode: true, code: true, sido: true, fullName: true },
   });
-  const map = new Map<string, { code: string; label: string }>();
+  const map = new Map<string, { code: string; sido: string; label: string }>();
   for (const r of rows) {
-    if (r.sigunguCode) map.set(r.sigunguCode, { code: r.code, label: regionLabel(r.fullName) });
+    if (r.sigunguCode) map.set(r.sigunguCode, { code: r.code, sido: r.sido, label: regionLabel(r.fullName) });
   }
   return map;
 }
@@ -202,11 +222,14 @@ export async function getMarketBriefing(now: Date = new Date()): Promise<MarketB
   const regionMap = await resolveRegions(Array.from(allCodes));
   const labelOf = (sgg: string) => regionMap.get(sgg)?.label ?? sgg;
   const codeOf = (sgg: string) => regionMap.get(sgg)?.code ?? sgg;
+  const sidoOf = (sgg: string) => regionMap.get(sgg)?.sido ?? '';
 
   // 5) 조립
   const topAreaBand = areaBandCounts.reduce((a, b) => (b.count > a.count ? b : a));
   const popularRegions: RegionCount[] = regionGroups.map((g) => ({
     code: codeOf(g.sigunguCode),
+    sigunguCode: g.sigunguCode,
+    sido: sidoOf(g.sigunguCode),
     label: labelOf(g.sigunguCode),
     count: g._count._all,
   }));
@@ -219,7 +242,7 @@ export async function getMarketBriefing(now: Date = new Date()): Promise<MarketB
       const recent = g._count._all;
       const prev = prevMap.get(g.sigunguCode) ?? 0;
       const changePct = prev === 0 ? 100 : Math.round(((recent - prev) / prev) * 100);
-      return { code: codeOf(g.sigunguCode), label: labelOf(g.sigunguCode), recent, prev, changePct };
+      return { code: codeOf(g.sigunguCode), sigunguCode: g.sigunguCode, sido: sidoOf(g.sigunguCode), label: labelOf(g.sigunguCode), recent, prev, changePct };
     })
     .filter((s) => s.changePct > 0)
     .sort((a, b) => b.changePct - a.changePct)
@@ -242,7 +265,13 @@ export async function getMarketBriefing(now: Date = new Date()): Promise<MarketB
   return {
     refDate,
     isFallback,
-    summary: { txCount, highest, lowest, topRegion, topAreaBand: topAreaBand.count > 0 ? topAreaBand : null },
+    summary: {
+      txCount,
+      highest,
+      lowest,
+      topRegion,
+      topAreaBand: topAreaBand.count > 0 ? { ...topAreaBand, areaRange: areaBandToRange(topAreaBand.label) } : null,
+    },
     popularRegions,
     surgeRegions,
     hashtags,
