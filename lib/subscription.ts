@@ -304,7 +304,7 @@ export function parseSigungu(address: string | null, regionName: string | null):
     const guGun = tokens.find((t) => t.endsWith('구') || t.endsWith('군'));
     if (guGun) return guGun;
     const si = tokens.find((t) => t.endsWith('시'));
-    if (si) return si;
+    if (si) return si.replace(/(특별자치시|특별시|광역시)$/, '');
   }
   return regionName ?? null;
 }
@@ -346,7 +346,9 @@ export function assembleWeeklyBoard(rows: WeeklyNoticeRow[], today: Date = new D
   }
 
   const days: WeeklyBoardDay[] = dates.map((date, i) => {
-    const sorted = buckets[i].sort((a, b) => TONE_ORDER[a.tone] - TONE_ORDER[b.tone]);
+    const sorted = buckets[i].sort(
+      (a, b) => TONE_ORDER[a.tone] - TONE_ORDER[b.tone] || a.name.localeCompare(b.name, 'ko'),
+    );
     return {
       date,
       weekday: WEEKDAYS[i],

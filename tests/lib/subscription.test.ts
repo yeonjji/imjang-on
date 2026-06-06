@@ -163,6 +163,11 @@ describe('parseSigungu', () => {
   it('둘 다 없으면 null', () => {
     expect(parseSigungu(null, null)).toBeNull();
   });
+  it('특별자치시·광역시는 접미사를 떼고 축약한다', () => {
+    expect(parseSigungu('세종특별자치시 보람동', '세종')).toBe('세종');
+    expect(parseSigungu('부산광역시 해운대구 우동', '부산')).toBe('해운대구'); // 구 우선
+    expect(parseSigungu('부산광역시 강서동', '부산')).toBe('부산');
+  });
 });
 
 const row = (o: Partial<WeeklyNoticeRow> & { id: bigint; name: string }): WeeklyNoticeRow => ({
