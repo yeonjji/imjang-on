@@ -2,7 +2,7 @@ import { SubscriptionCategory, SubscriptionSource } from '@prisma/client';
 import { logger } from '@/lib/logger';
 import { fetchOdcloud } from './http';
 import { parseFlexibleDate } from './dates';
-import type { NormalizedNotice, NormalizedUnit, NoticeWithUnits } from './types';
+import type { NormalizedNotice, NormalizedUnit } from './types';
 
 export interface ApplyhomeCategoryConfig {
   category: SubscriptionCategory;
@@ -99,30 +99,6 @@ export async function fetchApplyhomeNotices(
       out.push(notice);
     }
     logger.info({ category: cfg.category, page, fetched: out.length, totalCount }, 'applyhome notice page');
-    if (page * PER >= totalCount || data.length === 0) break;
-    page++;
-  }
-  return out;
-}
-
-export async function fetchApplyhomeCategory(
-  cfg: ApplyhomeCategoryConfig,
-): Promise<NoticeWithUnits[]> {
-  const out: NoticeWithUnits[] = [];
-  const PER = 100;
-  let page = 1;
-  while (true) {
-    const { data, totalCount } = await fetchOdcloud(cfg.detailOp, { page, perPage: PER });
-    for (const row of data) {
-      const notice = normalizeNotice(row as Record<string, unknown>, cfg);
-      if (!notice.houseManageNo || !notice.pblancNo) {
-        logger.warn({ category: cfg.category, sourceKey: notice.sourceKey }, 'skip notice missing id');
-        continue;
-      }
-      const units = await fetchUnits(cfg, notice.houseManageNo, notice.pblancNo);
-      out.push({ notice, units });
-    }
-    logger.info({ category: cfg.category, page, fetched: out.length, totalCount }, 'applyhome page');
     if (page * PER >= totalCount || data.length === 0) break;
     page++;
   }
