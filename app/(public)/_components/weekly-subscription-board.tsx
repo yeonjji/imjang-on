@@ -13,11 +13,11 @@ function SummaryHeader({ board }: { board: WeeklyBoard }) {
     { n: board.summary.closed, label: '마감', cls: 'bg-slate-100 text-slate-600 ring-slate-200', dot: 'bg-slate-400' },
   ];
   return (
-    <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-3">
+    <div className="flex gap-2">
       {cards.map((c) => (
-        <div key={c.label} className={`rounded-2xl px-3 py-3 ring-1 ${c.cls}`}>
-          <strong className="block text-2xl font-black leading-none">{c.n}</strong>
-          <span className="mt-1.5 flex items-center gap-1 text-xs font-bold">
+        <div key={c.label} className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 ring-1 ${c.cls}`}>
+          <strong className="text-lg font-black leading-none">{c.n}</strong>
+          <span className="flex items-center gap-1 text-xs font-bold">
             <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />
             {c.label}
           </span>
@@ -48,9 +48,9 @@ function DayItems({ day }: { day: WeeklyBoardDay }) {
 export function WeeklySubscriptionBoard({ board }: { board: WeeklyBoard }) {
   return (
     <section className="mt-10">
-      <p className="mb-1 text-xs font-bold text-[var(--color-blue)]"><span aria-hidden>📅</span> 이번주 청약</p>
-      <div className="mb-4 flex items-end justify-between gap-3">
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
+          <p className="mb-1 text-xs font-bold text-[var(--color-blue)]"><span aria-hidden>📅</span> 이번주 청약</p>
           <h2 className="mb-1 text-2xl font-black tracking-tight text-[var(--color-blue-dark)]">
             이번 주 청약을 한눈에
           </h2>
@@ -58,12 +58,13 @@ export function WeeklySubscriptionBoard({ board }: { board: WeeklyBoard }) {
             {formatMd(board.weekStart)} – {formatMd(board.weekEnd)} · 진행중·예정·마감 일정
           </p>
         </div>
-        <Link href="/subscription" className="shrink-0 text-xs font-bold text-[var(--color-blue)]">
-          전체 보기 →
-        </Link>
+        <div className="flex items-center gap-3 md:flex-col md:items-end">
+          <SummaryHeader board={board} />
+          <Link href="/subscription" className="shrink-0 text-xs font-bold text-[var(--color-blue)]">
+            전체 보기 →
+          </Link>
+        </div>
       </div>
-
-      <SummaryHeader board={board} />
 
       {board.total === 0 ? (
         <div className="rounded-2xl border border-[var(--color-line)] bg-white px-5 py-8 text-center">
