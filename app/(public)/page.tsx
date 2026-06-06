@@ -4,7 +4,7 @@ import { HeroSection } from './_components/hero-section';
 import { StatsBar } from './_components/stats-bar';
 import { AmenityHub } from './_components/amenity-hub';
 import { MarketBriefing } from './_components/market-briefing';
-import { getSidoList } from '@/lib/region';
+import { getSidoList, getPopularSigungus } from '@/lib/region';
 import { getHomeStats } from '@/lib/stats';
 import { getMarketBriefing } from '@/lib/briefing';
 import type { Metadata } from 'next';
@@ -17,11 +17,16 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function HomePage() {
-  const [sidoList, stats, briefing] = await Promise.all([getSidoList(), getHomeStats(), getMarketBriefing()]);
+  const [sidoList, stats, briefing, popularRegions] = await Promise.all([
+    getSidoList(),
+    getHomeStats(),
+    getMarketBriefing(),
+    getPopularSigungus(),
+  ]);
 
   return (
     <section className="mx-auto max-w-[1180px] px-6 py-12">
-      <HeroSection />
+      <HeroSection popularRegions={popularRegions} />
       <StatsBar stats={stats} />
 
       <div className="mt-10 flex flex-col gap-6 md:flex-row md:items-stretch">

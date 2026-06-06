@@ -88,3 +88,54 @@ export function sidoFromPrefix(prefix: string): string | undefined {
   if (!prefix) return undefined;
   return PREFIX_TO_SIDO[prefix];
 }
+
+export interface PopularRegion {
+  sigunguCode: string;
+  sido: string;
+  sigungu: string;
+}
+
+/**
+ * 거래량(최근 90일) 기준 인기 시군구 상위 N개.
+ * 최근 90일 결과가 limit 미만이면 전체 기간으로 폴백한다.
+ * 메인 페이지 ISR(revalidate=3600)로 캐시되므로 시간당 1회만 집계된다.
+ */
+export async function getPopularSigungus(limit = 6): Promise<PopularRegion[]> {
+  const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+
+  async function topCodes(where: { contractDate?: { gte: Date } }) {
+    const rows = await prisma.transaction.groupBy({
+      by: ['sigunguCode'],
+      where,
+      _count: { sigunguCode: true },
+      orderBy: { _count: { sigunguCode: 'desc' } },
+      take: limit,
+    });
+    return rows.map((r) => r.sigunguCode);
+  }
+
+  let codes = await topCodes({ contractDate: { gte: since } });
+  if (codes.length < limit) {
+    codes = await topCodes({});
+  }
+  if (codes.length === 0) return [];
+
+  const regions = await prisma.region.findMany({
+    where: { sigunguCode: { in: codes }, level: 2, isAbolished: false },
+    select: { sigunguCode: true, sigungu: true },
+  });
+  const labelByCode = new Map(
+    regions
+      .filter((r): r is typeof r & { sigunguCode: string } => r.sigunguCode !== null)
+      .map((r) => [r.sigunguCode, r.sigungu]),
+  );
+
+  const result: PopularRegion[] = [];
+  for (const code of codes) {
+    const sigungu = labelByCode.get(code);
+    const sido = sidoFromPrefix(code.slice(0, 2));
+    if (!sigungu || !sido) continue;
+    result.push({ sigunguCode: code, sido, sigungu });
+  }
+  return result;
+}

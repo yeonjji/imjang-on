@@ -3,13 +3,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import type { PopularRegion } from '@/lib/region';
 
 interface Result {
   properties: Array<{ id: string; name: string; region: string; type: string }>;
   regions: Array<{ code: string; fullName: string }>;
 }
-
-const POPULAR = ['마포', '송도', '동탄', '강남'];
 
 function typeToHref(type: string, id: string): string {
   if (type === 'APARTMENT') return `/apt/${id}`;
@@ -17,7 +16,7 @@ function typeToHref(type: string, id: string): string {
   return `/villa/${id}`;
 }
 
-export function HeroSearch() {
+export function HeroSearch({ popularRegions }: { popularRegions: PopularRegion[] }) {
   const router = useRouter();
   const [q, setQ] = useState('');
   const [results, setResults] = useState<Result | null>(null);
@@ -93,14 +92,16 @@ export function HeroSearch() {
         </div>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="text-xs font-bold text-[var(--color-muted)]">인기검색</span>
-        {POPULAR.map((k) => (
-          <Link key={k} href={`/search?q=${encodeURIComponent(k)}`} className="rounded-full border border-[var(--color-line)] bg-white px-3 py-2 text-xs font-bold text-[var(--color-blue-dark)] hover:border-[var(--color-blue)]">
-            # {k}
-          </Link>
-        ))}
-      </div>
+      {popularRegions.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold text-[var(--color-muted)]">인기 지역</span>
+          {popularRegions.map((r) => (
+            <Link key={r.sigunguCode} href={`/list?sido=${encodeURIComponent(r.sido)}&region=${encodeURIComponent(r.sigunguCode)}`} className="rounded-full border border-[var(--color-line)] bg-white px-3 py-2 text-xs font-bold text-[var(--color-blue-dark)] hover:border-[var(--color-blue)]">
+              # {r.sigungu}
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sidoPrefix, sidoFromPrefix, shortSidoFromRegionCode } from '@/lib/region';
+import { sidoPrefix, sidoFromPrefix, shortSidoFromRegionCode, getPopularSigungus } from '@/lib/region';
 
 describe('sidoPrefix', () => {
   it('짧은 시도명', () => {
@@ -51,5 +51,36 @@ describe('shortSidoFromRegionCode', () => {
   });
   it('빈 문자열은 null', () => {
     expect(shortSidoFromRegionCode('')).toBeNull();
+  });
+});
+
+describe('getPopularSigungus', () => {
+  it('limit 이하의 배열을 반환한다', async () => {
+    const result = await getPopularSigungus(6);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeLessThanOrEqual(6);
+  });
+
+  it('각 항목은 sigunguCode/sido/sigungu 문자열을 가진다', async () => {
+    const result = await getPopularSigungus(6);
+    for (const r of result) {
+      expect(typeof r.sigunguCode).toBe('string');
+      expect(typeof r.sido).toBe('string');
+      expect(typeof r.sigungu).toBe('string');
+      expect(r.sigunguCode.length).toBe(5);
+    }
+  });
+
+  it('sido는 sigunguCode 앞 2자리의 시도 단축명과 일치한다', async () => {
+    const result = await getPopularSigungus(6);
+    for (const r of result) {
+      expect(r.sido).toBe(sidoFromPrefix(r.sigunguCode.slice(0, 2)));
+    }
+  });
+
+  it('sigunguCode는 중복되지 않는다', async () => {
+    const result = await getPopularSigungus(6);
+    const codes = result.map((r) => r.sigunguCode);
+    expect(new Set(codes).size).toBe(codes.length);
   });
 });

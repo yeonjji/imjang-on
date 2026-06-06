@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { HeroSearch } from './hero-search';
+import type { PopularRegion } from '@/lib/region';
 import { TypeIconGrid } from './type-icon-grid';
 
-export function HeroSection() {
+export function HeroSection({ popularRegions }: { popularRegions: PopularRegion[] }) {
   function scrollToFilter() {
     document.getElementById('search-filter')?.scrollIntoView({ behavior: 'smooth' });
   }
@@ -19,7 +20,7 @@ export function HeroSection() {
           어디든, <span className="text-[var(--color-blue)]">임장ON</span>에서 바로 검색하세요
         </h1>
 
-        <HeroSearch />
+        <HeroSearch popularRegions={popularRegions} />
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <button
