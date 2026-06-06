@@ -13,6 +13,7 @@ interface Props {
   sort: SortOption;
   sigunguCode?: string;
   sido?: string;
+  q?: string;
   page: number;
 }
 
@@ -25,6 +26,7 @@ export async function PropertyList({
   sort,
   sigunguCode,
   sido,
+  q,
   page,
 }: Props) {
   const { rows, total, totalPages, perPage } = await getPropertyList({
@@ -36,6 +38,7 @@ export async function PropertyList({
     sort,
     sigunguCode,
     sido,
+    q,
     page,
     perPage: 30,
   });
