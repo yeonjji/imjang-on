@@ -82,9 +82,14 @@ export function WeeklySubscriptionBoard({ board }: { board: WeeklyBoard }) {
                   day.isToday ? 'border-[var(--color-blue)] bg-[var(--color-soft)]' : 'border-[var(--color-line)]'
                 }`}
               >
-                <div className="w-10 shrink-0">
+                <div className="w-12 shrink-0">
                   <strong className="block text-sm font-black text-[var(--color-blue-dark)]">{day.weekday}</strong>
                   <span className="block text-[10px] font-medium text-[var(--color-muted)]">{formatMd(day.date)}</span>
+                  {day.isToday && (
+                    <span className="mt-1 inline-block rounded-full bg-[var(--color-blue-dark)] px-1.5 py-0.5 text-[8px] font-black leading-none text-white">
+                      TODAY
+                    </span>
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <DayItems day={day} />
@@ -101,11 +106,15 @@ export function WeeklySubscriptionBoard({ board }: { board: WeeklyBoard }) {
                   day.isToday ? 'border-[var(--color-blue)] bg-[var(--color-soft)]' : 'border-[var(--color-line)]'
                 }`}
               >
-                <div className="mb-2.5 border-b border-[var(--color-line)] pb-2">
-                  <strong className="block text-sm font-black text-[var(--color-blue-dark)]">
+                <div className="mb-2.5 flex items-center gap-1.5 border-b border-[var(--color-line)] pb-2">
+                  <strong className="text-sm font-black text-[var(--color-blue-dark)]">
                     {day.weekday} {formatMd(day.date)}
                   </strong>
-                  {day.isToday && <span className="text-[10px] font-bold text-[var(--color-blue)]">오늘</span>}
+                  {day.isToday && (
+                    <span className="rounded-full bg-[var(--color-blue-dark)] px-1.5 py-0.5 text-[9px] font-black leading-none text-white">
+                      TODAY
+                    </span>
+                  )}
                 </div>
                 <div className="flex-1">
                   <DayItems day={day} />
