@@ -8,6 +8,7 @@ import {
   formatAreaRange,
   getWeekRange,
   boardTone,
+  parseSigungu,
 } from '@/lib/subscription';
 
 const D = (s: string) => new Date(`${s}T00:00:00.000Z`);
@@ -140,5 +141,24 @@ describe('boardTone', () => {
   });
   it('마감은 회색 + 마감', () => {
     expect(boardTone({ status: 'CLOSED', dday: null })).toEqual({ tone: 'gray', badge: '마감' });
+  });
+});
+
+describe('parseSigungu', () => {
+  it('구가 있으면 구를 반환한다', () => {
+    expect(parseSigungu('서울특별시 마포구 합정동 1-2', '서울')).toBe('마포구');
+  });
+  it('군이 있으면 군을 반환한다', () => {
+    expect(parseSigungu('경기도 양평군 양평읍', '경기')).toBe('양평군');
+  });
+  it('구·군이 없으면 시를 반환한다', () => {
+    expect(parseSigungu('경기도 부천시 원미구 ', '경기')).toBe('원미구');
+    expect(parseSigungu('경기도 부천시', '경기')).toBe('부천시');
+  });
+  it('주소가 없으면 regionName 폴백', () => {
+    expect(parseSigungu(null, '서울')).toBe('서울');
+  });
+  it('둘 다 없으면 null', () => {
+    expect(parseSigungu(null, null)).toBeNull();
   });
 });

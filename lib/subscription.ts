@@ -298,6 +298,17 @@ export function boardTone(st: DerivedStatus): { tone: BoardTone; badge: string }
   return { tone: 'green', badge: '진행중' };
 }
 
+export function parseSigungu(address: string | null, regionName: string | null): string | null {
+  if (address) {
+    const tokens = address.match(/[가-힣]+[시군구]/g) ?? [];
+    const guGun = tokens.find((t) => t.endsWith('구') || t.endsWith('군'));
+    if (guGun) return guGun;
+    const si = tokens.find((t) => t.endsWith('시'));
+    if (si) return si;
+  }
+  return regionName ?? null;
+}
+
 export async function getSubscriptionById(id: bigint): Promise<SubscriptionDetail | null> {
   return prisma.subscriptionNotice.findUnique({
     where: { id },
