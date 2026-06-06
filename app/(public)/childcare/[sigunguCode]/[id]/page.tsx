@@ -13,7 +13,7 @@ import { ChildcareDetailSidebar } from './_components/childcare-detail-sidebar';
 import { NearbyChildcare } from './_components/nearby-childcare';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
-import { NaverMap } from '@/components/ui/naver-map';
+import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import type { Metadata } from 'next';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
@@ -85,7 +85,7 @@ export default async function ChildcareDetailPage({ params }: Params) {
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
-              <NaverMap lat={coord.lat} lng={coord.lng} name={item.name} />
+              <LocationViewer lat={coord.lat} lng={coord.lng} name={item.name} />
             </Card>
           )}
           <NearbyApartments items={apts} />

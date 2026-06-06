@@ -15,7 +15,7 @@ import { ChargerStatusTable } from './_components/charger-status-table';
 import { UrbanInfo } from '@/app/(public)/urban/[category]/_components/urban-info';
 import { UrbanDetailSidebar } from '@/app/(public)/urban/[category]/_components/urban-detail-sidebar';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
-import { NaverMap } from '@/components/ui/naver-map';
+import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
@@ -95,7 +95,7 @@ export default async function ChargerDetailPage({ params }: Params) {
           {coord ? (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
-              <NaverMap lat={coord.lat} lng={coord.lng} name={item.name} />
+              <LocationViewer lat={coord.lat} lng={coord.lng} name={item.name} />
             </Card>
           ) : (
             <Card>
