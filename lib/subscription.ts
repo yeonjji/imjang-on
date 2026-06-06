@@ -309,6 +309,56 @@ export function parseSigungu(address: string | null, regionName: string | null):
   return regionName ?? null;
 }
 
+const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
+const TONE_ORDER: Record<BoardTone, number> = { orange: 0, green: 1, blue: 2, gray: 3 };
+
+function clampToWeek(d: Date, weekStart: Date, weekEnd: Date): Date {
+  if (dateInt(d) < dateInt(weekStart)) return weekStart;
+  if (dateInt(d) > dateInt(weekEnd)) return weekEnd;
+  return d;
+}
+
+export function assembleWeeklyBoard(rows: WeeklyNoticeRow[], today: Date = new Date()): WeeklyBoard {
+  const { weekStart, weekEnd, dates } = getWeekRange(today);
+  const buckets: WeeklyBoardItem[][] = dates.map(() => []);
+  const summary = { open: 0, upcoming: 0, closed: 0 };
+
+  for (const r of rows) {
+    const st = deriveStatus(r.receiptBegin, r.receiptEnd, today);
+    if (st.status === 'OPEN') summary.open++;
+    else if (st.status === 'UPCOMING') summary.upcoming++;
+    else summary.closed++;
+
+    const anchorRaw = st.status === 'UPCOMING' ? r.receiptBegin : (r.receiptEnd ?? r.receiptBegin);
+    if (!anchorRaw) continue;
+    const anchor = clampToWeek(anchorRaw, weekStart, weekEnd);
+    const idx = dates.findIndex((d) => dateInt(d) === dateInt(anchor));
+    if (idx < 0) continue;
+
+    const { tone, badge } = boardTone(st);
+    buckets[idx].push({
+      id: String(r.id),
+      name: r.name,
+      regionShort: parseSigungu(r.address, r.regionName),
+      tone,
+      badge,
+    });
+  }
+
+  const days: WeeklyBoardDay[] = dates.map((date, i) => {
+    const sorted = buckets[i].sort((a, b) => TONE_ORDER[a.tone] - TONE_ORDER[b.tone]);
+    return {
+      date,
+      weekday: WEEKDAYS[i],
+      isToday: dateInt(date) === dateInt(today),
+      items: sorted.slice(0, 3),
+      overflow: Math.max(0, sorted.length - 3),
+    };
+  });
+
+  return { weekStart, weekEnd, days, summary, total: rows.length };
+}
+
 export async function getSubscriptionById(id: bigint): Promise<SubscriptionDetail | null> {
   return prisma.subscriptionNotice.findUnique({
     where: { id },

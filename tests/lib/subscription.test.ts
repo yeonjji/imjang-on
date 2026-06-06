@@ -9,7 +9,9 @@ import {
   getWeekRange,
   boardTone,
   parseSigungu,
+  assembleWeeklyBoard,
 } from '@/lib/subscription';
+import type { WeeklyNoticeRow } from '@/lib/subscription';
 
 const D = (s: string) => new Date(`${s}T00:00:00.000Z`);
 
@@ -160,5 +162,65 @@ describe('parseSigungu', () => {
   });
   it('둘 다 없으면 null', () => {
     expect(parseSigungu(null, null)).toBeNull();
+  });
+});
+
+const row = (o: Partial<WeeklyNoticeRow> & { id: bigint; name: string }): WeeklyNoticeRow => ({
+  regionName: '서울', address: '서울특별시 마포구 합정동',
+  receiptBegin: null, receiptEnd: null, ...o,
+});
+
+describe('assembleWeeklyBoard', () => {
+  const today = D('2026-06-06');
+
+  it('항상 7일(월~일)을 만들고 오늘을 표시한다', () => {
+    const b = assembleWeeklyBoard([], today);
+    expect(b.days).toHaveLength(7);
+    expect(b.days[0].weekday).toBe('월');
+    expect(b.days[6].weekday).toBe('일');
+    expect(b.days.find((d) => d.isToday)?.date).toEqual(D('2026-06-06'));
+    expect(b.total).toBe(0);
+    expect(b.summary).toEqual({ open: 0, upcoming: 0, closed: 0 });
+  });
+
+  it('예정은 접수 시작일에, 마감/진행은 마감일에 배치한다', () => {
+    const b = assembleWeeklyBoard([
+      row({ id: 1n, name: '부천 센트럴포레', receiptBegin: D('2026-06-08'), receiptEnd: D('2026-06-10') }),
+      row({ id: 2n, name: '강동 리버파크', receiptBegin: D('2026-05-20'), receiptEnd: D('2026-06-02') }),
+      row({ id: 3n, name: '마포 더하이츠', receiptBegin: D('2026-06-01'), receiptEnd: D('2026-06-09') }),
+    ], today);
+    const tue = b.days.find((d) => d.weekday === '화')!;
+    expect(tue.items.map((i) => i.name)).toContain('강동 리버파크');
+    expect(tue.items[0].badge).toBe('마감');
+  });
+
+  it('상태별 summary를 집계한다', () => {
+    const b = assembleWeeklyBoard([
+      row({ id: 1n, name: 'A', receiptBegin: D('2026-06-01'), receiptEnd: D('2026-06-09') }),
+      row({ id: 2n, name: 'B', receiptBegin: D('2026-06-08'), receiptEnd: D('2026-06-10') }),
+      row({ id: 3n, name: 'C', receiptBegin: D('2026-05-20'), receiptEnd: D('2026-06-02') }),
+    ], today);
+    expect(b.summary).toEqual({ open: 1, upcoming: 1, closed: 1 });
+    expect(b.total).toBe(3);
+  });
+
+  it('하루 4건이면 3건 + overflow 1', () => {
+    const sameDay = { receiptBegin: D('2026-06-01'), receiptEnd: D('2026-06-04') };
+    const b = assembleWeeklyBoard([
+      row({ id: 1n, name: 'A', ...sameDay }), row({ id: 2n, name: 'B', ...sameDay }),
+      row({ id: 3n, name: 'C', ...sameDay }), row({ id: 4n, name: 'D', ...sameDay }),
+    ], today);
+    const thu = b.days.find((d) => d.weekday === '목')!;
+    expect(thu.items).toHaveLength(3);
+    expect(thu.overflow).toBe(1);
+  });
+
+  it('아이템에 링크용 id와 지역 축약을 담는다', () => {
+    const b = assembleWeeklyBoard([
+      row({ id: 7n, name: '마포 더하이츠', receiptBegin: D('2026-06-01'), receiptEnd: D('2026-06-09') }),
+    ], today);
+    const item = b.days.flatMap((d) => d.items).find((i) => i.name === '마포 더하이츠')!;
+    expect(item.id).toBe('7');
+    expect(item.regionShort).toBe('마포구');
   });
 });
