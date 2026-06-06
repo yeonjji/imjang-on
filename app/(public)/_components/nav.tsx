@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu } from 'lucide-react';
 import { SearchInput } from './search-input';
 import { useState } from 'react';
@@ -16,13 +17,15 @@ export function Nav() {
     <>
       <header className="sticky top-0 z-20 border-b border-[var(--color-line)] bg-white/85 backdrop-blur">
         <nav className="mx-auto flex h-[72px] max-w-[1180px] items-center gap-6 px-6">
-          <Link href="/" className="flex items-center gap-2.5">
-            <span className="grid h-[34px] w-[34px] place-items-center rounded-xl bg-gradient-to-br from-[var(--color-blue)] to-[var(--color-sky)] text-base font-black text-white">
-              임
-            </span>
-            <span className="text-[22px] font-black tracking-tighter text-[var(--color-blue-dark)]">
-              임장온
-            </span>
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/logo.png"
+              alt="임장온"
+              width={1814}
+              height={867}
+              priority
+              className="h-11 w-auto md:h-14"
+            />
           </Link>
 
           <div className="hidden gap-6 text-[15px] font-semibold text-[var(--color-muted)] md:flex md:items-center">
