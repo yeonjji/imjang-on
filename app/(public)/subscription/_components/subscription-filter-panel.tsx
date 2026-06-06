@@ -25,7 +25,7 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
 ];
 
 const SORT_OPTIONS: { value: string; label: string }[] = [
-  { value: 'recent', label: '접수마감일순' },
+  { value: 'recent', label: '마감임박순' },
   { value: 'notice', label: '공고일순' },
 ];
 
