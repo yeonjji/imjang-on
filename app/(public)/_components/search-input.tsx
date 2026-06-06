@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
@@ -11,6 +12,7 @@ interface Result {
 }
 
 export function SearchInput() {
+  const router = useRouter();
   const [q, setQ] = useState('');
   const [results, setResults] = useState<Result | null>(null);
   const [open, setOpen] = useState(false);
@@ -36,12 +38,6 @@ export function SearchInput() {
     return () => document.removeEventListener('mousedown', close);
   }, []);
 
-  function typeToHref(type: string, id: string): string {
-    if (type === 'APARTMENT') return `/apt/${id}`;
-    if (type === 'OFFICETEL') return `/officetel/${id}`;
-    return `/villa/${id}`;
-  }
-
   return (
     <div ref={ref} className="relative">
       <div className="relative">
@@ -50,6 +46,12 @@ export function SearchInput() {
           value={q}
           onChange={(e) => { setQ(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              const term = q.trim();
+              if (term) { setOpen(false); router.push(`/list?q=${encodeURIComponent(term)}`); }
+            }
+          }}
           placeholder="단지/지역명 검색"
           className="pl-8"
         />
@@ -62,7 +64,7 @@ export function SearchInput() {
               {results.properties.map((p) => (
                 <Link
                   key={p.id}
-                  href={typeToHref(p.type, p.id)}
+                  href={`/list?q=${encodeURIComponent(p.name)}`}
                   className="block rounded-lg px-3 py-2 hover:bg-[var(--color-soft)]"
                   onClick={() => setOpen(false)}
                 >
@@ -78,7 +80,7 @@ export function SearchInput() {
               {results.regions.map((r) => (
                 <Link
                   key={r.code}
-                  href={`/region/${r.code.slice(0, 5)}`}
+                  href={`/list?region=${r.code.slice(0, 5)}`}
                   className="block rounded-lg px-3 py-2 hover:bg-[var(--color-soft)]"
                   onClick={() => setOpen(false)}
                 >

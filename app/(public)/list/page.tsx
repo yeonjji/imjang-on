@@ -32,6 +32,7 @@ interface SearchParams {
   sort?: string;
   region?: string;
   sido?: string;
+  q?: string;
   page?: string;
 }
 
@@ -52,6 +53,7 @@ export default async function ListPage({
   const areaRange = sp.area as AreaRange | undefined;
   const sort = (sp.sort ?? 'recent') as SortOption;
   const page = Math.max(1, Number(sp.page ?? '1'));
+  const q = sp.q?.trim() || undefined;
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-8">
@@ -67,7 +69,9 @@ export default async function ListPage({
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">부동산 통합 검색</p>
         <h1 className="text-3xl font-black tracking-tight text-[var(--color-blue-dark)]">실거래가 목록</h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">
-          아파트, 오피스텔, 다세대의 매매·전세·월세 실거래가를 한 번에 확인하세요.
+          {q
+            ? `“${q}” 검색 결과`
+            : '아파트, 오피스텔, 다세대의 매매·전세·월세 실거래가를 한 번에 확인하세요.'}
         </p>
       </div>
 
@@ -102,6 +106,7 @@ export default async function ListPage({
               sort={sort}
               sigunguCode={sp.region}
               sido={sp.sido}
+              q={q}
               page={page}
             />
           </Suspense>

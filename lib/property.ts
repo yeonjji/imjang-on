@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { PropertyType } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
+import { normalizeName } from '@/lib/slug';
 
 export type PropertyTypeSlug = 'apt' | 'officetel' | 'villa';
 
@@ -36,6 +37,7 @@ export interface PropertyListParams {
   sort?: SortOption;
   sigunguCode?: string;
   sido?: string;
+  q?: string;
   page?: number;
   perPage?: number;
 }
@@ -55,6 +57,19 @@ export function buildPriceCondition(
   return cond;
 }
 
+export function buildKeywordCondition(
+  q: string | undefined,
+): Prisma.PropertyWhereInput | undefined {
+  const term = q?.trim();
+  if (!term) return undefined;
+  return {
+    OR: [
+      { nameNorm: { contains: normalizeName(term) } },
+      { region: { is: { fullName: { contains: term } } } },
+    ],
+  };
+}
+
 function rangeArray(start: number, end: number): number[] {
   return Array.from({ length: end - start }, (_, i) => start + i);
 }
@@ -68,6 +83,7 @@ export async function getPropertyList({
   sort = 'recent',
   sigunguCode,
   sido,
+  q,
   page = 1,
   perPage = 30,
 }: PropertyListParams) {
@@ -118,6 +134,11 @@ export async function getPropertyList({
             ? rangeArray(26, 35)
             : rangeArray(35, 100);
     where.areaTypes = { hasSome: areas };
+  }
+
+  const keywordCond = buildKeywordCondition(q);
+  if (keywordCond) {
+    where.AND = [keywordCond];
   }
 
   // deal + sort → orderBy
