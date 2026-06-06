@@ -89,7 +89,7 @@ export default async function AptDetailPage({ params }: Params) {
             <h2 className="mb-4 text-xl font-bold text-[var(--color-blue-dark)]">
               가격 흐름 그래프
             </h2>
-            <PriceCharts sale={chart.SALE} jeonse={chart.JEONSE} wolse={chart.WOLSE} />
+            <PriceCharts data={chart} />
           </section>
           <AreaComparison id="area" areas={areaSummary} />
           <NearbyPriceComparison id="nearby" items={nearby} slug="apt" />

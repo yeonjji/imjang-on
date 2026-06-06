@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import type { DealType, Prisma } from '@prisma/client';
+import type { MonthPoint } from '@/lib/price-chart';
 
 export async function getTransactionCounts(propertyId: bigint) {
   const rows = await prisma.transaction.groupBy({
@@ -30,31 +31,52 @@ export async function getTransactionsByType(propertyId: bigint, dealType: DealTy
   });
 }
 
-export async function getMonthlyChartData(propertyId: bigint) {
-  const rows = await prisma.$queryRaw<Array<{ month: Date; deal_type: DealType; avg_value: number | null; cnt: number }>>`
+export type ChartData = Record<DealType, MonthPoint[]>;
+
+export async function getMonthlyChartData(propertyId: bigint): Promise<ChartData> {
+  const rows = await prisma.$queryRaw<
+    Array<{
+      month: Date;
+      deal_type: DealType;
+      avg_value: number | null;
+      min_value: number | null;
+      max_value: number | null;
+      cnt: number;
+    }>
+  >`
     SELECT
       DATE_TRUNC('month', "contractDate")::date AS month,
       "dealType" AS deal_type,
-      AVG(
-        CASE
-          WHEN "dealType" = 'SALE' THEN "dealAmount"
-          WHEN "dealType" IN ('JEONSE', 'WOLSE') THEN "deposit"
-        END
-      )::float AS avg_value,
+      AVG(val)::float AS avg_value,
+      MIN(val)::float AS min_value,
+      MAX(val)::float AS max_value,
       COUNT(*)::int AS cnt
-    FROM "Transaction"
-    WHERE "propertyId" = ${propertyId}
-      AND "contractDate" >= NOW() - INTERVAL '24 months'
+    FROM (
+      SELECT
+        "contractDate",
+        "dealType",
+        CASE WHEN "dealType" = 'SALE' THEN "dealAmount" ELSE "deposit" END AS val
+      FROM "Transaction"
+      WHERE "propertyId" = ${propertyId}
+        AND "contractDate" >= NOW() - INTERVAL '24 months'
+    ) t
+    WHERE val IS NOT NULL
     GROUP BY 1, 2
     ORDER BY 1 ASC
   `;
-  const byType: Record<DealType, { month: string; value: number; count: number }[]> = { SALE: [], JEONSE: [], WOLSE: [] };
+
+  const byType: ChartData = { SALE: [], JEONSE: [], WOLSE: [] };
   for (const r of rows) {
-    const monthStr = r.month.toISOString().slice(0, 7);
-    if (r.avg_value !== null) {
-      byType[r.deal_type].push({ month: monthStr, value: r.avg_value, count: r.cnt });
-    }
+    if (r.avg_value === null || r.min_value === null || r.max_value === null) continue;
+    byType[r.deal_type].push({
+      month: r.month.toISOString().slice(0, 7),
+      avg: r.avg_value,
+      min: r.min_value,
+      max: r.max_value,
+      count: r.cnt,
+    });
   }
+
   return byType;
 }
 
