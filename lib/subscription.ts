@@ -361,6 +361,37 @@ export function assembleWeeklyBoard(rows: WeeklyNoticeRow[], today: Date = new D
   return { weekStart, weekEnd, days, summary, total: rows.length };
 }
 
+export async function getWeeklySubscriptions(today: Date = new Date()): Promise<WeeklyBoard> {
+  const { weekStart, weekEnd } = getWeekRange(today);
+  const rows = await prisma.$queryRaw<
+    Array<{
+      id: bigint; name: string; region_name: string | null; address: string | null;
+      receipt_begin: Date | null; receipt_end: Date | null;
+    }>
+  >(Prisma.sql`
+    SELECT n.id, n.name,
+           n."regionName" AS region_name,
+           n.address AS address,
+           n."receiptBegin" AS receipt_begin,
+           n."receiptEnd" AS receipt_end
+    FROM "SubscriptionNotice" n
+    WHERE (n."receiptBegin" BETWEEN ${weekStart} AND ${weekEnd})
+       OR (n."receiptEnd"   BETWEEN ${weekStart} AND ${weekEnd})
+    ORDER BY n."receiptEnd" ASC NULLS LAST, n.id ASC
+  `);
+
+  const mapped: WeeklyNoticeRow[] = rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    regionName: r.region_name,
+    address: r.address,
+    receiptBegin: r.receipt_begin,
+    receiptEnd: r.receipt_end,
+  }));
+
+  return assembleWeeklyBoard(mapped, today);
+}
+
 export async function getSubscriptionById(id: bigint): Promise<SubscriptionDetail | null> {
   return prisma.subscriptionNotice.findUnique({
     where: { id },
