@@ -221,6 +221,6 @@ function Stat({ k, v }: { k: string; v: string }) {
 
 function EndDot(props: { cx?: number; cy?: number; index?: number; color: string; lastIdx: number }) {
   const { cx, cy, index, color, lastIdx } = props;
-  if (index !== lastIdx || cx == null || cy == null) return <g />;
+  if (index !== lastIdx || cx == null || cy == null) return null;
   return <circle cx={cx} cy={cy} r={4.5} fill={color} stroke="#fff" strokeWidth={2} />;
 }
