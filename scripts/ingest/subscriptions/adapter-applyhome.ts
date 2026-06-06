@@ -81,6 +81,30 @@ export function normalizeUnit(row: Record<string, unknown>): NormalizedUnit {
   };
 }
 
+// detail 페이징만 수행. units 는 받지 않는다(변경 감지 후 대상만 fetchUnits).
+export async function fetchApplyhomeNotices(
+  cfg: ApplyhomeCategoryConfig,
+): Promise<NormalizedNotice[]> {
+  const out: NormalizedNotice[] = [];
+  const PER = 100;
+  let page = 1;
+  while (true) {
+    const { data, totalCount } = await fetchOdcloud(cfg.detailOp, { page, perPage: PER });
+    for (const row of data) {
+      const notice = normalizeNotice(row as Record<string, unknown>, cfg);
+      if (!notice.houseManageNo || !notice.pblancNo) {
+        logger.warn({ category: cfg.category, sourceKey: notice.sourceKey }, 'skip notice missing id');
+        continue;
+      }
+      out.push(notice);
+    }
+    logger.info({ category: cfg.category, page, fetched: out.length, totalCount }, 'applyhome notice page');
+    if (page * PER >= totalCount || data.length === 0) break;
+    page++;
+  }
+  return out;
+}
+
 export async function fetchApplyhomeCategory(
   cfg: ApplyhomeCategoryConfig,
 ): Promise<NoticeWithUnits[]> {
@@ -105,7 +129,7 @@ export async function fetchApplyhomeCategory(
   return out;
 }
 
-async function fetchUnits(
+export async function fetchUnits(
   cfg: ApplyhomeCategoryConfig,
   houseManageNo: string | null,
   pblancNo: string | null,
