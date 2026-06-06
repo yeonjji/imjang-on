@@ -230,6 +230,65 @@ export async function getSubscriptionList(opts: {
 
 export type SubscriptionDetail = SubscriptionNotice & { units: SubscriptionUnit[] };
 
+// ---- 주간 보드 타입 ----
+export type BoardTone = 'green' | 'blue' | 'gray' | 'orange';
+
+export interface WeeklyNoticeRow {
+  id: bigint;
+  name: string;
+  regionName: string | null;
+  address: string | null;
+  receiptBegin: Date | null;
+  receiptEnd: Date | null;
+}
+
+export interface WeeklyBoardItem {
+  id: string;
+  name: string;
+  regionShort: string | null;
+  tone: BoardTone;
+  badge: string;
+}
+
+export interface WeeklyBoardDay {
+  date: Date;
+  weekday: string;
+  isToday: boolean;
+  items: WeeklyBoardItem[];
+  overflow: number;
+}
+
+export interface WeeklyBoard {
+  weekStart: Date;
+  weekEnd: Date;
+  days: WeeklyBoardDay[];
+  summary: { open: number; upcoming: number; closed: number };
+  total: number;
+}
+
+export interface WeekRange {
+  weekStart: Date;
+  weekEnd: Date;
+  dates: Date[];
+}
+
+function utcMidnight(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
+export function getWeekRange(today: Date): WeekRange {
+  const base = utcMidnight(today);
+  const offsetToMonday = (base.getUTCDay() + 6) % 7;
+  const weekStart = new Date(base);
+  weekStart.setUTCDate(base.getUTCDate() - offsetToMonday);
+  const dates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setUTCDate(weekStart.getUTCDate() + i);
+    return d;
+  });
+  return { weekStart: dates[0], weekEnd: dates[6], dates };
+}
+
 export async function getSubscriptionById(id: bigint): Promise<SubscriptionDetail | null> {
   return prisma.subscriptionNotice.findUnique({
     where: { id },

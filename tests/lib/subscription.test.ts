@@ -6,6 +6,7 @@ import {
   ddayLabel,
   formatPriceRange,
   formatAreaRange,
+  getWeekRange,
 } from '@/lib/subscription';
 
 const D = (s: string) => new Date(`${s}T00:00:00.000Z`);
@@ -100,5 +101,25 @@ describe('formatAreaRange (㎡ → 평)', () => {
   });
   it('null이 섞이면 -', () => {
     expect(formatAreaRange(null, 84)).toBe('-');
+  });
+});
+
+describe('getWeekRange (월~일 UTC)', () => {
+  it('주중(금요일) 기준 월요일~일요일 7일을 만든다', () => {
+    const r = getWeekRange(D('2026-06-05'));
+    expect(r.weekStart).toEqual(D('2026-06-01'));
+    expect(r.weekEnd).toEqual(D('2026-06-07'));
+    expect(r.dates).toHaveLength(7);
+    expect(r.dates[0]).toEqual(D('2026-06-01'));
+    expect(r.dates[6]).toEqual(D('2026-06-07'));
+  });
+  it('일요일은 같은 주의 끝으로 본다', () => {
+    const r = getWeekRange(D('2026-06-07'));
+    expect(r.weekStart).toEqual(D('2026-06-01'));
+    expect(r.weekEnd).toEqual(D('2026-06-07'));
+  });
+  it('월요일은 주의 시작이다', () => {
+    const r = getWeekRange(D('2026-06-01'));
+    expect(r.weekStart).toEqual(D('2026-06-01'));
   });
 });
