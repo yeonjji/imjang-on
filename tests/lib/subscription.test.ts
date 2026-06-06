@@ -7,6 +7,7 @@ import {
   formatPriceRange,
   formatAreaRange,
   getWeekRange,
+  boardTone,
 } from '@/lib/subscription';
 
 const D = (s: string) => new Date(`${s}T00:00:00.000Z`);
@@ -121,5 +122,23 @@ describe('getWeekRange (월~일 UTC)', () => {
   it('월요일은 주의 시작이다', () => {
     const r = getWeekRange(D('2026-06-01'));
     expect(r.weekStart).toEqual(D('2026-06-01'));
+  });
+});
+
+describe('boardTone', () => {
+  it('예정은 파랑 + 예정', () => {
+    expect(boardTone({ status: 'UPCOMING', dday: 3 })).toEqual({ tone: 'blue', badge: '예정' });
+  });
+  it('접수중 D-day 2 이상은 초록 + 진행중', () => {
+    expect(boardTone({ status: 'OPEN', dday: 4 })).toEqual({ tone: 'green', badge: '진행중' });
+  });
+  it('접수중 D-1은 주황 + D-1', () => {
+    expect(boardTone({ status: 'OPEN', dday: 1 })).toEqual({ tone: 'orange', badge: 'D-1' });
+  });
+  it('접수중 오늘 마감은 주황 + 오늘 마감', () => {
+    expect(boardTone({ status: 'OPEN', dday: 0 })).toEqual({ tone: 'orange', badge: '오늘 마감' });
+  });
+  it('마감은 회색 + 마감', () => {
+    expect(boardTone({ status: 'CLOSED', dday: null })).toEqual({ tone: 'gray', badge: '마감' });
   });
 });

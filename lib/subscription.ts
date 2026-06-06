@@ -289,6 +289,15 @@ export function getWeekRange(today: Date): WeekRange {
   return { weekStart: dates[0], weekEnd: dates[6], dates };
 }
 
+export function boardTone(st: DerivedStatus): { tone: BoardTone; badge: string } {
+  if (st.status === 'UPCOMING') return { tone: 'blue', badge: '예정' };
+  if (st.status === 'CLOSED') return { tone: 'gray', badge: '마감' };
+  if (st.dday != null && st.dday <= 1) {
+    return { tone: 'orange', badge: ddayLabel(st) ?? '진행중' };
+  }
+  return { tone: 'green', badge: '진행중' };
+}
+
 export async function getSubscriptionById(id: bigint): Promise<SubscriptionDetail | null> {
   return prisma.subscriptionNotice.findUnique({
     where: { id },
