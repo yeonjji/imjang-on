@@ -31,17 +31,11 @@ export async function getTransactionsByType(propertyId: bigint, dealType: DealTy
   });
 }
 
-export interface AreaSeries {
-  pyeong: number;
-  totalCount: number;
-  series: Record<DealType, MonthPoint[]>;
-}
-export type ChartData = AreaSeries[];
+export type ChartData = Record<DealType, MonthPoint[]>;
 
 export async function getMonthlyChartData(propertyId: bigint): Promise<ChartData> {
   const rows = await prisma.$queryRaw<
     Array<{
-      pyeong: number;
       month: Date;
       deal_type: DealType;
       avg_value: number | null;
@@ -51,7 +45,6 @@ export async function getMonthlyChartData(propertyId: bigint): Promise<ChartData
     }>
   >`
     SELECT
-      ROUND("exclusiveArea"::numeric / 3.3057851239669422)::int AS pyeong,
       DATE_TRUNC('month', "contractDate")::date AS month,
       "dealType" AS deal_type,
       AVG(val)::float AS avg_value,
@@ -60,7 +53,6 @@ export async function getMonthlyChartData(propertyId: bigint): Promise<ChartData
       COUNT(*)::int AS cnt
     FROM (
       SELECT
-        "exclusiveArea",
         "contractDate",
         "dealType",
         CASE WHEN "dealType" = 'SALE' THEN "dealAmount" ELSE "deposit" END AS val
@@ -69,29 +61,23 @@ export async function getMonthlyChartData(propertyId: bigint): Promise<ChartData
         AND "contractDate" >= NOW() - INTERVAL '24 months'
     ) t
     WHERE val IS NOT NULL
-    GROUP BY 1, 2, 3
-    ORDER BY 1 ASC, 2 ASC
+    GROUP BY 1, 2
+    ORDER BY 1 ASC
   `;
 
-  const byPyeong = new Map<number, AreaSeries>();
+  const byType: ChartData = { SALE: [], JEONSE: [], WOLSE: [] };
   for (const r of rows) {
     if (r.avg_value === null || r.min_value === null || r.max_value === null) continue;
-    let area = byPyeong.get(r.pyeong);
-    if (!area) {
-      area = { pyeong: r.pyeong, totalCount: 0, series: { SALE: [], JEONSE: [], WOLSE: [] } };
-      byPyeong.set(r.pyeong, area);
-    }
-    area.series[r.deal_type].push({
+    byType[r.deal_type].push({
       month: r.month.toISOString().slice(0, 7),
       avg: r.avg_value,
       min: r.min_value,
       max: r.max_value,
       count: r.cnt,
     });
-    area.totalCount += r.cnt;
   }
 
-  return [...byPyeong.values()].sort((a, b) => b.totalCount - a.totalCount);
+  return byType;
 }
 
 export interface UnifiedTxRow {

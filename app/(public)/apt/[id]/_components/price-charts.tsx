@@ -13,7 +13,7 @@ import {
 import type { DealType } from '@prisma/client';
 import { Card } from '@/components/ui/card';
 import { formatBillion } from '@/lib/format';
-import { deriveHeaderStats, toChartRows, pickDefaultPyeong } from '@/lib/price-chart';
+import { deriveHeaderStats, toChartRows } from '@/lib/price-chart';
 import type { ChartData } from '@/lib/transaction';
 
 const DEALS: { key: DealType; label: string; color: string }[] = [
@@ -28,11 +28,9 @@ function fmtMonth(m: string): string {
 }
 
 export function PriceCharts({ data }: { data: ChartData }) {
-  const defaultPyeong = pickDefaultPyeong(data);
-  const [pyeong, setPyeong] = useState<number | null>(defaultPyeong);
   const [deal, setDeal] = useState<DealType>('SALE');
 
-  if (data.length === 0 || defaultPyeong === null) {
+  if (DEALS.every((d) => (data[d.key]?.length ?? 0) === 0)) {
     return (
       <Card>
         <p className="text-sm text-[var(--color-muted)]">실거래 데이터가 없습니다.</p>
@@ -40,8 +38,7 @@ export function PriceCharts({ data }: { data: ChartData }) {
     );
   }
 
-  const area = data.find((a) => a.pyeong === pyeong) ?? data[0];
-  const points = area.series[deal] ?? [];
+  const points = data[deal] ?? [];
   const stats = deriveHeaderStats(points);
   const rows = toChartRows(points);
   const color = DEALS.find((d) => d.key === deal)!.color;
@@ -49,25 +46,6 @@ export function PriceCharts({ data }: { data: ChartData }) {
 
   return (
     <Card>
-      {/* 평형 선택칩 */}
-      {data.length > 1 && (
-        <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-          {data.map((a) => (
-            <button
-              key={a.pyeong}
-              onClick={() => setPyeong(a.pyeong)}
-              className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
-                a.pyeong === area.pyeong
-                  ? 'bg-[var(--color-blue-dark)] text-white'
-                  : 'bg-[var(--color-soft)] text-[var(--color-muted)]'
-              }`}
-            >
-              {a.pyeong}평 <span className="font-medium opacity-70">{a.totalCount}건</span>
-            </button>
-          ))}
-        </div>
-      )}
-
       {/* 유형 탭 */}
       <div className="mb-4 flex gap-1.5 overflow-x-auto">
         {DEALS.map((d) => (
@@ -173,14 +151,14 @@ export function PriceCharts({ data }: { data: ChartData }) {
         </>
       ) : (
         <p className="py-10 text-center text-sm text-[var(--color-muted)]">
-          해당 평형·유형의 거래 데이터가 없습니다.
+          해당 유형의 거래 데이터가 없습니다.
         </p>
       )}
 
       {/* 비교 스트립 */}
       <div className="mt-4 grid grid-cols-3 gap-2 border-t border-dashed border-[var(--color-line)] pt-4">
         {DEALS.map((d) => {
-          const s = deriveHeaderStats(area.series[d.key] ?? []);
+          const s = deriveHeaderStats(data[d.key] ?? []);
           const on = d.key === deal;
           return (
             <button

@@ -3,7 +3,6 @@ import {
   monthDiff,
   deriveHeaderStats,
   toChartRows,
-  pickDefaultPyeong,
   type MonthPoint,
 } from '@/lib/price-chart';
 
@@ -75,14 +74,5 @@ describe('toChartRows', () => {
     expect(rows.map((r) => r.month)).toEqual(['2025-03', '2026-03']);
     expect(rows[0].band).toEqual([9000, 11000]);
     expect(rows[1].avg).toBe(12000);
-  });
-});
-
-describe('pickDefaultPyeong', () => {
-  it('거래 최다 평형을 반환', () => {
-    expect(pickDefaultPyeong([{ pyeong: 25, totalCount: 72 }, { pyeong: 34, totalCount: 134 }])).toBe(34);
-  });
-  it('빈 배열이면 null', () => {
-    expect(pickDefaultPyeong([])).toBeNull();
   });
 });

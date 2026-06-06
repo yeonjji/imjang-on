@@ -74,10 +74,3 @@ export function toChartRows(points: MonthPoint[]): ChartRow[] {
     count: p.count,
   }));
 }
-
-export function pickDefaultPyeong(
-  areas: { pyeong: number; totalCount: number }[],
-): number | null {
-  if (areas.length === 0) return null;
-  return areas.reduce((best, a) => (a.totalCount > best.totalCount ? a : best)).pyeong;
-}
