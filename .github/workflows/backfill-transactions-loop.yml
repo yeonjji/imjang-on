@@ -1,0 +1,42 @@
+name: backfill-transactions-loop
+on:
+  schedule:
+    - cron: '7 * * * *'  # 매시간 :07 (daily ingest 15·19시와 분 단위로 분리)
+  workflow_dispatch:
+
+concurrency:
+  group: backfill-transactions-loop
+  cancel-in-progress: false
+
+env:
+  BACKFILL_FROM: '202301'
+  BACKFILL_TO: '202505'
+  BACKFILL_LIMIT: '261'  # API job당 ≈1개월치 시군구
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [apt-trade, apt-rent, offi-trade, offi-rent, rh-trade, rh-rent]
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      PUBLIC_DATA_KEY: ${{ secrets.PUBLIC_DATA_KEY }}
+      KAKAO_REST_KEY: ${{ secrets.KAKAO_REST_KEY }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      LOG_LEVEL: info
+      PRISMA_INGEST: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma generate
+      - id: check
+        run: pnpm tsx scripts/ingest/transactions/backfill-status.ts --api=${{ matrix.api }} --from=${{ env.BACKFILL_FROM }} --to=${{ env.BACKFILL_TO }}
+      - if: ${{ steps.check.outputs.pending != '0' }}
+        run: pnpm tsx scripts/ingest/transactions/runner.ts --api=${{ matrix.api }} --mode=backfill --from=${{ env.BACKFILL_FROM }} --to=${{ env.BACKFILL_TO }} --limit=${{ env.BACKFILL_LIMIT }}
+        timeout-minutes: 350
