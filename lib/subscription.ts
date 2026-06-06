@@ -230,6 +230,168 @@ export async function getSubscriptionList(opts: {
 
 export type SubscriptionDetail = SubscriptionNotice & { units: SubscriptionUnit[] };
 
+// ---- 주간 보드 타입 ----
+export type BoardTone = 'green' | 'blue' | 'gray' | 'orange';
+
+export interface WeeklyNoticeRow {
+  id: bigint;
+  name: string;
+  regionName: string | null;
+  address: string | null;
+  receiptBegin: Date | null;
+  receiptEnd: Date | null;
+}
+
+export interface WeeklyBoardItem {
+  id: string;
+  name: string;
+  regionShort: string | null;
+  tone: BoardTone;
+  badge: string;
+}
+
+export interface WeeklyBoardDay {
+  date: Date;
+  weekday: string;
+  isToday: boolean;
+  items: WeeklyBoardItem[];
+  overflow: number;
+}
+
+export interface WeeklyBoard {
+  weekStart: Date;
+  weekEnd: Date;
+  days: WeeklyBoardDay[];
+  summary: { open: number; upcoming: number; closed: number };
+  total: number;
+}
+
+export interface WeekRange {
+  weekStart: Date;
+  weekEnd: Date;
+  dates: Date[];
+}
+
+function utcMidnight(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
+export function getWeekRange(today: Date): WeekRange {
+  const base = utcMidnight(today);
+  const offsetToMonday = (base.getUTCDay() + 6) % 7;
+  const weekStart = new Date(base);
+  weekStart.setUTCDate(base.getUTCDate() - offsetToMonday);
+  const dates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setUTCDate(weekStart.getUTCDate() + i);
+    return d;
+  });
+  return { weekStart: dates[0], weekEnd: dates[6], dates };
+}
+
+export function boardTone(st: DerivedStatus): { tone: BoardTone; badge: string } {
+  if (st.status === 'UPCOMING') return { tone: 'blue', badge: '예정' };
+  if (st.status === 'CLOSED') return { tone: 'gray', badge: '마감' };
+  if (st.dday != null && st.dday <= 1) {
+    return { tone: 'orange', badge: ddayLabel(st) ?? '진행중' };
+  }
+  return { tone: 'green', badge: '진행중' };
+}
+
+export function parseSigungu(address: string | null, regionName: string | null): string | null {
+  if (address) {
+    const tokens = address.match(/[가-힣]+[시군구]/g) ?? [];
+    const guGun = tokens.find((t) => t.endsWith('구') || t.endsWith('군'));
+    if (guGun) return guGun;
+    const si = tokens.find((t) => t.endsWith('시'));
+    if (si) return si.replace(/(특별자치시|특별시|광역시)$/, '');
+  }
+  return regionName ?? null;
+}
+
+const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
+const TONE_ORDER: Record<BoardTone, number> = { orange: 0, green: 1, blue: 2, gray: 3 };
+
+function clampToWeek(d: Date, weekStart: Date, weekEnd: Date): Date {
+  if (dateInt(d) < dateInt(weekStart)) return weekStart;
+  if (dateInt(d) > dateInt(weekEnd)) return weekEnd;
+  return d;
+}
+
+export function assembleWeeklyBoard(rows: WeeklyNoticeRow[], today: Date = new Date()): WeeklyBoard {
+  const { weekStart, weekEnd, dates } = getWeekRange(today);
+  const buckets: WeeklyBoardItem[][] = dates.map(() => []);
+  const summary = { open: 0, upcoming: 0, closed: 0 };
+
+  for (const r of rows) {
+    const st = deriveStatus(r.receiptBegin, r.receiptEnd, today);
+    if (st.status === 'OPEN') summary.open++;
+    else if (st.status === 'UPCOMING') summary.upcoming++;
+    else summary.closed++;
+
+    const anchorRaw = st.status === 'UPCOMING' ? r.receiptBegin : (r.receiptEnd ?? r.receiptBegin);
+    if (!anchorRaw) continue;
+    const anchor = clampToWeek(anchorRaw, weekStart, weekEnd);
+    const idx = dates.findIndex((d) => dateInt(d) === dateInt(anchor));
+    if (idx < 0) continue;
+
+    const { tone, badge } = boardTone(st);
+    buckets[idx].push({
+      id: String(r.id),
+      name: r.name,
+      regionShort: parseSigungu(r.address, r.regionName),
+      tone,
+      badge,
+    });
+  }
+
+  const days: WeeklyBoardDay[] = dates.map((date, i) => {
+    const sorted = buckets[i].sort(
+      (a, b) => TONE_ORDER[a.tone] - TONE_ORDER[b.tone] || a.name.localeCompare(b.name, 'ko'),
+    );
+    return {
+      date,
+      weekday: WEEKDAYS[i],
+      isToday: dateInt(date) === dateInt(today),
+      items: sorted.slice(0, 3),
+      overflow: Math.max(0, sorted.length - 3),
+    };
+  });
+
+  return { weekStart, weekEnd, days, summary, total: rows.length };
+}
+
+export async function getWeeklySubscriptions(today: Date = new Date()): Promise<WeeklyBoard> {
+  const { weekStart, weekEnd } = getWeekRange(today);
+  const rows = await prisma.$queryRaw<
+    Array<{
+      id: bigint; name: string; region_name: string | null; address: string | null;
+      receipt_begin: Date | null; receipt_end: Date | null;
+    }>
+  >(Prisma.sql`
+    SELECT n.id, n.name,
+           n."regionName" AS region_name,
+           n.address AS address,
+           n."receiptBegin" AS receipt_begin,
+           n."receiptEnd" AS receipt_end
+    FROM "SubscriptionNotice" n
+    WHERE (n."receiptBegin" BETWEEN ${weekStart} AND ${weekEnd})
+       OR (n."receiptEnd"   BETWEEN ${weekStart} AND ${weekEnd})
+    ORDER BY n."receiptEnd" ASC NULLS LAST, n.id ASC
+  `);
+
+  const mapped: WeeklyNoticeRow[] = rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    regionName: r.region_name,
+    address: r.address,
+    receiptBegin: r.receipt_begin,
+    receiptEnd: r.receipt_end,
+  }));
+
+  return assembleWeeklyBoard(mapped, today);
+}
+
 export async function getSubscriptionById(id: bigint): Promise<SubscriptionDetail | null> {
   return prisma.subscriptionNotice.findUnique({
     where: { id },
