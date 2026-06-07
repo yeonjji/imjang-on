@@ -3,9 +3,10 @@ import type { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { GoogleAnalytics } from '@next/third-parties/google';
+import { SITE_URL } from '@/lib/site';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://imjang-on.com'),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: '임장온 — 공공데이터 부동산 실거래가',
     template: '%s | 임장온',
@@ -18,6 +19,12 @@ export const metadata: Metadata = {
     siteName: '임장온',
   },
   robots: { index: true, follow: true },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    other: process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION
+      ? { 'naver-site-verification': process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION }
+      : {},
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
