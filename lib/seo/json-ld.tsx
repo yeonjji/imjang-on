@@ -92,8 +92,8 @@ export function placeSchema(input: PlaceInput & { type: PlaceType }): Json {
     address: postalAddress(input.address),
     geo: geoOf(input.lat, input.lng),
     image: input.image,
-    telephone: input.telephone ?? undefined,
-    openingHours: input.openingHours ?? undefined,
+    telephone: input.telephone || undefined,
+    openingHours: input.openingHours || undefined,
   };
 }
 

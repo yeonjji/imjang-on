@@ -22,7 +22,7 @@ import { PriceCharts } from '../../apt/[id]/_components/price-charts';
 import { AreaComparison } from '../../apt/[id]/_components/area-comparison';
 import { NearbyPriceComparison } from '../../apt/[id]/_components/nearby-price-comparison';
 import { DetailSidebar } from '../../apt/[id]/_components/detail-sidebar';
-import { propertyBlurb } from '@/lib/seo/blurb';
+import { propertyBlurb, salePriceTrend } from '@/lib/seo/blurb';
 import { formatBillion } from '@/lib/format';
 import { JsonLd, residenceSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { staticMapUrl } from '@/lib/seo/static-map';
@@ -84,9 +84,9 @@ export default async function VillaDetailPage({ params }: Params) {
     jeonseCount12m: property.jeonseCount12m,
     saleAvgPrice12m: property.saleAvgPrice12m ? Number(property.saleAvgPrice12m) : null,
     jeonseAvgDeposit12m: property.jeonseAvgDeposit12m ? Number(property.jeonseAvgDeposit12m) : null,
-    trend: null,
-    subwayCount: 0,
-    infra: [],
+    trend: salePriceTrend(chart.SALE.map((p) => ({ month: p.month, avg: p.avg }))),
+    subwayCount: subway.stations.length,
+    infra: infra.map((c) => ({ label: c.label, count: c.items.length })).filter((c) => c.count > 0).slice(0, 5),
   });
 
   return (

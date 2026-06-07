@@ -65,8 +65,8 @@ export default async function SubscriptionDetailPage({ params }: Params) {
                 name: `${notice.name} 청약 공고`,
                 url: `${SITE_URL}/subscription/${notice.id}`,
                 ...(notice.regionName ? { location: { '@type': 'Place', name: notice.regionName } } : {}),
-                ...(notice.receiptBegin ? { startDate: notice.receiptBegin.toISOString() } : {}),
-                ...(notice.receiptEnd ? { endDate: notice.receiptEnd.toISOString() } : {}),
+                ...(notice.receiptBegin ? { startDate: notice.receiptBegin.toISOString().slice(0, 10) } : {}),
+                ...(notice.receiptEnd ? { endDate: notice.receiptEnd.toISOString().slice(0, 10) } : {}),
               }
             : {
                 '@context': 'https://schema.org',
