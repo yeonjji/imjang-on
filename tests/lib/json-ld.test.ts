@@ -19,9 +19,10 @@ describe('organizationSchema', () => {
 describe('webSiteSchema', () => {
   it('exposes a SearchAction pointing at the list page', () => {
     const s = webSiteSchema();
+    const action = s.potentialAction as Record<string, unknown>;
     expect(s['@type']).toBe('WebSite');
-    expect(s.potentialAction['@type']).toBe('SearchAction');
-    expect(String(s.potentialAction.target.urlTemplate)).toContain('/list');
+    expect(action['@type']).toBe('SearchAction');
+    expect(String((action.target as Record<string, unknown>).urlTemplate)).toContain('/list');
   });
 });
 
@@ -31,10 +32,11 @@ describe('breadcrumbSchema', () => {
       { name: '홈', url: 'https://x/' },
       { name: '병원', url: 'https://x/medical/hospital' },
     ]);
+    const items = s.itemListElement as Record<string, unknown>[];
     expect(s['@type']).toBe('BreadcrumbList');
-    expect(s.itemListElement[0].position).toBe(1);
-    expect(s.itemListElement[1].position).toBe(2);
-    expect(s.itemListElement[1].name).toBe('병원');
+    expect(items[0].position).toBe(1);
+    expect(items[1].position).toBe(2);
+    expect(items[1].name).toBe('병원');
   });
 });
 
@@ -48,9 +50,10 @@ describe('residenceSchema', () => {
       url: 'https://x/apt/1',
       image: 'https://x/api/staticmap?lat=37.5&lng=127.1',
     });
+    const addr = s.address as Record<string, unknown>;
     expect(s['@type']).toBe('Residence');
-    expect(s.address['@type']).toBe('PostalAddress');
-    expect(s.address.addressCountry).toBe('KR');
+    expect(addr['@type']).toBe('PostalAddress');
+    expect(addr.addressCountry).toBe('KR');
     expect(s.geo).toEqual({ '@type': 'GeoCoordinates', latitude: 37.5, longitude: 127.1 });
     expect(s.image).toContain('/api/staticmap');
   });
