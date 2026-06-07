@@ -108,23 +108,21 @@ describe('formatAreaRange (㎡ → 평)', () => {
   });
 });
 
-describe('getWeekRange (월~일 UTC)', () => {
-  it('주중(금요일) 기준 월요일~일요일 7일을 만든다', () => {
+describe('getWeekRange (오늘 중심 전후 3일 UTC)', () => {
+  it('오늘을 가운데(index 3)에 두고 전후 3일, 총 7일을 만든다', () => {
     const r = getWeekRange(D('2026-06-05'));
-    expect(r.weekStart).toEqual(D('2026-06-01'));
-    expect(r.weekEnd).toEqual(D('2026-06-07'));
+    expect(r.weekStart).toEqual(D('2026-06-02'));
+    expect(r.weekEnd).toEqual(D('2026-06-08'));
     expect(r.dates).toHaveLength(7);
-    expect(r.dates[0]).toEqual(D('2026-06-01'));
-    expect(r.dates[6]).toEqual(D('2026-06-07'));
+    expect(r.dates[0]).toEqual(D('2026-06-02'));
+    expect(r.dates[3]).toEqual(D('2026-06-05'));
+    expect(r.dates[6]).toEqual(D('2026-06-08'));
   });
-  it('일요일은 같은 주의 끝으로 본다', () => {
-    const r = getWeekRange(D('2026-06-07'));
-    expect(r.weekStart).toEqual(D('2026-06-01'));
-    expect(r.weekEnd).toEqual(D('2026-06-07'));
-  });
-  it('월요일은 주의 시작이다', () => {
+  it('월말 경계도 오늘을 중심으로 전후 3일을 만든다', () => {
     const r = getWeekRange(D('2026-06-01'));
-    expect(r.weekStart).toEqual(D('2026-06-01'));
+    expect(r.weekStart).toEqual(D('2026-05-29'));
+    expect(r.dates[3]).toEqual(D('2026-06-01'));
+    expect(r.weekEnd).toEqual(D('2026-06-04'));
   });
 });
 
@@ -178,12 +176,13 @@ const row = (o: Partial<WeeklyNoticeRow> & { id: bigint; name: string }): Weekly
 describe('assembleWeeklyBoard', () => {
   const today = D('2026-06-06');
 
-  it('항상 7일(월~일)을 만들고 오늘을 표시한다', () => {
+  it('항상 7일을 만들고 오늘을 가운데(index 3)에 표시한다', () => {
     const b = assembleWeeklyBoard([], today);
     expect(b.days).toHaveLength(7);
-    expect(b.days[0].weekday).toBe('월');
-    expect(b.days[6].weekday).toBe('일');
-    expect(b.days.find((d) => d.isToday)?.date).toEqual(D('2026-06-06'));
+    expect(b.days[0].weekday).toBe('수'); // 2026-06-03
+    expect(b.days[6].weekday).toBe('화'); // 2026-06-09
+    expect(b.days[3].isToday).toBe(true);
+    expect(b.days[3].date).toEqual(D('2026-06-06'));
     expect(b.total).toBe(0);
     expect(b.summary).toEqual({ open: 0, upcoming: 0, closed: 0 });
   });
@@ -191,12 +190,14 @@ describe('assembleWeeklyBoard', () => {
   it('예정은 접수 시작일에, 마감/진행은 마감일에 배치한다', () => {
     const b = assembleWeeklyBoard([
       row({ id: 1n, name: '부천 센트럴포레', receiptBegin: D('2026-06-08'), receiptEnd: D('2026-06-10') }),
-      row({ id: 2n, name: '강동 리버파크', receiptBegin: D('2026-05-20'), receiptEnd: D('2026-06-02') }),
+      row({ id: 2n, name: '강동 리버파크', receiptBegin: D('2026-05-20'), receiptEnd: D('2026-06-04') }),
       row({ id: 3n, name: '마포 더하이츠', receiptBegin: D('2026-06-01'), receiptEnd: D('2026-06-09') }),
     ], today);
-    const tue = b.days.find((d) => d.weekday === '화')!;
-    expect(tue.items.map((i) => i.name)).toContain('강동 리버파크');
-    expect(tue.items[0].badge).toBe('마감');
+    const thu = b.days.find((d) => d.weekday === '목')!; // 06-04 마감
+    expect(thu.items.map((i) => i.name)).toContain('강동 리버파크');
+    expect(thu.items[0].badge).toBe('마감');
+    const mon = b.days.find((d) => d.weekday === '월')!; // 06-08 예정
+    expect(mon.items.map((i) => i.name)).toContain('부천 센트럴포레');
   });
 
   it('상태별 summary를 집계한다', () => {
