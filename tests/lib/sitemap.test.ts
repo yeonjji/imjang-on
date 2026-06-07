@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { STATIC_ENTRIES } from '@/app/sitemap';
+import { STATIC_ENTRIES } from '@/lib/sitemap/static-entries';
 import { LIFE_GROUPS } from '@/app/(public)/_components/life-menu';
 
 describe('sitemap STATIC_ENTRIES', () => {

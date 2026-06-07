@@ -1,104 +1,25 @@
-import { prisma } from '@/lib/db';
-import { getAllSigungus } from '@/lib/region';
-import { AMENITY_CATEGORIES, AMENITY_SLUGS } from '@/lib/amenity/category';
-import { LIFE_GROUPS } from '@/app/(public)/_components/life-menu';
 import type { MetadataRoute } from 'next';
-
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://imjang-on.com';
+import { buildManifest } from '@/lib/sitemap/manifest';
+import { CHUNK_SIZE, SOURCE_MAP, loadCounts } from '@/lib/sitemap/sources';
 
 export const revalidate = 86_400;
 
-export const STATIC_ENTRIES: MetadataRoute.Sitemap = [
-  { url: `${SITE}/`, changeFrequency: 'daily', priority: 1.0 },
-  { url: `${SITE}/apt`, changeFrequency: 'daily', priority: 0.9 },
-  { url: `${SITE}/officetel`, changeFrequency: 'daily', priority: 0.9 },
-  { url: `${SITE}/villa`, changeFrequency: 'daily', priority: 0.9 },
-  { url: `${SITE}/region`, changeFrequency: 'weekly', priority: 0.8 },
-  { url: `${SITE}/life`, changeFrequency: 'weekly', priority: 0.8 },
-  ...LIFE_GROUPS.map((g) => ({
-    url: `${SITE}/life/${g.slug}`,
-    changeFrequency: 'weekly' as const,
-    priority: 0.7,
-  })),
-  { url: `${SITE}/school`, changeFrequency: 'weekly', priority: 0.8 },
-  { url: `${SITE}/school/regions`, changeFrequency: 'weekly', priority: 0.7 },
-  ...AMENITY_SLUGS.map((slug) => ({
-    url: `${SITE}/amenity/${slug}?sido=${encodeURIComponent('서울')}`,
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
-  })),
-  { url: `${SITE}/urban/parking`, changeFrequency: 'weekly', priority: 0.7 },
-  { url: `${SITE}/urban/parking?sido=${encodeURIComponent('서울')}`, changeFrequency: 'weekly', priority: 0.6 },
-  { url: `${SITE}/subscription`, changeFrequency: 'daily', priority: 0.9 },
-  { url: `${SITE}/about`, changeFrequency: 'monthly', priority: 0.3 },
-  { url: `${SITE}/data-source`, changeFrequency: 'monthly', priority: 0.3 },
-  { url: `${SITE}/terms`, changeFrequency: 'monthly', priority: 0.3 },
-  { url: `${SITE}/privacy`, changeFrequency: 'monthly', priority: 0.3 },
-  { url: `${SITE}/contact`, changeFrequency: 'monthly', priority: 0.3 },
-  { url: `${SITE}/sitemap`, changeFrequency: 'monthly', priority: 0.3 },
-];
+export async function generateSitemaps(): Promise<{ id: number }[]> {
+  const counts = await loadCounts();
+  return buildManifest(counts, CHUNK_SIZE).map((s) => ({ id: s.id }));
+}
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // DB 장애 시에도 최소 entries로 빌드가 깨지지 않도록 보호
-  // (revalidate 1일 안에 자동 복구)
-  try {
-    const [sigungus, properties, schoolSigungus, amenityCountsBySlug] = await Promise.all([
-      prisma.region.findMany({
-        where: { level: 2, isAbolished: false },
-        select: { code: true },
-      }),
-      prisma.property.findMany({
-        where: { txCount12m: { gt: 0 } },
-        select: { id: true, propertyType: true, updatedAt: true },
-      }),
-      getAllSigungus().catch(() => []),
-      Promise.all(
-        AMENITY_SLUGS.map(async (slug) => ({
-          slug,
-          counts: await AMENITY_CATEGORIES[slug].getCountsBySigungu().catch(() => new Map<string, number>()),
-        })),
-      ),
-    ]);
-
-    const entries: MetadataRoute.Sitemap = [...STATIC_ENTRIES];
-
-    for (const r of sigungus) {
-      entries.push({
-        url: `${SITE}/region/${r.code.slice(0, 5)}`,
-        changeFrequency: 'daily',
-        priority: 0.7,
-      });
-    }
-    for (const s of schoolSigungus) {
-      entries.push({
-        url: `${SITE}/school/${s.sigunguCode}`,
-        changeFrequency: 'weekly',
-        priority: 0.7,
-      });
-    }
-    for (const { slug, counts } of amenityCountsBySlug) {
-      for (const [sigunguCode, count] of counts) {
-        if (count <= 0) continue;
-        entries.push({
-          url: `${SITE}/amenity/${slug}?region=${sigunguCode}`,
-          changeFrequency: 'weekly',
-          priority: 0.6,
-        });
-      }
-    }
-    for (const p of properties) {
-      const prefix =
-        p.propertyType === 'APARTMENT' ? 'apt' : p.propertyType === 'OFFICETEL' ? 'officetel' : 'villa';
-      entries.push({
-        url: `${SITE}/${prefix}/${p.id}`,
-        lastModified: p.updatedAt,
-        changeFrequency: 'weekly',
-        priority: 0.6,
-      });
-    }
-    return entries;
-  } catch (err) {
-    console.error('sitemap: DB unavailable, returning static entries only', err);
-    return STATIC_ENTRIES;
-  }
+export default async function sitemap({
+  id,
+}: {
+  id: number;
+}): Promise<MetadataRoute.Sitemap> {
+  // Next는 URL 라우트 파라미터로 id를 문자열로 넘길 수 있어 숫자로 정규화한다.
+  const shardId = Number(id);
+  const counts = await loadCounts();
+  const shard = buildManifest(counts, CHUNK_SIZE).find((s) => s.id === shardId);
+  if (!shard) return [];
+  const source = SOURCE_MAP[shard.key];
+  if (!source) return [];
+  return source.page(shard.offset, shard.limit);
 }
