@@ -38,6 +38,8 @@ export function Footer() {
             <li><Link href="/data-source">데이터 안내</Link></li>
             <li><Link href="/terms">이용약관</Link></li>
             <li><Link href="/privacy">개인정보 처리방침</Link></li>
+            <li><Link href="/contact">문의</Link></li>
+            <li><Link href="/sitemap">사이트맵</Link></li>
           </ul>
         </div>
       </div>

@@ -29,6 +29,13 @@ export const STATIC_ENTRIES: MetadataRoute.Sitemap = [
   })),
   { url: `${SITE}/urban/parking`, changeFrequency: 'weekly', priority: 0.7 },
   { url: `${SITE}/urban/parking?sido=${encodeURIComponent('서울')}`, changeFrequency: 'weekly', priority: 0.6 },
+  { url: `${SITE}/subscription`, changeFrequency: 'daily', priority: 0.9 },
+  { url: `${SITE}/about`, changeFrequency: 'monthly', priority: 0.3 },
+  { url: `${SITE}/data-source`, changeFrequency: 'monthly', priority: 0.3 },
+  { url: `${SITE}/terms`, changeFrequency: 'monthly', priority: 0.3 },
+  { url: `${SITE}/privacy`, changeFrequency: 'monthly', priority: 0.3 },
+  { url: `${SITE}/contact`, changeFrequency: 'monthly', priority: 0.3 },
+  { url: `${SITE}/sitemap`, changeFrequency: 'monthly', priority: 0.3 },
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
