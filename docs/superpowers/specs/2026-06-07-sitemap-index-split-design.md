@@ -191,3 +191,14 @@ export const metadata: Metadata = {
 - Search Console·서치어드바이저 제출·모니터링, 인증 토큰 발급/Vercel 설정(콘솔 작업).
 - `...vercel.app` → `imjangon.co.kr` 301 리다이렉트(중복 콘텐츠 방지) — 권장하나 Vercel 도메인 설정 영역이라 별도.
 - 다른 env(`PUBLIC_DATA_KEY`, `REVALIDATE_TOKEN`)의 잔여 개행 정리(운영 env 작업).
+
+## 구현 정정 (배포 중 발견)
+
+설계 시 가정한 "Next `generateSitemaps()`가 `/sitemap.xml` 인덱스를 자동 생성한다"는 **틀렸다.** 실제로는 자식 `/sitemap/[id].xml`만 생성되고, 게다가 `app/(public)/sitemap/page.tsx`(HTML `/sitemap` 페이지)가 세그먼트를 점유해 인덱스가 만들어지지 않아 `/sitemap.xml`이 404였다. 또한 메타데이터 라우트가 빌드 시 26개 샤드를 전부 프리렌더하며 DB 커넥션을 폭주시켜 Vercel 빌드가 실패했다.
+
+**최종 아키텍처(메타데이터 컨벤션 폐기, 명시적 라우트 핸들러):**
+- `app/sitemap.xml/route.ts` — sitemap 인덱스(`<sitemapindex>`), 자식 `/sitemaps/{id}` 나열. ISR(`revalidate=86400`).
+- `app/sitemaps/[id]/route.ts` — 자식 sitemap(`<urlset>`). **dynamic 세그먼트라 빌드 프리렌더 안 됨 → 빌드 DB 부하 없음**, 요청 시 생성 후 ISR 캐시.
+- `app/sitemap.ts`(메타데이터)는 삭제.
+- `lib/sitemap/{manifest,sources,static-entries}.ts`와 `loadCounts` 방어 로직은 그대로 재사용.
+- 자식 URL은 `/sitemaps/{id}`(확장자 없음) — 크롤러는 Content-Type으로 인식하므로 무방.
