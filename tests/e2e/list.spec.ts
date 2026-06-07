@@ -45,11 +45,22 @@ test('모바일: 카드 가로 스크롤 없음 (375px)', async ({ page }) => {
   expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
 });
 
-test('모바일 페이지네이션: 이전/다음 버튼만 노출', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto('/list?page=2');
-  // Next.js dev mode가 "Open Next.js Dev Tools" 버튼을 띄워 strict 매칭 충돌
-  // → exact: true로 페이지네이션 버튼만 잡음
-  await expect(page.getByRole('button', { name: 'prev', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'next', exact: true })).toBeVisible();
+test('무한 스크롤: 카드 + 인피드 광고 슬롯 노출', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/list?type=apt');
+  await expect(page.getByText(/검색 결과/)).toBeVisible();
+  // 시드가 30건 이상이면 8번째 뒤에 SPONSORED 슬롯이 최소 1개
+  await expect(page.getByText('SPONSORED').first()).toBeVisible();
+});
+
+test('무한 스크롤: 끝까지 로드 시 종료 문구', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/list?type=apt');
+  await expect(page.getByText(/검색 결과/)).toBeVisible();
+  // 바닥까지 스크롤하여 자동 로드 유도
+  for (let i = 0; i < 5; i++) {
+    await page.mouse.wheel(0, 4000);
+    await page.waitForTimeout(400);
+  }
+  await expect(page.getByText('모든 결과를 불러왔습니다')).toBeVisible({ timeout: 15000 });
 });
