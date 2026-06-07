@@ -69,7 +69,8 @@ export default async function UrbanListPage({ params, searchParams }: Params) {
       type: sp.type,
       pwd: sp.pwd,
       open24: sp.open24,
-    }, page),
+      // 빌드 프리렌더 시 DB 블립에도 배포 통과; ISR이 다음 사이클에 채움
+    }, page).catch(() => ({ rows: [], total: 0, page, perPage: 20, totalPages: 0 })),
     getSidoList().catch(() => []),
     sp.region ? getSigunguByCode(sp.region).catch(() => null) : Promise.resolve(null),
   ]);
