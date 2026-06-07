@@ -5,6 +5,7 @@ import { HospitalCard } from './_components/hospital-card';
 import { HospitalFilterPanel } from './_components/hospital-filter-panel';
 import { HospitalMobileFilterSheet } from './_components/hospital-mobile-filter-sheet';
 import { SiblingTabs } from '../../_components/sibling-tabs';
+import { SourceCaption } from '@/components/ui/source-caption';
 import type { Metadata } from 'next';
 
 export const revalidate = 86_400;
@@ -107,6 +108,8 @@ export default async function HospitalListPage({ searchParams }: Props) {
               })}
             </div>
           )}
+
+          <SourceCaption ids={['hira']} />
         </main>
       </div>
     </div>

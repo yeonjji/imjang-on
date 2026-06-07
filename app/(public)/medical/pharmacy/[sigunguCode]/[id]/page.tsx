@@ -12,6 +12,7 @@ import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
+import { SourceCaption } from '@/components/ui/source-caption';
 import type { Metadata } from 'next';
 
 export const revalidate = 86_400;
@@ -76,6 +77,7 @@ export default async function PharmacyDetailPage({ params }: Params) {
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex flex-col gap-6">
           <PharmacyInfo pharmacy={pharmacy} />
+          <SourceCaption ids={['hira']} />
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>

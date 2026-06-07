@@ -3,13 +3,14 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { getSidoList, getSigunguByCode, sidoFromPrefix } from '@/lib/region';
-import { getUrbanCategoryDef, toUrbanCategoryView, URBAN_SLUGS } from '@/lib/urban/category';
+import { getUrbanCategoryDef, toUrbanCategoryView, URBAN_SLUGS, URBAN_SOURCE } from '@/lib/urban/category';
 import { getUrbanList, normalizePage } from '@/lib/urban/list';
 import { UrbanFilterPanel } from './_components/urban-filter-panel';
 import { UrbanMobileFilterSheet } from './_components/urban-mobile-filter-sheet';
 import { UrbanCard } from './_components/urban-card';
 import { UrbanPagination } from './_components/urban-pagination';
 import { SiblingTabs } from '../../_components/sibling-tabs';
+import { SourceCaption } from '@/components/ui/source-caption';
 
 export const revalidate = 21_600;
 
@@ -127,6 +128,7 @@ export default async function UrbanListPage({ params, searchParams }: Params) {
               <Suspense><UrbanPagination basePath={basePath} current={page} totalPages={totalPages} totalItems={total} perPage={perPage} /></Suspense>
             </div>
           )}
+          <SourceCaption ids={[URBAN_SOURCE[def.slug]]} />
         </main>
       </div>
     </div>

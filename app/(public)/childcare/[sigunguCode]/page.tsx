@@ -21,6 +21,7 @@ import { ChildcareFilterPanel } from '../_components/childcare-filter-panel';
 import { ChildcareMobileFilterSheet } from '../_components/childcare-mobile-filter-sheet';
 import { ChildcareCard } from '../_components/childcare-card';
 import { ChildcarePagination } from '../_components/childcare-pagination';
+import { SourceCaption } from '@/components/ui/source-caption';
 import type { Metadata } from 'next';
 
 export const revalidate = 21_600;
@@ -100,6 +101,7 @@ export default async function ChildcareSigunguListPage({ params, searchParams }:
               <Suspense><ChildcarePagination basePath={basePath} current={page} totalPages={totalPages} totalItems={total} perPage={perPage} /></Suspense>
             </div>
           )}
+          <SourceCaption ids={['childcare']} />
         </main>
       </div>
     </div>

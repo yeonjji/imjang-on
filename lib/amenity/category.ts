@@ -1,6 +1,16 @@
 // lib/amenity/category.ts
 
+import type { DataSourceId } from '@/lib/data-sources';
+
 export type AmenitySlug = 'convenience' | 'mart' | 'cafe' | 'market';
+
+/** 상권·편의 카테고리별 데이터 출처 */
+export const AMENITY_SOURCE: Record<AmenitySlug, DataSourceId> = {
+  convenience: 'semas-store',
+  mart: 'semas-store',
+  cafe: 'semas-store',
+  market: 'mois-market',
+};
 
 /**
  * 4종 카테고리가 공통으로 반환하는 row 모양.

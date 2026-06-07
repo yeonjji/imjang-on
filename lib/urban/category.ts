@@ -2,8 +2,16 @@ import type { ReactNode } from 'react';
 import { parkingDef } from './adapters/parking';
 import { chargerDef } from './adapters/charger';
 import { parkDef } from './adapters/park';
+import type { DataSourceId } from '@/lib/data-sources';
 
 export type UrbanSlug = 'parking' | 'charger' | 'park';
+
+/** 도시인프라 카테고리별 데이터 출처 */
+export const URBAN_SOURCE: Record<UrbanSlug, DataSourceId> = {
+  parking: 'mois-parking',
+  charger: 'kepco-ev',
+  park: 'mois-park',
+};
 
 export interface UrbanItem<TRow = unknown> {
   id: bigint;

@@ -5,6 +5,7 @@ import { PharmacyCard } from './_components/pharmacy-card';
 import { PharmacyFilterPanel } from './_components/pharmacy-filter-panel';
 import { PharmacyMobileFilterSheet } from './_components/pharmacy-mobile-filter-sheet';
 import { SiblingTabs } from '../../_components/sibling-tabs';
+import { SourceCaption } from '@/components/ui/source-caption';
 import type { Metadata } from 'next';
 
 export const revalidate = 86_400;
@@ -104,6 +105,8 @@ export default async function PharmacyListPage({ searchParams }: Props) {
               })}
             </div>
           )}
+
+          <SourceCaption ids={['hira']} />
         </main>
       </div>
     </div>

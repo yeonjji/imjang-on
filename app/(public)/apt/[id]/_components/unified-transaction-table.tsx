@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
+import { SourceCaption } from '@/components/ui/source-caption';
 import { formatBillion, formatPyeong } from '@/lib/format';
 import { fetchUnifiedTxPage } from '../actions';
 import type { UnifiedTxRow } from '@/lib/transaction';
@@ -170,6 +171,7 @@ export function UnifiedTransactionTable({
           </div>
         </Card>
       )}
+      <SourceCaption ids={['molit-rtms']} />
     </section>
   );
 }

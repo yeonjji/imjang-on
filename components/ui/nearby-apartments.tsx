@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
+import { SourceCaption } from '@/components/ui/source-caption';
 import { formatBillion } from '@/lib/format';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 
@@ -27,6 +28,7 @@ export function NearbyApartments({ items }: { items: NearbyApartment[] }) {
           </li>
         ))}
       </ul>
+      <SourceCaption ids={['molit-rtms']} />
     </Card>
   );
 }

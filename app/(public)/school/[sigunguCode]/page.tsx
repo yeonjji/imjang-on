@@ -8,6 +8,7 @@ import { SchoolFilterPanel } from '../_components/school-filter-panel';
 import { SchoolMobileFilterSheet } from '../_components/school-mobile-filter-sheet';
 import { SchoolCard } from '../_components/school-card';
 import { SchoolPagination } from '../_components/school-pagination';
+import { SourceCaption } from '@/components/ui/source-caption';
 import type { Metadata } from 'next';
 
 export const revalidate = 21_600;
@@ -98,6 +99,7 @@ export default async function SchoolSigunguListPage({ params, searchParams }: Pa
               <Suspense><SchoolPagination basePath={basePath} current={page} totalPages={totalPages} totalItems={total} perPage={perPage} /></Suspense>
             </div>
           )}
+          <SourceCaption ids={['neis']} />
         </main>
       </div>
     </div>

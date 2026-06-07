@@ -5,6 +5,7 @@ import { slugsToCategories, type SubscriptionStatus } from '@/lib/subscription';
 import { SubscriptionFilterPanel } from './_components/subscription-filter-panel';
 import { SubscriptionMobileFilterSheet } from './_components/subscription-mobile-filter-sheet';
 import { SubscriptionList } from './_components/subscription-list';
+import { SourceCaption } from '@/components/ui/source-caption';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -83,6 +84,7 @@ export default async function SubscriptionPage({
               page={page}
             />
           </Suspense>
+          <SourceCaption ids={['applyhome', 'lh-presub']} />
         </main>
       </div>
     </div>

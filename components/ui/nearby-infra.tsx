@@ -1,12 +1,28 @@
 'use client';
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import type { InfraCategory } from '@/lib/amenity/infra';
+import { SourceCaption } from '@/components/ui/source-caption';
+import type { InfraCategory, InfraCategoryKey } from '@/lib/amenity/infra';
+import type { DataSourceId } from '@/lib/data-sources';
 
 const DISPLAY_CAP = 5;
 
+const INFRA_SOURCE: Record<InfraCategoryKey, DataSourceId> = {
+  store: 'semas-store',
+  cafe: 'semas-store',
+  etc: 'semas-store',
+  hospital: 'hira',
+  pharmacy: 'hira',
+  park: 'mois-park',
+  market: 'mois-market',
+  charger: 'kepco-ev',
+  parking: 'mois-parking',
+  childcare: 'childcare',
+};
+
 export function NearbyInfra({ categories }: { categories: InfraCategory[] }) {
   if (categories.length === 0) return null;
+  const sourceIds = Array.from(new Set(categories.map((c) => INFRA_SOURCE[c.key])));
   return (
     <Card id="poi">
       <h2 className="text-lg font-bold text-[var(--color-blue-dark)]">주변 생활 인프라</h2>
@@ -30,6 +46,8 @@ export function NearbyInfra({ categories }: { categories: InfraCategory[] }) {
           <InfraBlock key={c.key} category={c} />
         ))}
       </div>
+
+      <SourceCaption ids={sourceIds} />
     </Card>
   );
 }

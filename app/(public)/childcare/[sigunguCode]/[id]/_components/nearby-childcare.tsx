@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
+import { SourceCaption } from '@/components/ui/source-caption';
 import type { NearbyChildcare as Item } from '@/lib/amenity/nearby';
 
 export function NearbyChildcare({ items }: { items: Item[] }) {
@@ -23,6 +24,7 @@ export function NearbyChildcare({ items }: { items: Item[] }) {
           </li>
         ))}
       </ul>
+      <SourceCaption ids={['childcare']} />
     </Card>
   );
 }

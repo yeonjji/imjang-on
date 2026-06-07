@@ -20,6 +20,7 @@ import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
+import { SourceCaption } from '@/components/ui/source-caption';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 
 export const revalidate = 60;
@@ -97,6 +98,7 @@ export default async function ChargerDetailPage({ params }: Params) {
         <main className="flex flex-col gap-6">
           <ChargerStatusTable units={r.units} statuses={statuses} lastUpdated={lastUpdated} />
           <UrbanInfo item={item} def={chargerDef} regionFullName={region?.fullName ?? ''} />
+          <SourceCaption ids={['kepco-ev']} />
           {coord ? (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { getUrbanCategoryDef } from '@/lib/urban/category';
+import { getUrbanCategoryDef, URBAN_SOURCE } from '@/lib/urban/category';
 import type { UrbanItem } from '@/lib/urban/category';
 import { getUrbanById, getUrbanLatLng } from '@/lib/urban/detail';
 import { getUrbanList } from '@/lib/urban/list';
@@ -20,6 +20,7 @@ import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
+import { SourceCaption } from '@/components/ui/source-caption';
 import type { ParkingRaw } from '@/lib/urban/adapters/parking';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { ParkInfo } from '../_components/park-info';
@@ -109,6 +110,7 @@ export default async function UrbanDetailPage({ params }: Params) {
               <ParkingExtras row={r} />
             </>
           )}
+          <SourceCaption ids={[URBAN_SOURCE[def.slug]]} />
           {coord ? (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>

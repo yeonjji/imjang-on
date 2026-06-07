@@ -17,6 +17,7 @@ import { NearbySubway } from '@/components/ui/nearby-subway';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
+import { SourceCaption } from '@/components/ui/source-caption';
 import type { Metadata } from 'next';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 
@@ -87,6 +88,7 @@ export default async function ChildcareDetailPage({ params }: Params) {
           <ChildcareAgeBreakdown item={item} />
           <ChildcareWaitList item={item} />
           <ChildcareStaff item={item} />
+          <SourceCaption ids={['childcare']} />
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
