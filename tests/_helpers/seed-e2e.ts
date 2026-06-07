@@ -3,6 +3,7 @@ import { PropertyType, DealType } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { updatePropertyAggregates } from '@/scripts/ingest/aggregator';
 import { assertLocalDatabase } from './assert-local-db';
+import { normalizeName } from '@/lib/slug';
 
 export async function seedChildcare() {
   const SIGUNGU = '11710';
@@ -84,6 +85,20 @@ async function seedPropertyWithDeals(opts: {
   }
   await updatePropertyAggregates([prop.id]);
   return prop;
+}
+
+async function seedSubway() {
+  await prisma.subwayStation.deleteMany({ where: { name: { startsWith: 'E2E' } } });
+  await prisma.$executeRaw`
+    INSERT INTO "SubwayStation" (name, "nameNorm", lines, operators, address, "isTransfer", location, "sourceKey", "updatedAt")
+    VALUES (
+      'E2E중앙역', ${normalizeName('E2E중앙역')}, ARRAY['2호선']::text[], ARRAY['E2E운영']::text[],
+      '서울특별시 서초구 서초동', false,
+      ST_SetSRID(ST_MakePoint(127.026, 37.4965), 4326)::geography,
+      'E2E_STATION_0001', NOW()
+    )
+    ON CONFLICT ("sourceKey") DO NOTHING
+  `;
 }
 
 async function main() {
@@ -245,6 +260,7 @@ async function main() {
 
   await seedChildcare();
   await seedParking();
+  await seedSubway();
 
   console.log('e2e seed done. propertyId =', String(p.id), 'officetelId =', String(offi.id), 'villaId =', String(villa.id));
   await prisma.$disconnect();

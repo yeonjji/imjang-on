@@ -24,7 +24,7 @@ export default async function ListPage({
 }) {
   const [sp, sidoList] = await Promise.all([searchParams, getSidoList()]);
 
-  const { types, deal, priceMin, priceMax, areaRange, sort, sigunguCode, sido, q } =
+  const { types, deal, priceMin, priceMax, areaRange, sort, sigunguCode, sido, q, stationId } =
     parseListParams(sp);
   const query = new URLSearchParams(
     Object.entries(sp).filter(([k, v]) => k !== 'page' && v != null) as [string, string][],
@@ -82,6 +82,7 @@ export default async function ListPage({
               sigunguCode={sigunguCode}
               sido={sido}
               q={q}
+              stationId={stationId}
               query={query}
             />
           </Suspense>
