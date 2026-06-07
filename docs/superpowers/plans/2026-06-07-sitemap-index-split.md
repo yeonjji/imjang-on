@@ -571,8 +571,11 @@ export default async function sitemap({
 }: {
   id: number;
 }): Promise<MetadataRoute.Sitemap> {
+  // Next는 /sitemap/[id].xml 의 id를 문자열로 넘길 수 있어 숫자로 정규화한다.
+  // (정규화 안 하면 number===string 비교가 항상 실패해 모든 샤드가 빈 urlset을 반환함)
+  const shardId = Number(id);
   const counts = await loadCounts();
-  const shard = buildManifest(counts, CHUNK_SIZE).find((s) => s.id === id);
+  const shard = buildManifest(counts, CHUNK_SIZE).find((s) => s.id === shardId);
   if (!shard) return [];
   const source = SOURCE_MAP[shard.key];
   if (!source) return [];
@@ -745,11 +748,14 @@ Expected: 에러 없음.
 `.env.test`는 로컬 docker DB라 데이터가 적으므로, **운영 데이터로 보려면 `.env.local`로** dev를 띄운다(읽기 전용 조회만 발생):
 
 Run (백그라운드): `pnpm dev`
-그 다음:
+
+> **주의(Next.js 알려진 동작):** `generateSitemaps` 사용 시 인덱스(`/sitemap.xml`)는 **프로덕션 빌드에서만** 생성된다. `next dev`에서는 `/sitemap.xml`이 404이고 개별 샤드 `/sitemap/[id].xml`만 제공된다. 따라서 dev에서는 개별 샤드로 검증하고, 인덱스는 배포 후 라이브에서 확인한다.
+
 ```bash
-curl -s http://localhost:3000/sitemap.xml | head -c 600
+curl -s http://localhost:3000/sitemap/0.xml | grep -c '<loc>'   # core: 수백~수천
+curl -s http://localhost:3000/sitemap/1.xml | grep -c '<loc>'   # property: 10000
 ```
-Expected: `<sitemapindex>`와 `<sitemap><loc>...//sitemap/0.xml</loc>...` 형태. (운영 데이터 기준 0~25번 샤드)
+Expected: 각 샤드가 유효한 `<urlset>`, URL 수 ≤ 10,000. 배포 후 `https://imjangon.co.kr/sitemap.xml`이 `<sitemapindex>`로 0~25번 샤드를 가리키는지 확인.
 
 - [ ] **Step 4: 개별 샤드 + URL 형식 확인**
 
