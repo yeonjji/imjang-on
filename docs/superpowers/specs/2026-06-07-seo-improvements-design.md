@@ -95,15 +95,16 @@ imjang-on(공공데이터 부동산 통합 플랫폼)의 SEO 구성을 감사한
 - 인터랙티브 `LocationViewer`는 유지하고 정적 지도를 함께/위에 배치(인터랙티브 로드 전 LCP 후보로도 유리).
 - 같은 URL을 **JSON-LD `image`** 와 **OG 이미지**에 재사용.
 
-**⚠️ 열린 의존성 (구현 1순위 검증)**
-- NCP 콘솔에서 **Static Map API 활성화** 확인.
-- 현재 env에는 JS SDK용 `NEXT_PUBLIC_NAVER_MAP_CLIENT_ID`(`ncpKeyId`)만 있음. Static Map raster 호출에 필요한 **서버 전용 시크릿**(`NAVER_MAP_CLIENT_SECRET` 등) 발급/확인이 선행돼야 함.
+**의존성 상태 (해소됨)**
+- NCP 콘솔에서 **Static Map API 신청 완료** ✅
+- Vercel(운영)에 서버 전용 시크릿 **`NAVER_MAP_CLIENT_SECRET` 등록 완료** ✅ (인증 헤더: `x-ncp-apigw-api-key-id`=Client ID, `x-ncp-apigw-api-key`=Client Secret)
+- 남은 작업: 로컬 개발/테스트용으로 `.env.local`에 동일 값 추가, `lib/env.ts` 스키마에 `NAVER_MAP_CLIENT_SECRET` 추가.
 - 구현 착수 시 가장 먼저 `/api/staticmap`로 실제 이미지가 반환되는지 검증한 뒤 페이지 통합 진행.
 
 ## 데이터/의존성
 
 - **좌표 소스**: PostGIS `geography(Point,4326)`. 기존 유틸(`getPropertyLatLng`, `getHospitalLatLng`, `getPharmacyLatLng`, `getChildcareLatLng`, `getAmenityLatLng`, `getUrbanLatLng`, `getSubscriptionLatLng`) 재사용.
-- **신규 env**: `NAVER_MAP_CLIENT_SECRET`(서버 전용; 정확한 이름/필요 여부는 NCP 인증 방식 확인 후 확정). `lib/env.ts` 스키마에 추가.
+- **신규 env**: `NAVER_MAP_CLIENT_SECRET`(서버 전용). Vercel 등록 완료, `.env.local` + `lib/env.ts` 스키마에 추가 필요.
 - **신규 자산**: 한글 서브셋 폰트 파일(1~2개).
 - **신규 의존성**: 없음(`next/og`는 Next 내장).
 
@@ -119,7 +120,7 @@ imjang-on(공공데이터 부동산 통합 플랫폼)의 SEO 구성을 감사한
 ## 리스크
 
 - **한글 폰트 로딩**(섹션 2): `ImageResponse` 폰트 미설정 시 한글 깨짐. → 서브셋 번들 + 로드로 해소, OG 라우트별로 검증.
-- **NCP Static Map 인증/할당량**(섹션 4): 시크릿 미발급 또는 API 미활성 시 블로커. → 구현 1순위로 검증, 프록시 캐싱으로 호출량 절감.
+- **NCP Static Map 할당량**(섹션 4): 인증은 해소됨(API 신청 + Vercel 시크릿 등록 완료). 남은 리스크는 호출 할당량 → 프록시 캐싱으로 절감.
 - **schema.org 매핑 모호성**(섹션 1): 거래 데이터 ↔ `Residence` 매핑이 완벽치 않을 수 있음. → 보수적 적용 + Rich Results Test로 조정.
 
 ## 산출물 요약
