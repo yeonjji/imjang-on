@@ -12,6 +12,7 @@ const schema = z.object({
   KAKAO_REST_KEY: z.string().optional(),
   KAKAO_JS_KEY: z.string().optional(),
   NEXT_PUBLIC_NAVER_MAP_CLIENT_ID: z.string().optional(),
+  NAVER_MAP_CLIENT_SECRET: z.string().optional(),
 
   REVALIDATE_TOKEN: z.string().optional(),
 

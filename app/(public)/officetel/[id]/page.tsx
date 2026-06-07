@@ -12,6 +12,7 @@ import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
+import { StaticMapImage } from '@/components/ui/static-map';
 import { Card } from '@/components/ui/card';
 import { PropertyType } from '@prisma/client';
 import { PropertyDetailHero } from '../../apt/[id]/_components/property-detail-hero';
@@ -22,6 +23,9 @@ import { AreaComparison } from '../../apt/[id]/_components/area-comparison';
 import { NearbyPriceComparison } from '../../apt/[id]/_components/nearby-price-comparison';
 import { DetailSidebar } from '../../apt/[id]/_components/detail-sidebar';
 import { formatBillion } from '@/lib/format';
+import { JsonLd, residenceSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
+import { staticMapUrl } from '@/lib/seo/static-map';
+import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 
 export const revalidate = 21_600;
@@ -65,6 +69,23 @@ export default async function OffiDetailPage({ params }: Params) {
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
+      <JsonLd
+        data={[
+          residenceSchema({
+            name: property.name,
+            address: property.region.fullName,
+            lat: coord?.lat,
+            lng: coord?.lng,
+            url: `${SITE_URL}/officetel/${property.id}`,
+            image: coord ? staticMapUrl(coord) : undefined,
+          }),
+          breadcrumbSchema([
+            { name: '홈', url: `${SITE_URL}/` },
+            { name: '오피스텔', url: `${SITE_URL}/officetel` },
+            { name: property.name, url: `${SITE_URL}/officetel/${property.id}` },
+          ]),
+        ]}
+      />
       <PropertyDetailHero property={property} region={property.region} />
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-8">
@@ -74,6 +95,7 @@ export default async function OffiDetailPage({ params }: Params) {
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">
                 위치 · 로드뷰
               </h2>
+              <StaticMapImage lat={coord.lat} lng={coord.lng} name={property.name} />
               <LocationViewer lat={coord.lat} lng={coord.lng} name={property.name} />
             </Card>
           )}
