@@ -4,10 +4,11 @@ import { normalizeName } from '@/lib/slug';
 export interface AutocompleteResult {
   properties: Array<{ id: string; name: string; address: string; region: string; type: string }>;
   regions: Array<{ code: string; fullName: string }>;
+  stations: Array<{ id: string; name: string; lines: string[]; isTransfer: boolean }>;
 }
 
 export async function autocomplete(q: string): Promise<AutocompleteResult> {
-  if (!q || q.trim().length < 2) return { properties: [], regions: [] };
+  if (!q || q.trim().length < 2) return { properties: [], regions: [], stations: [] };
   const norm = normalizeName(q);
   const prefix = `${norm}%`;
 
@@ -32,6 +33,14 @@ export async function autocomplete(q: string): Promise<AutocompleteResult> {
     LIMIT 10
   `;
 
+  const stations = await prisma.$queryRaw<Array<{ id: bigint; name: string; lines: string[]; is_transfer: boolean }>>`
+    SELECT id, name, lines, "isTransfer" AS is_transfer
+    FROM "SubwayStation"
+    WHERE "nameNorm" % ${norm} OR "nameNorm" ILIKE ${prefix}
+    ORDER BY ("nameNorm" ILIKE ${prefix})::int DESC, similarity("nameNorm", ${norm}) DESC
+    LIMIT 5
+  `;
+
   return {
     properties: props.map((p) => ({
       id: String(p.id),
@@ -41,5 +50,11 @@ export async function autocomplete(q: string): Promise<AutocompleteResult> {
       type: p.type,
     })),
     regions: regions.map((r) => ({ code: r.code, fullName: r.full_name })),
+    stations: stations.map((s) => ({
+      id: String(s.id),
+      name: s.name,
+      lines: s.lines,
+      isTransfer: s.is_transfer,
+    })),
   };
 }

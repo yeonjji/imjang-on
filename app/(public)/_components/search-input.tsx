@@ -9,6 +9,7 @@ import Link from 'next/link';
 interface Result {
   properties: Array<{ id: string; name: string; address: string; region: string; type: string }>;
   regions: Array<{ code: string; fullName: string }>;
+  stations: Array<{ id: string; name: string; lines: string[]; isTransfer: boolean }>;
 }
 
 export function SearchInput() {
@@ -56,7 +57,7 @@ export function SearchInput() {
           className="pl-8"
         />
       </div>
-      {open && results && (results.properties.length > 0 || results.regions.length > 0) && (
+      {open && results && (results.properties.length > 0 || results.regions.length > 0 || results.stations.length > 0) && (
         <div className="absolute left-0 right-0 z-40 mt-2 rounded-2xl border border-[var(--color-line)] bg-white p-2 shadow-[var(--shadow-soft)] md:left-auto md:w-80">
           {results.properties.length > 0 && (
             <>
@@ -85,6 +86,22 @@ export function SearchInput() {
                   onClick={() => setOpen(false)}
                 >
                   <p className="text-sm">{r.fullName}</p>
+                </Link>
+              ))}
+            </>
+          )}
+          {results.stations.length > 0 && (
+            <>
+              <p className="mt-2 px-3 py-1 text-xs font-bold uppercase text-[var(--color-muted)]">지하철역</p>
+              {results.stations.map((s) => (
+                <Link
+                  key={s.id}
+                  href={`/list?station=${s.id}`}
+                  className="block rounded-lg px-3 py-2 hover:bg-[var(--color-soft)]"
+                  onClick={() => setOpen(false)}
+                >
+                  <p className="text-sm font-semibold">🚇 {s.name}</p>
+                  <p className="text-xs text-[var(--color-muted)]">{s.lines.join(' · ')}</p>
                 </Link>
               ))}
             </>
