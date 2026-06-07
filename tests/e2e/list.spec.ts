@@ -45,12 +45,12 @@ test('모바일: 카드 가로 스크롤 없음 (375px)', async ({ page }) => {
   expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
 });
 
-test('무한 스크롤: 카드 + 인피드 광고 슬롯 노출', async ({ page }) => {
+test('무한 스크롤: 결과 카드 렌더', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/list?type=apt');
   await expect(page.getByText(/검색 결과/)).toBeVisible();
-  // 시드가 30건 이상이면 8번째 뒤에 SPONSORED 슬롯이 최소 1개
-  await expect(page.getByText('SPONSORED').first()).toBeVisible();
+  // 인피드 광고는 현재 코드만 유지하고 화면 비표시 → 카드 렌더만 검증
+  await expect(page.locator('article').first()).toBeVisible();
 });
 
 test('무한 스크롤: 끝까지 로드 시 종료 문구', async ({ page }) => {
