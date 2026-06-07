@@ -8,11 +8,13 @@ import {
   getNearbyApartments,
   getNearbyInfra,
 } from '@/lib/amenity/nearby';
+import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { AmenityHero } from '../_components/amenity-hero';
 import { AmenityInfo } from '../_components/amenity-info';
 import { AmenityDetailSidebar } from '../_components/amenity-detail-sidebar';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
+import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import type { Metadata } from 'next';
@@ -53,7 +55,7 @@ export default async function AmenityDetailPage({ params }: Params) {
   // 'convenience' | 'mart' | 'cafe'는 Store 행, 'market'은 TraditionalMarket 행.
   const exclude =
     def.slug === 'market' ? { excludeMarketId: itemId } : { excludeStoreId: itemId };
-  const [apts, infra, otherList] = await Promise.all([
+  const [apts, infra, otherList, subway] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
     coord
       ? getNearbyInfra(coord.lat, coord.lng, { ...exclude, includeChildcare: true })
@@ -61,6 +63,9 @@ export default async function AmenityDetailPage({ params }: Params) {
     item.sigunguCode
       ? getAmenityList(def.slug, { sigunguCode: item.sigunguCode }, 1)
       : Promise.resolve({ rows: [], total: 0, page: 1, perPage: 0, totalPages: 0 }),
+    coord
+      ? getNearbySubwayStations(coord.lat, coord.lng)
+      : Promise.resolve({ stations: [], fallback: false }),
   ]);
 
   const others = otherList.rows.filter((s) => s.id !== item.id).slice(0, 4);
@@ -100,6 +105,7 @@ export default async function AmenityDetailPage({ params }: Params) {
             </Card>
           )}
           <NearbyApartments items={apts} />
+          {coord && <NearbySubway data={subway} />}
           {coord && <NearbyInfra categories={infra} />}
         </main>
         <aside><AmenityDetailSidebar others={others} def={def} sigunguCode={item.sigunguCode} /></aside>

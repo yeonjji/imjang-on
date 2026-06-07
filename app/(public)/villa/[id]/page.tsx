@@ -8,7 +8,9 @@ import {
 } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
 import { getNearbyInfra } from '@/lib/amenity/nearby';
+import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
+import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import { PropertyType } from '@prisma/client';
@@ -52,7 +54,7 @@ export default async function VillaDetailPage({ params }: Params) {
 
   const coord = await getPropertyLatLng(propId);
 
-  const [unified, counts, chart, areaSummary, nearby, infra] = await Promise.all([
+  const [unified, counts, chart, areaSummary, nearby, infra, subway] = await Promise.all([
     getUnifiedTransactions(propId, { page: 1, perPage: 15 }),
     getTransactionCounts(propId),
     getMonthlyChartData(propId),
@@ -61,6 +63,9 @@ export default async function VillaDetailPage({ params }: Params) {
     coord
       ? getNearbyInfra(coord.lat, coord.lng, { includeChildcare: true })
       : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
+    coord
+      ? getNearbySubwayStations(coord.lat, coord.lng)
+      : Promise.resolve({ stations: [], fallback: false }),
   ]);
 
   return (
@@ -91,6 +96,7 @@ export default async function VillaDetailPage({ params }: Params) {
           </section>
           <AreaComparison id="area" areas={areaSummary} />
           <NearbyPriceComparison id="nearby" items={nearby} slug="villa" />
+          <NearbySubway data={subway} />
           <NearbyInfra categories={infra} />
         </main>
         <aside>

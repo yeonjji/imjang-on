@@ -5,9 +5,11 @@ import {
   categoryLabel,
 } from '@/lib/subscription';
 import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
+import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { LocationViewer } from '@/components/ui/location-viewer';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
+import { NearbySubway } from '@/components/ui/nearby-subway';
 import { SubscriptionHero } from './_components/subscription-hero';
 import { ScheduleTimeline } from './_components/schedule-timeline';
 import { UnitSupplyTable } from './_components/unit-supply-table';
@@ -38,11 +40,14 @@ export default async function SubscriptionDetailPage({ params }: Params) {
   if (!notice) notFound();
 
   const coord = await getSubscriptionLatLng(noticeId);
-  const [nearbyApts, infra] = await Promise.all([
+  const [nearbyApts, infra, subway] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([]),
     coord
       ? getNearbyInfra(coord.lat, coord.lng, { includeChildcare: true })
       : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
+    coord
+      ? getNearbySubwayStations(coord.lat, coord.lng)
+      : Promise.resolve({ stations: [], fallback: false }),
   ]);
 
   return (
@@ -60,6 +65,7 @@ export default async function SubscriptionDetailPage({ params }: Params) {
                 <LocationViewer lat={coord.lat} lng={coord.lng} name={notice.name} />
               </section>
               <NearbyApartments items={nearbyApts} />
+              <NearbySubway data={subway} />
               <NearbyInfra categories={infra} />
             </>
           ) : (
