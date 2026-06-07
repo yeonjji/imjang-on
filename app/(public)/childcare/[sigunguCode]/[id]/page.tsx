@@ -16,6 +16,7 @@ import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { LocationViewer } from '@/components/ui/location-viewer';
+import { StaticMapImage } from '@/components/ui/static-map';
 import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import type { Metadata } from 'next';
@@ -92,6 +93,7 @@ export default async function ChildcareDetailPage({ params }: Params) {
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
+              <StaticMapImage lat={coord.lat} lng={coord.lng} name={item.name} />
               <LocationViewer lat={coord.lat} lng={coord.lng} name={item.name} />
             </Card>
           )}

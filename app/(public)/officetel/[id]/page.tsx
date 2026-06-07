@@ -12,6 +12,7 @@ import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
+import { StaticMapImage } from '@/components/ui/static-map';
 import { Card } from '@/components/ui/card';
 import { PropertyType } from '@prisma/client';
 import { PropertyDetailHero } from '../../apt/[id]/_components/property-detail-hero';
@@ -74,6 +75,7 @@ export default async function OffiDetailPage({ params }: Params) {
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">
                 위치 · 로드뷰
               </h2>
+              <StaticMapImage lat={coord.lat} lng={coord.lng} name={property.name} />
               <LocationViewer lat={coord.lat} lng={coord.lng} name={property.name} />
             </Card>
           )}
