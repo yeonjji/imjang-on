@@ -16,8 +16,8 @@ export default function ContactPage() {
       </p>
 
       <p className="mt-4 text-lg font-bold text-[var(--color-text)]">
-        <a href="mailto:contact@imjang-on.com" className="underline hover:text-[var(--color-blue-dark)]">
-          contact@imjang-on.com
+        <a href="mailto:contact@imjangon.co.kr" className="underline hover:text-[var(--color-blue-dark)]">
+          contact@imjangon.co.kr
         </a>
       </p>
 

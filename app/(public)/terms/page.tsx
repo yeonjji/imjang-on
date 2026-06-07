@@ -82,7 +82,7 @@ export default function TermsPage() {
       </div>
 
       <p className="mt-10 text-sm text-[var(--color-muted)]">
-        문의: <a href="mailto:contact@imjang-on.com" className="underline">contact@imjang-on.com</a>
+        문의: <a href="mailto:contact@imjangon.co.kr" className="underline">contact@imjangon.co.kr</a>
       </p>
     </article>
   );

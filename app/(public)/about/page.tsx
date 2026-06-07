@@ -29,8 +29,8 @@ export default function AboutPage() {
       <p className="mt-3 text-[var(--color-text)]">
         임장온은 개인이 운영하는 비상업 정보 서비스이며, 회원가입·결제·중개 기능을 제공하지 않습니다.
         문의는{' '}
-        <a href="mailto:contact@imjang-on.com" className="underline hover:text-[var(--color-blue-dark)]">
-          contact@imjang-on.com
+        <a href="mailto:contact@imjangon.co.kr" className="underline hover:text-[var(--color-blue-dark)]">
+          contact@imjangon.co.kr
         </a>
         으로 받습니다.
       </p>

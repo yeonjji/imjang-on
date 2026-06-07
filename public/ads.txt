@@ -1,2 +1,1 @@
-# Google AdSense 승인 후 아래 줄의 주석(#)을 제거하고 게시자 ID(pub-XXXXXXXXXXXXXXXX)를 채운다.
-# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+google.com, pub-7716793757405086, DIRECT, f08c47fec0942fa0
