@@ -67,6 +67,24 @@ export function ListFilterPanel({ sidoList, params: externalParams, onParamsChan
     return () => clearTimeout(t);
   }, [stationQuery]);
 
+  function selectStation(s: { id: string; name: string }) {
+    setStationLabel(s.name);
+    setStationQuery('');
+    setStationOpts([]);
+    updateParams({ station: s.id });
+  }
+
+  // Enter 입력 시: 이미 떠 있는 후보가 있으면 최상위 선택, 없으면 즉시 조회해 최상위 선택.
+  async function submitStationSearch() {
+    const q = stationQuery.trim();
+    if (!q) return;
+    if (stationOpts.length > 0) { selectStation(stationOpts[0]); return; }
+    const r = await fetch(`/api/subway/search?q=${encodeURIComponent(q)}`);
+    if (!r.ok) return;
+    const list: Array<{ id: string; name: string; lines: string[] }> = (await r.json()).stations;
+    if (list.length > 0) selectStation(list[0]);
+  }
+
   const [sigunguList, setSigunguList] = useState<SigunguItem[]>([]);
 
   useEffect(() => {
@@ -173,7 +191,8 @@ export function ListFilterPanel({ sidoList, params: externalParams, onParamsChan
             <input
               value={stationQuery}
               onChange={(e) => setStationQuery(e.target.value)}
-              placeholder="역 이름 검색 (예: 강남)"
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submitStationSearch(); } }}
+              placeholder="역 이름 검색 후 Enter (예: 강남)"
               className="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-blue)]"
             />
             {stationOpts.length > 0 && (
@@ -181,7 +200,7 @@ export function ListFilterPanel({ sidoList, params: externalParams, onParamsChan
                 {stationOpts.map((s) => (
                   <button
                     key={s.id}
-                    onClick={() => { setStationLabel(s.name); setStationQuery(''); setStationOpts([]); updateParams({ station: s.id }); }}
+                    onClick={() => selectStation(s)}
                     className="block w-full rounded-lg px-3 py-2 text-left hover:bg-[var(--color-soft)]"
                   >
                     <span className="text-sm font-semibold">🚇 {s.name}</span>
