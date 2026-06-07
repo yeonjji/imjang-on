@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-export const metadata: Metadata = { title: '서비스 소개', alternates: { canonical: '/about' } };
+export const metadata: Metadata = {
+  title: '서비스 소개',
+  description: '임장온 서비스 소개 — 공공데이터 기반 부동산 실거래가·생활편의 정보를 제공하는 방식과 운영 안내.',
+  alternates: { canonical: '/about' },
+};
 
 export default function AboutPage() {
   return (

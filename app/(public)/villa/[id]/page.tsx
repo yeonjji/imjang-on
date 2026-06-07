@@ -23,6 +23,7 @@ import { AreaComparison } from '../../apt/[id]/_components/area-comparison';
 import { NearbyPriceComparison } from '../../apt/[id]/_components/nearby-price-comparison';
 import { DetailSidebar } from '../../apt/[id]/_components/detail-sidebar';
 import { propertyBlurb } from '@/lib/seo/blurb';
+import { formatBillion } from '@/lib/format';
 import { JsonLd, residenceSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { staticMapUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
@@ -40,8 +41,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!p) return {};
   const typeLabel = p.propertyType === 'ROW_HOUSE' ? '연립' : '다세대';
   return {
-    title: `${p.name} 실거래가 · ${typeLabel}`,
-    description: `${p.name} ${typeLabel} 실거래가`,
+    title: `${p.name} 실거래가 · ${p.region.fullName}`,
+    description: `${p.name}(${typeLabel}). 매매 평균 ${formatBillion(p.saleAvgPrice12m)} · 전세 ${formatBillion(p.jeonseAvgDeposit12m)} · 거래 ${p.txCount12m}건.`,
     alternates: { canonical: `/villa/${p.id}` },
   };
 }

@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = { title: '개인정보 처리방침', alternates: { canonical: '/privacy' } };
+export const metadata: Metadata = {
+  title: '개인정보 처리방침',
+  description: '임장온 개인정보 처리방침 — 수집 항목, 이용 목적, 쿠키 및 광고(Google AdSense) 안내.',
+  alternates: { canonical: '/privacy' },
+};
 
 const SECTIONS: { heading: string; body: React.ReactNode[] }[] = [
   {
