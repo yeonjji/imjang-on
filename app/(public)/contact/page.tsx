@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = { title: '문의', alternates: { canonical: '/contact' } };
+export const metadata: Metadata = {
+  title: '문의',
+  description: '임장온 문의 — 데이터 정정·삭제 요청, 제휴 등 문의 안내.',
+  alternates: { canonical: '/contact' },
+};
 
 export default function ContactPage() {
   return (

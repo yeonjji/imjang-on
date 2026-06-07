@@ -87,6 +87,7 @@ export default async function SchoolDetailPage({ params }: Params) {
             lng: coord?.lng,
             url: `${SITE_URL}/school/${sigunguCode}/${id}`,
             image: coord ? staticMapUrl(coord) : undefined,
+            telephone: school.tel,
           }),
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },

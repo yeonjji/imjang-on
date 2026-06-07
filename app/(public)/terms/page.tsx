@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = { title: '이용약관', alternates: { canonical: '/terms' } };
+export const metadata: Metadata = {
+  title: '이용약관',
+  description: '임장온 이용약관 — 서비스 이용 조건과 데이터 정확성·책임 범위 안내.',
+  alternates: { canonical: '/terms' },
+};
 
 const SECTIONS: { heading: string; body: string[] }[] = [
   {

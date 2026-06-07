@@ -3,6 +3,7 @@ import { dataSourcesByCategory } from '@/lib/data-sources';
 
 export const metadata: Metadata = {
   title: '데이터 출처',
+  description: '임장온 데이터 출처 — 국토교통부 실거래가, 청약홈, 건강보험심사평가원 등 공공데이터 출처 안내.',
   alternates: { canonical: '/data-source' },
 };
 

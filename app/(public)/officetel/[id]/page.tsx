@@ -23,6 +23,7 @@ import { AreaComparison } from '../../apt/[id]/_components/area-comparison';
 import { NearbyPriceComparison } from '../../apt/[id]/_components/nearby-price-comparison';
 import { DetailSidebar } from '../../apt/[id]/_components/detail-sidebar';
 import { formatBillion } from '@/lib/format';
+import { propertyBlurb, salePriceTrend } from '@/lib/seo/blurb';
 import { JsonLd, residenceSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { staticMapUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
@@ -67,6 +68,21 @@ export default async function OffiDetailPage({ params }: Params) {
       : Promise.resolve({ stations: [], fallback: false }),
   ]);
 
+  const blurbText = propertyBlurb({
+    name: property.name,
+    regionFullName: property.region.fullName,
+    builtYear: property.builtYear,
+    households: property.households,
+    txCount12m: property.txCount12m,
+    saleCount12m: property.saleCount12m,
+    jeonseCount12m: property.jeonseCount12m,
+    saleAvgPrice12m: property.saleAvgPrice12m ? Number(property.saleAvgPrice12m) : null,
+    jeonseAvgDeposit12m: property.jeonseAvgDeposit12m ? Number(property.jeonseAvgDeposit12m) : null,
+    trend: salePriceTrend(chart.SALE.map((p) => ({ month: p.month, avg: p.avg }))),
+    subwayCount: subway.stations.length,
+    infra: infra.map((c) => ({ label: c.label, count: c.items.length })).filter((c) => c.count > 0).slice(0, 5),
+  });
+
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
       <JsonLd
@@ -87,6 +103,9 @@ export default async function OffiDetailPage({ params }: Params) {
         ]}
       />
       <PropertyDetailHero property={property} region={property.region} />
+      <p className="mt-5 rounded-2xl bg-[var(--color-soft)] px-5 py-4 leading-relaxed text-[var(--color-text)]">
+        {blurbText}
+      </p>
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-8">
           <DealSummarySection id="summary" property={property} />

@@ -56,6 +56,8 @@ interface PlaceInput {
   lng?: number | null;
   url: string;
   image?: string;
+  telephone?: string | null;
+  openingHours?: string | null;
 }
 
 function geoOf(lat?: number | null, lng?: number | null): Json | undefined {
@@ -90,6 +92,8 @@ export function placeSchema(input: PlaceInput & { type: PlaceType }): Json {
     address: postalAddress(input.address),
     geo: geoOf(input.lat, input.lng),
     image: input.image,
+    telephone: input.telephone || undefined,
+    openingHours: input.openingHours || undefined,
   };
 }
 

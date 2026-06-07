@@ -70,6 +70,7 @@ export default async function PharmacyDetailPage({ params }: Params) {
             lng: coord?.lng,
             url: `${SITE_URL}/medical/pharmacy/${pharmacy.sigunguCode}/${id}`,
             image: coord ? staticMapUrl(coord) : undefined,
+            telephone: pharmacy.tel,
           }),
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },

@@ -2,7 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LIFE_GROUPS } from '../_components/life-menu';
 
-export const metadata: Metadata = { title: '사이트맵', alternates: { canonical: '/sitemap' } };
+export const metadata: Metadata = {
+  title: '사이트맵',
+  description: '임장온 사이트맵 — 아파트·오피스텔·연립다세대·지역·생활편의 전체 페이지 안내.',
+  alternates: { canonical: '/sitemap' },
+};
 
 const PRIMARY: { heading: string; links: { href: string; label: string }[] }[] = [
   {
