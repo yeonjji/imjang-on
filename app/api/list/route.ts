@@ -18,6 +18,7 @@ export async function GET(req: Request) {
     q: p.q,
     page: p.page,
     perPage: 30,
+    stationId: p.stationId,
   });
 
   return Response.json(

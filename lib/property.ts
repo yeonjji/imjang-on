@@ -40,6 +40,7 @@ export interface PropertyListParams {
   q?: string;
   page?: number;
   perPage?: number;
+  stationId?: string;
 }
 
 export function buildPriceCondition(
@@ -86,8 +87,24 @@ export async function getPropertyList({
   q,
   page = 1,
   perPage = 30,
+  stationId,
 }: PropertyListParams) {
   const where: Prisma.PropertyWhereInput = { propertyType: { in: types } };
+
+  if (stationId) {
+    const ids = await prisma.$queryRaw<{ id: bigint }[]>`
+      SELECT p.id
+      FROM "Property" p, "SubwayStation" s
+      WHERE s.id = ${BigInt(stationId)}
+        AND p.location IS NOT NULL
+        AND ST_DWithin(p.location, s.location, 800)
+      LIMIT 3000
+    `;
+    if (ids.length === 0) {
+      return { rows: [], total: 0, page, perPage, totalPages: 0 };
+    }
+    where.id = { in: ids.map((r) => r.id) };
+  }
 
   // deal → count filter
   if (deal === 'sale') {
