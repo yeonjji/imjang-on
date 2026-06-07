@@ -26,6 +26,9 @@ import { formatBillion } from '@/lib/format';
 import { getNearbySubscriptions } from '@/lib/subscription';
 import { shortSidoFromRegionCode } from '@/lib/region';
 import { NearbySubscriptions } from './_components/nearby-subscriptions';
+import { JsonLd, residenceSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
+import { staticMapUrl } from '@/lib/seo/static-map';
+import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 
 export const revalidate = 21_600;
@@ -73,6 +76,23 @@ export default async function AptDetailPage({ params }: Params) {
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
+      <JsonLd
+        data={[
+          residenceSchema({
+            name: property.name,
+            address: property.region.fullName,
+            lat: coord?.lat,
+            lng: coord?.lng,
+            url: `${SITE_URL}/apt/${property.id}`,
+            image: coord ? staticMapUrl(coord) : undefined,
+          }),
+          breadcrumbSchema([
+            { name: '홈', url: `${SITE_URL}/` },
+            { name: '아파트', url: `${SITE_URL}/apt` },
+            { name: property.name, url: `${SITE_URL}/apt/${property.id}` },
+          ]),
+        ]}
+      />
       <PropertyDetailHero property={property} region={property.region} />
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-8">

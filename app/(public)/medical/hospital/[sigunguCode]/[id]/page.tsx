@@ -15,6 +15,9 @@ import { LocationViewer } from '@/components/ui/location-viewer';
 import { StaticMapImage } from '@/components/ui/static-map';
 import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
+import { JsonLd, placeSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
+import { staticMapUrl } from '@/lib/seo/static-map';
+import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 
 export const revalidate = 86_400;
@@ -57,6 +60,25 @@ export default async function HospitalDetailPage({ params }: Params) {
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10">
+      <JsonLd
+        data={[
+          placeSchema({
+            type: 'Hospital',
+            name: hospital.name,
+            address: hospital.address,
+            lat: coord?.lat,
+            lng: coord?.lng,
+            url: `${SITE_URL}/medical/hospital/${hospital.sigunguCode}/${id}`,
+            image: coord ? staticMapUrl(coord) : undefined,
+          }),
+          breadcrumbSchema([
+            { name: '홈', url: `${SITE_URL}/` },
+            { name: '생활편의', url: `${SITE_URL}/life` },
+            { name: '병원·의원', url: `${SITE_URL}/medical/hospital` },
+            { name: hospital.name, url: `${SITE_URL}/medical/hospital/${hospital.sigunguCode}/${id}` },
+          ]),
+        ]}
+      />
       <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
         <Link href="/">홈</Link><span>›</span>
         <Link href="/life">생활편의</Link><span>›</span>
