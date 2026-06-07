@@ -14,8 +14,10 @@ export default async function sitemap({
 }: {
   id: number;
 }): Promise<MetadataRoute.Sitemap> {
+  // Next는 URL 라우트 파라미터로 id를 문자열로 넘길 수 있어 숫자로 정규화한다.
+  const shardId = Number(id);
   const counts = await loadCounts();
-  const shard = buildManifest(counts, CHUNK_SIZE).find((s) => s.id === id);
+  const shard = buildManifest(counts, CHUNK_SIZE).find((s) => s.id === shardId);
   if (!shard) return [];
   const source = SOURCE_MAP[shard.key];
   if (!source) return [];
