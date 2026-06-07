@@ -22,12 +22,14 @@ export function InfinitePropertyList({ initialItems, totalPages, deal, query }: 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const inFlightRef = useRef(false);
 
   const done = page >= totalPages;
   const canAuto = !done && page - 1 < AUTO_MAX;
 
   async function loadMore() {
-    if (loading || done) return;
+    if (inFlightRef.current || done) return;
+    inFlightRef.current = true;
     setLoading(true);
     setError(false);
     const next = page + 1;
@@ -41,6 +43,7 @@ export function InfinitePropertyList({ initialItems, totalPages, deal, query }: 
       setError(true);
     } finally {
       setLoading(false);
+      inFlightRef.current = false;
     }
   }
 
