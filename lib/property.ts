@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import { PropertyType } from '@prisma/client';
-import type { Prisma } from '@prisma/client';
+import type { Prisma, Property, Region } from '@prisma/client';
 import { normalizeName } from '@/lib/slug';
 
 export type PropertyTypeSlug = 'apt' | 'officetel' | 'villa';
@@ -197,4 +197,57 @@ export async function getPropertyLatLng(
     FROM "Property" WHERE id = ${id} AND location IS NOT NULL
   `;
   return rows[0] ?? null;
+}
+
+export interface PropertyListItem {
+  id: string;
+  propertyType: PropertyType;
+  name: string;
+  builtYear: number | null;
+  households: number | null;
+  txCount12m: number;
+  saleCount12m: number;
+  saleLastPrice: number | null;
+  saleAvgPrice12m: number | null;
+  jeonseCount12m: number;
+  jeonseLastDeposit: number | null;
+  jeonseAvgDeposit12m: number | null;
+  wolseCount12m: number;
+  wolseLastDeposit: number | null;
+  wolseLastRent: number | null;
+  region: { fullName: string };
+}
+
+const toNum = (v: bigint | number | null): number | null => (v == null ? null : Number(v));
+
+export function serializeProperty(p: Property & { region: Region }): PropertyListItem {
+  return {
+    id: p.id.toString(),
+    propertyType: p.propertyType,
+    name: p.name,
+    builtYear: p.builtYear,
+    households: p.households,
+    txCount12m: p.txCount12m,
+    saleCount12m: p.saleCount12m,
+    saleLastPrice: toNum(p.saleLastPrice),
+    saleAvgPrice12m: toNum(p.saleAvgPrice12m),
+    jeonseCount12m: p.jeonseCount12m,
+    jeonseLastDeposit: toNum(p.jeonseLastDeposit),
+    jeonseAvgDeposit12m: toNum(p.jeonseAvgDeposit12m),
+    wolseCount12m: p.wolseCount12m,
+    wolseLastDeposit: toNum(p.wolseLastDeposit),
+    wolseLastRent: p.wolseLastRent,
+    region: { fullName: p.region.fullName },
+  };
+}
+
+export type FeedEntry<T> = { type: 'item'; item: T } | { type: 'ad'; key: string };
+
+export function withAdSlots<T>(items: T[], interval: number): FeedEntry<T>[] {
+  const out: FeedEntry<T>[] = [];
+  items.forEach((item, i) => {
+    out.push({ type: 'item', item });
+    if ((i + 1) % interval === 0) out.push({ type: 'ad', key: `ad-${i + 1}` });
+  });
+  return out;
 }
