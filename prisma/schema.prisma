@@ -7,7 +7,7 @@ datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
   directUrl  = env("DIRECT_URL")
-  extensions = [postgis, pg_trgm]
+  extensions = [postgis, pg_trgm, fuzzystrmatch, postgis_tiger_geocoder, postgis_topology]
 }
 
 model Region {
@@ -707,4 +707,18 @@ model SubscriptionUnit {
 
   @@unique([noticeId, modelNo, houseType])
   @@index([noticeId])
+}
+
+model SubwayStation {
+  id          BigInt                                @id @default(autoincrement())
+  name        String                                @db.VarChar(60)
+  nameNorm    String                                @db.VarChar(60)
+  lines       String[]                              @default([])
+  operators   String[]                              @default([])
+  address     String?                               @db.VarChar(200)
+  isTransfer  Boolean                               @default(false)
+  location    Unsupported("geography(Point,4326)")?
+  dataStdDate DateTime?                             @db.Date
+  sourceKey   String                                @unique @db.VarChar(80)
+  updatedAt   DateTime                              @updatedAt
 }

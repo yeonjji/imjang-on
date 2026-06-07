@@ -6,6 +6,7 @@ import { getUrbanList } from '@/lib/urban/list';
 import { resolveSigunguFromAddress } from '@/lib/urban/region-from-address';
 import { fetchChargerStatus } from '@/lib/urban/ev-status';
 import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
+import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { getSigunguByCode } from '@/lib/region';
 import { chargerDef } from '@/lib/urban/adapters/charger';
 import type { ChargerRaw } from '@/lib/urban/adapters/charger';
@@ -18,6 +19,7 @@ import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
+import { NearbySubway } from '@/components/ui/nearby-subway';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 
 export const revalidate = 60;
@@ -62,12 +64,15 @@ export default async function ChargerDetailPage({ params }: Params) {
 
   const emptyList = { rows: [], total: 0, page: 1, perPage: 0, totalPages: 0 };
 
-  const [apts, infra, otherList] = await Promise.all([
+  const [apts, infra, otherList, subway] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
     coord
       ? getNearbyInfra(coord.lat, coord.lng, { excludeChargerId: itemId, includeChildcare: true })
       : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
     sigunguCode ? getUrbanList('charger', { sigunguCode }, 1) : Promise.resolve(emptyList),
+    coord
+      ? getNearbySubwayStations(coord.lat, coord.lng)
+      : Promise.resolve({ stations: [], fallback: false }),
   ]);
 
   const others = otherList.rows.filter((s) => s.id !== item.id).slice(0, 4);
@@ -105,6 +110,7 @@ export default async function ChargerDetailPage({ params }: Params) {
             </Card>
           )}
           {coord && <NearbyApartments items={apts} />}
+          {coord && <NearbySubway data={subway} />}
           {coord && <NearbyInfra categories={infra} />}
         </main>
         <aside>

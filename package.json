@@ -28,7 +28,8 @@
     "backfill:market-region": "dotenv -e .env.local -- tsx scripts/ingest/amenities/market-region-backfill.ts",
     "seed:regions:api": "dotenv -e .env.local -- tsx scripts/ingest/regions/seed-from-api.ts",
     "ingest:run": "dotenv -e .env.local -- tsx scripts/ingest/transactions/runner.ts",
-    "ingest:subscriptions": "dotenv -e .env.local -- tsx scripts/ingest/subscriptions/runner.ts"
+    "ingest:subscriptions": "dotenv -e .env.local -- tsx scripts/ingest/subscriptions/runner.ts",
+    "ingest:subway": "dotenv -e .env.local -- tsx scripts/ingest-subway.ts"
   },
   "dependencies": {
     "@next/third-parties": "^16.2.6",

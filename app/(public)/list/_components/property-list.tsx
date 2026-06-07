@@ -13,6 +13,7 @@ interface Props {
   sigunguCode?: string;
   sido?: string;
   q?: string;
+  stationId?: string;
   query: string;
 }
 
@@ -26,6 +27,7 @@ export async function PropertyList({
   sigunguCode,
   sido,
   q,
+  stationId,
   query,
 }: Props) {
   const { rows, total, totalPages } = await getPropertyList({
@@ -38,6 +40,7 @@ export async function PropertyList({
     sigunguCode,
     sido,
     q,
+    stationId,
     page: 1,
     perPage: 30,
   });

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getHospitalById, getHospitalLatLng, getHospitalList } from '@/lib/hospital';
 import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
+import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { HospitalHero } from './_components/hospital-hero';
 import { HospitalSummaryCards } from './_components/hospital-summary-cards';
@@ -9,6 +10,7 @@ import { HospitalTabs } from './_components/hospital-tabs';
 import { HospitalSidebar } from './_components/hospital-sidebar';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
+import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import type { Metadata } from 'next';
@@ -38,12 +40,15 @@ export default async function HospitalDetailPage({ params }: Params) {
 
   const coord = await getHospitalLatLng(hospitalId);
 
-  const [apts, infra, otherList] = await Promise.all([
+  const [apts, infra, otherList, subway] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
     coord
       ? getNearbyInfra(coord.lat, coord.lng, { excludeHospitalId: hospital.id, includeChildcare: true })
       : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
     getHospitalList({ sigunguCode }, 1, 5),
+    coord
+      ? getNearbySubwayStations(coord.lat, coord.lng)
+      : Promise.resolve({ stations: [], fallback: false }),
   ]);
 
   const others = otherList.rows.filter(h => h.id !== hospital.id).slice(0, 4);
@@ -86,6 +91,7 @@ export default async function HospitalDetailPage({ params }: Params) {
             </Card>
           )}
           <NearbyApartments items={apts} />
+          {coord && <NearbySubway data={subway} />}
           {coord && <NearbyInfra categories={infra} />}
         </div>
         <aside>

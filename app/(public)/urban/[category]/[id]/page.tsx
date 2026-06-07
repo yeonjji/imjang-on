@@ -7,6 +7,7 @@ import { getUrbanById, getUrbanLatLng } from '@/lib/urban/detail';
 import { getUrbanList } from '@/lib/urban/list';
 import { resolveSigunguFromAddress } from '@/lib/urban/region-from-address';
 import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
+import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { getSigunguByCode } from '@/lib/region';
 import { UrbanHero } from '../_components/urban-hero';
 import { UrbanInfo } from '../_components/urban-info';
@@ -18,6 +19,7 @@ import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
+import { NearbySubway } from '@/components/ui/nearby-subway';
 import type { ParkingRaw } from '@/lib/urban/adapters/parking';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { ParkInfo } from '../_components/park-info';
@@ -62,12 +64,15 @@ export default async function UrbanDetailPage({ params }: Params) {
   const exclude =
     def.slug === 'park' ? { excludeParkId: itemId } : { excludeParkingId: itemId };
 
-  const [apts, infra, otherList] = await Promise.all([
+  const [apts, infra, otherList, subway] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
     coord
       ? getNearbyInfra(coord.lat, coord.lng, { ...exclude, includeChildcare: true })
       : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
     sigunguCode ? getUrbanList(def.slug, { sigunguCode }, 1) : Promise.resolve(emptyList),
+    coord
+      ? getNearbySubwayStations(coord.lat, coord.lng)
+      : Promise.resolve({ stations: [], fallback: false }),
   ]);
 
   const others = otherList.rows.filter((s) => s.id !== item.id).slice(0, 4);
@@ -115,6 +120,7 @@ export default async function UrbanDetailPage({ params }: Params) {
             </Card>
           )}
           {coord && <NearbyApartments items={apts} />}
+          {coord && <NearbySubway data={subway} />}
           {coord && <NearbyInfra categories={infra} />}
         </main>
         <aside><UrbanDetailSidebar others={others} def={def} sigunguCode={sigunguCode} anchors={def.slug === 'park' ? PARK_ANCHORS : undefined} /></aside>

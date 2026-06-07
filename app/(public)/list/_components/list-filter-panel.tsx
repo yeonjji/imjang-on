@@ -53,6 +53,38 @@ export function ListFilterPanel({ sidoList, params: externalParams, onParamsChan
   const region = effectiveParams.get('region') ?? null;
   const sido = effectiveParams.get('sido') ?? null;
 
+  const station = effectiveParams.get('station');
+  const [stationLabel, setStationLabel] = useState<string | null>(null);
+  const [stationQuery, setStationQuery] = useState('');
+  const [stationOpts, setStationOpts] = useState<Array<{ id: string; name: string; lines: string[] }>>([]);
+
+  useEffect(() => {
+    if (stationQuery.trim().length < 1) { setStationOpts([]); return; }
+    const t = setTimeout(async () => {
+      const r = await fetch(`/api/subway/search?q=${encodeURIComponent(stationQuery)}`);
+      if (r.ok) setStationOpts((await r.json()).stations);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [stationQuery]);
+
+  function selectStation(s: { id: string; name: string }) {
+    setStationLabel(s.name);
+    setStationQuery('');
+    setStationOpts([]);
+    updateParams({ station: s.id });
+  }
+
+  // Enter 입력 시: 이미 떠 있는 후보가 있으면 최상위 선택, 없으면 즉시 조회해 최상위 선택.
+  async function submitStationSearch() {
+    const q = stationQuery.trim();
+    if (!q) return;
+    if (stationOpts.length > 0) { selectStation(stationOpts[0]); return; }
+    const r = await fetch(`/api/subway/search?q=${encodeURIComponent(q)}`);
+    if (!r.ok) return;
+    const list: Array<{ id: string; name: string; lines: string[] }> = (await r.json()).stations;
+    if (list.length > 0) selectStation(list[0]);
+  }
+
   const [sigunguList, setSigunguList] = useState<SigunguItem[]>([]);
 
   useEffect(() => {
@@ -63,7 +95,7 @@ export function ListFilterPanel({ sidoList, params: externalParams, onParamsChan
   }, [sido]);
 
   const hasActiveFilters =
-    type !== 'all' || deal !== 'all' || !!priceMin || !!priceMax || !!area || sort !== 'recent' || !!region || !!sido;
+    type !== 'all' || deal !== 'all' || !!priceMin || !!priceMax || !!area || sort !== 'recent' || !!region || !!sido || !!station;
 
   function updateParams(updates: Record<string, string | null>) {
     const next = new URLSearchParams(effectiveParams.toString());
@@ -139,6 +171,46 @@ export function ListFilterPanel({ sidoList, params: externalParams, onParamsChan
             </select>
           )}
         </div>
+      </section>
+
+      {/* 지하철역 */}
+      <section>
+        <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">지하철역</h3>
+        {station ? (
+          <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[var(--color-line)] bg-[var(--color-soft)] px-3 py-2">
+            <span className="truncate text-sm font-semibold text-[var(--color-blue-dark)]">
+              🚇 {stationLabel ?? '선택한 역'} <span className="text-xs text-[var(--color-muted)]">800m 이내</span>
+            </span>
+            <button
+              onClick={() => { updateParams({ station: null }); setStationQuery(''); }}
+              className="shrink-0 text-xs font-bold text-[var(--color-blue)]"
+            >✕</button>
+          </div>
+        ) : (
+          <div className="relative mt-2">
+            <input
+              value={stationQuery}
+              onChange={(e) => setStationQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submitStationSearch(); } }}
+              placeholder="역 이름 검색 후 Enter (예: 강남)"
+              className="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-blue)]"
+            />
+            {stationOpts.length > 0 && (
+              <div className="absolute left-0 right-0 z-20 mt-1 rounded-xl border border-[var(--color-line)] bg-white p-1 shadow-[var(--shadow-soft)]">
+                {stationOpts.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => selectStation(s)}
+                    className="block w-full rounded-lg px-3 py-2 text-left hover:bg-[var(--color-soft)]"
+                  >
+                    <span className="text-sm font-semibold">🚇 {s.name}</span>
+                    <span className="ml-2 text-xs text-[var(--color-muted)]">{s.lines.join(' · ')}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {/* 가격대 */}

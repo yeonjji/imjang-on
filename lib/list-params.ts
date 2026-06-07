@@ -19,6 +19,7 @@ export interface ListSearchParams {
   sido?: string;
   q?: string;
   page?: string;
+  station?: string;
 }
 
 export interface ParsedListParams {
@@ -32,6 +33,7 @@ export interface ParsedListParams {
   sido?: string;
   q?: string;
   page: number;
+  stationId?: string;
 }
 
 export function parseListParams(sp: ListSearchParams): ParsedListParams {
@@ -47,5 +49,6 @@ export function parseListParams(sp: ListSearchParams): ParsedListParams {
     sido: sp.sido,
     q: sp.q?.trim() || undefined,
     page: Math.max(1, Number(sp.page ?? '1')),
+    stationId: sp.station || undefined,
   };
 }

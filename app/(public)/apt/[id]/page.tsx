@@ -16,7 +16,9 @@ import { AreaComparison } from './_components/area-comparison';
 import { NearbyPriceComparison } from './_components/nearby-price-comparison';
 import { DetailSidebar } from './_components/detail-sidebar';
 import { getNearbyInfra } from '@/lib/amenity/nearby';
+import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
+import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import { formatBillion } from '@/lib/format';
@@ -51,7 +53,7 @@ export default async function AptDetailPage({ params }: Params) {
   const coord = await getPropertyLatLng(propId);
   const shortSido = shortSidoFromRegionCode(property.region.code);
 
-  const [unified, counts, chart, areaSummary, nearby, infra, nearbySubs] = await Promise.all([
+  const [unified, counts, chart, areaSummary, nearby, infra, nearbySubs, subway] = await Promise.all([
     getUnifiedTransactions(propId, { page: 1, perPage: 15 }),
     getTransactionCounts(propId),
     getMonthlyChartData(propId),
@@ -63,6 +65,9 @@ export default async function AptDetailPage({ params }: Params) {
     shortSido
       ? getNearbySubscriptions({ sido: shortSido, sigungu: property.region.sigungu })
       : Promise.resolve(null),
+    coord
+      ? getNearbySubwayStations(coord.lat, coord.lng)
+      : Promise.resolve({ stations: [], fallback: false }),
   ]);
 
   return (
@@ -101,6 +106,7 @@ export default async function AptDetailPage({ params }: Params) {
               sido={shortSido}
             />
           )}
+          <NearbySubway data={subway} />
           <NearbyInfra categories={infra} />
         </main>
         <aside>
