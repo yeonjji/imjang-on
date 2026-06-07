@@ -229,9 +229,16 @@ export const SOURCE_MAP: Record<string, SitemapSource> = Object.fromEntries(
   SOURCE_ORDER.map((s) => [s.key, s]),
 );
 
-/** 모든 소스의 count를 SOURCE_ORDER 순서로 조회한다. */
+/** 모든 소스의 count를 SOURCE_ORDER 순서로 조회한다. 개별 소스 count 실패 시 0으로 격리(전체 500 방지). */
 export async function loadCounts() {
   return Promise.all(
-    SOURCE_ORDER.map(async (s) => ({ key: s.key, count: await s.count() })),
+    SOURCE_ORDER.map(async (s) => {
+      try {
+        return { key: s.key, count: await s.count() };
+      } catch (err) {
+        console.error(`sitemap ${s.key}: count failed`, err);
+        return { key: s.key, count: 0 };
+      }
+    }),
   );
 }
