@@ -18,13 +18,32 @@ export const metadata: Metadata = {
 
 export const revalidate = 3600;
 
+/**
+ * 빌드 시 정적 프리렌더 중 DB 블립(커넥션 한계 등)으로 쿼리가 실패해도
+ * 빌드 전체가 죽지 않도록 fallback으로 폴백한다. ISR 재검증 시 실제 데이터로 채워진다.
+ */
+async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await p;
+  } catch (err) {
+    console.error('[home] data fetch failed during render, using fallback', err);
+    return fallback;
+  }
+}
+
 export default async function HomePage() {
   const [sidoList, stats, briefing, popularRegions, weeklyBoard] = await Promise.all([
     getSidoList(),
-    getHomeStats(),
-    getMarketBriefing(),
-    getPopularSigungus(),
-    getWeeklySubscriptions(),
+    safe(getHomeStats(), { transactions: 0, properties: 0, schools: 0, lifeFacilities: 0 }),
+    safe(getMarketBriefing(), null),
+    safe(getPopularSigungus(), []),
+    safe(getWeeklySubscriptions(), {
+      weekStart: new Date(),
+      weekEnd: new Date(),
+      days: [],
+      summary: { open: 0, upcoming: 0, closed: 0 },
+      total: 0,
+    }),
   ]);
 
   return (
