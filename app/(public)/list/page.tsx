@@ -1,12 +1,11 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { PropertyType } from '@prisma/client';
 import { ListFilterPanel } from './_components/list-filter-panel';
 import { MobileFilterSheet } from './_components/mobile-filter-sheet';
 import { PropertyList } from './_components/property-list';
 import { ListSkeleton } from './_components/list-skeleton';
 import { getSidoList } from '@/lib/region';
-import type { DealFilter, AreaRange, SortOption } from '@/lib/property';
+import { parseListParams } from '@/lib/list-params';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -16,44 +15,20 @@ export const metadata: Metadata = {
   alternates: { canonical: '/list' },
 };
 
-const TYPE_MAP: Record<string, PropertyType[]> = {
-  apt: [PropertyType.APARTMENT],
-  officetel: [PropertyType.OFFICETEL],
-  villa: [PropertyType.ROW_HOUSE, PropertyType.MULTIPLEX],
-  all: [PropertyType.APARTMENT, PropertyType.OFFICETEL, PropertyType.ROW_HOUSE, PropertyType.MULTIPLEX],
-};
-
-interface SearchParams {
-  type?: string;
-  deal?: string;
-  price_min?: string;
-  price_max?: string;
-  area?: string;
-  sort?: string;
-  region?: string;
-  sido?: string;
-  q?: string;
-  page?: string;
-}
-
 export const revalidate = 60;
 
 export default async function ListPage({
   searchParams,
 }: {
-  searchParams: Promise<SearchParams>;
+  searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const [sp, sidoList] = await Promise.all([searchParams, getSidoList()]);
 
-  const typeSlug = sp.type ?? 'all';
-  const types = TYPE_MAP[typeSlug] ?? TYPE_MAP.all;
-  const deal = (sp.deal ?? 'all') as DealFilter;
-  const priceMin = sp.price_min ? Number(sp.price_min) : undefined;
-  const priceMax = sp.price_max ? Number(sp.price_max) : undefined;
-  const areaRange = sp.area as AreaRange | undefined;
-  const sort = (sp.sort ?? 'recent') as SortOption;
-  const page = Math.max(1, Number(sp.page ?? '1'));
-  const q = sp.q?.trim() || undefined;
+  const { types, deal, priceMin, priceMax, areaRange, sort, sigunguCode, sido, q } =
+    parseListParams(sp);
+  const query = new URLSearchParams(
+    Object.entries(sp).filter(([k, v]) => k !== 'page' && v != null) as [string, string][],
+  ).toString();
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-8">
@@ -104,10 +79,10 @@ export default async function ListPage({
               priceMax={priceMax}
               areaRange={areaRange}
               sort={sort}
-              sigunguCode={sp.region}
-              sido={sp.sido}
+              sigunguCode={sigunguCode}
+              sido={sido}
               q={q}
-              page={page}
+              query={query}
             />
           </Suspense>
         </main>

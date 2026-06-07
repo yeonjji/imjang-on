@@ -1,8 +1,7 @@
 import type { PropertyType } from '@prisma/client';
-import { getPropertyList } from '@/lib/property';
+import { getPropertyList, serializeProperty } from '@/lib/property';
 import type { DealFilter, AreaRange, SortOption } from '@/lib/property';
-import { PropertyListCard } from './property-list-card';
-import { PaginationNav } from './pagination-nav';
+import { InfinitePropertyList } from './infinite-property-list';
 
 interface Props {
   types: PropertyType[];
@@ -14,7 +13,7 @@ interface Props {
   sigunguCode?: string;
   sido?: string;
   q?: string;
-  page: number;
+  query: string;
 }
 
 export async function PropertyList({
@@ -27,9 +26,9 @@ export async function PropertyList({
   sigunguCode,
   sido,
   q,
-  page,
+  query,
 }: Props) {
-  const { rows, total, totalPages, perPage } = await getPropertyList({
+  const { rows, total, totalPages } = await getPropertyList({
     types,
     deal,
     priceMin,
@@ -39,9 +38,11 @@ export async function PropertyList({
     sigunguCode,
     sido,
     q,
-    page,
+    page: 1,
     perPage: 30,
   });
+
+  const items = rows.map(serializeProperty);
 
   return (
     <>
@@ -51,27 +52,18 @@ export async function PropertyList({
         </p>
       </div>
 
-      {rows.length === 0 ? (
+      {items.length === 0 ? (
         <div className="rounded-[22px] border border-[var(--color-line)] bg-white p-12 text-center text-[var(--color-muted)]">
           조건에 맞는 매물이 없습니다.
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          {rows.map((p) => (
-            <PropertyListCard key={String(p.id)} property={p} deal={deal} />
-          ))}
-        </div>
-      )}
-
-      {totalPages > 1 && (
-        <div className="mt-6">
-          <PaginationNav
-            current={page}
-            totalPages={totalPages}
-            totalItems={total}
-            perPage={perPage}
-          />
-        </div>
+        <InfinitePropertyList
+          key={query}
+          initialItems={items}
+          totalPages={totalPages}
+          deal={deal}
+          query={query}
+        />
       )}
     </>
   );

@@ -2,8 +2,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { formatBillion } from '@/lib/format';
 import { typeToSlug } from '@/lib/property';
-import type { DealFilter } from '@/lib/property';
-import type { Property, Region } from '@prisma/client';
+import type { DealFilter, PropertyListItem } from '@/lib/property';
 
 const TYPE_LABEL: Record<string, string> = {
   APARTMENT: '아파트',
@@ -13,7 +12,7 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 interface Props {
-  property: Property & { region: Region };
+  property: PropertyListItem;
   deal?: DealFilter;
 }
 
