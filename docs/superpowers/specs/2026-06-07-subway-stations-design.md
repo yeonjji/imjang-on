@@ -75,7 +75,7 @@ model SubwayStation {
 - 좌표는 엑셀에 이미 있으므로 **지오코딩 불필요**.
 - `IngestionRun`에 `source="subway"`, `targetKey="stations"`로 실행 기록(기존 패턴 동일).
 - 멱등성: 재실행 시 `sourceKey` upsert로 중복 없음.
-- 입력 파일 경로는 인자 또는 env로 받는다(기본값 없음).
+- 입력 파일은 레포에 커밋된 `data/subway.xlsx`를 기본 경로로 읽는다(인자로 다른 경로 지정 가능). 정적·소용량 데이터라 레포에 동봉해 재실행·CI 재현이 가능하다.
 
 ## 4. 근처 지하철역 섹션
 
