@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { SITE_URL } from '@/lib/site';
+import { JsonLd, organizationSchema, webSiteSchema } from '@/lib/seo/json-ld';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -18,6 +19,9 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: '임장온',
   },
+  twitter: {
+    card: 'summary_large_image',
+  },
   robots: { index: true, follow: true },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
@@ -31,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko">
       <body>
+        <JsonLd data={[organizationSchema(), webSiteSchema()]} />
         {children}
         <Analytics />
         <SpeedInsights />
