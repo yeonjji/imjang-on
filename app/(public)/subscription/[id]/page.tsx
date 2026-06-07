@@ -16,6 +16,8 @@ import { ScheduleTimeline } from './_components/schedule-timeline';
 import { UnitSupplyTable } from './_components/unit-supply-table';
 import { SubscriptionSidebar } from './_components/subscription-sidebar';
 import { SourceCaption } from '@/components/ui/source-caption';
+import { JsonLd, breadcrumbSchema } from '@/lib/seo/json-ld';
+import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 
 export const revalidate = 21_600;
@@ -54,6 +56,32 @@ export default async function SubscriptionDetailPage({ params }: Params) {
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
+      <JsonLd
+        data={[
+          notice.receiptBegin || notice.receiptEnd
+            ? {
+                '@context': 'https://schema.org',
+                '@type': 'Event',
+                name: `${notice.name} 청약 공고`,
+                url: `${SITE_URL}/subscription/${notice.id}`,
+                ...(notice.regionName ? { location: { '@type': 'Place', name: notice.regionName } } : {}),
+                ...(notice.receiptBegin ? { startDate: notice.receiptBegin.toISOString() } : {}),
+                ...(notice.receiptEnd ? { endDate: notice.receiptEnd.toISOString() } : {}),
+              }
+            : {
+                '@context': 'https://schema.org',
+                '@type': 'WebPage',
+                name: `${notice.name} 청약 공고`,
+                url: `${SITE_URL}/subscription/${notice.id}`,
+                ...(notice.regionName ? { about: notice.regionName } : {}),
+              },
+          breadcrumbSchema([
+            { name: '홈', url: `${SITE_URL}/` },
+            { name: '청약·분양', url: `${SITE_URL}/subscription` },
+            { name: notice.name, url: `${SITE_URL}/subscription/${notice.id}` },
+          ]),
+        ]}
+      />
       <SubscriptionHero notice={notice} />
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex min-w-0 flex-col gap-8">

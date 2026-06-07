@@ -70,6 +70,7 @@ export default async function HospitalDetailPage({ params }: Params) {
             lng: coord?.lng,
             url: `${SITE_URL}/medical/hospital/${hospital.sigunguCode}/${id}`,
             image: coord ? staticMapUrl(coord) : undefined,
+            telephone: hospital.tel,
           }),
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },

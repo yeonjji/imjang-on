@@ -85,6 +85,7 @@ export default async function ChildcareDetailPage({ params }: Params) {
             lng: coord?.lng,
             url: `${SITE_URL}/childcare/${sigunguCode}/${id}`,
             image: coord ? staticMapUrl(coord) : undefined,
+            telephone: item.tel,
           }),
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
