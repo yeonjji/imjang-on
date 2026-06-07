@@ -205,7 +205,7 @@ function MobilePager({
         <button
           onClick={() => setOpen(true)}
           aria-label="페이지 이동"
-          className="text-sm font-bold text-[var(--color-blue-dark)]"
+          className="flex h-11 items-center text-sm font-bold text-[var(--color-blue-dark)]"
         >
           {current.toLocaleString('ko-KR')} / {totalPages.toLocaleString('ko-KR')}
         </button>
