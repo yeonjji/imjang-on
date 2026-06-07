@@ -268,3 +268,45 @@ export function withAdSlots<T>(items: T[], interval: number): FeedEntry<T>[] {
   });
   return out;
 }
+
+export interface RegionStats {
+  complexCount: number;
+  txCount12m: number;
+  saleAvgPrice12m: number | null;   // 만원
+  jeonseAvgDeposit12m: number | null; // 만원
+  priceMin: number | null;
+  priceMax: number | null;
+}
+
+/** 시군구 단위 아파트 집계(거래 있는 단지 대상). raw SQL로 BigInt 평균 안전 처리. */
+export async function getRegionStats(sigunguCode: string): Promise<RegionStats> {
+  const rows = await prisma.$queryRaw<Array<{
+    complex_count: number;
+    tx_count: number;
+    sale_avg: number | null;
+    jeonse_avg: number | null;
+    sale_min: number | null;
+    sale_max: number | null;
+  }>>`
+    SELECT
+      COUNT(*)::int AS complex_count,
+      COALESCE(SUM("txCount12m"), 0)::int AS tx_count,
+      AVG("saleAvgPrice12m")::float AS sale_avg,
+      AVG("jeonseAvgDeposit12m")::float AS jeonse_avg,
+      MIN("saleAvgPrice12m")::float AS sale_min,
+      MAX("saleAvgPrice12m")::float AS sale_max
+    FROM "Property"
+    WHERE "sigunguCode" = ${sigunguCode}
+      AND "propertyType" = 'APARTMENT'
+      AND "txCount12m" > 0
+  `;
+  const r = rows[0];
+  return {
+    complexCount: r?.complex_count ?? 0,
+    txCount12m: r?.tx_count ?? 0,
+    saleAvgPrice12m: r?.sale_avg != null ? Math.round(r.sale_avg) : null,
+    jeonseAvgDeposit12m: r?.jeonse_avg != null ? Math.round(r.jeonse_avg) : null,
+    priceMin: r?.sale_min != null ? Math.round(r.sale_min) : null,
+    priceMax: r?.sale_max != null ? Math.round(r.sale_max) : null,
+  };
+}
