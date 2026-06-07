@@ -1,9 +1,6 @@
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
-CREATE EXTENSION IF NOT EXISTS postgis_tiger_geocoder;
-CREATE EXTENSION IF NOT EXISTS postgis_topology;
 
 -- CreateEnum
 CREATE TYPE "PropertyType" AS ENUM ('APARTMENT', 'OFFICETEL', 'ROW_HOUSE', 'MULTIPLEX');
