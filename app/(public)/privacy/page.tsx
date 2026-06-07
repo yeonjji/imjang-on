@@ -58,7 +58,7 @@ const SECTIONS: { heading: string; body: React.ReactNode[] }[] = [
     body: [
       <>
         임장온 운영자 / 연락처:{' '}
-        <a href="mailto:contact@imjang-on.com" className="underline">contact@imjang-on.com</a>
+        <a href="mailto:contact@imjangon.co.kr" className="underline">contact@imjangon.co.kr</a>
       </>,
     ],
   },
