@@ -285,9 +285,8 @@ function utcMidnight(d: Date): Date {
 
 export function getWeekRange(today: Date): WeekRange {
   const base = utcMidnight(today);
-  const offsetToMonday = (base.getUTCDay() + 6) % 7;
   const weekStart = new Date(base);
-  weekStart.setUTCDate(base.getUTCDate() - offsetToMonday);
+  weekStart.setUTCDate(base.getUTCDate() - 3);
   const dates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
     d.setUTCDate(weekStart.getUTCDate() + i);
@@ -316,7 +315,7 @@ export function parseSigungu(address: string | null, regionName: string | null):
   return regionName ?? null;
 }
 
-const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const TONE_ORDER: Record<BoardTone, number> = { orange: 0, green: 1, blue: 2, gray: 3 };
 
 function clampToWeek(d: Date, weekStart: Date, weekEnd: Date): Date {
@@ -358,7 +357,7 @@ export function assembleWeeklyBoard(rows: WeeklyNoticeRow[], today: Date = new D
     );
     return {
       date,
-      weekday: WEEKDAYS[i],
+      weekday: WEEKDAYS[date.getUTCDay()],
       isToday: dateInt(date) === dateInt(today),
       items: sorted.slice(0, 3),
       overflow: Math.max(0, sorted.length - 3),

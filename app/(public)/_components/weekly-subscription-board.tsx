@@ -50,12 +50,12 @@ export function WeeklySubscriptionBoard({ board }: { board: WeeklyBoard }) {
     <section className="mt-10">
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="mb-1 text-xs font-bold text-[var(--color-blue)]"><span aria-hidden>📅</span> 이번주 청약</p>
+          <p className="mb-1 text-xs font-bold text-[var(--color-blue)]"><span aria-hidden>📅</span> 청약 캘린더</p>
           <h2 className="mb-1 text-2xl font-black tracking-tight text-[var(--color-blue-dark)]">
-            이번 주 청약을 한눈에
+            청약 일정을 한눈에
           </h2>
           <p className="text-sm text-[var(--color-muted)]">
-            {formatMd(board.weekStart)} – {formatMd(board.weekEnd)} · 진행중·예정·마감 일정
+            오늘 기준 전후 3일 · 진행중·예정·마감 일정
           </p>
         </div>
         <div className="flex items-center gap-3 md:flex-col md:items-end">
@@ -68,7 +68,7 @@ export function WeeklySubscriptionBoard({ board }: { board: WeeklyBoard }) {
 
       {board.total === 0 ? (
         <div className="rounded-2xl border border-[var(--color-line)] bg-white px-5 py-8 text-center">
-          <p className="text-sm font-medium text-[var(--color-muted)]">이번 주 등록된 청약이 없습니다.</p>
+          <p className="text-sm font-medium text-[var(--color-muted)]">표시할 청약 일정이 없습니다.</p>
           <Link href="/subscription" className="mt-2 inline-block text-sm font-bold text-[var(--color-blue)]">
             전체 청약 일정 보기 →
           </Link>
