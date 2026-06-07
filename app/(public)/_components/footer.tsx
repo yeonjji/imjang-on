@@ -26,8 +26,9 @@ export function Footer() {
           <p className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">데이터 출처</p>
           <ul className="space-y-2 text-sm text-[var(--color-muted)]">
             <li>국토교통부 실거래가</li>
-            <li>행정안전부 법정동코드</li>
-            <li>카카오 로컬</li>
+            <li>한국부동산원 청약홈</li>
+            <li>건강보험심사평가원·교육부 등</li>
+            <li><Link href="/data-source" className="underline">전체 출처 보기</Link></li>
           </ul>
         </div>
         <div>

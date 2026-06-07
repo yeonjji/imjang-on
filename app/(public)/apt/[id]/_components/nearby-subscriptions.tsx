@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { SourceCaption } from '@/components/ui/source-caption';
 import {
   deriveStatus,
   ddayLabel,
@@ -63,6 +64,7 @@ export function NearbySubscriptions({ id, items, scopeLabel, sido }: NearbySubsc
       >
         {sido} 청약 더보기 →
       </Link>
+      <SourceCaption ids={['applyhome', 'lh-presub']} />
     </Card>
   );
 }

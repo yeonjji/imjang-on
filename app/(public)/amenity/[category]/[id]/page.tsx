@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getCategoryDef } from '@/lib/amenity/category';
+import { getCategoryDef, AMENITY_SOURCE } from '@/lib/amenity/category';
 import { getAmenityById, getAmenityLatLng } from '@/lib/amenity/detail';
 import { getAmenityList } from '@/lib/amenity/list';
 import { getSigunguByCode } from '@/lib/region';
@@ -17,6 +17,7 @@ import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
+import { SourceCaption } from '@/components/ui/source-caption';
 import type { Metadata } from 'next';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 
@@ -93,6 +94,7 @@ export default async function AmenityDetailPage({ params }: Params) {
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-6">
           <AmenityInfo item={item} def={def} regionFullName={region?.fullName ?? ''} />
+          <SourceCaption ids={[AMENITY_SOURCE[def.slug]]} />
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>

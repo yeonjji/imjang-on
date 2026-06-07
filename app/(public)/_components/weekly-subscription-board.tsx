@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { WeeklyBoard, WeeklyBoardDay } from '@/lib/subscription';
 import { SubscriptionBoardItem } from './subscription-board-item';
+import { SourceCaption } from '@/components/ui/source-caption';
 
 function formatMd(d: Date): string {
   return `${String(d.getUTCMonth() + 1).padStart(2, '0')}.${String(d.getUTCDate()).padStart(2, '0')}`;
@@ -125,6 +126,8 @@ export function WeeklySubscriptionBoard({ board }: { board: WeeklyBoard }) {
           </div>
         </>
       )}
+
+      <SourceCaption ids={['applyhome', 'lh-presub']} />
     </section>
   );
 }

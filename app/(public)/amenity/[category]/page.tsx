@@ -2,13 +2,14 @@ import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { getSidoList, getSigunguByCode, sidoFromPrefix } from '@/lib/region';
-import { getCategoryDef, toAmenityCategoryView, AMENITY_SLUGS } from '@/lib/amenity/category';
+import { getCategoryDef, toAmenityCategoryView, AMENITY_SLUGS, AMENITY_SOURCE } from '@/lib/amenity/category';
 import { getAmenityList, normalizePage } from '@/lib/amenity/list';
 import { AmenityFilterPanel } from './_components/amenity-filter-panel';
 import { AmenityMobileFilterSheet } from './_components/amenity-mobile-filter-sheet';
 import { AmenityCard } from './_components/amenity-card';
 import { AmenityPagination } from './_components/amenity-pagination';
 import { SiblingTabs } from '../../_components/sibling-tabs';
+import { SourceCaption } from '@/components/ui/source-caption';
 import type { Metadata } from 'next';
 
 export const revalidate = 21_600;
@@ -126,6 +127,7 @@ export default async function AmenityListPage({ params, searchParams }: Params) 
               <Suspense><AmenityPagination basePath={basePath} current={page} totalPages={totalPages} totalItems={total} perPage={perPage} /></Suspense>
             </div>
           )}
+          <SourceCaption ids={[AMENITY_SOURCE[def.slug]]} />
         </main>
       </div>
     </div>

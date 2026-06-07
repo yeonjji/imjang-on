@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getSigunguByCode } from '@/lib/region';
 import { getTopPropertiesByVolume } from '@/lib/property';
 import { PropertyCard } from '../../_components/property-card';
+import { SourceCaption } from '@/components/ui/source-caption';
 import { PropertyType } from '@prisma/client';
 import type { Metadata } from 'next';
 
@@ -50,6 +51,8 @@ export default async function RegionPage({ params }: Params) {
           <PropertyCard key={String(p.id)} property={p} />
         ))}
       </div>
+
+      <SourceCaption ids={['molit-rtms']} />
     </section>
   );
 }

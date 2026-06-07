@@ -14,6 +14,7 @@ import { SubscriptionHero } from './_components/subscription-hero';
 import { ScheduleTimeline } from './_components/schedule-timeline';
 import { UnitSupplyTable } from './_components/unit-supply-table';
 import { SubscriptionSidebar } from './_components/subscription-sidebar';
+import { SourceCaption } from '@/components/ui/source-caption';
 import type { Metadata } from 'next';
 
 export const revalidate = 21_600;
@@ -57,6 +58,7 @@ export default async function SubscriptionDetailPage({ params }: Params) {
         <main className="flex min-w-0 flex-col gap-8">
           <ScheduleTimeline notice={notice} />
           <UnitSupplyTable units={notice.units} />
+          <SourceCaption ids={['applyhome', 'lh-presub']} />
 
           {coord ? (
             <>

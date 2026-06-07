@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/card';
+import { SourceCaption } from '@/components/ui/source-caption';
 import { lineBadge } from '@/lib/subway/line-colors';
 import type { NearbySubwayResult, NearbySubwayStation } from '@/lib/subway/nearby';
 
@@ -45,6 +46,8 @@ export function NearbySubway({ data }: { data: NearbySubwayResult }) {
           <StationRow key={s.id} station={s} />
         ))}
       </ul>
+
+      <SourceCaption ids={['subway']} />
     </Card>
   );
 }

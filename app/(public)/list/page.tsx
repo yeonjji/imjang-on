@@ -4,6 +4,7 @@ import { ListFilterPanel } from './_components/list-filter-panel';
 import { MobileFilterSheet } from './_components/mobile-filter-sheet';
 import { PropertyList } from './_components/property-list';
 import { ListSkeleton } from './_components/list-skeleton';
+import { SourceCaption } from '@/components/ui/source-caption';
 import { getSidoList } from '@/lib/region';
 import { parseListParams } from '@/lib/list-params';
 import type { Metadata } from 'next';
@@ -86,6 +87,7 @@ export default async function ListPage({
               query={query}
             />
           </Suspense>
+          <SourceCaption ids={['molit-rtms']} />
         </main>
       </div>
     </div>
