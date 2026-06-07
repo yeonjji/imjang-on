@@ -32,21 +32,21 @@
 - **Tier 1 (핵심 콘텐츠)**: 매물 상세, 청약 공고, 기존 허브·시군구·정적 페이지
 - **Tier 2 (의미 있는 랜딩)**: 학교 상세, 병원 상세, 어린이집 상세, 약국 상세
 
-### 샤드 구성 (`CHUNK_SIZE = 40,000`)
+### 샤드 구성 (`CHUNK_SIZE = 10,000`)
 
-소스별 `ceil(count / CHUNK_SIZE)` 개 샤드 생성:
+소스별 `ceil(count / CHUNK_SIZE)` 개 샤드 생성. 작은 파일로 쪼개면 변경분이 생긴 샤드만 재크롤되어 크롤 예산이 절약된다:
 
 | 소스 key | 대상 | 건수(실측) | 샤드 수 |
 |---|---|---:|:---:|
 | `core` | 정적 + region + school 허브 + amenity 허브 | ~수백 | 1 |
-| `property` | Property `txCount12m>0` | 74,759 | 2 |
-| `hospital` | Hospital 전체 | 79,562 | 2 |
-| `pharmacy` | Pharmacy 전체 | 25,688 | 1 |
-| `childcare` | Childcare 전체 | 25,102 | 1 |
-| `school` | School 상세 전체 | 12,561 | 1 |
+| `property` | Property `txCount12m>0` | 74,759 | 8 |
+| `hospital` | Hospital 전체 | 79,562 | 8 |
+| `pharmacy` | Pharmacy 전체 | 25,688 | 3 |
+| `childcare` | Childcare 전체 | 25,102 | 3 |
+| `school` | School 상세 전체 | 12,561 | 2 |
 | `subscription` | SubscriptionNotice 전체 | 5,704 | 1 |
 
-→ 현재 총 **9개 샤드**. 결과물: `/sitemap.xml`(인덱스) + `/sitemap/0.xml` ~ `/sitemap/8.xml`.
+→ 현재 총 **26개 샤드**. 결과물: `/sitemap.xml`(인덱스) + `/sitemap/0.xml` ~ `/sitemap/25.xml`.
 
 ## 아키텍처
 
@@ -127,8 +127,8 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
 ## 검증 (구현 후)
 
 - `pnpm test` 통과.
-- 로컬에서 `/sitemap.xml`이 `<sitemapindex>`로 9개 샤드를 가리키는지 확인.
-- 임의 샤드(`/sitemap/2.xml` 등)가 유효한 `<urlset>`이고 URL 수 ≤ 40,000인지 확인.
+- 로컬에서 `/sitemap.xml`이 `<sitemapindex>`로 26개 샤드를 가리키는지 확인.
+- 임의 샤드(`/sitemap/2.xml` 등)가 유효한 `<urlset>`이고 URL 수 ≤ 10,000인지 확인.
 - 매물/청약/병원/약국/어린이집/학교 상세 URL이 올바른 경로 패턴으로 포함되는지 샘플 확인.
 
 ## 비범위 (Out of scope)
