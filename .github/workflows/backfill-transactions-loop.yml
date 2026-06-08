@@ -18,6 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # Micro 인스턴스 디스크 IO 버스트 예산 보호: 6갈래 동시 write가 baseline(87Mbps)을
+      # 넘겨 사이트 쿼리까지 스로틀되는 것을 막는다. 완주 시간은 늘지만 사이트는 쾌적 유지.
+      max-parallel: 2
       matrix:
         api: [apt-trade, apt-rent, offi-trade, offi-rent, rh-trade, rh-rent]
     env:
@@ -71,7 +74,9 @@ jobs:
       # VACUUM은 트랜잭션 밖에서만 실행 가능 → 세션 연결(DIRECT_URL)로 psql 사용. 실패해도 비치명적.
       - name: VACUUM ANALYZE Property
         continue-on-error: true
-        run: psql "$DIRECT_URL" -c 'VACUUM (ANALYZE) "Property";'
+        # statement_timeout=0: 디스크 스로틀 시 기본 타임아웃에 걸려 VACUUM이 no-op로
+        # 취소되는 것을 막는다(PGOPTIONS로 세션 시작 시 설정).
+        run: PGOPTIONS='-c statement_timeout=0' psql "$DIRECT_URL" -c 'VACUUM (ANALYZE) "Property";'
       - id: total
         run: |
           total=0
