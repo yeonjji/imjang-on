@@ -180,7 +180,12 @@ export async function getPropertyList({
     orderBy = sort === 'volume' ? { txCount12m: 'desc' } : { lastTxAt: 'desc' };
   }
 
-  const [rows, total] = await Promise.all([
+  // 정확 카운트는 충분히 좁은 필터(지역·역·키워드)에서만. 광역/기본 조회는
+  // 10만+ 행 카운트가 비싸므로 1,000건에서 캡(이상이면 "1,000+" 표시).
+  const COUNT_CAP = 1000;
+  const narrowCount = Boolean(sigunguCode || stationId || q);
+
+  const [rows, rawTotal] = await Promise.all([
     prisma.property.findMany({
       where,
       include: { region: true },
@@ -188,9 +193,22 @@ export async function getPropertyList({
       skip: (page - 1) * perPage,
       take: perPage,
     }),
-    prisma.property.count({ where }),
+    narrowCount
+      ? prisma.property.count({ where })
+      : prisma.property
+          .findMany({ where, select: { id: true }, take: COUNT_CAP + 1 })
+          .then((r) => r.length),
   ]);
-  return { rows, total, page, perPage, totalPages: Math.ceil(total / perPage) };
+
+  const totalCapped = !narrowCount && rawTotal > COUNT_CAP;
+  return {
+    rows,
+    total: rawTotal,
+    totalCapped,
+    page,
+    perPage,
+    totalPages: Math.ceil(rawTotal / perPage),
+  };
 }
 
 export async function getTopPropertiesByVolume({ types, sigunguCode, limit = 10 }: { types: PropertyType[]; sigunguCode?: string; limit?: number }) {

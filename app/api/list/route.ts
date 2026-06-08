@@ -6,7 +6,7 @@ export async function GET(req: Request) {
   const sp = Object.fromEntries(url.searchParams) as Record<string, string>;
   const p = parseListParams(sp);
 
-  const { rows, total, page, perPage, totalPages } = await getPropertyList({
+  const { rows, total, totalCapped, page, perPage, totalPages } = await getPropertyList({
     types: p.types,
     deal: p.deal,
     priceMin: p.priceMin,
@@ -22,7 +22,7 @@ export async function GET(req: Request) {
   });
 
   return Response.json(
-    { items: rows.map(serializeProperty), total, page, perPage, totalPages },
+    { items: rows.map(serializeProperty), total, totalCapped, page, perPage, totalPages },
     { headers: { 'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300' } },
   );
 }

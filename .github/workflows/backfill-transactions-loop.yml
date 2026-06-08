@@ -66,6 +66,12 @@ jobs:
         with: { node-version: 20, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma generate
+      # 백필이 대량 업데이트한 Property의 visibility map·통계를 갱신해
+      # /list 의 COUNT(인덱스 온리 스캔)가 힙 페치로 느려지지 않게 한다.
+      # VACUUM은 트랜잭션 밖에서만 실행 가능 → 세션 연결(DIRECT_URL)로 psql 사용. 실패해도 비치명적.
+      - name: VACUUM ANALYZE Property
+        continue-on-error: true
+        run: psql "$DIRECT_URL" -c 'VACUUM (ANALYZE) "Property";'
       - id: total
         run: |
           total=0

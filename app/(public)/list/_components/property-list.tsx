@@ -30,7 +30,7 @@ export async function PropertyList({
   stationId,
   query,
 }: Props) {
-  const { rows, total, totalPages } = await getPropertyList({
+  const { rows, total, totalCapped, totalPages } = await getPropertyList({
     types,
     deal,
     priceMin,
@@ -51,7 +51,7 @@ export async function PropertyList({
     <>
       <div className="mb-4 rounded-[18px] border border-[var(--color-line)] bg-white px-5 py-3 shadow-[var(--shadow)]">
         <p className="text-base font-bold text-[var(--color-blue-dark)]">
-          검색 결과 <span className="text-[var(--color-blue)]">{total.toLocaleString('ko-KR')}</span>건
+          검색 결과 <span className="text-[var(--color-blue)]">{totalCapped ? '1,000+' : total.toLocaleString('ko-KR')}</span>건
         </p>
       </div>
 
