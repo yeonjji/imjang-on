@@ -7,7 +7,6 @@ import {
 import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
 import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { LocationViewer } from '@/components/ui/location-viewer';
-import { StaticMapImage } from '@/components/ui/static-map';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
@@ -93,7 +92,6 @@ export default async function SubscriptionDetailPage({ params }: Params) {
             <>
               <section id="map">
                 <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
-                <StaticMapImage lat={coord.lat} lng={coord.lng} name={notice.name} />
                 <LocationViewer lat={coord.lat} lng={coord.lng} name={notice.name} />
               </section>
               <NearbyApartments items={nearbyApts} />
