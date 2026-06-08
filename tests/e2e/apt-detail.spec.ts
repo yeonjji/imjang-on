@@ -37,7 +37,8 @@ test('apt detail: unified transaction table + page 2', async ({ page }) => {
     await expect(page.getByText(badge).first()).toBeVisible();
   }
 
-  await page.getByRole('button', { name: '2' }).click();
+  // exact 매칭: 거래 행 버튼(예: "매매 30.05억 ▼3.2%")에 "2"가 포함돼 모호해지는 것 방지
+  await page.getByRole('button', { name: '2', exact: true }).click();
   await expect(page.getByText(/36건 중 16–30/)).toBeVisible();
 });
 
