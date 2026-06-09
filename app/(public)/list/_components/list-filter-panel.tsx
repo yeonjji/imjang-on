@@ -192,7 +192,7 @@ export function ListFilterPanel({ sidoList, params: externalParams, onParamsChan
               value={stationQuery}
               onChange={(e) => setStationQuery(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submitStationSearch(); } }}
-              placeholder="역 이름 검색 후 Enter (예: 강남)"
+              placeholder="역 이름 검색 (예: 강남)"
               className="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-blue)]"
             />
             {stationOpts.length > 0 && (
