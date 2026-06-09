@@ -1,4 +1,5 @@
 import { DetailsCard } from '@/components/ui/details-card';
+import { childcareCount } from '@/lib/childcare';
 import type { Childcare } from '@prisma/client';
 
 const ROLES = [
@@ -12,10 +13,8 @@ const TENURES = [
 ] as const;
 
 export function ChildcareStaff({ item }: { item: Childcare }) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const i = item as any;
-  const roleRows = ROLES.map(([k, label]) => ({ label, v: i[k] as number | null })).filter((r) => r.v != null && r.v > 0);
-  const tenRows = TENURES.map(([k, label]) => ({ label, v: i[k] as number | null })).filter((r) => r.v != null);
+  const roleRows = ROLES.map(([k, label]) => ({ label, v: childcareCount(item, k) })).filter((r) => r.v != null && r.v > 0);
+  const tenRows = TENURES.map(([k, label]) => ({ label, v: childcareCount(item, k) })).filter((r) => r.v != null);
   if (roleRows.length === 0 && tenRows.length === 0) return null;
   const summary = item.emRoleTot != null ? `총 ${item.emRoleTot}명` : `총 ${item.staffCount ?? '-'}명`;
   return (

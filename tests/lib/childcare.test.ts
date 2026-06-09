@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { prisma } from '@/lib/db';
+import type { Childcare } from '@prisma/client';
 import {
   getChildcareTypeFromDB,
   getChildcareTypeLabel,
   getChildcareList,
   buildChildcareWhere,
+  childcareCount,
 } from '@/lib/childcare';
 
 const SEED_SIGUNGU = '99999';
@@ -30,6 +32,22 @@ beforeAll(async () => {
 afterAll(async () => {
   await prisma.childcare.deleteMany({ where: { sigunguCode: SEED_SIGUNGU } });
   await prisma.$disconnect();
+});
+
+describe('childcareCount', () => {
+  const item = { emRoleDirector: 1, childCnt00: 0, classCnt00: null } as unknown as Childcare;
+  it('존재하는 숫자 키 → 값', () => {
+    expect(childcareCount(item, 'emRoleDirector')).toBe(1);
+  });
+  it('0 값 → 0 (null 아님)', () => {
+    expect(childcareCount(item, 'childCnt00')).toBe(0);
+  });
+  it('null 컬럼 → null', () => {
+    expect(childcareCount(item, 'classCnt00')).toBeNull();
+  });
+  it('없는 키 → null', () => {
+    expect(childcareCount(item, 'waitCntZZ')).toBeNull();
+  });
 });
 
 describe('getChildcareTypeFromDB', () => {
