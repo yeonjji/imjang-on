@@ -26,7 +26,7 @@ export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         {hashtags.map((t) => (
-          <span key={t} className="rounded-full border border-[var(--color-line)] bg-[var(--color-sky-soft)] px-2.5 py-1.5 text-xs font-bold text-[var(--color-blue)]">
+          <span key={t} className="rounded-full border border-[var(--color-line)] bg-[var(--color-sky-soft)] px-2.5 py-1.5 text-xs font-bold text-[var(--color-blue-dark)]">
             {t}
           </span>
         ))}

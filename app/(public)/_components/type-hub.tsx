@@ -9,7 +9,6 @@ const HUB_ITEMS = [
 export function TypeHub() {
   return (
     <div className="flex h-full flex-col rounded-[26px] border border-[var(--color-line)] bg-white p-6 shadow-[var(--shadow)]">
-      <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">유형별</p>
       <h2 className="mb-4 text-2xl font-black tracking-tight text-[var(--color-blue-dark)]">
         실거래가 보러가기
       </h2>
