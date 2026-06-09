@@ -16,11 +16,13 @@ export const metadata: Metadata = {
   description: '공공데이터 기반 전국 부동산 실거래가 통합 정보 플랫폼. 매매·전세·월세를 단지 단위로 한눈에.',
 };
 
-export const revalidate = 3600;
+// Vercel 빌드 환경은 Supabase에 접근하지 못해 정적 프리렌더가 빈 데이터로 구워진다.
+// 런타임 DB는 정상이므로 요청 시점에 동적 렌더하여 항상 실제 데이터를 보여준다.
+export const dynamic = 'force-dynamic';
 
 /**
- * 빌드 시 정적 프리렌더 중 DB 블립(커넥션 한계 등)으로 쿼리가 실패해도
- * 빌드 전체가 죽지 않도록 fallback으로 폴백한다. ISR 재검증 시 실제 데이터로 채워진다.
+ * 런타임 DB 블립(커넥션 한계 등)으로 일부 쿼리가 실패해도
+ * 페이지 전체가 죽지 않도록 항목별 fallback으로 폴백한다.
  */
 async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
   try {
