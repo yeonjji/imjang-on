@@ -45,7 +45,9 @@ export function AmenityDetailSidebar({
           </ul>
         </Card>
       )}
+      {/* 광고 영역 (AdSense 미연동 — 연동 후 활성화)
       <div className="rounded-[20px] border border-dashed border-[#93c5fd] bg-white/65 p-7 text-center text-xs text-[var(--color-muted)]">광고 영역</div>
+      */}
     </div>
   );
 }

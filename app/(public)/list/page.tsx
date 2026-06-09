@@ -65,9 +65,11 @@ export default async function ListPage({
               <ListFilterPanel sidoList={sidoList} />
             </Suspense>
           </div>
+          {/* 광고 영역 (AdSense 미연동 — 연동 후 활성화)
           <div className="mt-4 rounded-[22px] border border-dashed border-[#93c5fd] bg-white/65 p-5 text-center text-xs text-[var(--color-muted)]">
             광고 영역
           </div>
+          */}
         </aside>
 
         {/* 메인 영역 */}

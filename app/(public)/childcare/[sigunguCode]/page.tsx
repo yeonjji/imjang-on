@@ -82,7 +82,9 @@ export default async function ChildcareSigunguListPage({ params, searchParams }:
               <ChildcareFilterPanel basePath={basePath} />
             </Suspense>
           </div>
+          {/* 광고 영역 (AdSense 미연동 — 연동 후 활성화)
           <div className="mt-4 rounded-[22px] border border-dashed border-[#93c5fd] bg-white/65 p-5 text-center text-xs text-[var(--color-muted)]">광고 영역</div>
+          */}
         </aside>
 
         <main className="min-w-0 flex-1">
