@@ -33,12 +33,23 @@ async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
   }
 }
 
+/**
+ * 느린 집계 쿼리가 홈 렌더 전체를 멈추지 않도록 시간 상한을 둔다.
+ * 상한 초과 시 fallback으로 즉시 폴백(쿼리는 DB statement_timeout이 정리).
+ */
+function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
 export default async function HomePage() {
   const [sidoList, stats, briefing, popularRegions, weeklyBoard] = await Promise.all([
     getSidoList(),
     safe(getHomeStats(), { transactions: 0, properties: 0, schools: 0, lifeFacilities: 0 }),
-    safe(getMarketBriefing(), null),
-    safe(getPopularSigungus(), []),
+    withTimeout(safe(getMarketBriefing(), null), 6000, null),
+    withTimeout(safe(getPopularSigungus(), []), 6000, []),
     safe(getWeeklySubscriptions(), {
       weekStart: new Date(),
       weekEnd: new Date(),
