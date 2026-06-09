@@ -34,3 +34,22 @@ jobs:
       - run: pnpm prisma generate
       - run: pnpm tsx scripts/ingest/transactions/runner.ts --api=${{ matrix.api }} --mode=daily
         timeout-minutes: 300
+
+  # 신규 데이터 반영 후 홈 대시보드(시장 브리핑·인기지역) 스냅샷을 1회 사전계산한다.
+  snapshot:
+    needs: ingest
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      LOG_LEVEL: info
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma generate
+      - run: pnpm tsx scripts/dashboard/refresh-snapshot.ts
+        timeout-minutes: 20
