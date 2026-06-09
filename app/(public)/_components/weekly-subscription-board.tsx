@@ -52,7 +52,7 @@ export function WeeklySubscriptionBoard({ board }: { board: WeeklyBoard }) {
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="mb-1 text-xs font-bold text-[var(--color-blue)]"><span aria-hidden>📅</span> 청약 캘린더</p>
-          <h2 className="mb-1 text-2xl font-black tracking-tight text-[var(--color-blue-dark)]">
+          <h2 className="mb-1 text-xl font-bold tracking-tight text-[var(--color-blue-dark)]">
             청약 일정을 한눈에
           </h2>
           <p className="text-sm text-[var(--color-muted)]">
