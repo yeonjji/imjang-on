@@ -49,7 +49,7 @@ export function HeroSearch({ popularRegions }: { popularRegions: PopularRegion[]
           onChange={(e) => { setQ(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
-          placeholder="단지명·지역명·지하철역으로 검색"
+          placeholder="단지명·지역명으로 검색"
           className="min-w-0 flex-1 bg-transparent px-1 py-3 text-base text-[var(--color-text)] outline-none"
         />
         <button
