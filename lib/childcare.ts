@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/db';
-import type { Prisma } from '@prisma/client';
+import type { Prisma, Childcare } from '@prisma/client';
+
+/** Childcare의 동적 숫자 컬럼 키를 타입 안전하게 읽는다. 숫자가 아니면 null. */
+export function childcareCount(item: Childcare, key: string): number | null {
+  const v = (item as Record<string, unknown>)[key];
+  return typeof v === 'number' ? v : null;
+}
 
 export type ChildcareTypeSlug =
   | 'all'

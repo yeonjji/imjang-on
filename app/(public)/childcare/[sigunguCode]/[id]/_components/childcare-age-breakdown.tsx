@@ -1,4 +1,5 @@
 import { DetailsCard } from '@/components/ui/details-card';
+import { childcareCount } from '@/lib/childcare';
 import type { Childcare } from '@prisma/client';
 
 const AGES = [
@@ -10,9 +11,7 @@ const MIXED = [
 ] as const;
 
 function row(item: Childcare, key: string): { cls: number | null; chd: number | null } {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const i = item as any;
-  return { cls: i[`classCnt${key}`] ?? null, chd: i[`childCnt${key}`] ?? null };
+  return { cls: childcareCount(item, `classCnt${key}`), chd: childcareCount(item, `childCnt${key}`) };
 }
 
 export function ChildcareAgeBreakdown({ item }: { item: Childcare }) {
