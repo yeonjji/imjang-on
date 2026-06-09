@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { formatBillion } from '@/lib/format';
 import type { MarketBriefing } from '@/lib/briefing';
+import { SourceCaption } from '@/components/ui/source-caption';
 
 /** 시군구로 필터된 실거래가 목록 링크. sido가 있으면 필터 패널에서 선택 상태로 표시된다. */
 function listRegionHref({ sigunguCode, sido }: { sigunguCode: string; sido: string }): string {
@@ -92,6 +93,8 @@ export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }
           </section>
         )}
       </div>
+
+      <SourceCaption ids={['molit-rtms']} />
     </section>
   );
 }

@@ -63,3 +63,17 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+---
+
+## Design Context
+
+UI 작업 전에 `PRODUCT.md`(전략: 레지스터·사용자·브랜드·원칙)와 `DESIGN.md`(시각: 컬러·타이포·컴포넌트)를 읽는다.
+
+- **Register:** product (디자인이 제품을 뒷받침)
+- **사용자:** 진입 검토자(이사·매수) + 탐색 관심층, 둘 다 핵심
+- **성격:** 신뢰·전문·정직 — 조용한 정보 안내자 톤
+- **North Star:** "공공기록의 열람실"
+- **핵심 원칙:** 모든 수치에 출처 표기, 과장 금지, 그림자는 `--shadow-soft` 하나, 한글 본문 14px 이상, 색은 정보 전달용
+- **안티레퍼런스:** 자극적 부동산 광고, 전형적 AI SaaS 룩
+- **접근성:** WCAG 2.1 AA
