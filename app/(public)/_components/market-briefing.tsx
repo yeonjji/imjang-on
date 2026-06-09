@@ -17,7 +17,7 @@ export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }
   const [, mm, dd] = refDate.split('-');
 
   return (
-    <section className="mt-10">
+    <section className="mt-16">
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <h2 className="text-xl font-black tracking-tight md:text-[22px]">📈 오늘의 부동산 한입 브리핑</h2>
         <span className="text-[13px] text-[var(--color-muted)]">
@@ -65,7 +65,7 @@ export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }
                   <span className={`grid h-[22px] w-[22px] flex-none place-items-center rounded-md text-xs font-black ${i === 0 ? 'bg-[var(--color-blue)] text-white' : 'bg-[var(--color-soft)] text-[var(--color-blue-dark)]'}`}>{i + 1}</span>
                   <Link href={listRegionHref(r)} className="w-[88px] flex-none truncate text-sm font-bold hover:underline">{r.label}</Link>
                   <span className="h-2 flex-1 overflow-hidden rounded-full bg-[var(--color-sky-soft)]">
-                    <span className="block h-full rounded-full bg-gradient-to-r from-[var(--color-blue)] to-[var(--color-sky)]" style={{ width: `${Math.max(8, (r.count / maxCount) * 100)}%` }} />
+                    <span className="block h-full rounded-full bg-[var(--color-blue)]" style={{ width: `${Math.max(8, (r.count / maxCount) * 100)}%` }} />
                   </span>
                   <span className="w-12 text-right text-[13px] font-extrabold text-[var(--color-blue-dark)]">{r.count}건</span>
                 </li>

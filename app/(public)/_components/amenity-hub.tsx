@@ -31,7 +31,7 @@ export function AmenityHub() {
   return (
     <section className="mt-10">
       <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">생활편의</p>
-      <h2 className="mb-1 text-2xl font-black tracking-tight text-[var(--color-blue-dark)]">
+      <h2 className="mb-1 text-xl font-bold tracking-tight text-[var(--color-blue-dark)]">
         생활권까지 함께 보기
       </h2>
       <p className="mb-6 text-sm text-[var(--color-muted)]">
