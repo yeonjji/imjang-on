@@ -150,6 +150,16 @@ model Transaction {
   @@index([propertyType, contractDate(sort: Desc)])
   @@index([dealType, createdAt(sort: Desc)])
   @@index([dealType, contractDate(sort: Desc)])
+  @@index([contractDate, sigunguCode])
+}
+
+/// 홈 대시보드(시장 브리핑·인기지역)용 사전계산 스냅샷.
+/// 5M행 transaction 집계는 요청 경로에서 너무 느려, 일일 ingest에서 미리 계산해 저장하고
+/// 홈은 이 행을 즉시 읽는다. key별 1행(예: 'market_briefing', 'popular_sigungus').
+model DashboardSnapshot {
+  key        String   @id @db.VarChar(40)
+  payload    Json
+  computedAt DateTime @updatedAt
 }
 
 enum IngestionStatus {

@@ -5,10 +5,10 @@ import { StatsBar } from './_components/stats-bar';
 import { AmenityHub } from './_components/amenity-hub';
 import { MarketBriefing } from './_components/market-briefing';
 import { WeeklySubscriptionBoard } from './_components/weekly-subscription-board';
-import { getSidoList, getPopularSigungus } from '@/lib/region';
+import { getSidoList } from '@/lib/region';
 import { getHomeStats } from '@/lib/stats';
-import { getMarketBriefing } from '@/lib/briefing';
 import { getWeeklySubscriptions } from '@/lib/subscription';
+import { readHomeSnapshot } from '@/lib/dashboard-snapshot';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -33,23 +33,12 @@ async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
   }
 }
 
-/**
- * 느린 집계 쿼리가 홈 렌더 전체를 멈추지 않도록 시간 상한을 둔다.
- * 상한 초과 시 fallback으로 즉시 폴백(쿼리는 DB statement_timeout이 정리).
- */
-function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
-  return Promise.race([
-    p,
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
-  ]);
-}
-
 export default async function HomePage() {
-  const [sidoList, stats, briefing, popularRegions, weeklyBoard] = await Promise.all([
+  const [sidoList, stats, snapshot, weeklyBoard] = await Promise.all([
     getSidoList(),
     safe(getHomeStats(), { transactions: 0, properties: 0, schools: 0, lifeFacilities: 0 }),
-    withTimeout(safe(getMarketBriefing(), null), 6000, null),
-    withTimeout(safe(getPopularSigungus(), []), 6000, []),
+    // 브리핑·인기지역은 5M행 집계라 요청 경로에서 너무 느리다. 일일 ingest가 미리 계산해 둔 스냅샷을 즉시 읽는다.
+    safe(readHomeSnapshot(), { briefing: null, popularRegions: [] }),
     safe(getWeeklySubscriptions(), {
       weekStart: new Date(),
       weekEnd: new Date(),
@@ -58,6 +47,7 @@ export default async function HomePage() {
       total: 0,
     }),
   ]);
+  const { briefing, popularRegions } = snapshot;
 
   return (
     <section className="mx-auto max-w-[1180px] px-6 py-12">
