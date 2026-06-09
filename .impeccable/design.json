@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-09T00:00:00Z",
+  "title": "Design System: imjang-on",
+  "extensions": {
+    "colorMeta": {
+      "blue": { "role": "primary", "displayName": "Signal Blue", "canonical": "#2563eb", "tonalRamp": ["#0a1f4d", "#11317a", "#1e3a8a", "#1d4ed8", "#2563eb", "#60a5fa", "#bfdbfe", "#eff6ff"] },
+      "blue-dark": { "role": "primary", "displayName": "Deep Archive Blue", "canonical": "#1e3a8a", "tonalRamp": ["#0a1635", "#0f2156", "#162d72", "#1e3a8a", "#2c4ba8", "#5774c6", "#9fb2e0", "#dde4f5"] },
+      "sky": { "role": "secondary", "displayName": "Sky", "canonical": "#38bdf8", "tonalRamp": ["#0b3a4d", "#0f5571", "#147197", "#1f93c0", "#38bdf8", "#7dd3fc", "#bae6fd", "#e0f2fe"] },
+      "green": { "role": "tertiary", "displayName": "Verify Green", "canonical": "#0f9f6e", "tonalRamp": ["#053023", "#074733", "#0a6347", "#0d815b", "#0f9f6e", "#34c490", "#86e0bf", "#d1f5e7"] },
+      "red": { "role": "tertiary", "displayName": "Alert Red", "canonical": "#ef4444", "tonalRamp": ["#4c0d0d", "#6e1414", "#991b1b", "#c62828", "#ef4444", "#f87171", "#fca5a5", "#fee2e2"] },
+      "text": { "role": "neutral", "displayName": "Ink", "canonical": "#172033", "tonalRamp": ["#0b101b", "#172033", "#2b3550", "#475069", "#64748b", "#94a3b8", "#cbd5e1", "#f1f5f9"] },
+      "muted": { "role": "neutral", "displayName": "Muted Slate", "canonical": "#64748b", "tonalRamp": ["#1e2533", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#f8fafc"] },
+      "bg": { "role": "neutral", "displayName": "Reading-Room Blue", "canonical": "#f7fbff", "tonalRamp": ["#1e2a3a", "#33445c", "#5a7090", "#9fc0e0", "#cfe4f7", "#e6f1fb", "#f1f7ff", "#f7fbff"] },
+      "soft": { "role": "neutral", "displayName": "Soft Blue", "canonical": "#f1f7ff", "tonalRamp": ["#1e2a3a", "#33445c", "#5a7090", "#9fc0e0", "#cfe4f7", "#e0eefb", "#f1f7ff", "#f8fbff"] },
+      "line": { "role": "neutral", "displayName": "Line", "canonical": "#dbeafe", "tonalRamp": ["#1e3a5f", "#2c5282", "#3b6cb0", "#6195d6", "#93c5fd", "#bfdbfe", "#dbeafe", "#eff6ff"] },
+      "card": { "role": "neutral", "displayName": "Card White", "canonical": "#ffffff", "tonalRamp": ["#1a2433", "#33415c", "#586a86", "#8fa3bd", "#c2d0e0", "#e6edf5", "#f5f8fc", "#ffffff"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "히어로·페이지 최상단 헤딩. 2.25rem / 800." },
+      "headline": { "displayName": "Headline", "purpose": "섹션 대제목. 1.5rem / 700." },
+      "title": { "displayName": "Title", "purpose": "카드 제목·서브섹션. 1.125rem / 700 / Deep Archive Blue." },
+      "body": { "displayName": "Body", "purpose": "본문·설명. 14px 이상, lh 1.6." },
+      "label": { "displayName": "Label", "purpose": "메타·캡션·배지. 0.75rem / 700, ALL CAPS 금지." }
+    },
+    "shadows": [
+      { "name": "soft-lift", "value": "0 14px 34px rgba(37, 99, 235, 0.10)", "purpose": "카드·드롭다운·모달·바텀시트의 유일한 그림자. 블루 틴트라 바탕과 한 몸처럼 떠 있다." }
+    ],
+    "motion": [
+      { "name": "transition-default", "value": "150ms ease", "purpose": "버튼·칩·입력 상태 전환 기본값(Tailwind transition)." }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "1차 행동 버튼. 알약형, Signal Blue, hover 시 Deep Archive Blue.",
+      "html": "<button class=\"ds-btn-primary\">검색하기</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--color-blue, #2563eb); color: #fff; border: none; border-radius: 9999px; padding: 10px 16px; font-size: 0.875rem; font-weight: 700; font-family: Pretendard, sans-serif; cursor: pointer; transition: background 150ms ease; } .ds-btn-primary:hover { background: var(--color-blue-dark, #1e3a8a); } .ds-btn-primary:focus-visible { outline: 2px solid var(--color-sky-soft, #e0f2fe); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "보조 버튼. 흰 배경 + Deep Archive Blue 텍스트 + Line 보더.",
+      "html": "<button class=\"ds-btn-secondary\">지도 보기</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #fff; color: var(--color-blue-dark, #1e3a8a); border: 1px solid var(--color-line, #dbeafe); border-radius: 9999px; padding: 10px 16px; font-size: 0.875rem; font-weight: 700; font-family: Pretendard, sans-serif; cursor: pointer; transition: background 150ms ease; } .ds-btn-secondary:hover { background: var(--color-soft, #f1f7ff); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--color-sky-soft, #e0f2fe); outline-offset: 2px; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip-active",
+      "description": "필터 토글 칩. active = Signal Blue/흰색, inactive = 흰색/Muted + 보더.",
+      "html": "<div style=\"display:flex; gap:8px;\"><button class=\"ds-chip ds-chip-active\" aria-pressed=\"true\">매매</button><button class=\"ds-chip\" aria-pressed=\"false\">전세</button><button class=\"ds-chip\" aria-pressed=\"false\">월세</button></div>",
+      "css": ".ds-chip { border-radius: 9999px; padding: 6px 12px; font-size: 0.875rem; font-weight: 600; font-family: Pretendard, sans-serif; background: #fff; color: var(--color-muted, #64748b); border: 1px solid var(--color-line, #dbeafe); cursor: pointer; transition: color 150ms ease, background 150ms ease; } .ds-chip:hover { color: var(--color-text, #172033); } .ds-chip-active, .ds-chip[aria-pressed=\"true\"] { background: var(--color-blue, #2563eb); color: #fff; border-color: var(--color-blue, #2563eb); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "기본 표면. 22px 라운드, Soft Lift 그림자 하나, p-6.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">래미안 아파트</h3><p class=\"ds-card-body\">전용 84㎡ · 12억 4,000만원</p></div>",
+      "css": ".ds-card { background: #fff; border-radius: 22px; box-shadow: 0 14px 34px rgba(37, 99, 235, 0.10); padding: 24px; font-family: Pretendard, sans-serif; } .ds-card-title { margin: 0 0 8px; font-size: 1.125rem; font-weight: 700; color: var(--color-blue-dark, #1e3a8a); } .ds-card-body { margin: 0; font-size: 0.875rem; line-height: 1.6; color: var(--color-text, #172033); }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "검색·필터 입력. 12px 라운드, Line 보더, 포커스 시 Signal Blue 보더 + Sky Soft 링.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"지역·단지·지하철역 검색\" />",
+      "css": ".ds-input { width: 100%; box-sizing: border-box; background: #fff; color: var(--color-text, #172033); border: 1px solid var(--color-line, #dbeafe); border-radius: 12px; padding: 10px 16px; font-size: 0.875rem; font-family: Pretendard, sans-serif; outline: none; transition: border-color 150ms ease, box-shadow 150ms ease; } .ds-input::placeholder { color: var(--color-muted, #64748b); } .ds-input:focus { border-color: var(--color-blue, #2563eb); box-shadow: 0 0 0 2px var(--color-sky-soft, #e0f2fe); }"
+    },
+    {
+      "name": "Deal-type Badge",
+      "kind": "custom",
+      "refersTo": "badge-blue",
+      "description": "거래유형·상태 배지. 색 + 라벨 병행으로 색에만 의존하지 않는다.",
+      "html": "<div style=\"display:flex; gap:8px;\"><span class=\"ds-badge ds-badge-blue\">매매</span><span class=\"ds-badge ds-badge-green\">전세</span><span class=\"ds-badge ds-badge-orange\">월세</span></div>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; gap: 4px; border-radius: 9999px; padding: 2px 8px; font-size: 0.75rem; font-weight: 700; font-family: Pretendard, sans-serif; } .ds-badge-blue { background: var(--color-sky-soft, #e0f2fe); color: var(--color-blue-dark, #1e3a8a); } .ds-badge-green { background: #ecfdf5; color: #047857; } .ds-badge-orange { background: #fff7ed; color: #c2410c; }"
+    },
+    {
+      "name": "Source Caption",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "출처 표기 인라인 캡션. 모든 핵심 수치 하단에 데이터 출처를 Label 크기·Muted 색으로 붙인다.",
+      "html": "<p class=\"ds-source-caption\">출처: 국토교통부 실거래가 공개시스템 (2026.05 기준)</p>",
+      "css": ".ds-source-caption { margin: 4px 0 0; font-size: 0.75rem; font-weight: 400; line-height: 1.3; color: var(--color-muted, #64748b); font-family: Pretendard, sans-serif; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "공공기록의 열람실",
+    "overview": "imjang-on은 흩어진 정부 부동산 데이터(실거래가, 청약, 학군·생활 인프라)를 한 곳에 모아 보여주는 열람실이다. 조용하고 단단하다. 인터페이스는 자신을 내세우지 않고, 데이터와 그 출처를 또렷하게 비춘다. 맑은 블루 계열의 차분한 바탕 위에 흰 카드가 떠 있고, 그림자는 종이가 책상 위에 살짝 들린 정도로만 옅게 깔린다. 두 부류의 방문자를 같은 화면에서 맞는다: 단지를 깊게 파는 검토자에게는 상세와 출처를, 시세를 둘러보는 탐색층에게는 빠른 검색과 한눈 요약을. 강조는 색을 켜서가 아니라 위계·여백·굵기 대비로 만든다.",
+    "keyCharacteristics": [
+      "맑은 블루 바탕(#f7fbff) 위에 흰 카드, 옅은 블루 틴트 그림자",
+      "단일 패밀리(Pretendard)를 굵기 대비로 운용하는 타이포",
+      "알약형 버튼·칩, 22px 둥근 카드",
+      "색은 정보 전달용(거래유형·상태)이며 분위기 연출용이 아니다",
+      "모든 핵심 수치에 출처 캡션이 따라붙는다"
+    ],
+    "rules": [
+      { "name": "The Sourced-Number Rule", "body": "화면에 노출되는 모든 핵심 수치에는 출처(lib/data-sources.ts 레지스트리 + SourceCaption)가 인라인으로 붙는다. 출처 없는 숫자는 두지 않는다.", "section": "colors" },
+      { "name": "The Quiet-Surface Rule", "body": "바탕은 자극하지 않는다. 빨강·주황은 거래유형/경고 같은 정보 신호에만 쓰고, 프로모션·어그로 목적의 강조색으로는 절대 쓰지 않는다.", "section": "colors" },
+      { "name": "The 14px Floor Rule", "body": "한글 본문 텍스트는 14px 미만으로 두지 않는다. text-xs(12px)는 라벨·캡션·배지에 한정한다.", "section": "typography" },
+      { "name": "The Weight-Not-Family Rule", "body": "위계와 강조는 두 번째 서체가 아니라 굵기·크기로만 만든다. 폰트 패밀리는 하나다.", "section": "typography" },
+      { "name": "The One-Shadow Rule", "body": "그림자는 --shadow-soft 하나뿐이다. 표면마다 새 그림자를 만들지 않는다. 로고·아이콘·배지·바탕에는 그림자를 얹지 않는다.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do 모든 핵심 수치에 출처 캡션(SourceCaption)을 붙인다.",
+      "Do 강조는 위계·여백·굵기로 만든다. 색 강조는 Signal Blue 하나로 절제한다.",
+      "Do 카드 그림자는 --shadow-soft 하나만 쓴다.",
+      "Do 한글 본문은 14px 이상. text-xs는 라벨·캡션·배지에만.",
+      "Do 거래유형·상태는 색 + 라벨/아이콘을 함께 써서 색에만 의존하지 않는다.",
+      "Do 버튼·칩은 알약형, 카드는 22px 라운드로 통일한다."
+    ],
+    "donts": [
+      "Don't 빨간 급매 배너, 과장 카피, 깜빡이는 프로모션 같은 자극적 부동산 광고 어휘를 쓰지 않는다.",
+      "Don't 보라/파랑 그라데이션, 똑같은 카드 그리드 반복, 히어로-메트릭 템플릿, 섹션마다 붙는 대문자 eyebrow 같은 전형적 AI SaaS 룩을 쓰지 않는다.",
+      "Don't background-clip: text 그라데이션 텍스트를 쓰지 않는다. 강조는 단색 + 굵기.",
+      "Don't 1px을 넘는 색 띠 사이드 보더를 쓰지 않는다.",
+      "Don't 검정 그림자나 표면마다 다른 그림자를 만들지 않는다.",
+      "Don't 빨강·주황을 프로모션 강조색으로 전용하지 않는다. 정보 신호 전용."
+    ]
+  }
+}
