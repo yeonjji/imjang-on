@@ -10,10 +10,12 @@ export const metadata: Metadata = {
   alternates: { canonical: '/apt' },
 };
 
-export const revalidate = 3600;
+// 빌드 타임 Supabase 커넥션 풀 경합(P2024)으로 정적 프리렌더가 불안정하다.
+// 런타임 DB는 정상이므로 force-dynamic으로 요청 시점에 렌더한다. (홈과 동일 전략)
+export const dynamic = 'force-dynamic';
 
 export default async function AptHubPage() {
-  // 빌드 시 DB 일시 장애에도 배포 통과시키고 ISR이 다음 사이클에 채운다
+  // 런타임 DB 블립 시에도 페이지가 죽지 않도록 빈 목록으로 폴백
   const popular = await getTopPropertiesByVolume({ types: [PropertyType.APARTMENT], limit: 30 })
     .catch((err) => {
       console.error('AptHubPage: popular query failed', err);
