@@ -51,7 +51,6 @@ export function WeeklySubscriptionBoard({ board }: { board: WeeklyBoard }) {
     <section className="mt-10">
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="mb-1 text-xs font-bold text-[var(--color-blue)]"><span aria-hidden>📅</span> 청약 캘린더</p>
           <h2 className="mb-1 text-xl font-bold tracking-tight text-[var(--color-blue-dark)]">
             청약 일정을 한눈에
           </h2>
@@ -86,9 +85,9 @@ export function WeeklySubscriptionBoard({ board }: { board: WeeklyBoard }) {
               >
                 <div className="w-12 shrink-0">
                   <strong className="block text-sm font-black text-[var(--color-blue-dark)]">{day.weekday}</strong>
-                  <span className="block text-[10px] font-medium text-[var(--color-muted)]">{formatMd(day.date)}</span>
+                  <span className="block text-xs font-medium text-[var(--color-muted)]">{formatMd(day.date)}</span>
                   {day.isToday && (
-                    <span className="mt-1 inline-block rounded-full bg-[var(--color-blue-dark)] px-1.5 py-0.5 text-[8px] font-black leading-none text-white">
+                    <span className="mt-1 inline-block rounded-full bg-[var(--color-blue-dark)] px-1.5 py-0.5 text-[10px] font-black leading-none text-white">
                       TODAY
                     </span>
                   )}
@@ -113,7 +112,7 @@ export function WeeklySubscriptionBoard({ board }: { board: WeeklyBoard }) {
                     {day.weekday} {formatMd(day.date)}
                   </strong>
                   {day.isToday && (
-                    <span className="rounded-full bg-[var(--color-blue-dark)] px-1.5 py-0.5 text-[9px] font-black leading-none text-white">
+                    <span className="rounded-full bg-[var(--color-blue-dark)] px-1.5 py-0.5 text-[10px] font-black leading-none text-white">
                       TODAY
                     </span>
                   )}
