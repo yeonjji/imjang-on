@@ -48,12 +48,15 @@ export function buildPriceCondition(
   priceMax: number | undefined,
 ): Prisma.BigIntFilter | undefined {
   if (priceMin === undefined && priceMax === undefined) return undefined;
+  // 비교 대상 컬럼(saleAvgPrice12m 등)이 만원 단위로 저장되므로, 만원 단위인
+  // priceMin/priceMax를 그대로 비교한다(원 단위 환산 금지 — 그러면 임계값이 1만배 부풀려져
+  // min은 전부 탈락(빈 리스트), max는 상한이 사라져 필터가 무력화된다).
   const cond: Prisma.BigIntFilter = {};
   if (priceMin !== undefined && priceMin > 0) {
-    cond.gte = BigInt(priceMin) * 10000n;
+    cond.gte = BigInt(priceMin);
   }
   if (priceMax !== undefined) {
-    cond.lte = BigInt(priceMax) * 10000n;
+    cond.lte = BigInt(priceMax);
   }
   return cond;
 }
