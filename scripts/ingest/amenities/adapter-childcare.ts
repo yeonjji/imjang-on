@@ -164,6 +164,8 @@ export async function fetchAllChildcare(): Promise<NormalizedChildcare[]> {
   const { enrichWithGeocode } = await import('./geocode-fill');
   const { logger } = await import('@/lib/logger');
 
+  const { getIlbanguToSiMap } = await import('./sigungu-normalize');
+
   const key = env.CHILDCARE_API_KEY;
   if (!key) throw new Error('CHILDCARE_API_KEY is required');
 
@@ -177,6 +179,10 @@ export async function fetchAllChildcare(): Promise<NormalizedChildcare[]> {
     .filter((c): c is string => !!c)
     .sort();
 
+  // 통합시는 API가 시·구 arcode에 걸쳐 데이터를 쪼개 반환한다. 수집은 양쪽 arcode로
+  // 그대로 하되(유실 방지), 저장 sigunguCode는 부모 시코드로 통일해 한 시군구로 묶는다.
+  const guToSi = await getIlbanguToSiMap();
+
   logger.info({ arcodes: arcodes.length }, 'childcare ingest: arcode 순회 시작');
 
   const all: NormalizedChildcare[] = [];
@@ -189,7 +195,7 @@ export async function fetchAllChildcare(): Promise<NormalizedChildcare[]> {
     if (errKind === 'rate') throw new Error(`childcare 일 요청 한도 초과(INFO-300) arcode=${arcode} — 재실행 필요`);
     if (errKind === 'server') throw new Error(`childcare 서버 오류(ERROR) arcode=${arcode}`);
 
-    const rows = parseChildcareXml(body, arcode);
+    const rows = parseChildcareXml(body, guToSi.get(arcode) ?? arcode);
     all.push(...rows);
     done++;
     if (done === 1 || done % 30 === 0) {
