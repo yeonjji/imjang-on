@@ -13,6 +13,7 @@ import { adapterOffiRent } from './adapter-offi-rent';
 import { adapterRhTrade } from './adapter-rh-trade';
 import { adapterRhRent } from './adapter-rh-rent';
 import { doneRunFilter, buildDoneKeys } from './resume';
+import { getSigunguTargets } from './sigungu';
 
 import type { Adapter, ApiType, Mode, NormalizedTransaction } from '@/scripts/ingest/types';
 import { createHash } from 'node:crypto';
@@ -65,16 +66,9 @@ async function main() {
 
   logger.info({ apis, months, mode: args.mode }, 'runner start');
 
-  const sigunguRecords = await prisma.region.findMany({
-    where: { level: 2, isAbolished: false },
-    select: { code: true },
-  });
-  // sigunguCode (5자리) → 실제 Region.code (10자리) 매핑.
-  // padEnd로 강제 매핑하면 세종 등 특수 케이스 FK 위반 발생.
-  const sigunguToRegionCode = new Map<string, string>();
-  for (const r of sigunguRecords) {
-    sigunguToRegionCode.set(r.code.slice(0, 5), r.code);
-  }
+  // MOLIT가 인식하는 시군구 LAWD_CD(5자리) → Region.code(10자리) 매핑.
+  // 일반구 통합시(성남·수원 등)는 시 코드가 아닌 구 코드를 써야 데이터가 잡힌다(getSigunguTargets 참고).
+  const sigunguToRegionCode = await getSigunguTargets();
   const sigunguIds = Array.from(sigunguToRegionCode.keys());
 
   const sources = apis.map((a) => ADAPTERS[a].source);
