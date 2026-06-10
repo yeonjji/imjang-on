@@ -4,6 +4,9 @@ import {
   DATA_SOURCE_CATEGORY_ORDER,
   dataSourcesByCategory,
   sourceShortLabel,
+  subscriptionSource,
+  sourceHost,
+  sourceCategoryIcon,
   type DataSourceId,
 } from '@/lib/data-sources';
 
@@ -42,5 +45,32 @@ describe('dataSourcesByCategory', () => {
 describe('sourceShortLabel', () => {
   it('제공기관명을 반환한다', () => {
     expect(sourceShortLabel('molit-rtms' as DataSourceId)).toBe('국토교통부');
+  });
+});
+
+describe('subscriptionSource', () => {
+  it('LH 사전청약은 lh-presub', () => {
+    expect(subscriptionSource('LH_PRESUB')).toBe('lh-presub');
+  });
+  it('그 외 카테고리는 applyhome', () => {
+    for (const c of ['APT', 'OFFICETEL_ETC', 'REMNANT', 'PUB_PRIV_RENT', 'ARBITRARY']) {
+      expect(subscriptionSource(c)).toBe('applyhome');
+    }
+  });
+});
+
+describe('sourceHost', () => {
+  it('호스트명만 반환한다', () => {
+    expect(sourceHost('https://rt.molit.go.kr')).toBe('rt.molit.go.kr');
+    expect(sourceHost('https://www.applyhome.co.kr')).toBe('applyhome.co.kr');
+    expect(sourceHost('https://www.data.go.kr')).toBe('data.go.kr');
+  });
+});
+
+describe('sourceCategoryIcon', () => {
+  it('모든 카테고리에 비어있지 않은 아이콘이 있다', () => {
+    for (const c of DATA_SOURCE_CATEGORY_ORDER) {
+      expect(sourceCategoryIcon(c).length, c).toBeGreaterThan(0);
+    }
   });
 });

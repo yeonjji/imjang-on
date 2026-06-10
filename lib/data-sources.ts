@@ -161,3 +161,29 @@ export function dataSourcesByCategory(): Array<{ category: DataSourceCategory; s
 export function sourceShortLabel(id: DataSourceId): string {
   return DATA_SOURCES[id].provider;
 }
+
+/** 청약 공고 카테고리 → 메인 출처. LH 사전청약은 LH, 그 외는 청약홈. */
+export function subscriptionSource(category: string): DataSourceId {
+  return category === 'LH_PRESUB' ? 'lh-presub' : 'applyhome';
+}
+
+/** 출처 URL의 호스트명(www. 제거). 블록의 "원본 {host}" 표기에 사용. */
+export function sourceHost(url: string): string {
+  return new URL(url).hostname.replace(/^www\./, '');
+}
+
+/** 카테고리별 블록 아이콘(정보 보조용, 장식 최소). */
+const CATEGORY_ICON: Record<DataSourceCategory, string> = {
+  '부동산 거래': '🏛️',
+  청약: '📋',
+  의료: '🏥',
+  '교육·보육': '🏫',
+  생활편의: '🏪',
+  교통: '🚇',
+  공통: '🗂️',
+};
+
+/** 메인 출처 블록 좌측 아이콘. */
+export function sourceCategoryIcon(category: DataSourceCategory): string {
+  return CATEGORY_ICON[category];
+}
