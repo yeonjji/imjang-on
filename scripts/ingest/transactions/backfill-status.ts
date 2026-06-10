@@ -1,6 +1,7 @@
 import { appendFileSync } from 'node:fs';
 import { prisma } from '@/lib/db';
 import { getRangeMonths } from './months';
+import { getSigunguTargets } from './sigungu';
 import type { ApiType } from '@/scripts/ingest/types';
 
 const SOURCE_BY_API: Record<ApiType, string> = {
@@ -27,17 +28,20 @@ async function main() {
   const months = getRangeMonths(from, to);
   const monthSet = new Set(months);
 
-  const sigunguCount = await prisma.region.count({ where: { level: 2, isAbolished: false } });
-  const expected = sigunguCount * months.length;
+  const sigunguTargets = await getSigunguTargets();
+  const expected = sigunguTargets.size * months.length;
 
   const okRuns = await prisma.ingestionRun.findMany({
     where: { source, status: 'OK' },
     select: { targetKey: true },
   });
+  // 타깃 시군구 집합에 속하고 기간 내인 OK만 카운트. (옛 통합시 시코드의 빈 OK가
+  // 끼면 pending이 과소 계산돼 finalize 자동 disable이 잘못 트리거된다.)
+  const targetSet = new Set(sigunguTargets.keys());
   const okInRange = new Set<string>();
   for (const r of okRuns) {
-    const m = r.targetKey.split('-')[1];
-    if (monthSet.has(m)) okInRange.add(r.targetKey);
+    const [sgg, m] = r.targetKey.split('-');
+    if (monthSet.has(m) && targetSet.has(sgg)) okInRange.add(r.targetKey);
   }
 
   const pending = Math.max(0, expected - okInRange.size);
