@@ -33,6 +33,14 @@ export function getSidoList(): Promise<{ code: string; sido: string; fullName: s
   return Promise.resolve(SIDO_LIST);
 }
 
+/**
+ * 시도 단축명("서울")을 Region.sido에 저장된 fullName("서울특별시")으로 변환.
+ * 매칭 실패 시(이미 fullName이거나 미지의 값) 입력을 그대로 돌려줘 양방향 안전.
+ */
+export function sidoFullName(sido: string): string {
+  return SIDO_LIST.find((s) => s.sido === sido)?.fullName ?? sido;
+}
+
 export async function getSigunguByCode(sigunguCode: string) {
   return prisma.region.findFirst({
     where: { sigunguCode, level: 2, isAbolished: false },
