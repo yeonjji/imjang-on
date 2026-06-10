@@ -1,5 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { sidoPrefix, sidoFromPrefix, shortSidoFromRegionCode, getPopularSigungus } from '@/lib/region';
+import { sidoPrefix, sidoFromPrefix, shortSidoFromRegionCode, sidoFullName, getPopularSigungus } from '@/lib/region';
+
+describe('sidoFullName', () => {
+  it('단축명 → fullName 변환', () => {
+    expect(sidoFullName('서울')).toBe('서울특별시');
+    expect(sidoFullName('경기')).toBe('경기도');
+    expect(sidoFullName('세종')).toBe('세종특별자치시');
+  });
+
+  it('이미 fullName이거나 미지의 값이면 그대로 반환', () => {
+    expect(sidoFullName('서울특별시')).toBe('서울특별시');
+    expect(sidoFullName('존재하지않음')).toBe('존재하지않음');
+  });
+});
 
 describe('sidoPrefix', () => {
   it('짧은 시도명', () => {

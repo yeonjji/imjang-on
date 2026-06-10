@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { PropertyType } from '@prisma/client';
 import type { Prisma, Property, Region } from '@prisma/client';
 import { normalizeName } from '@/lib/slug';
+import { sidoFullName } from '@/lib/region';
 
 export type PropertyTypeSlug = 'apt' | 'officetel' | 'villa';
 
@@ -123,7 +124,8 @@ export async function getPropertyList({
   if (sigunguCode) {
     where.sigunguCode = sigunguCode;
   } else if (sido) {
-    where.region = { sido };
+    // Region.sido는 fullName("서울특별시")으로 저장되므로 단축명("서울")을 변환해 비교한다.
+    where.region = { sido: sidoFullName(sido) };
   }
 
   const priceCond = buildPriceCondition(priceMin, priceMax);
