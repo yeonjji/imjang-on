@@ -120,7 +120,11 @@ export async function getSigungusBySido(sido: string, opts?: { gu?: boolean }) {
     .map((r) => ({
       code: r.code,
       // 일반구(level-3)는 구명이 eupmyeondong에 있어 "수원시 장안구"로 합쳐 표시한다.
-      sigungu: r.level === 3 && r.eupmyeondong ? `${r.sigungu} ${r.eupmyeondong}` : r.sigungu,
+      // sigungu/eupmyeondong은 스키마상 nullable이라 fullName 파생값으로 폴백한다.
+      sigungu:
+        r.level === 3 && r.eupmyeondong
+          ? `${r.sigungu ?? ''} ${r.eupmyeondong}`.trim()
+          : r.sigungu ?? stripSido(r.fullName),
       fullName: r.fullName,
       sigunguCode: r.sigunguCode,
     }))
