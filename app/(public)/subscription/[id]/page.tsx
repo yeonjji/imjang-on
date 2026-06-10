@@ -15,6 +15,8 @@ import { ScheduleTimeline } from './_components/schedule-timeline';
 import { UnitSupplyTable } from './_components/unit-supply-table';
 import { SubscriptionSidebar } from './_components/subscription-sidebar';
 import { SourceCaption } from '@/components/ui/source-caption';
+import { MainSourceBlock } from '@/components/ui/main-source-block';
+import { subscriptionSource } from '@/lib/data-sources';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
@@ -103,6 +105,7 @@ export default async function SubscriptionDetailPage({ params }: Params) {
               위치 정보가 없어 주변 실거래가·편의시설 정보를 제공하지 않습니다.
             </div>
           )}
+          <MainSourceBlock id={subscriptionSource(notice.category)} />
         </main>
         <aside className="min-w-0">
           <SubscriptionSidebar notice={notice} />

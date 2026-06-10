@@ -21,6 +21,7 @@ import { Card } from '@/components/ui/card';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
 import { SourceCaption } from '@/components/ui/source-caption';
+import { MainSourceBlock } from '@/components/ui/main-source-block';
 import type { ParkingRaw } from '@/lib/urban/adapters/parking';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { ParkInfo } from '../_components/park-info';
@@ -124,6 +125,7 @@ export default async function UrbanDetailPage({ params }: Params) {
           {coord && <NearbyApartments items={apts} />}
           {coord && <NearbySubway data={subway} />}
           {coord && <NearbyInfra categories={infra} />}
+          <MainSourceBlock id={URBAN_SOURCE[def.slug]} />
         </main>
         <aside><UrbanDetailSidebar others={others} def={def} sigunguCode={sigunguCode} anchors={def.slug === 'park' ? PARK_ANCHORS : undefined} /></aside>
       </div>
