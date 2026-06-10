@@ -1,7 +1,9 @@
 name: backfill-transactions-loop
 on:
   schedule:
-    - cron: '7 * * * *'  # 매시간 :07 (daily ingest 15·19시와 분 단위로 분리)
+    # 3시간마다 :07. 한 run(6 API 직렬)이 ≈80분이라 매시간이면 run이 겹쳐
+    # cancel churn("higher priority waiting request")만 반복된다 → 주기를 run 길이보다 넉넉히.
+    - cron: '7 */3 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -18,9 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # Micro 인스턴스 디스크 IO 버스트 예산 보호: 6갈래 동시 write가 baseline(87Mbps)을
-      # 넘겨 사이트 쿼리까지 스로틀되는 것을 막는다. 완주 시간은 늘지만 사이트는 쾌적 유지.
-      max-parallel: 2
+      # Micro 인스턴스 디스크 IO baseline(87Mbps) 보호: 동시 write가 baseline을 넘기면
+      # 하루 30분 버스트 예산을 태우고 인스턴스 전체가 스로틀된다(사이트 쿼리까지 느려짐).
+      # max-parallel:1 + runner 내부 concurrency:1 → write 스트림 딱 1개로 baseline 안 유지.
+      # 완주 시간은 늘지만 사이트는 쾌적하고, resume(doneKeys)가 매 run 이어받아 자가복구.
+      max-parallel: 1
       matrix:
         api: [apt-trade, apt-rent, offi-trade, offi-rent, rh-trade, rh-rent]
     env:
@@ -42,7 +46,8 @@ jobs:
         run: pnpm tsx scripts/ingest/transactions/backfill-status.ts --api=${{ matrix.api }} --from=${{ env.BACKFILL_FROM }} --to=${{ env.BACKFILL_TO }}
       - if: ${{ steps.check.outputs.pending != '0' }}
         run: pnpm tsx scripts/ingest/transactions/runner.ts --api=${{ matrix.api }} --mode=backfill --from=${{ env.BACKFILL_FROM }} --to=${{ env.BACKFILL_TO }} --limit=${{ env.BACKFILL_LIMIT }}
-        timeout-minutes: 350
+        # 14h 메가런 방지 상한. throttle 등으로 늘어지면 60분에 끊고, resume가 다음 run에서 이어받는다.
+        timeout-minutes: 60
 
   # 6종 API의 pending 합계가 0이면(=백필 완주) 이 워크플로의 schedule을 스스로 비활성화.
   # 일회성 백필이므로 완주 후 매시간 빈 실행이 Actions 분을 계속 먹는 것을 막는다.

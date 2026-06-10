@@ -121,8 +121,11 @@ async function main() {
   // resume(doneKeys)가 이어주므로 여러 번 돌리면 전체가 완료된다.
   const pending = args.limit ? tasks.slice(0, args.limit) : tasks;
   logger.info({ pending: pending.length, total: tasks.length, limit: args.limit ?? null }, 'tasks to run this pass');
-  // Supabase pooler 동시 연결 제약 — 5로 두면 connection pool / statement timeout 빈발
-  await runWithLimit(pending, 2);
+  // 동시 write 스트림 수. daily는 소량이라 2로 두지만, backfill은 Micro 인스턴스의
+  // 디스크 IO baseline(87Mbps)을 넘겨 버스트 예산(하루 30분)을 태우고 인스턴스 전체가
+  // 스로틀되므로 1로 직렬화한다. 느리지만 baseline 안에 머물러 사이트도 안 느려진다.
+  const writeConcurrency = args.mode === 'backfill' ? 1 : 2;
+  await runWithLimit(pending, writeConcurrency);
 
   if (affectedPropertyIds.size > 0) {
     await updatePropertyAggregates(Array.from(affectedPropertyIds));
