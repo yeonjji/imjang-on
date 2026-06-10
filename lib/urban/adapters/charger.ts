@@ -25,10 +25,15 @@ function buildWhere(f: UrbanListFilter, addrPrefix: string | null): Prisma.EvCha
   return conditions.length > 0 ? { AND: conditions } : {};
 }
 
+/** 원본 데이터의 일부 충전소 이름이 "_홍길동"처럼 선행 언더스코어를 달고 들어와 표시용으로 제거. */
+export function displayName(name: string): string {
+  return name.replace(/^_+/, '');
+}
+
 function toItem(row: ChargerRaw): UrbanItem<ChargerRaw> {
   return {
     id: row.id,
-    name: row.name,
+    name: displayName(row.name),
     address: row.address,
     sigunguCode: null,
     raw: row,
