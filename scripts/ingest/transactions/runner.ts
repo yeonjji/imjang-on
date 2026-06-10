@@ -37,6 +37,7 @@ interface RunArgs {
   limit?: number;
   from?: string;
   to?: string;
+  onlyIlbangu: boolean;
 }
 
 function parseArgs(): RunArgs {
@@ -49,7 +50,10 @@ function parseArgs(): RunArgs {
   const limit = get('limit') !== undefined ? Number(get('limit')) : undefined;
   const from = get('from');
   const to = get('to');
-  return { api, mode, months, monthOffset, limit, from, to };
+  // 일반구 통합시(수원·성남 등)만 대상으로 좁힌다. daily 누락으로 생긴 최근 갭을
+  // 39개 구만 메울 때 사용(전체 255개 시군구 재수집을 피해 빠르게 끝낸다).
+  const onlyIlbangu = args.includes('--only-ilbangu');
+  return { api, mode, months, monthOffset, limit, from, to, onlyIlbangu };
 }
 
 async function main() {
@@ -69,6 +73,18 @@ async function main() {
   // MOLIT가 인식하는 시군구 LAWD_CD(5자리) → Region.code(10자리) 매핑.
   // 일반구 통합시(성남·수원 등)는 시 코드가 아닌 구 코드를 써야 데이터가 잡힌다(getSigunguTargets 참고).
   const sigunguToRegionCode = await getSigunguTargets();
+  if (args.onlyIlbangu) {
+    // 일반구 = level-3이면서 코드 끝이 "00000"인 구. 이 구 코드(5자리)만 남긴다.
+    const ilbangu = await prisma.region.findMany({
+      where: { level: 3, code: { endsWith: '00000' }, isAbolished: false },
+      select: { code: true },
+    });
+    const keep = new Set(ilbangu.map((r) => r.code.slice(0, 5)));
+    for (const code of [...sigunguToRegionCode.keys()]) {
+      if (!keep.has(code)) sigunguToRegionCode.delete(code);
+    }
+    logger.info({ ilbanguCount: sigunguToRegionCode.size }, 'only-ilbangu filter applied');
+  }
   const sigunguIds = Array.from(sigunguToRegionCode.keys());
 
   const sources = apis.map((a) => ADAPTERS[a].source);

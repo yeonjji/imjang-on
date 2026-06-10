@@ -3,15 +3,30 @@ on:
   schedule:
     - cron: '7 * * * *'  # 매시간 :07 (daily ingest 15·19시와 분 단위로 분리)
   workflow_dispatch:
+    inputs:
+      from:
+        description: 'BACKFILL_FROM (YYYYMM). 미지정 시 202301'
+        required: false
+      to:
+        description: 'BACKFILL_TO (YYYYMM). 미지정 시 202505'
+        required: false
+      only_ilbangu:
+        description: '일반구 통합시(39개 구)만 대상 — daily 누락 갭 일회성 메움용'
+        type: boolean
+        default: false
+      limit:
+        description: 'API pass당 시군구-월 상한. 미지정 시 261'
+        required: false
 
+# only_ilbangu 일회성 갭 실행은 별도 그룹으로 분리해 스케줄 백필과 병렬 실행(서로 안 막음).
 concurrency:
-  group: backfill-transactions-loop
+  group: backfill-transactions-loop${{ inputs.only_ilbangu && '-gap' || '' }}
   cancel-in-progress: false
 
 env:
-  BACKFILL_FROM: '202301'
-  BACKFILL_TO: '202505'
-  BACKFILL_LIMIT: '261'  # API job당 ≈1개월치 시군구
+  BACKFILL_FROM: ${{ inputs.from || '202301' }}
+  BACKFILL_TO: ${{ inputs.to || '202505' }}
+  BACKFILL_LIMIT: ${{ inputs.limit || '261' }}  # API job당 ≈1개월치 시군구
 
 jobs:
   backfill:
@@ -41,7 +56,7 @@ jobs:
       - id: check
         run: pnpm tsx scripts/ingest/transactions/backfill-status.ts --api=${{ matrix.api }} --from=${{ env.BACKFILL_FROM }} --to=${{ env.BACKFILL_TO }}
       - if: ${{ steps.check.outputs.pending != '0' }}
-        run: pnpm tsx scripts/ingest/transactions/runner.ts --api=${{ matrix.api }} --mode=backfill --from=${{ env.BACKFILL_FROM }} --to=${{ env.BACKFILL_TO }} --limit=${{ env.BACKFILL_LIMIT }}
+        run: pnpm tsx scripts/ingest/transactions/runner.ts --api=${{ matrix.api }} --mode=backfill --from=${{ env.BACKFILL_FROM }} --to=${{ env.BACKFILL_TO }} --limit=${{ env.BACKFILL_LIMIT }} ${{ inputs.only_ilbangu && '--only-ilbangu' || '' }}
         timeout-minutes: 350
 
   # 6종 API의 pending 합계가 0이면(=백필 완주) 이 워크플로의 schedule을 스스로 비활성화.
@@ -88,7 +103,9 @@ jobs:
           done
           echo "Total pending across all APIs: $total"
           echo "total_pending=$total" >> "$GITHUB_OUTPUT"
-      - if: ${{ steps.total.outputs.total_pending == '0' }}
+      # 일회성 갭 실행(only_ilbangu)은 전체 시군구 기준 pending이 0이 아니므로 보통 해당 없으나,
+      # 스케줄 루프를 실수로 끄지 않도록 명시적으로 제외한다.
+      - if: ${{ steps.total.outputs.total_pending == '0' && !inputs.only_ilbangu }}
         run: |
           echo "Backfill complete (total pending=0) — disabling scheduled workflow."
           gh workflow disable backfill-transactions-loop.yml
