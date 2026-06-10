@@ -21,6 +21,7 @@ import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
+import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { formatBillion } from '@/lib/format';
 import { getNearbySubscriptions } from '@/lib/subscription';
 import { shortSidoFromRegionCode } from '@/lib/region';
@@ -147,6 +148,7 @@ export default async function AptDetailPage({ params }: Params) {
           )}
           <NearbySubway data={subway} />
           <NearbyInfra categories={infra} />
+          <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>
           <DetailSidebar property={property} />

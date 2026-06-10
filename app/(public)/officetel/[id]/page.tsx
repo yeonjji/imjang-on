@@ -13,6 +13,7 @@ import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
+import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { PropertyType } from '@prisma/client';
 import { PropertyDetailHero } from '../../apt/[id]/_components/property-detail-hero';
 import { DealSummarySection } from '../../apt/[id]/_components/deal-summary-section';
@@ -132,6 +133,7 @@ export default async function OffiDetailPage({ params }: Params) {
           <NearbyPriceComparison id="nearby" items={nearby} slug="officetel" />
           <NearbySubway data={subway} />
           <NearbyInfra categories={infra} />
+          <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>
           <DetailSidebar property={property} />

@@ -18,6 +18,7 @@ import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
+import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { JsonLd, placeSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { staticMapUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
@@ -122,6 +123,7 @@ export default async function ChildcareDetailPage({ params }: Params) {
           {coord && <NearbyChildcare items={nearbyChildren} />}
           {coord && <NearbySubway data={subway} />}
           {coord && <NearbyInfra categories={infra} />}
+          <MainSourceBlock id="childcare" />
         </main>
         <aside><ChildcareDetailSidebar basePath={basePath} others={others} /></aside>
       </div>
