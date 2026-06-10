@@ -129,8 +129,15 @@ const SURGE_MIN_RECENT = 30; // 급증 후보 최소 최근거래 건수(노이�
 
 /** sigunguCode 집합 → { sigunguCode: {code, label} } 매핑 */
 async function resolveRegions(codes: string[]): Promise<Map<string, { code: string; sido: string; label: string }>> {
+  // 일반구 통합시는 구 코드(level-3)로 거래가 쌓이므로 시군구 단위 행(level-2 + 일반구 level-3)을
+  // 모두 조회한다. (level-2만 보면 수원·성남 등이 브리핑 인기/급증 지역에서 누락된다.)
+  // 읍면동(level-3, 코드 끝 ≠ 00000)은 같은 sigunguCode를 공유해 라벨을 덮으므로 제외한다.
   const rows = await prisma.region.findMany({
-    where: { sigunguCode: { in: codes }, level: 2, isAbolished: false },
+    where: {
+      sigunguCode: { in: codes },
+      isAbolished: false,
+      OR: [{ level: 2 }, { level: 3, code: { endsWith: '00000' } }],
+    },
     select: { sigunguCode: true, code: true, sido: true, fullName: true },
   });
   const map = new Map<string, { code: string; sido: string; label: string }>();
