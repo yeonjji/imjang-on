@@ -112,7 +112,7 @@ export function PriceCharts({ data }: { data: ChartData }) {
                 />
                 <YAxis
                   tickFormatter={(v) => formatBillion(Number(v))}
-                  width={46}
+                  width={60}
                   tick={{ fontSize: 11, fill: '#94a3b8' }}
                   tickLine={false}
                   axisLine={false}
