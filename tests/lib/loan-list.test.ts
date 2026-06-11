@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { collectFacets, filterLoans, type LoanSummary } from '@/lib/loan/list';
+import { collectFacets, filterLoans, type LoanSummary, type LoanFilterCriteria } from '@/lib/loan/list';
 
 const rows: LoanSummary[] = [
   { seq: 1, finprdnm: '청년전세대출', ofrinstnm: 'A', instCtg: '시중은행', lnlmt: 2000, irt: '3', usageTags: ['주거'], targetTags: ['청년'], regionTags: ['전국'] },
@@ -17,7 +17,7 @@ describe('collectFacets', () => {
 });
 
 describe('filterLoans', () => {
-  const base = { usage: [], inst: [], region: [], target: [], query: '', sort: null } as const;
+  const base: LoanFilterCriteria = { usage: [], inst: [], region: [], target: [], query: '', sort: null };
 
   it('같은 패세트 내 선택은 OR', () => {
     const r = filterLoans(rows, { ...base, usage: ['주거', '운영'] });
