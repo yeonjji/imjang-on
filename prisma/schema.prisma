@@ -188,8 +188,8 @@ model LoanProduct {
   ofrinstnm  String?  @db.VarChar(120) // 제공기관
   instCtg    String?  @db.VarChar(40) // 기관구분
   lnlmt      Int? // 한도(만원)
-  irt        String?  @db.VarChar(60) // 금리(텍스트)
-  irtCtg     String?  @db.VarChar(40) // 금리구분
+  irt        String? // 금리(텍스트, 설명형이라 길이 제한 없음)
+  irtCtg     String? // 금리구분(설명형이라 길이 제한 없음)
   usageTags  String[] @default([]) // 자금용도 태그
   targetTags String[] @default([]) // 대상 태그
   regionTags String[] @default([]) // 시도 태그
