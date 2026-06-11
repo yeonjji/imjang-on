@@ -184,9 +184,9 @@ model IngestionRun {
 
 model LoanProduct {
   seq        Int      @id // API 자연키
-  finprdnm   String   @db.VarChar(200) // 상품명
-  ofrinstnm  String?  @db.VarChar(120) // 제공기관
-  instCtg    String?  @db.VarChar(40) // 기관구분
+  finprdnm   String // 상품명 (길이 제한 없음 — 한 값 초과가 전체 스냅샷을 막는 위험 회피)
+  ofrinstnm  String? // 제공기관
+  instCtg    String? // 기관구분
   lnlmt      Int? // 한도(만원)
   irt        String? // 금리(텍스트, 설명형이라 길이 제한 없음)
   irtCtg     String? // 금리구분(설명형이라 길이 제한 없음)
