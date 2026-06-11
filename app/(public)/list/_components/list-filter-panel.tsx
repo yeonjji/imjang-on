@@ -89,7 +89,7 @@ export function ListFilterPanel({ sidoList, params: externalParams, onParamsChan
 
   useEffect(() => {
     if (!sido) { setSigunguList([]); return; }
-    fetch(`/api/regions?sido=${encodeURIComponent(sido)}`)
+    fetch(`/api/regions?sido=${encodeURIComponent(sido)}&gu=1`)
       .then((r) => r.json())
       .then((data: SigunguItem[]) => setSigunguList(data));
   }, [sido]);
