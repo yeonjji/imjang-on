@@ -7,13 +7,15 @@ interface Props {
   /** 표시 너비/높이(px). 기본 600x400. */
   width?: number;
   height?: number;
+  /** 기본 스타일 대신 사용할 클래스 (예: LocationViewer poster용 absolute fill). */
+  className?: string;
 }
 
 /**
  * 검색 썸네일 후보가 되는 실제 <img>. 인터랙티브 지도(LocationViewer)와 별개로,
  * JS 없이도 마크업에 존재한다. next/image 대신 plain <img>로 직접 URL을 노출한다.
  */
-export function StaticMapImage({ lat, lng, name, width = 600, height = 400 }: Props) {
+export function StaticMapImage({ lat, lng, name, width = 600, height = 400, className }: Props) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -21,7 +23,7 @@ export function StaticMapImage({ lat, lng, name, width = 600, height = 400 }: Pr
       alt={`${name} 위치 지도`}
       width={width}
       height={height}
-      className="mb-3 w-full rounded-2xl border border-[var(--color-line)] object-cover"
+      className={className ?? 'mb-3 w-full rounded-2xl border border-[var(--color-line)] object-cover'}
     />
   );
 }

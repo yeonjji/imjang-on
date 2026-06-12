@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { STATIC_ENTRIES } from '@/lib/sitemap/static-entries';
+import { SOURCE_ORDER } from '@/lib/sitemap/sources';
 import { LIFE_GROUPS } from '@/app/(public)/_components/life-menu';
 
 describe('sitemap STATIC_ENTRIES', () => {
@@ -18,5 +19,11 @@ describe('sitemap STATIC_ENTRIES', () => {
 
   it('/urban/parking을 포함한다', () => {
     expect(STATIC_ENTRIES.some((e) => e.url.endsWith('/urban/parking'))).toBe(true);
+  });
+});
+
+describe('sitemap SOURCE_ORDER', () => {
+  it('대출상품(loan) 상세 소스를 포함한다', () => {
+    expect(SOURCE_ORDER.some((s) => s.key === 'loan')).toBe(true);
   });
 });

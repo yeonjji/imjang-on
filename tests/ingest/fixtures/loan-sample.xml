@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <header><resultCode>00</resultCode><resultMsg>NORMAL SERVICE.</resultMsg></header>
+  <body>
+    <items>
+      <item>
+        <seq>8</seq>
+        <finprdnm>사잇돌Ⅱ대출_대환형</finprdnm>
+        <lnlmt>2000</lnlmt>
+        <irtCtg>변동금리</irtCtg>
+        <irt>~19.99</irt>
+        <usge>생계</usge>
+        <trgt>근로자, 사업자, 연금소득자</trgt>
+        <instCtg>민간기업</instCtg>
+        <ofrinstnm>SGI서울보증</ofrinstnm>
+        <rsdAreaPamtEqltIstm>전국</rsdAreaPamtEqltIstm>
+        <cnpl>1397</cnpl>
+        <rltsite>https://www.fsb.or.kr</rltsite>
+      </item>
+      <item>
+        <seq>12</seq>
+        <finprdnm>저소득주민 융자사업(주택매입 및 전세임대자금)</finprdnm>
+        <lnlmt>3000</lnlmt>
+        <irtCtg>고정금리</irtCtg>
+        <irt>0</irt>
+        <usge>주거</usge>
+        <trgt>저소득가구 및 무주택세대주</trgt>
+        <instCtg>지자체</instCtg>
+        <ofrinstnm>강원도 영월군</ofrinstnm>
+        <rsdAreaPamtEqltIstm>강원</rsdAreaPamtEqltIstm>
+      </item>
+    </items>
+    <numOfRows>100</numOfRows>
+    <pageNo>1</pageNo>
+    <totalCount>2</totalCount>
+  </body>
+</response>

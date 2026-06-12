@@ -1,6 +1,7 @@
 'use client';
 import Script from 'next/script';
 import { useEffect, useRef, useState } from 'react';
+import { StaticMapImage } from '@/components/ui/static-map';
 
 declare global {
   interface Window {
@@ -116,10 +117,19 @@ export function LocationViewer({ lat, lng, name, height = 280 }: Props) {
       />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div
-          ref={mapRef}
-          className="overflow-hidden rounded-2xl border border-[var(--color-line)]"
+          className="relative overflow-hidden rounded-2xl border border-[var(--color-line)]"
           style={{ height }}
-        />
+        >
+          {/* SSR 정적 지도 poster: 검색 썸네일 후보로 마크업에 항상 존재한다.
+              네이버 JS 지도가 로드되면 불투명 타일이 이 위를 덮고, 실패 시 그대로 fallback. */}
+          <StaticMapImage
+            lat={lat}
+            lng={lng}
+            name={name ?? '위치'}
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+          />
+          <div ref={mapRef} className="relative h-full w-full" />
+        </div>
         <div
           className="relative overflow-hidden rounded-2xl border border-[var(--color-line)]"
           style={{ height }}

@@ -182,6 +182,23 @@ model IngestionRun {
   @@index([status, startedAt(sort: Desc)])
 }
 
+model LoanProduct {
+  seq        Int      @id // API 자연키
+  finprdnm   String // 상품명 (길이 제한 없음 — 한 값 초과가 전체 스냅샷을 막는 위험 회피)
+  ofrinstnm  String? // 제공기관
+  instCtg    String? // 기관구분
+  lnlmt      Int? // 한도(만원)
+  irt        String? // 금리(텍스트, 설명형이라 길이 제한 없음)
+  irtCtg     String? // 금리구분(설명형이라 길이 제한 없음)
+  usageTags  String[] @default([]) // 자금용도 태그
+  targetTags String[] @default([]) // 대상 태그
+  regionTags String[] @default([]) // 시도 태그
+  rawJson    Json // 전체 원본
+  updatedAt  DateTime @default(now())
+
+  @@index([finprdnm])
+}
+
 model EmailSignup {
   id        BigInt   @id @default(autoincrement())
   email     String   @unique @db.VarChar(120)

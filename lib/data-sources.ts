@@ -15,7 +15,8 @@ export type DataSourceId =
   | 'mois-market'
   | 'subway'
   | 'mois-bdong'
-  | 'kakao-local';
+  | 'kakao-local'
+  | 'kinfa-loan';
 
 export type DataSourceCategory =
   | '부동산 거래'
@@ -24,6 +25,7 @@ export type DataSourceCategory =
   | '교육·보육'
   | '생활편의'
   | '교통'
+  | '주거금융'
   | '공통';
 
 export interface DataSource {
@@ -136,12 +138,20 @@ export const DATA_SOURCES: Record<DataSourceId, DataSource> = {
     url: 'https://developers.kakao.com',
     category: '공통',
   },
+  'kinfa-loan': {
+    id: 'kinfa-loan',
+    provider: '서민금융진흥원',
+    dataset: '대출상품한눈에',
+    url: 'https://www.kinfa.or.kr',
+    category: '주거금융',
+  },
 };
 
 /** 중앙 페이지 그룹 렌더 순서 */
 export const DATA_SOURCE_CATEGORY_ORDER: DataSourceCategory[] = [
   '부동산 거래',
   '청약',
+  '주거금융',
   '의료',
   '교육·보육',
   '생활편의',
@@ -180,6 +190,7 @@ const CATEGORY_ICON: Record<DataSourceCategory, string> = {
   '교육·보육': '🏫',
   생활편의: '🏪',
   교통: '🚇',
+  주거금융: '🏦',
   공통: '🗂️',
 };
 
