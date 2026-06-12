@@ -107,3 +107,38 @@ export function regionBlurb(i: RegionBlurbInput): string {
 
   return `${i.fullName}에는 최근 1년 거래가 있는 아파트가 ${i.complexCount.toLocaleString('ko-KR')}개 단지이며, 총 ${i.txCount12m.toLocaleString('ko-KR')}건이 거래됐습니다.${pricePart}${rangePart}${ratioPart}.${topPart}`;
 }
+
+export interface PropertyMetaInput {
+  name: string;
+  typeLabel: string;           // '아파트' | '오피스텔' | '연립·다세대'
+  regionFullName: string;
+  builtYear: number | null;
+  households: number | null;
+  saleAvgPrice12m: number | null;    // 만원
+  jeonseAvgDeposit12m: number | null;
+  txCount12m: number;
+}
+
+/** 매물 상세 메타 description. 가격 없으면 데이터부족 폴백, 있으면 전세가율·준공·세대수 조립. */
+export function propertyMetaDescription(i: PropertyMetaInput): string {
+  const priceParts: string[] = [];
+  if (i.saleAvgPrice12m) priceParts.push(`매매 ${formatBillion(i.saleAvgPrice12m)}`);
+  if (i.jeonseAvgDeposit12m) priceParts.push(`전세 ${formatBillion(i.jeonseAvgDeposit12m)}`);
+
+  if (priceParts.length === 0) {
+    return `${i.name} ${i.typeLabel} 실거래가. ${i.regionFullName} 단지 정보와 매매·전세 시세를 공공데이터로 확인하세요. (최근 1년 신고 거래는 아직 적습니다.)`;
+  }
+
+  const ratio =
+    i.saleAvgPrice12m && i.jeonseAvgDeposit12m
+      ? Math.round((i.jeonseAvgDeposit12m / i.saleAvgPrice12m) * 100)
+      : null;
+  const price = `${priceParts.join('·')}${ratio ? `(전세가율 ${ratio}%)` : ''}`;
+
+  const specParts: string[] = [];
+  if (i.builtYear) specParts.push(`${i.builtYear}년 준공`);
+  if (i.households) specParts.push(`${i.households.toLocaleString('ko-KR')}세대`);
+  const spec = specParts.length ? `${specParts.join(' ')}, ` : '';
+
+  return `${i.name} ${price}. ${spec}${i.regionFullName} 실거래가를 공공데이터로 확인하세요.`;
+}

@@ -28,9 +28,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!/^\d+$/.test(id)) return {};
   const pharmacy = await getPharmacyById(BigInt(id)).catch(() => null);
   if (!pharmacy) return {};
+  const region = pharmacy.sigungu ?? pharmacy.sido;
+  const regionPart = region ? `${region} ` : '';
   return {
     title: `${pharmacy.name} — 약국 정보·주변 아파트`,
-    description: `${pharmacy.name}(${pharmacy.address}) 위치·연락처와 주변 아파트·생활 인프라.`,
+    description: `${pharmacy.name} 위치·연락처와 도보권 아파트 실거래가. ${regionPart}주변 생활 인프라를 한눈에 확인하세요.`,
     alternates: { canonical: `/medical/pharmacy/${pharmacy.sigunguCode}/${id}` },
   };
 }

@@ -28,9 +28,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   const hospital = await getHospitalById(BigInt(id)).catch(() => null);
   if (!hospital) return {};
+  const docs = hospital.totalDoctors ? `, 의사 ${hospital.totalDoctors.toLocaleString('ko-KR')}명` : '';
   return {
     title: `${hospital.name} — ${hospital.typeName} 정보·주변 아파트`,
-    description: `${hospital.name}(${hospital.address}) 진료과·시설·교통 정보와 주변 아파트.`,
+    description: `${hospital.name} ${hospital.typeName}${docs}. 진료·시설·교통 정보와 도보권 아파트 실거래가를 함께 확인하세요.`,
     alternates: { canonical: `/medical/hospital/${hospital.sigunguCode}/${id}` },
   };
 }

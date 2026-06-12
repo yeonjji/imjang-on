@@ -33,9 +33,15 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { sigunguCode, id } = await params;
   const item = await getChildcareById(BigInt(id)).catch(() => null);
   if (!item) return {};
+  const parts: string[] = [];
+  if (item.capacity != null) parts.push(`정원 ${item.capacity.toLocaleString('ko-KR')}명`);
+  if (item.currentCount != null) parts.push(`현원 ${item.currentCount.toLocaleString('ko-KR')}명`);
+  if (item.staffCount != null) parts.push(`교직원 ${item.staffCount.toLocaleString('ko-KR')}명`);
+  const stat = parts.length ? ` ${parts.join('·')}` : '';
+  const type = item.crType ? `(${item.crType})` : '';
   return {
     title: `${item.name} — ${item.crType ?? '어린이집'} 정원 ${item.capacity ?? '-'}`,
-    description: `${item.name}(${item.address}) 보육정보·정원·교직원·주변 아파트 실거래가.`,
+    description: `${item.name}${type}${stat}. 도보권 아파트 실거래가와 보육정보를 한눈에.`,
     alternates: { canonical: `/childcare/${sigunguCode}/${id}` },
   };
 }

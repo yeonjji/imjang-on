@@ -16,10 +16,15 @@ interface Params {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { code } = await params;
   const r = await getSigunguByCode(code);
-  if (!r) return {};
+  if (!r || !r.sigunguCode) return {};
+  const stats = await getRegionStats(r.sigunguCode).catch(() => null);
+  const description =
+    stats && stats.complexCount > 0
+      ? `${r.fullName} 아파트 ${stats.complexCount.toLocaleString('ko-KR')}개 단지·최근 1년 ${stats.txCount12m.toLocaleString('ko-KR')}건 실거래. 매매·전세·월세 시세와 거래 많은 단지를 공공데이터로 확인하세요.`
+      : `${r.fullName} 아파트·오피스텔·연립다세대 매매·전세·월세 실거래가. 거래 많은 단지와 시세 흐름을 공공데이터로 확인하세요.`;
   return {
-    title: `${r.fullName} 아파트 실거래가`,
-    description: `${r.fullName}의 아파트·오피스텔·연립다세대 매매·전세·월세 실거래가.`,
+    title: `${r.fullName} 아파트 실거래가·시세`,
+    description,
     alternates: { canonical: `/region/${r.sigunguCode}` },
   };
 }
