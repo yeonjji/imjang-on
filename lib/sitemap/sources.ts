@@ -214,6 +214,24 @@ const hospital = dbSource({
   }),
 });
 
+const loan = dbSource({
+  key: 'loan',
+  count: () => prisma.loanProduct.count(),
+  findMany: (skip, take) =>
+    prisma.loanProduct.findMany({
+      select: { seq: true, updatedAt: true },
+      orderBy: { seq: 'asc' },
+      skip,
+      take,
+    }),
+  toEntry: (l) => ({
+    url: `${SITE_URL}/finance/${l.seq}`,
+    lastModified: l.updatedAt,
+    changeFrequency: 'monthly',
+    priority: 0.6,
+  }),
+});
+
 /** 샤드 id 부여 순서(고정). 변경 시 기존 인덱스 매핑이 바뀌므로 끝에만 추가할 것. */
 export const SOURCE_ORDER: SitemapSource[] = [
   core,
@@ -223,6 +241,7 @@ export const SOURCE_ORDER: SitemapSource[] = [
   childcare,
   pharmacy,
   hospital,
+  loan,
 ];
 
 export const SOURCE_MAP: Record<string, SitemapSource> = Object.fromEntries(
