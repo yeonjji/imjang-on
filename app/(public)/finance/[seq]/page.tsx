@@ -8,8 +8,14 @@ import { SITE_URL } from '@/lib/site';
 export const revalidate = 86_400;
 
 export async function generateStaticParams() {
-  const seqs = await getAllLoanSeqs();
-  return seqs.map((seq) => ({ seq: String(seq) }));
+  // 빌드 DB에 LoanProduct가 아직 없거나(마이그레이션 미적용) DB 불가 시
+  // 빌드를 깨뜨리지 않고 on-demand 렌더로 폴백한다.
+  try {
+    const seqs = await getAllLoanSeqs();
+    return seqs.map((seq) => ({ seq: String(seq) }));
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata({
