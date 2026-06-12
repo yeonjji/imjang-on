@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getLoanProduct, getAllLoanSeqs, LOAN_SECTIONS, isDisplayable } from '@/lib/loan/detail';
 import { SourceCaption } from '@/components/ui/source-caption';
+import { JsonLd, breadcrumbSchema } from '@/lib/seo/json-ld';
+import { SITE_URL } from '@/lib/site';
 
 export const revalidate = 86_400;
 
@@ -35,6 +37,15 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
 
   return (
     <section className="mx-auto max-w-[820px] px-6 py-12">
+      <JsonLd
+        data={[
+          breadcrumbSchema([
+            { name: '홈', url: `${SITE_URL}/` },
+            { name: '주거금융', url: `${SITE_URL}/finance` },
+            { name: product.finprdnm, url: `${SITE_URL}/finance/${seq}` },
+          ]),
+        ]}
+      />
       <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">주거금융 · 대출상품</p>
       <h1 className="mb-2 text-2xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-3xl">
         {product.finprdnm}
