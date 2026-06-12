@@ -6,7 +6,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: '전국 아파트 실거래가',
-  description: '공공데이터 기반 전국 아파트 매매·전세·월세 실거래가. 단지별 평균가·거래량·최근 거래를 한눈에.',
+  description: '전국 아파트 매매·전세·월세 실거래가를 단지별로. 평균 시세·거래량·최근 거래 흐름을 공공데이터로 매일 업데이트.',
   alternates: { canonical: '/apt' },
 };
 

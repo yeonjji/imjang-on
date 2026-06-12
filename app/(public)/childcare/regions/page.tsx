@@ -5,7 +5,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: '지역별 어린이집',
-  description: '시·도와 시군구별 어린이집 분포를 한눈에.',
+  description: '전국 시·도·시군구별 어린이집 분포를 보고 우리 동네 국공립·민간·가정 어린이집을 찾아보세요.',
   alternates: { canonical: '/childcare/regions' },
 };
 

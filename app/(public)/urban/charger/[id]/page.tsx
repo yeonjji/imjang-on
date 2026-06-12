@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!item) return {};
   return {
     title: `${item.name} — 전기차충전소 정보·주변 아파트`,
-    description: `${item.name}(${item.address}) 전기차충전소 실시간 충전기 현황과 주변 아파트 실거래가.`,
+    description: `${item.name} 전기차충전소 실시간 충전기 현황과 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
     alternates: { canonical: `/urban/charger/${id}` },
   };
 }

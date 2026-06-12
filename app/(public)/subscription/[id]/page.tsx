@@ -31,9 +31,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   const notice = await getSubscriptionById(BigInt(id)).catch(() => null);
   if (!notice) return {};
+  const region = notice.regionName ? `${notice.regionName} ` : '';
+  const supply = notice.totalSupply ? `, ${notice.totalSupply.toLocaleString('ko-KR')}세대 공급` : '';
   return {
     title: `${notice.name} 청약 · ${categoryLabel(notice.category)}`,
-    description: `${notice.regionName ?? ''} ${notice.name} 청약 공고. 접수 일정·주택형별 분양가·주변 시세를 확인하세요.`,
+    description: `${region}${notice.name} 청약${supply}. 접수 일정·주택형별 분양가와 주변 단지 시세를 한눈에 확인하세요.`,
     alternates: { canonical: `/subscription/${notice.id}` },
   };
 }

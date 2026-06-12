@@ -12,7 +12,7 @@ export const revalidate = 86_400;
 
 export const metadata: Metadata = {
   title: '약국 찾기 — 우리 동네 의료시설',
-  description: '지역별 약국 정보를 한눈에.',
+  description: '전국 시·군·구별 약국 위치·연락처를 찾고, 주변 아파트 실거래가까지 함께 확인하세요.',
   alternates: { canonical: '/medical/pharmacy' },
 };
 

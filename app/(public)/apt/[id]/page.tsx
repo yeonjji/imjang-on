@@ -22,11 +22,10 @@ import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
-import { formatBillion } from '@/lib/format';
 import { getNearbySubscriptions } from '@/lib/subscription';
 import { shortSidoFromRegionCode } from '@/lib/region';
 import { NearbySubscriptions } from './_components/nearby-subscriptions';
-import { propertyBlurb, salePriceTrend } from '@/lib/seo/blurb';
+import { propertyBlurb, salePriceTrend, propertyMetaDescription } from '@/lib/seo/blurb';
 import { JsonLd, residenceSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { staticMapUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
@@ -43,8 +42,17 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const property = await getPropertyById(BigInt(id)).catch(() => null);
   if (!property) return {};
   return {
-    title: `${property.name} 실거래가 · ${property.region.fullName}`,
-    description: `${property.name}(${property.builtYear ?? '?'}년 준공). 매매 평균 ${formatBillion(property.saleAvgPrice12m)} · 전세 ${formatBillion(property.jeonseAvgDeposit12m)} · 거래 ${property.txCount12m}건.`,
+    title: `${property.name} 실거래가 · ${property.region.sigungu}`,
+    description: propertyMetaDescription({
+      name: property.name,
+      typeLabel: '아파트',
+      regionFullName: property.region.fullName,
+      builtYear: property.builtYear,
+      households: property.households,
+      saleAvgPrice12m: property.saleAvgPrice12m ? Number(property.saleAvgPrice12m) : null,
+      jeonseAvgDeposit12m: property.jeonseAvgDeposit12m ? Number(property.jeonseAvgDeposit12m) : null,
+      txCount12m: property.txCount12m,
+    }),
     alternates: { canonical: `/apt/${property.id}` },
   };
 }

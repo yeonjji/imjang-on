@@ -12,7 +12,7 @@ export const revalidate = 86_400;
 
 export const metadata: Metadata = {
   title: '병원·의원 찾기 — 우리 동네 의료시설',
-  description: '지역별 병원·의원·종합병원 정보를 한눈에.',
+  description: '전국 시·군·구별 병원·의원·종합병원 진료·위치 정보와 주변 아파트 실거래가를 한눈에.',
   alternates: { canonical: '/medical/hospital' },
 };
 

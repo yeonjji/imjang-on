@@ -38,9 +38,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { sigunguCode, id } = await params;
   const school = await getSchoolById(BigInt(id)).catch(() => null);
   if (!school) return {};
+  const tags = [school.foundType, school.coeduType].filter(Boolean).join('·');
+  const tagPart = tags ? `(${tags})` : '';
+  const regionPart = school.region ? `${school.region} ` : '';
   return {
     title: `${school.name} — ${school.schoolKind ?? '학교'} 정보·주변 아파트`,
-    description: `${school.name}(${school.address}) 학교 정보와 주변 아파트 실거래가.`,
+    description: `${school.name}${tagPart} ${school.schoolKind ?? '학교'} 정보와 도보권 아파트 실거래가. ${regionPart}배정·통학 정보를 공공데이터로 확인하세요.`,
     alternates: { canonical: `/school/${sigunguCode}/${id}` },
   };
 }
