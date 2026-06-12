@@ -6,7 +6,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: '전국 연립·다세대 실거래가',
-  description: '공공데이터 기반 전국 연립주택·다세대주택 매매·전세·월세 실거래가.',
+  description: '전국 연립·다세대 매매·전세·월세 실거래가. 단지별 시세·거래량을 공공데이터로 한눈에.',
   alternates: { canonical: '/villa' },
 };
 

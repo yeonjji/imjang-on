@@ -13,7 +13,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: '전국 아파트·오피스텔·연립다세대 실거래가',
-  description: '공공데이터 기반 전국 부동산 실거래가 통합 정보 플랫폼. 매매·전세·월세를 단지 단위로 한눈에.',
+  description: '아파트·오피스텔·빌라 실거래가부터 청약·학군·생활편의까지. 공공데이터로 보는 전국 부동산 시세를 한 곳에서 확인하세요.',
 };
 
 // Vercel 빌드 환경은 Supabase에 접근하지 못해 정적 프리렌더가 빈 데이터로 구워진다.
