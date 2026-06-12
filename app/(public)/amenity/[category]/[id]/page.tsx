@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!item) return {};
   return {
     title: `${item.name} — ${def.label} 정보·주변 아파트`,
-    description: `${item.name}(${item.address}) ${def.label} 정보와 주변 아파트 실거래가.`,
+    description: `${item.name} ${def.label} 정보와 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
     alternates: { canonical: `/amenity/${def.slug}/${id}` },
   };
 }
