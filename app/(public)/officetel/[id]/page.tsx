@@ -22,7 +22,6 @@ import { PriceCharts } from '../../apt/[id]/_components/price-charts';
 import { AreaComparison } from '../../apt/[id]/_components/area-comparison';
 import { NearbyPriceComparison } from '../../apt/[id]/_components/nearby-price-comparison';
 import { DetailSidebar } from '../../apt/[id]/_components/detail-sidebar';
-import { formatBillion } from '@/lib/format';
 import { propertyBlurb, salePriceTrend, propertyMetaDescription } from '@/lib/seo/blurb';
 import { JsonLd, residenceSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { staticMapUrl } from '@/lib/seo/static-map';

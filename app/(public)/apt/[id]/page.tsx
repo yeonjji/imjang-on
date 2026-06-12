@@ -22,7 +22,6 @@ import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
-import { formatBillion } from '@/lib/format';
 import { getNearbySubscriptions } from '@/lib/subscription';
 import { shortSidoFromRegionCode } from '@/lib/region';
 import { NearbySubscriptions } from './_components/nearby-subscriptions';

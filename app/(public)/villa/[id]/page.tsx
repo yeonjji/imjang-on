@@ -23,7 +23,6 @@ import { AreaComparison } from '../../apt/[id]/_components/area-comparison';
 import { NearbyPriceComparison } from '../../apt/[id]/_components/nearby-price-comparison';
 import { DetailSidebar } from '../../apt/[id]/_components/detail-sidebar';
 import { propertyBlurb, salePriceTrend, propertyMetaDescription } from '@/lib/seo/blurb';
-import { formatBillion } from '@/lib/format';
 import { JsonLd, residenceSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { staticMapUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
@@ -39,7 +38,6 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   const p = await getPropertyById(BigInt(id)).catch(() => null);
   if (!p) return {};
-  const typeLabel = p.propertyType === 'ROW_HOUSE' ? '연립' : '다세대';
   return {
     title: `${p.name} 실거래가 · ${p.region.sigungu}`,
     description: propertyMetaDescription({
