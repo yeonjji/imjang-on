@@ -1,4 +1,5 @@
 // app/(public)/medical/hospital/[sigunguCode]/[id]/_components/hospital-hero.tsx
+import { externalHref } from '@/lib/external-href';
 import type { HospitalWithRelations } from '@/lib/hospital';
 
 interface Props { hospital: HospitalWithRelations; }
@@ -17,7 +18,7 @@ export function HospitalHero({ hospital }: Props) {
           <a href={`tel:${hospital.tel}`} className="hover:underline">📞 {hospital.tel}</a>
         )}
         {hospital.homepage && (
-          <a href={hospital.homepage} target="_blank" rel="noopener noreferrer" className="hover:underline">
+          <a href={externalHref(hospital.homepage)} target="_blank" rel="noopener noreferrer" className="hover:underline">
             🌐 홈페이지
           </a>
         )}

@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, formatMoveInYm } from '@/lib/format';
+import { externalHref } from '@/lib/external-href';
 import type { SubscriptionDetail } from '@/lib/subscription';
 
 export function SubscriptionSidebar({ notice }: { notice: SubscriptionDetail }) {
@@ -51,7 +52,7 @@ export function SubscriptionSidebar({ notice }: { notice: SubscriptionDetail }) 
             {notice.noticeUrl && (
               <li>
                 <a
-                  href={notice.noticeUrl}
+                  href={externalHref(notice.noticeUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block rounded-xl bg-[var(--color-soft)] px-4 py-2.5 text-sm font-semibold text-[var(--color-blue-dark)] transition-colors hover:bg-[var(--color-line)]"
@@ -63,7 +64,7 @@ export function SubscriptionSidebar({ notice }: { notice: SubscriptionDetail }) 
             {notice.homepage && (
               <li>
                 <a
-                  href={notice.homepage}
+                  href={externalHref(notice.homepage)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block rounded-xl bg-[var(--color-soft)] px-4 py-2.5 text-sm font-semibold text-[var(--color-blue-dark)] transition-colors hover:bg-[var(--color-line)]"

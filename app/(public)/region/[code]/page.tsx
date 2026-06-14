@@ -4,6 +4,8 @@ import { getTopPropertiesByVolume, getRegionStats } from '@/lib/property';
 import { PropertyCard } from '../../_components/property-card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { regionBlurb } from '@/lib/seo/blurb';
+import { JsonLd, breadcrumbSchema } from '@/lib/seo/json-ld';
+import { SITE_URL } from '@/lib/site';
 import { PropertyType } from '@prisma/client';
 import type { Metadata } from 'next';
 
@@ -56,6 +58,14 @@ export default async function RegionPage({ params }: Params) {
 
   return (
     <section className="mx-auto max-w-[1180px] px-6 py-16">
+      <JsonLd
+        data={[
+          breadcrumbSchema([
+            { name: '홈', url: `${SITE_URL}/` },
+            { name: region.fullName, url: `${SITE_URL}/region/${region.sigunguCode}` },
+          ]),
+        ]}
+      />
       <p className="text-sm text-[var(--color-muted)]">
         홈 › {region.sido} › {region.sigungu}
       </p>
