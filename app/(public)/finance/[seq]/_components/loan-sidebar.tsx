@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { externalHref } from '@/lib/external-href';
+import { decodeEntities } from '@/lib/loan/detail';
 import type { LoanProduct } from '@prisma/client';
 
 export function LoanSidebar({
@@ -11,10 +12,10 @@ export function LoanSidebar({
 }) {
   // 한도·금리 등 핵심 수치는 본문 '한눈에' 박스에 있으므로, 사이드바는 분류성 정보만.
   const facts: { label: string; value: string }[] = [];
-  if (product.ofrinstnm) facts.push({ label: '제공기관', value: product.ofrinstnm });
-  if (product.instCtg) facts.push({ label: '기관구분', value: product.instCtg });
+  if (product.ofrinstnm) facts.push({ label: '제공기관', value: decodeEntities(product.ofrinstnm) });
+  if (product.instCtg) facts.push({ label: '기관구분', value: decodeEntities(product.instCtg) });
   if (product.targetTags.length > 0)
-    facts.push({ label: '대상', value: product.targetTags.join(', ') });
+    facts.push({ label: '대상', value: decodeEntities(product.targetTags.join(', ')) });
 
   return (
     <div className="sticky top-24 flex flex-col gap-4">

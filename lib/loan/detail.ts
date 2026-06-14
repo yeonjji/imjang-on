@@ -65,10 +65,23 @@ export function isDisplayable(v: unknown): boolean {
   return s !== '' && s !== '-';
 }
 
+// 원본 데이터에 HTML 엔티티가 박혀 있음(예: '원&#40;리&#41;금' = '원(리)금'). 표시 전 디코딩.
+export function decodeEntities(s: string): string {
+  return s
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;|&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&');
+}
+
 // 단위 부착: 순수 숫자형(범위 ~ · 소수 · 콤마 허용)에만 붙인다.
 // 이미 '년'/'개월' 등 단위나 설명("은행별 상이")이 들어간 값은 그대로 둔다.
 export function formatLoanValue(value: unknown, unit?: string): string {
-  const s = String(value).trim();
+  const s = decodeEntities(String(value).trim());
   if (!unit) return s;
   return /^[\d.,~\s]+$/.test(s) ? `${s}${unit}` : s;
 }
