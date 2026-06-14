@@ -26,9 +26,12 @@ export async function generateMetadata({
   const { seq } = await params;
   const product = await getLoanProduct(Number(seq));
   if (!product) return {};
+  const provider = product.ofrinstnm ? `${product.ofrinstnm} ` : '';
+  const limit = product.lnlmt ? ` 한도 ${product.lnlmt.toLocaleString('ko-KR')}만원` : '';
+  const target = product.targetTags.length ? `, ${product.targetTags.slice(0, 2).join('·')} 대상` : '';
   return {
-    title: `${product.finprdnm} — 주거금융`,
-    description: `${product.ofrinstnm ?? ''} 대출상품 ${product.finprdnm}의 한도·금리·자격요건·신청방법.`,
+    title: `${product.finprdnm} 한도·금리 — 주거금융`,
+    description: `${provider}${product.finprdnm}${limit}${target}. 금리·자격요건·신청방법을 한눈에 확인하세요.`,
     alternates: { canonical: `/finance/${seq}` },
   };
 }
