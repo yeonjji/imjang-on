@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { toTags, emptyToNull } from '@/scripts/ingest/loan/normalize';
+import {
+  toTags,
+  emptyToNull,
+  sanitizeYearTermValue,
+  sanitizeRawItem,
+} from '@/scripts/ingest/loan/normalize';
 
 describe('toTags', () => {
   it('콤마 다값을 트림해 태그 배열로 만든다', () => {
@@ -29,5 +34,33 @@ describe('emptyToNull', () => {
     expect(emptyToNull(null)).toBeNull();
     expect(emptyToNull('변동금리')).toBe('변동금리');
     expect(emptyToNull(2000)).toBe('2000');
+  });
+});
+
+describe('sanitizeYearTermValue', () => {
+  it('50년 초과 토큰만 제거하고 정상값은 유지', () => {
+    expect(sanitizeYearTermValue('10, 15, 20, 309, 14, 19, 29')).toBe('10, 15, 20, 14, 19, 29');
+    expect(sanitizeYearTermValue('5')).toBe('5');
+    expect(sanitizeYearTermValue('5~30')).toBe('5~30');
+  });
+  it('단위·설명이 든 텍스트는 보존(정답을 알 수 없음)', () => {
+    expect(sanitizeYearTermValue('5(최대 60개월, 보증기간 이내)')).toBe('5(최대 60개월, 보증기간 이내)');
+    expect(sanitizeYearTermValue('은행별 상이')).toBe('은행별 상이');
+  });
+  it('null·빈값은 그대로', () => {
+    expect(sanitizeYearTermValue(null)).toBeNull();
+  });
+});
+
+describe('sanitizeRawItem', () => {
+  it('연단위 기간 필드만 교정하고 나머지는 그대로 둔다', () => {
+    const out = sanitizeRawItem({
+      maxrdpttrm: '10, 15, 20, 309, 14, 19, 29',
+      maxtotlntrm: '5',
+      finprdnm: '신혼부부전용 구입자금',
+    });
+    expect(out.maxrdpttrm).toBe('10, 15, 20, 14, 19, 29');
+    expect(out.maxtotlntrm).toBe('5');
+    expect(out.finprdnm).toBe('신혼부부전용 구입자금');
   });
 });
