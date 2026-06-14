@@ -31,6 +31,7 @@ export function Nav() {
           <div className="hidden gap-6 text-[15px] font-semibold text-[var(--color-muted)] md:flex md:items-center">
             <Link href="/list">실거래가</Link>
             <Link href="/subscription">청약</Link>
+            <Link href="/finance">금융정보</Link>
             <LifeDropdown onSoon={(topic) => setSoonOpen(topic)} />
           </div>
 
