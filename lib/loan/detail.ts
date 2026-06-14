@@ -78,6 +78,16 @@ export function decodeEntities(s: string): string {
     .replace(/&amp;/g, '&');
 }
 
+// 연 단위 필드에서 비현실적 값(50년 초과 숫자 포함)은 소스 데이터 오류로 보고 숨긴다.
+// 단, 단위/맥락이 있는 텍스트("5(최대 60개월…)")는 판단하지 않고 그대로 둔다(순수 숫자형만 검사).
+export function isPlausibleValue(value: unknown, unit?: string): boolean {
+  if (unit !== '년') return true;
+  const s = String(value).trim();
+  if (!/^[\d.,~\s]+$/.test(s)) return true;
+  const nums = s.match(/\d+(\.\d+)?/g) ?? [];
+  return !nums.some((n) => Number(n) > 50);
+}
+
 // 단위 부착: 순수 숫자형(범위 ~ · 소수 · 콤마 허용)에만 붙인다.
 // 이미 '년'/'개월' 등 단위나 설명("은행별 상이")이 들어간 값은 그대로 둔다.
 export function formatLoanValue(value: unknown, unit?: string): string {
