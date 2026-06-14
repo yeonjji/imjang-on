@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { getLoanProduct, getAllLoanSeqs, LOAN_SECTIONS, isDisplayable, formatLoanValue } from '@/lib/loan/detail';
+import { getLoanProduct, getAllLoanSeqs, LOAN_SECTIONS, isDisplayable, isPlausibleValue, formatLoanValue } from '@/lib/loan/detail';
 import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/json-ld';
@@ -63,7 +63,9 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex min-w-0 flex-col gap-6">
           {LOAN_SECTIONS.map((section) => {
-            const visible = section.fields.filter((f) => isDisplayable(raw[f.key]));
+            const visible = section.fields.filter(
+              (f) => isDisplayable(raw[f.key]) && isPlausibleValue(raw[f.key], f.unit),
+            );
             if (visible.length === 0) return null;
 
             // '한눈에'는 핵심 수치라 색 틴트 메트릭 박스 그리드로(텍스트 단조로움 완화).
