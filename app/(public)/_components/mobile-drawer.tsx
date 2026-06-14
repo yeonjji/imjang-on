@@ -17,6 +17,7 @@ const links = [
   { href: '/', label: '홈' },
   { href: '/list', label: '실거래가' },
   { href: '/subscription', label: '청약' },
+  { href: '/finance', label: '금융정보' },
 ];
 
 export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
