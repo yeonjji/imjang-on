@@ -5,7 +5,7 @@ import {
   parseCommaNumber,
   assertNormalResponse,
 } from '@/scripts/ingest/xml-parse';
-import { toTags, emptyToNull } from './normalize';
+import { toTags, emptyToNull, sanitizeRawItem } from './normalize';
 import type { LoanProductRow } from './types';
 
 // 대출상품 응답(XML 한 페이지) → 행 + totalCount.
@@ -28,7 +28,7 @@ export function parseLoanProducts(xml: string): { rows: LoanProductRow[]; totalC
       usageTags: toTags(it.usge),
       targetTags: toTags(it.trgt),
       regionTags: toTags(it.rsdAreaPamtEqltIstm),
-      rawJson: it,
+      rawJson: sanitizeRawItem(it),
     };
   });
   return { rows, totalCount };
