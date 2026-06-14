@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getLoanProduct, getAllLoanSeqs, LOAN_SECTIONS, isDisplayable } from '@/lib/loan/detail';
 import { SourceCaption } from '@/components/ui/source-caption';
+import { externalHref } from '@/lib/external-href';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { SITE_URL } from '@/lib/site';
 
@@ -92,7 +93,7 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
 
         {isDisplayable(rltsite) && (
           <a
-            href={String(rltsite)}
+            href={externalHref(String(rltsite))}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block text-sm font-semibold text-[var(--color-blue)] hover:underline"

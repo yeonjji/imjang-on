@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge';
+import { externalHref } from '@/lib/external-href';
 import type { School } from '@prisma/client';
 
 export function SchoolHero({ school }: { school: School }) {
@@ -15,7 +16,7 @@ export function SchoolHero({ school }: { school: School }) {
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-muted)]">
           <span>📍 {school.address}</span>
           {school.tel && <span>📞 {school.tel}</span>}
-          {school.homepage && <a href={school.homepage} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--color-blue)]">🔗 홈페이지</a>}
+          {school.homepage && <a href={externalHref(school.homepage)} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--color-blue)]">🔗 홈페이지</a>}
         </div>
       </div>
     </div>

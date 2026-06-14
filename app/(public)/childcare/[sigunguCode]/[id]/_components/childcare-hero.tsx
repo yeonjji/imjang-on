@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge';
+import { externalHref } from '@/lib/external-href';
 import type { Childcare } from '@prisma/client';
 
 export function ChildcareHero({ item }: { item: Childcare }) {
@@ -20,7 +21,7 @@ export function ChildcareHero({ item }: { item: Childcare }) {
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-muted)]">
             <span>📍 {item.address}</span>
             {item.tel && <span>📞 {item.tel}</span>}
-            {item.homepage && <a href={item.homepage} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--color-blue)]">🔗 홈페이지</a>}
+            {item.homepage && <a href={externalHref(item.homepage)} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--color-blue)]">🔗 홈페이지</a>}
           </div>
         </div>
       </div>
