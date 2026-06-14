@@ -8,13 +8,11 @@ import {
   type LoanFilterCriteria,
 } from '@/lib/loan/list';
 import { LoanCard } from './loan-card';
+import { LoanFilterPanel } from './loan-filter-panel';
+import { LoanMobileFilterSheet } from './loan-mobile-filter-sheet';
 
 const EMPTY: LoanFilterCriteria = { usage: [], inst: [], region: [], target: [], query: '', sort: null };
 const FACET_KEYS = ['usage', 'inst', 'region', 'target'] as const;
-type FacetKey = (typeof FACET_KEYS)[number];
-const FACET_LABEL: Record<FacetKey, string> = {
-  usage: '자금용도', inst: '기관', region: '지역', target: '대상',
-};
 
 // URL searchParams ↔ criteria (정적 ISR 유지 위해 useSearchParams 대신 location 사용).
 function readFromUrl(): LoanFilterCriteria {
@@ -51,68 +49,56 @@ export function LoanExplorer({ rows, facets }: { rows: LoanSummary[]; facets: Lo
   }, [criteria]);
 
   const visible = useMemo(() => filterLoans(rows, criteria), [rows, criteria]);
-
-  function toggle(key: FacetKey, value: string) {
-    setCriteria((c) => {
-      const has = c[key].includes(value);
-      return { ...c, [key]: has ? c[key].filter((v) => v !== value) : [...c[key], value] };
-    });
-  }
+  const activeCount =
+    FACET_KEYS.reduce((n, k) => n + criteria[k].length, 0) + (criteria.query ? 1 : 0);
 
   return (
-    <div className="flex flex-col gap-6 md:flex-row">
-      <aside className="md:w-64 md:shrink-0">
-        <input
-          type="search"
-          placeholder="상품명 검색"
-          value={criteria.query}
-          onChange={(e) => setCriteria((c) => ({ ...c, query: e.target.value }))}
-          className="mb-4 w-full rounded-md border border-[var(--color-line)] px-3 py-2 text-sm"
-        />
-        {FACET_KEYS.map((key) => (
-          <fieldset key={key} className="mb-4">
-            <legend className="mb-2 text-sm font-bold text-[var(--color-blue-dark)]">{FACET_LABEL[key]}</legend>
-            <div className="flex max-h-48 flex-col gap-1 overflow-auto">
-              {facets[key].map((f) => (
-                <label key={f.value} className="flex items-center gap-2 text-sm text-[var(--color-text)]">
-                  <input
-                    type="checkbox"
-                    checked={criteria[key].includes(f.value)}
-                    onChange={() => toggle(key, f.value)}
-                  />
-                  <span className="flex-1">{f.value}</span>
-                  <span className="text-xs text-[var(--color-muted)]">{f.count}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        ))}
-      </aside>
+    <>
+      <LoanMobileFilterSheet
+        facets={facets}
+        criteria={criteria}
+        onChange={setCriteria}
+        activeCount={activeCount}
+        resultCount={visible.length}
+      />
 
-      <div className="flex-1">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-sm text-[var(--color-muted)]">{visible.length}개 상품</p>
-          <select
-            value={criteria.sort ?? ''}
-            onChange={(e) =>
-              setCriteria((c) => ({ ...c, sort: (e.target.value || null) as LoanFilterCriteria['sort'] }))
-            }
-            className="rounded-md border border-[var(--color-line)] px-2 py-1 text-sm"
-          >
-            <option value="">정렬</option>
-            <option value="limitDesc">한도 높은순</option>
-            <option value="limitAsc">한도 낮은순</option>
-          </select>
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {visible.map((item) => (
-            <LoanCard key={item.seq} item={item} />
-          ))}
-        </div>
-        {visible.length === 0 && (
-          <p className="py-12 text-center text-sm text-[var(--color-muted)]">조건에 맞는 상품이 없습니다.</p>
-        )}
+      <div className="flex items-start gap-6">
+        <aside className="sticky top-[88px] hidden w-[280px] shrink-0 md:block">
+          <div className="max-h-[calc(100vh-104px)] overflow-y-auto rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
+            <LoanFilterPanel facets={facets} criteria={criteria} onChange={setCriteria} />
+          </div>
+        </aside>
+
+        <main className="min-w-0 flex-1">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <p className="text-sm text-[var(--color-muted)]">{visible.length}개 상품</p>
+            <select
+              aria-label="정렬"
+              value={criteria.sort ?? ''}
+              onChange={(e) =>
+                setCriteria((c) => ({ ...c, sort: (e.target.value || null) as LoanFilterCriteria['sort'] }))
+              }
+              className="rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-blue-dark)] focus:border-[var(--color-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--color-sky-soft)]"
+            >
+              <option value="">정렬</option>
+              <option value="limitDesc">한도 높은순</option>
+              <option value="limitAsc">한도 낮은순</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            {visible.map((item) => (
+              <LoanCard key={item.seq} item={item} />
+            ))}
+          </div>
+
+          {visible.length === 0 && (
+            <p className="py-12 text-center text-sm text-[var(--color-muted)]">
+              조건에 맞는 상품이 없습니다.
+            </p>
+          )}
+        </main>
       </div>
-    </div>
+    </>
   );
 }

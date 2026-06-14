@@ -1,10 +1,12 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getLoanProduct, getAllLoanSeqs, LOAN_SECTIONS, isDisplayable } from '@/lib/loan/detail';
+import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
-import { externalHref } from '@/lib/external-href';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { SITE_URL } from '@/lib/site';
+import { LoanHero } from './_components/loan-hero';
+import { LoanSidebar } from './_components/loan-sidebar';
 
 export const revalidate = 86_400;
 
@@ -43,10 +45,10 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
   if (!product) notFound();
 
   const raw = product.rawJson as Record<string, unknown>;
-  const rltsite = raw.rltsite;
+  const rltsite = isDisplayable(raw.rltsite) ? String(raw.rltsite) : null;
 
   return (
-    <section className="mx-auto max-w-[820px] px-6 py-12">
+    <div className="mx-auto max-w-[1180px] px-6 py-12">
       <JsonLd
         data={[
           breadcrumbSchema([
@@ -56,54 +58,35 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
           ]),
         ]}
       />
-      <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">주거금융 · 대출상품</p>
-      <h1 className="mb-2 text-2xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-3xl">
-        {product.finprdnm}
-      </h1>
-      <p className="mb-4 text-sm text-[var(--color-muted)]">
-        {product.ofrinstnm ?? '—'}
-        {product.instCtg ? ` · ${product.instCtg}` : ''}
-      </p>
-      <div className="mb-8 flex flex-wrap gap-1">
-        {product.usageTags.map((t) => (
-          <span key={t} className="rounded bg-[var(--color-soft)] px-2 py-0.5 text-xs text-[var(--color-muted)]">
-            {t}
-          </span>
-        ))}
+      <LoanHero product={product} />
+
+      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <main className="flex min-w-0 flex-col gap-6">
+          {LOAN_SECTIONS.map((section) => {
+            const visible = section.fields.filter((f) => isDisplayable(raw[f.key]));
+            if (visible.length === 0) return null;
+            return (
+              <Card key={section.title}>
+                <h2 className="mb-3 text-lg font-bold text-[var(--color-blue-dark)]">{section.title}</h2>
+                <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-[160px_1fr]">
+                  {visible.map((f) => (
+                    <div key={f.key} className="contents">
+                      <dt className="text-sm font-semibold text-[var(--color-muted)]">{f.label}</dt>
+                      <dd className="mb-2 text-sm text-[var(--color-text)] sm:mb-0">{String(raw[f.key])}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </Card>
+            );
+          })}
+
+          <SourceCaption ids={['kinfa-loan']} />
+        </main>
+
+        <aside className="min-w-0">
+          <LoanSidebar product={product} rltsite={rltsite} />
+        </aside>
       </div>
-
-      <div className="flex flex-col gap-8">
-        {LOAN_SECTIONS.map((section) => {
-          const visible = section.fields.filter((f) => isDisplayable(raw[f.key]));
-          if (visible.length === 0) return null;
-          return (
-            <div key={section.title}>
-              <h2 className="mb-3 text-lg font-bold text-[var(--color-blue-dark)]">{section.title}</h2>
-              <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-[160px_1fr]">
-                {visible.map((f) => (
-                  <div key={f.key} className="contents">
-                    <dt className="text-sm font-semibold text-[var(--color-muted)]">{f.label}</dt>
-                    <dd className="mb-2 text-sm text-[var(--color-text)] sm:mb-0">{String(raw[f.key])}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          );
-        })}
-
-        {isDisplayable(rltsite) && (
-          <a
-            href={externalHref(String(rltsite))}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block text-sm font-semibold text-[var(--color-blue)] hover:underline"
-          >
-            관련 사이트에서 자세히 보기 →
-          </a>
-        )}
-      </div>
-
-      <SourceCaption ids={['kinfa-loan']} />
-    </section>
+    </div>
   );
 }
