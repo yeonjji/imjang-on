@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 export interface LoanField {
   key: string; // rawJson 키
   label: string;
+  unit?: string; // 맨 숫자형 값에만 붙는 단위(예: '년'). 이미 단위/설명이 박힌 값은 건드리지 않음
 }
 export interface LoanSection {
   title: string;
@@ -17,9 +18,9 @@ export const LOAN_SECTIONS: LoanSection[] = [
       { key: 'lnlmt', label: '대출한도(만원)' },
       { key: 'irt', label: '금리' },
       { key: 'irtCtg', label: '금리구분' },
-      { key: 'maxtotlntrm', label: '최대 총 대출기간' },
-      { key: 'maxdfrmtrm', label: '최대 거치기간' },
-      { key: 'maxrdpttrm', label: '최대 상환기간' },
+      { key: 'maxtotlntrm', label: '최대 총 대출기간', unit: '년' },
+      { key: 'maxdfrmtrm', label: '최대 거치기간', unit: '년' },
+      { key: 'maxrdpttrm', label: '최대 상환기간', unit: '년' },
       { key: 'rdptmthd', label: '상환방식' },
     ],
   },
@@ -62,6 +63,14 @@ export function isDisplayable(v: unknown): boolean {
   if (v == null) return false;
   const s = String(v).trim();
   return s !== '' && s !== '-';
+}
+
+// 단위 부착: 순수 숫자형(범위 ~ · 소수 · 콤마 허용)에만 붙인다.
+// 이미 '년'/'개월' 등 단위나 설명("은행별 상이")이 들어간 값은 그대로 둔다.
+export function formatLoanValue(value: unknown, unit?: string): string {
+  const s = String(value).trim();
+  if (!unit) return s;
+  return /^[\d.,~\s]+$/.test(s) ? `${s}${unit}` : s;
 }
 
 export async function getLoanProduct(seq: number) {
