@@ -1,3 +1,4 @@
+import { decodeEntities } from '@/lib/loan/detail';
 import type { LoanProduct } from '@prisma/client';
 
 export function LoanHero({ product }: { product: LoanProduct }) {
@@ -6,11 +7,11 @@ export function LoanHero({ product }: { product: LoanProduct }) {
       <div className="min-w-0">
         <p className="mb-2 text-xs font-bold text-white/80">주거금융 · 대출상품</p>
         <h1 className="break-keep text-2xl font-black tracking-tight sm:text-3xl">
-          {product.finprdnm}
+          {decodeEntities(product.finprdnm)}
         </h1>
         <p className="mt-2 break-keep text-sm text-white/80">
-          {product.ofrinstnm ?? '—'}
-          {product.instCtg ? ` · ${product.instCtg}` : ''}
+          {product.ofrinstnm ? decodeEntities(product.ofrinstnm) : '—'}
+          {product.instCtg ? ` · ${decodeEntities(product.instCtg)}` : ''}
         </p>
         {product.usageTags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">

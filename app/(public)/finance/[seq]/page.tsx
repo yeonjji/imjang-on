@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { getLoanProduct, getAllLoanSeqs, LOAN_SECTIONS, isDisplayable } from '@/lib/loan/detail';
+import { getLoanProduct, getAllLoanSeqs, LOAN_SECTIONS, isDisplayable, formatLoanValue } from '@/lib/loan/detail';
 import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/json-ld';
@@ -76,7 +76,7 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
                       <div key={f.key} className="rounded-[14px] bg-[var(--color-soft)] px-4 py-3">
                         <span className="mb-1 block text-xs text-[var(--color-muted)]">{f.label}</span>
                         <strong className="block break-keep text-sm font-bold text-[var(--color-blue-dark)]">
-                          {String(raw[f.key])}
+                          {formatLoanValue(raw[f.key], f.unit)}
                         </strong>
                       </div>
                     ))}
@@ -92,7 +92,7 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
                   {visible.map((f) => (
                     <div key={f.key} className="contents">
                       <dt className="text-sm font-semibold text-[var(--color-muted)]">{f.label}</dt>
-                      <dd className="mb-2 text-sm text-[var(--color-text)] sm:mb-0">{String(raw[f.key])}</dd>
+                      <dd className="mb-2 text-sm text-[var(--color-text)] sm:mb-0">{formatLoanValue(raw[f.key], f.unit)}</dd>
                     </div>
                   ))}
                 </dl>
