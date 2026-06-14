@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { getLoanSummaries, collectFacets } from '@/lib/loan/list';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { LoanExplorer } from './_components/loan-explorer';
@@ -16,18 +17,28 @@ export default async function FinancePage() {
   const facets = collectFacets(rows);
 
   return (
-    <section className="mx-auto max-w-[1180px] px-6 py-12">
-      <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">주거금융</p>
-      <h1 className="mb-3 text-3xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-4xl">
-        서민금융 대출상품
-      </h1>
-      <p className="mb-8 text-sm text-[var(--color-muted)]">
-        서민금융진흥원이 모은 정부·정책·지자체·민간 대출상품입니다. 자금용도·대상·지역으로 좁혀 보세요.
-      </p>
+    <div className="mx-auto max-w-[1180px] px-6 py-8">
+      <nav className="mb-6 flex items-center gap-2 text-sm text-[var(--color-muted)]">
+        <Link href="/">홈</Link>
+        <span>›</span>
+        <span className="font-semibold text-[var(--color-blue-dark)]">대출상품</span>
+      </nav>
+
+      <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
+        <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">주거금융</p>
+        <h1 className="text-3xl font-black tracking-tight text-[var(--color-blue-dark)]">
+          서민금융 대출상품
+        </h1>
+        <p className="mt-2 break-keep text-sm text-[var(--color-muted)]">
+          서민금융진흥원이 모은 정부·정책·지자체·민간 대출상품입니다. 자금용도·대상·지역으로 좁혀 보세요.
+        </p>
+      </div>
 
       <LoanExplorer rows={rows} facets={facets} />
 
-      <SourceCaption ids={['kinfa-loan']} />
-    </section>
+      <div className="mt-6">
+        <SourceCaption ids={['kinfa-loan']} />
+      </div>
+    </div>
   );
 }

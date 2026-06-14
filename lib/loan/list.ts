@@ -1,4 +1,13 @@
 import { prisma } from '@/lib/db';
+import {
+  USAGE_CATEGORIES,
+  INST_CATEGORIES,
+  TARGET_CATEGORIES,
+  usageSlugs,
+  instSlug,
+  targetSlugs,
+  type CategoryDef,
+} from './categories';
 
 export interface LoanSummary {
   seq: number;
@@ -16,17 +25,24 @@ export interface FacetCount {
   value: string;
   count: number;
 }
-export interface LoanFacets {
-  usage: FacetCount[];
-  inst: FacetCount[];
-  region: FacetCount[];
-  target: FacetCount[];
+/** 우리 카테고리 facet(탭용): 슬러그·라벨·상품수 */
+export interface CategoryFacet {
+  slug: string;
+  label: string;
+  count: number;
 }
+export interface LoanFacets {
+  usage: CategoryFacet[];
+  inst: CategoryFacet[];
+  target: CategoryFacet[];
+  region: FacetCount[]; // 지역은 시도 셀렉트(원본값 유지)
+}
+/** 탭은 차원별 단일선택(전체=null), 차원 간 AND. 지역은 시도 단일값. */
 export interface LoanFilterCriteria {
-  usage: string[];
-  inst: string[];
-  region: string[];
-  target: string[];
+  usage: string | null; // 카테고리 슬러그
+  inst: string | null;
+  target: string | null;
+  region: string | null; // 시도값
   query: string;
   sort: 'limitDesc' | 'limitAsc' | null;
 }
@@ -39,28 +55,39 @@ function countTags(rows: LoanSummary[], pick: (r: LoanSummary) => string[]): Fac
   );
 }
 
-export function collectFacets(rows: LoanSummary[]): LoanFacets {
-  return {
-    usage: countTags(rows, (r) => r.usageTags),
-    target: countTags(rows, (r) => r.targetTags),
-    region: countTags(rows, (r) => r.regionTags),
-    inst: countTags(rows, (r) => (r.instCtg ? [r.instCtg] : [])),
-  };
+// 카테고리 def 순서를 유지하되 상품수 0인 카테고리는 제외.
+function categoryFacet(
+  rows: LoanSummary[],
+  defs: CategoryDef[],
+  slugsOf: (r: LoanSummary) => string[],
+): CategoryFacet[] {
+  const m = new Map<string, number>();
+  for (const r of rows) for (const s of slugsOf(r)) m.set(s, (m.get(s) ?? 0) + 1);
+  return defs
+    .filter((d) => m.has(d.slug))
+    .map((d) => ({ slug: d.slug, label: d.label, count: m.get(d.slug)! }));
 }
 
-// 같은 패세트 내 OR, 패세트 간 AND.
-function matchesAny(selected: string[], values: string[]): boolean {
-  return selected.length === 0 || selected.some((s) => values.includes(s));
+export function collectFacets(rows: LoanSummary[]): LoanFacets {
+  return {
+    usage: categoryFacet(rows, USAGE_CATEGORIES, (r) => usageSlugs(r.usageTags)),
+    inst: categoryFacet(rows, INST_CATEGORIES, (r) => {
+      const s = instSlug(r.instCtg);
+      return s ? [s] : [];
+    }),
+    target: categoryFacet(rows, TARGET_CATEGORIES, (r) => targetSlugs(r.targetTags)),
+    region: countTags(rows, (r) => r.regionTags),
+  };
 }
 
 export function filterLoans(rows: LoanSummary[], c: LoanFilterCriteria): LoanSummary[] {
   const q = c.query.trim().toLowerCase();
   const filtered = rows.filter(
     (r) =>
-      matchesAny(c.usage, r.usageTags) &&
-      matchesAny(c.target, r.targetTags) &&
-      matchesAny(c.region, r.regionTags) &&
-      matchesAny(c.inst, r.instCtg ? [r.instCtg] : []) &&
+      (c.usage === null || usageSlugs(r.usageTags).includes(c.usage)) &&
+      (c.inst === null || instSlug(r.instCtg) === c.inst) &&
+      (c.target === null || targetSlugs(r.targetTags).includes(c.target)) &&
+      (c.region === null || r.regionTags.includes(c.region)) &&
       (q === '' || r.finprdnm.toLowerCase().includes(q)),
   );
   if (c.sort === 'limitDesc' || c.sort === 'limitAsc') {
