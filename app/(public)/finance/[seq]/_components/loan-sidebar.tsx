@@ -9,14 +9,12 @@ export function LoanSidebar({
   product: LoanProduct;
   rltsite: string | null;
 }) {
+  // 한도·금리 등 핵심 수치는 본문 '한눈에' 박스에 있으므로, 사이드바는 분류성 정보만.
   const facts: { label: string; value: string }[] = [];
-  if (product.lnlmt != null)
-    facts.push({ label: '대출한도', value: `${product.lnlmt.toLocaleString('ko-KR')}만원` });
-  if (product.irt) facts.push({ label: '금리', value: product.irt });
-  if (product.irtCtg) facts.push({ label: '금리구분', value: product.irtCtg });
+  if (product.ofrinstnm) facts.push({ label: '제공기관', value: product.ofrinstnm });
+  if (product.instCtg) facts.push({ label: '기관구분', value: product.instCtg });
   if (product.targetTags.length > 0)
     facts.push({ label: '대상', value: product.targetTags.join(', ') });
-  if (product.ofrinstnm) facts.push({ label: '제공기관', value: product.ofrinstnm });
 
   return (
     <div className="sticky top-24 flex flex-col gap-4">

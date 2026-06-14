@@ -65,6 +65,26 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
           {LOAN_SECTIONS.map((section) => {
             const visible = section.fields.filter((f) => isDisplayable(raw[f.key]));
             if (visible.length === 0) return null;
+
+            // '한눈에'는 핵심 수치라 색 틴트 메트릭 박스 그리드로(텍스트 단조로움 완화).
+            if (section.title === '한눈에') {
+              return (
+                <Card key={section.title}>
+                  <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">{section.title}</h2>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {visible.map((f) => (
+                      <div key={f.key} className="rounded-[14px] bg-[var(--color-soft)] px-4 py-3">
+                        <span className="mb-1 block text-xs text-[var(--color-muted)]">{f.label}</span>
+                        <strong className="block break-keep text-sm font-bold text-[var(--color-blue-dark)]">
+                          {String(raw[f.key])}
+                        </strong>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              );
+            }
+
             return (
               <Card key={section.title}>
                 <h2 className="mb-3 text-lg font-bold text-[var(--color-blue-dark)]">{section.title}</h2>
