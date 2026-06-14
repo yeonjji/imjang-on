@@ -29,9 +29,15 @@ export const revalidate = 86_400;
 
 interface Params { params: Promise<{ sigunguCode: string; id: string }>; }
 
+/** 숫자가 아닌 id(크롤러의 변형 URL 등)는 BigInt 변환에서 throw → 500. null로 흡수한다. */
+function parseId(id: string): bigint | null {
+  try { return BigInt(id); } catch { return null; }
+}
+
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { sigunguCode, id } = await params;
-  const item = await getChildcareById(BigInt(id)).catch(() => null);
+  const itemId = parseId(id);
+  const item = itemId == null ? null : await getChildcareById(itemId).catch(() => null);
   if (!item) return {};
   const parts: string[] = [];
   if (item.capacity != null) parts.push(`정원 ${item.capacity.toLocaleString('ko-KR')}명`);
@@ -48,7 +54,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function ChildcareDetailPage({ params }: Params) {
   const { sigunguCode, id } = await params;
-  const itemId = BigInt(id);
+  const itemId = parseId(id);
+  if (itemId == null) notFound();
   const [item, region] = await Promise.all([
     getChildcareById(itemId),
     getSigunguByCode(sigunguCode),
