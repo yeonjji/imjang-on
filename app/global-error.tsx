@@ -43,6 +43,9 @@ export default function GlobalError({
           actions={
             <>
               <Button onClick={reset}>다시 시도</Button>
+              {/* global-error replaces the root layout; use a hard navigation rather than next/link
+                  so we recover even if the router/React tree is in a bad state. */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
               <a
                 href="/"
                 className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[var(--color-line)] bg-white px-5 py-2.5 text-sm font-bold text-[var(--color-blue-dark)] transition hover:bg-[var(--color-soft)]"
