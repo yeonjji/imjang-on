@@ -102,6 +102,7 @@ export function articleSchema(input: {
   url: string;
   datePublished: string; // YYYY-MM-DD
   description: string;
+  image?: string;
 }): Json {
   return {
     ...ctx,
@@ -110,6 +111,7 @@ export function articleSchema(input: {
     description: input.description,
     url: input.url,
     datePublished: input.datePublished,
+    image: input.image,
     publisher: { '@type': 'Organization', name: '임장온', url: SITE_URL },
   };
 }

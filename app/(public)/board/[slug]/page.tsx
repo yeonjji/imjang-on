@@ -39,6 +39,7 @@ export default async function BoardDetailPage({ params }: Params) {
             url: `${SITE_URL}/board/${post.slug}`,
             datePublished: post.publishedAt.toISOString().slice(0, 10),
             description: post.summary,
+            image: `${SITE_URL}/board/${post.slug}/thumbnail`,
           }),
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
@@ -56,6 +57,14 @@ export default async function BoardDetailPage({ params }: Params) {
       <p className="mt-2 text-sm text-[var(--color-muted)]">
         기준일 {post.sourceDate.toISOString().slice(0, 10)}
       </p>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/board/${post.slug}/thumbnail`}
+        alt={post.title}
+        width={1200}
+        height={630}
+        className="mb-6 mt-6 aspect-[1200/630] w-full rounded-[18px] border border-[var(--color-line)] object-cover"
+      />
 
       <div className="board-prose mt-8 text-[15px] leading-relaxed text-[var(--color-text)]">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.body}</ReactMarkdown>

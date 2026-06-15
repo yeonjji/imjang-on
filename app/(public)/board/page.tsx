@@ -83,6 +83,15 @@ export default async function BoardListPage({ searchParams }: Props) {
               href={`/board/${p.slug}`}
               className="block rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-blue)]"
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/board/${p.slug}/thumbnail`}
+                alt=""
+                width={1200}
+                height={630}
+                loading="lazy"
+                className="mb-3 aspect-[1200/630] w-full rounded-[14px] border border-[var(--color-line)] object-cover"
+              />
               <span className="inline-block rounded-full bg-[var(--color-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">
                 {categoryLabel(p.category)}
               </span>
