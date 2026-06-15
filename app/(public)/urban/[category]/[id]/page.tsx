@@ -33,6 +33,7 @@ interface Params { params: Promise<{ category: string; id: string }>; }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { category, id } = await params;
+  if (!/^\d+$/.test(id)) return {};
   const def = getUrbanCategoryDef(category);
   if (!def) return {};
   const item = await getUrbanById(def.slug, BigInt(id)).catch(() => null);
@@ -46,6 +47,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function UrbanDetailPage({ params }: Params) {
   const { category, id } = await params;
+  if (!/^\d+$/.test(id)) notFound();
   const def = getUrbanCategoryDef(category);
   if (!def) notFound();
 

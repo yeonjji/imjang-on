@@ -9,7 +9,7 @@ export const alt = '청약 공고';
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const notice = await getSubscriptionById(BigInt(id)).catch(() => null);
+  const notice = /^\d+$/.test(id) ? await getSubscriptionById(BigInt(id)).catch(() => null) : null;
   const title = notice?.name ?? '청약 공고';
   const subtitle = notice?.regionName ?? '공공데이터 부동산';
   return new ImageResponse(<OgFrame title={title} subtitle={subtitle} />, {

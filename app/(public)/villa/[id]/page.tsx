@@ -36,6 +36,7 @@ interface Params {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
+  if (!/^\d+$/.test(id)) return {};
   const p = await getPropertyById(BigInt(id)).catch(() => null);
   if (!p) return {};
   return {
@@ -56,6 +57,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function VillaDetailPage({ params }: Params) {
   const { id } = await params;
+  if (!/^\d+$/.test(id)) notFound();
   const propId = BigInt(id);
   const property = await getPropertyById(propId);
   if (

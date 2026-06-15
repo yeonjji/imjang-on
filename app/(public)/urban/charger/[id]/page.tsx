@@ -38,6 +38,7 @@ interface Params { params: Promise<{ id: string }> }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
+  if (!/^\d+$/.test(id)) return {};
   const item = await getUrbanById('charger', BigInt(id)).catch(() => null);
   if (!item) return {};
   return {
@@ -49,6 +50,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function ChargerDetailPage({ params }: Params) {
   const { id } = await params;
+  if (!/^\d+$/.test(id)) notFound();
   const itemId = BigInt(id);
 
   const rawItem = await getUrbanById('charger', itemId);

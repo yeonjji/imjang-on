@@ -36,6 +36,7 @@ async function getSchoolLatLng(id: bigint): Promise<{ lat: number; lng: number }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { sigunguCode, id } = await params;
+  if (!/^\d+$/.test(id)) return {};
   const school = await getSchoolById(BigInt(id)).catch(() => null);
   if (!school) return {};
   const tags = [school.foundType, school.coeduType].filter(Boolean).join('·');
@@ -50,6 +51,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function SchoolDetailPage({ params }: Params) {
   const { sigunguCode, id } = await params;
+  if (!/^\d+$/.test(id)) notFound();
   const schoolId = BigInt(id);
   const [school, region] = await Promise.all([
     getSchoolById(schoolId),
