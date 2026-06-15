@@ -749,3 +749,53 @@ model SubwayStation {
   sourceKey   String                                @unique @db.VarChar(80)
   updatedAt   DateTime                              @updatedAt
 }
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  REJECTED
+}
+
+enum PostType {
+  PROGRAM
+  TREND
+}
+
+enum PostCategory {
+  FINANCE
+  LOAN
+  ECONOMY
+  SUBSCRIPTION
+  REALESTATE
+}
+
+model Post {
+  id       BigInt       @id @default(autoincrement())
+  slug     String       @unique @db.VarChar(200)
+  title    String       @db.VarChar(200)
+  summary  String       @db.Text
+  body     String       @db.Text
+  type     PostType
+  category PostCategory
+  status   PostStatus   @default(DRAFT)
+
+  // 근거(출처) — 모든 글에 필수
+  sourceName    String   @db.VarChar(120)
+  sourceUrl     String   @db.VarChar(500)
+  sourceDate    DateTime @db.Date
+  sourceExcerpt String   @db.Text
+
+  // 중복 방지
+  dedupeKey String @unique @db.VarChar(120)
+
+  // 운영 메타
+  detectedFrom String?   @db.VarChar(200)
+  generatedAt  DateTime  @default(now())
+  publishedAt  DateTime?
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([status, publishedAt(sort: Desc)])
+  @@index([category, status])
+}
