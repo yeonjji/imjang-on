@@ -26,6 +26,7 @@ export const STATIC_ENTRIES: MetadataRoute.Sitemap = [
   { url: `${SITE_URL}/urban/parking?sido=${encodeURIComponent('서울')}`, changeFrequency: 'weekly', priority: 0.6 },
   { url: `${SITE_URL}/subscription`, changeFrequency: 'daily', priority: 0.9 },
   { url: `${SITE_URL}/finance`, changeFrequency: 'monthly', priority: 0.8 },
+  { url: `${SITE_URL}/board`, changeFrequency: 'daily', priority: 0.8 },
   { url: `${SITE_URL}/about`, changeFrequency: 'monthly', priority: 0.3 },
   { url: `${SITE_URL}/data-source`, changeFrequency: 'monthly', priority: 0.3 },
   { url: `${SITE_URL}/terms`, changeFrequency: 'monthly', priority: 0.3 },
