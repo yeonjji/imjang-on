@@ -39,6 +39,7 @@ interface Params {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
+  if (!/^\d+$/.test(id)) return {};
   const property = await getPropertyById(BigInt(id)).catch(() => null);
   if (!property) return {};
   return {
@@ -59,6 +60,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function AptDetailPage({ params }: Params) {
   const { id } = await params;
+  if (!/^\d+$/.test(id)) notFound();
   const propId = BigInt(id);
   const property = await getPropertyById(propId);
   if (!property || property.propertyType !== PropertyType.APARTMENT) notFound();

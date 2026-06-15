@@ -13,7 +13,7 @@ export default async function Image({
   params: Promise<{ sigunguCode: string; id: string }>;
 }) {
   const { id } = await params;
-  const school = await getSchoolById(BigInt(id)).catch(() => null);
+  const school = /^\d+$/.test(id) ? await getSchoolById(BigInt(id)).catch(() => null) : null;
   const title = school?.name ?? '학교 정보';
   const subtitle = school ? `${school.schoolKind ?? '학교'} · 주변 아파트 실거래가` : '주변 아파트 실거래가';
   return new ImageResponse(<OgFrame title={title} subtitle={subtitle} />, {

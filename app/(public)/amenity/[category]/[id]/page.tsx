@@ -28,6 +28,7 @@ interface Params { params: Promise<{ category: string; id: string }>; }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { category, id } = await params;
+  if (!/^\d+$/.test(id)) return {};
   const def = getCategoryDef(category);
   if (!def) return {};
   const item = await getAmenityById(def.slug, BigInt(id)).catch(() => null);
@@ -41,6 +42,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function AmenityDetailPage({ params }: Params) {
   const { category, id } = await params;
+  if (!/^\d+$/.test(id)) notFound();
   const def = getCategoryDef(category);
   if (!def) notFound();
 

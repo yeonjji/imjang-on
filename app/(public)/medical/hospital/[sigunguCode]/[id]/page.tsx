@@ -26,6 +26,7 @@ interface Params { params: Promise<{ sigunguCode: string; id: string }>; }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
+  if (!/^\d+$/.test(id)) return {};
   const hospital = await getHospitalById(BigInt(id)).catch(() => null);
   if (!hospital) return {};
   const docs = hospital.totalDoctors ? `, 의사 ${hospital.totalDoctors.toLocaleString('ko-KR')}명` : '';

@@ -29,6 +29,7 @@ interface Params {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
+  if (!/^\d+$/.test(id)) return {};
   const notice = await getSubscriptionById(BigInt(id)).catch(() => null);
   if (!notice) return {};
   const region = notice.regionName ? `${notice.regionName} ` : '';
@@ -42,6 +43,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function SubscriptionDetailPage({ params }: Params) {
   const { id } = await params;
+  if (!/^\d+$/.test(id)) notFound();
   const noticeId = BigInt(id);
   const notice = await getSubscriptionById(noticeId);
   if (!notice) notFound();
