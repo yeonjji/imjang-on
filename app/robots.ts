@@ -6,12 +6,12 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/apt/', '/officetel/', '/villa/', '/region/'],
+        allow: ['/', '/apt/', '/officetel/', '/villa/', '/region/', '/board/'],
         disallow: ['/list', '/api/', '/admin'],
       },
       {
         userAgent: 'Yeti',
-        allow: ['/', '/apt/', '/officetel/', '/villa/', '/region/'],
+        allow: ['/', '/apt/', '/officetel/', '/villa/', '/region/', '/board/'],
         disallow: ['/list', '/api/', '/admin'],
       },
     ],
