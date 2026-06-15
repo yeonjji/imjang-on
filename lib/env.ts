@@ -13,6 +13,10 @@ const schema = z.object({
   KAKAO_JS_KEY: z.string().optional(),
   NEXT_PUBLIC_NAVER_MAP_CLIENT_ID: z.string().optional(),
   NAVER_MAP_CLIENT_SECRET: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_MODEL: z.string().default('gpt-4.1-mini'),
+  NAVER_SEARCH_CLIENT_ID: z.string().optional(),
+  NAVER_SEARCH_CLIENT_SECRET: z.string().optional(),
 
   REVALIDATE_TOKEN: z.string().optional(),
 
