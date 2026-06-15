@@ -5,6 +5,12 @@ const nextConfig = {
   reactStrictMode: true,
   // typedRoutes: 모든 라우트 파일이 생성된 후 Phase 1D 후반에 재활성화 (현재는 미존재 라우트로 인한 typecheck 오류 회피)
   typedRoutes: false,
+  // 동적 OG 이미지 라우트(서버리스 함수)에 Pretendard 폰트를 번들로 포함.
+  // 미포함 시 loadOgFonts의 process.cwd() readFile이 런타임에 ENOENT → 500.
+  // (파라미터 없는 루트 /opengraph-image는 정적 생성되어 영향 없었음)
+  outputFileTracingIncludes: {
+    '**/opengraph-image': ['./lib/seo/fonts/Pretendard-Bold.otf'],
+  },
   images: {
     remotePatterns: [],
   },
