@@ -97,6 +97,23 @@ export function placeSchema(input: PlaceInput & { type: PlaceType }): Json {
   };
 }
 
+export function articleSchema(input: {
+  headline: string;
+  url: string;
+  datePublished: string; // YYYY-MM-DD
+  description: string;
+}): Json {
+  return {
+    ...ctx,
+    '@type': 'NewsArticle',
+    headline: input.headline,
+    description: input.description,
+    url: input.url,
+    datePublished: input.datePublished,
+    publisher: { '@type': 'Organization', name: '임장온', url: SITE_URL },
+  };
+}
+
 /** JSON-LD를 <script>로 렌더한다. 페이지/레이아웃에서 직접 사용. */
 export function JsonLd({ data }: { data: Json | Json[] }) {
   return (
