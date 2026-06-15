@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect } from 'react';
-import { ErrorState } from '@/components/error-state';
+import { ErrorState, ERROR_QUICK_LINKS } from '@/components/error-state';
 import { Button } from '@/components/ui/button';
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
@@ -43,6 +43,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
           </Link>
         </>
       }
+      links={ERROR_QUICK_LINKS}
     />
   );
 }
