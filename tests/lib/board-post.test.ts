@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { prisma } from '@/lib/db';
 import { assertLocalDatabase } from '../_helpers/assert-local-db';
-import { listPublishedPosts, getPublishedPostBySlug, PAGE_SIZE } from '@/lib/board/post';
+import { listPublishedPosts, getPublishedPostBySlug, normalizeSlug, PAGE_SIZE } from '@/lib/board/post';
 import type { Prisma } from '@prisma/client';
 
 assertLocalDatabase();
@@ -60,4 +60,25 @@ describe('getPublishedPostBySlug', () => {
     expect(await getPublishedPostBySlug(`${MARK}hidden`)).toBeNull();
   });
 });
+describe('normalizeSlug', () => {
+  it('퍼센트 인코딩된 한글을 디코드·NFC 정규화한다', () => {
+    const korean = '2026-06-15-디딤돌대출'.normalize('NFC');
+    expect(normalizeSlug(encodeURIComponent(korean))).toBe(korean);
+  });
+  it('이미 디코드된 ASCII는 그대로', () => {
+    expect(normalizeSlug('2026-06-15-loan')).toBe('2026-06-15-loan');
+  });
+});
+
+describe('getPublishedPostBySlug 한글 slug (라우트 인코딩 회귀)', () => {
+  it('인코딩된 slug로도 NFC 저장 글을 찾는다', async () => {
+    const korean = `${MARK}한글제목`.normalize('NFC');
+    await prisma.post.create({ data: postData({ slug: korean, dedupeKey: `${MARK}ko` }) });
+    // Next 프로덕션 라우트가 넘기는 형태(퍼센트 인코딩)로 조회
+    const post = await getPublishedPostBySlug(encodeURIComponent(korean));
+    expect(post).not.toBeNull();
+    expect(post!.slug).toBe(korean);
+  });
+});
+
 describe('PAGE_SIZE', () => { it('양의 정수다', () => { expect(PAGE_SIZE).toBeGreaterThan(0); }); });
