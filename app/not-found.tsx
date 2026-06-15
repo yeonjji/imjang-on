@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ErrorState } from '@/components/error-state';
+import { ErrorState, ERROR_QUICK_LINKS } from '@/components/error-state';
 
 export default function NotFound() {
   return (
@@ -23,21 +23,14 @@ export default function NotFound() {
         </svg>
       }
       actions={
-        <>
-          <Link
-            href="/"
-            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--color-blue)] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[var(--color-blue-dark)]"
-          >
-            홈으로
-          </Link>
-          <Link
-            href="/region"
-            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[var(--color-line)] bg-white px-5 py-2.5 text-sm font-bold text-[var(--color-blue-dark)] transition hover:bg-[var(--color-soft)]"
-          >
-            지역 둘러보기
-          </Link>
-        </>
+        <Link
+          href="/"
+          className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--color-blue)] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[var(--color-blue-dark)]"
+        >
+          홈으로
+        </Link>
       }
+      links={ERROR_QUICK_LINKS}
     />
   );
 }
