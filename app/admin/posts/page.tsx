@@ -21,10 +21,23 @@ export default async function AdminPostsPage({ searchParams }: Props) {
   const sp = await searchParams;
   const status: PostStatus = isStatus(sp.status) ? sp.status : 'DRAFT';
   const rows = await listPostsByStatus(status);
+  const previewToken = process.env.BOARD_PREVIEW_TOKEN;
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
-      <h1 className="text-2xl font-bold text-[var(--color-blue-dark)]">게시글 관리</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold text-[var(--color-blue-dark)]">게시글 관리</h1>
+        {previewToken && (
+          <a
+            href={`/board?preview=${previewToken}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full border border-[var(--color-line)] px-3 py-1.5 text-sm font-semibold text-[var(--color-blue)] hover:border-[var(--color-blue)]"
+          >
+            게시판 미리보기 ↗
+          </a>
+        )}
+      </div>
 
       <div className="mt-5 flex gap-2">
         {TABS.map((t) => (
@@ -56,6 +69,16 @@ export default async function AdminPostsPage({ searchParams }: Props) {
                   <Link href={`/admin/posts/${r.id}`} className="font-semibold text-[var(--color-blue)] underline">
                     {r.title}
                   </Link>
+                  {previewToken && r.status === 'PUBLISHED' && (
+                    <a
+                      href={`/board/${r.slug}?preview=${previewToken}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-2 text-xs text-[var(--color-muted)] underline"
+                    >
+                      ↗ 미리보기
+                    </a>
+                  )}
                 </td>
                 <td>{typeLabel(r.type)}</td>
                 <td>{categoryLabel(r.category)}</td>

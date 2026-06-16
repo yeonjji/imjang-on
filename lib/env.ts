@@ -27,6 +27,7 @@ const schema = z.object({
 
   ADMIN_USER: z.string().optional(),
   ADMIN_PASSWORD: z.string().optional(),
+  BOARD_PREVIEW_TOKEN: z.string().optional(),
 
   VERCEL_ENV: z.enum(['production', 'preview', 'development']).optional(),
   NODE_ENV: z.enum(['production', 'development', 'test']).default('development'),
