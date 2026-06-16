@@ -1,4 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+// post 소스는 게시판 공개(NEXT_PUBLIC_BOARD_ENABLED=true)일 때만 SOURCE_MAP에 포함된다.
+// sources 모듈 로드 전에 플래그를 켜 공개 상태의 사이트맵 동작을 검증한다.
+vi.hoisted(() => {
+  process.env.NEXT_PUBLIC_BOARD_ENABLED = 'true';
+});
 import { prisma } from '@/lib/db';
 import { assertLocalDatabase } from '../_helpers/assert-local-db';
 import { SOURCE_MAP } from '@/lib/sitemap/sources';
