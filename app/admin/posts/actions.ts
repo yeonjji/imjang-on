@@ -35,9 +35,11 @@ export async function savePostAction(fd: FormData) {
 export async function publishPostAction(fd: FormData) {
   const id = parseId(fd);
   await updatePostRow(id, readFields(fd));
-  const { slug } = await publishPostRow(id);
+  await publishPostRow(id);
   revalidatePath('/board');
-  revalidatePath(`/board/${slug}`);
+  // 한글 slug 경로를 직접 넘기면 revalidate가 헤더(ByteString)에 한글을 실어 500.
+  // 동적 라우트 패턴으로 게시글 상세 전체를 revalidate한다.
+  revalidatePath('/board/[slug]', 'page');
   revalidatePath('/admin/posts');
   redirect('/admin/posts');
 }
