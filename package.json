@@ -30,6 +30,7 @@
     "ingest:run": "dotenv -e .env.local -- tsx scripts/ingest/transactions/runner.ts",
     "ingest:subscriptions": "dotenv -e .env.local -- tsx scripts/ingest/subscriptions/runner.ts",
     "ingest:loan": "dotenv -e .env.local -- tsx scripts/ingest/loan/runner.ts",
+    "ingest:board": "dotenv -e .env.local -- tsx scripts/ingest/posts/runner.ts",
     "ingest:subway": "dotenv -e .env.local -- tsx scripts/ingest-subway.ts",
     "dashboard:refresh": "dotenv -e .env.local -- tsx scripts/dashboard/refresh-snapshot.ts"
   },
