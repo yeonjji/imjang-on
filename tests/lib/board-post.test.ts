@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { prisma } from '@/lib/db';
 import { assertLocalDatabase } from '../_helpers/assert-local-db';
 import { listPublishedPosts, getPublishedPostBySlug, normalizeSlug, PAGE_SIZE, getBoardCategoryCounts, getBoardSourceOrgs } from '@/lib/board/post';
+import { BOARD_CATEGORIES } from '@/lib/board/labels';
 import type { Prisma } from '@prisma/client';
 
 assertLocalDatabase();
@@ -86,7 +87,7 @@ describe('PAGE_SIZE', () => { it('양의 정수다', () => { expect(PAGE_SIZE).t
 describe('getBoardCategoryCounts', () => {
   it('모든 카테고리 키를 0 이상의 숫자로 반환한다', async () => {
     const counts = await getBoardCategoryCounts();
-    for (const key of ['FINANCE', 'LOAN', 'ECONOMY', 'SUBSCRIPTION', 'REALESTATE'] as const) {
+    for (const { value: key } of BOARD_CATEGORIES) {
       expect(typeof counts[key]).toBe('number');
       expect(counts[key]).toBeGreaterThanOrEqual(0);
     }
