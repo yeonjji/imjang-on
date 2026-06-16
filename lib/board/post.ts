@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import type { PostCategory } from '@prisma/client';
+import { BOARD_CATEGORIES } from '@/lib/board/labels';
 
 export const PAGE_SIZE = 12;
 
@@ -64,4 +65,30 @@ export async function getPublishedPostBySlug(slug: string) {
   });
   if (!post || !post.publishedAt) return null;
   return { ...post, publishedAt: post.publishedAt };
+}
+
+/** 레일용: PUBLISHED 글을 카테고리별로 집계한다(0건 카테고리도 0으로 포함). */
+export async function getBoardCategoryCounts(): Promise<Record<PostCategory, number>> {
+  const grouped = await prisma.post.groupBy({
+    by: ['category'],
+    where: { status: 'PUBLISHED' },
+    _count: { _all: true },
+  });
+  const counts = Object.fromEntries(
+    BOARD_CATEGORIES.map((c) => [c.value, 0]),
+  ) as Record<PostCategory, number>;
+  for (const g of grouped) counts[g.category] = g._count._all;
+  return counts;
+}
+
+/** 레일용: PUBLISHED 글의 출처기관을 글 수 내림차순 distinct로 반환한다. */
+export async function getBoardSourceOrgs(limit = 8): Promise<string[]> {
+  const grouped = await prisma.post.groupBy({
+    by: ['sourceName'],
+    where: { status: 'PUBLISHED' },
+    _count: { _all: true },
+    orderBy: { _count: { sourceName: 'desc' } },
+    take: limit,
+  });
+  return grouped.map((g) => g.sourceName);
 }
