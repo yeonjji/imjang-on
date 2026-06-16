@@ -3,22 +3,20 @@ import { logger } from '@/lib/logger';
 import { env } from '@/lib/env';
 import { notify } from '@/scripts/ingest/notify';
 import { BOARD_FEEDS } from '@/lib/board/feed-registry';
-import { fetchFeed, type FeedItem } from './rss';
+import { fetchFeed } from './rss';
 import { isRelevant, categoryHint, MIN_SOURCE_CHARS } from './relevance';
 import { naverNewsCount } from './detect-issues';
 import { dedupeKey, kstDateISO } from './keys';
+import { collectSubscriptionCandidates } from './sources/subscription';
+import type { BoardCandidate } from './candidate';
 import { generateDraft, createOpenAiClient } from '@/lib/board/generate';
 import { createDraft } from '@/lib/board/create-draft';
 
 const RANK_LIMIT = 10; // 네이버 화제성 점수를 매길 후보 상한(API 호출 절약)
 
-interface Candidate extends FeedItem {
-  feedKey: string;
-  dedupeKey: string;
-}
-
-async function collectCandidates(): Promise<{ candidates: Candidate[]; feedErrors: number }> {
-  const all: Candidate[] = [];
+/** 보도자료 RSS 후보 수집(부처/키워드/길이 필터 적용). */
+async function collectFeedCandidates(): Promise<{ candidates: BoardCandidate[]; feedErrors: number }> {
+  const all: BoardCandidate[] = [];
   let feedErrors = 0;
   for (const feed of BOARD_FEEDS) {
     try {
@@ -26,12 +24,20 @@ async function collectCandidates(): Promise<{ candidates: Candidate[]; feedError
       let kept = 0;
       for (const it of items) {
         const agency = it.agency ?? feed.defaultAgency;
-        const cand: Candidate = { ...it, agency, feedKey: feed.key, dedupeKey: dedupeKey(it.link) };
+        if (!it.link || !agency) continue;
         // 주제 적합 ∧ 생성 가능한 최소 본문 길이(짧으면 가드레일 reject → 사전 제외)
-        if (it.link && isRelevant(cand) && cand.bodyText.length >= MIN_SOURCE_CHARS) {
-          all.push(cand);
-          kept++;
-        }
+        if (!isRelevant({ agency, title: it.title, bodyText: it.bodyText })) continue;
+        if (it.bodyText.length < MIN_SOURCE_CHARS) continue;
+        all.push({
+          sourceKey: feed.key,
+          agency,
+          title: it.title,
+          link: it.link,
+          pubDate: it.pubDate,
+          bodyText: it.bodyText,
+          dedupeKey: dedupeKey(it.link),
+        });
+        kept++;
       }
       logger.info({ feed: feed.key, fetched: items.length, relevant: kept }, 'feed fetched');
     } catch (err) {
@@ -43,7 +49,7 @@ async function collectCandidates(): Promise<{ candidates: Candidate[]; feedError
 }
 
 /** 이미 생성된(dedupeKey 존재) 후보 제거 — OpenAI 호출 전 차단. */
-async function dropExisting(cands: Candidate[]): Promise<Candidate[]> {
+async function dropExisting(cands: BoardCandidate[]): Promise<BoardCandidate[]> {
   if (!cands.length) return [];
   const existing = await prisma.post.findMany({
     where: { dedupeKey: { in: cands.map((c) => c.dedupeKey) } },
@@ -54,7 +60,7 @@ async function dropExisting(cands: Candidate[]): Promise<Candidate[]> {
 }
 
 /** 네이버 화제성 점수로 랭킹. 전부 null(자격증명 없음/실패)이면 최신순 폴백. */
-async function rank(cands: Candidate[]): Promise<Candidate[]> {
+async function rank(cands: BoardCandidate[]): Promise<BoardCandidate[]> {
   const byRecency = [...cands].sort((a, b) => (b.pubDate?.getTime() ?? 0) - (a.pubDate?.getTime() ?? 0));
   const pool = byRecency.slice(0, RANK_LIMIT);
   const scored = await Promise.all(pool.map(async (c) => ({ c, score: await naverNewsCount(c.title) })));
@@ -70,10 +76,21 @@ async function main() {
   const dryRun = process.argv.includes('--dry-run');
   const run = await prisma.ingestionRun.create({ data: { source: 'board', targetKey: 'all', status: 'RUNNING' } });
   try {
-    const { candidates, feedErrors } = await collectCandidates();
+    const { candidates: feedCands, feedErrors } = await collectFeedCandidates();
+    let fpCands: BoardCandidate[] = [];
+    try {
+      fpCands = await collectSubscriptionCandidates(new Date());
+      logger.info({ count: fpCands.length }, 'first-party subscription candidates');
+    } catch (err) {
+      logger.error({ err }, 'first-party subscription collect failed');
+    }
+    const candidates = [...feedCands, ...fpCands];
     const fresh = await dropExisting(candidates);
     const ranked = await rank(fresh);
-    logger.info({ candidates: candidates.length, fresh: fresh.length, feedErrors }, 'board candidates collected');
+    logger.info(
+      { candidates: candidates.length, fresh: fresh.length, feedErrors, firstParty: fpCands.length },
+      'board candidates collected',
+    );
 
     if (dryRun) {
       const top = ranked.slice(0, 8).map((c) => ({
@@ -97,7 +114,7 @@ async function main() {
 
     for (const c of ranked) {
       try {
-        const sourceName = c.agency ?? '정부';
+        const sourceName = c.agency;
         const gen = await generateDraft(client, { sourceText: c.bodyText, sourceName }, env.OPENAI_MODEL);
         const sourceDate = c.pubDate ?? new Date();
         const res = await createDraft({
@@ -108,7 +125,7 @@ async function main() {
           sourceExcerpt: c.bodyText.slice(0, 4000),
           dedupeKey: c.dedupeKey,
           dateISO: kstDateISO(sourceDate),
-          detectedFrom: categoryHint(`${c.title}\n${c.bodyText}`) ?? c.feedKey,
+          detectedFrom: categoryHint(`${c.title}\n${c.bodyText}`) ?? c.sourceKey,
         });
         if (res.status === 'created') {
           created = { slug: res.slug, title: gen.title };
