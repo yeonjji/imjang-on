@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { listPublishedPosts } from '@/lib/board/post';
-import { isBoardPublic } from '@/lib/board/visibility';
+import { canViewBoard } from '@/lib/board/visibility';
 import { BOARD_CATEGORIES, categoryLabel } from '@/lib/board/labels';
 import type { PostCategory } from '@prisma/client';
 import type { Metadata } from 'next';
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 interface Props {
-  searchParams: Promise<{ category?: string; page?: string }>;
+  searchParams: Promise<{ category?: string; page?: string; preview?: string }>;
 }
 
 function isCategory(v: string | undefined): v is PostCategory {
@@ -29,10 +29,12 @@ function pageNums(current: number, total: number): number[] {
 }
 
 export default async function BoardListPage({ searchParams }: Props) {
-  if (!isBoardPublic()) notFound();
   const sp = await searchParams;
+  if (!canViewBoard(sp.preview)) notFound();
   const page = Math.max(1, Number(sp.page ?? 1));
   const category = isCategory(sp.category) ? sp.category : undefined;
+  // 미리보기 모드에서는 상세 링크에도 토큰을 이어붙여 404 방지.
+  const previewQs = sp.preview ? `?preview=${encodeURIComponent(sp.preview)}` : '';
 
   const { rows, totalPages } = await listPublishedPosts({ page, category });
 
@@ -83,7 +85,7 @@ export default async function BoardListPage({ searchParams }: Props) {
           {rows.map((p) => (
             <Link
               key={p.slug}
-              href={`/board/${p.slug}`}
+              href={`/board/${p.slug}${previewQs}`}
               className="block rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-blue)]"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}

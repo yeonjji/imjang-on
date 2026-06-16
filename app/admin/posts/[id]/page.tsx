@@ -17,6 +17,7 @@ export default async function AdminPostEditPage({ params }: Params) {
   }
   const post = await getPostForAdmin(postId);
   if (!post) notFound();
+  const previewToken = process.env.BOARD_PREVIEW_TOKEN;
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
@@ -24,6 +25,16 @@ export default async function AdminPostEditPage({ params }: Params) {
       <div className="mt-3 flex items-center gap-2">
         <h1 className="text-xl font-bold text-[var(--color-blue-dark)]">초안 검토</h1>
         <span className="rounded-full bg-[var(--color-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">{post.status}</span>
+        {previewToken && post.status === 'PUBLISHED' && (
+          <a
+            href={`/board/${post.slug}?preview=${previewToken}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto text-sm font-semibold text-[var(--color-blue)] underline"
+          >
+            공개 미리보기 ↗
+          </a>
+        )}
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">

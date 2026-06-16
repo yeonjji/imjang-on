@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { getPublishedPostBySlug } from '@/lib/board/post';
-import { isBoardPublic } from '@/lib/board/visibility';
+import { canViewBoard } from '@/lib/board/visibility';
 import { categoryLabel } from '@/lib/board/labels';
 import { PostSource } from '@/components/ui/post-source';
 import { JsonLd, articleSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
@@ -13,6 +13,7 @@ export const revalidate = 3_600;
 
 interface Params {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ preview?: string }>;
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
@@ -26,8 +27,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function BoardDetailPage({ params }: Params) {
-  if (!isBoardPublic()) notFound();
+export default async function BoardDetailPage({ params, searchParams }: Params) {
+  const { preview } = await searchParams;
+  if (!canViewBoard(preview)) notFound();
   const { slug } = await params;
   const post = await getPublishedPostBySlug(slug);
   if (!post) notFound();
