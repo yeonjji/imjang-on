@@ -13,7 +13,7 @@ export function findForbiddenPhrases(text: string): string[] {
   return FORBIDDEN_PATTERNS.filter((p) => p.re.test(text)).map((p) => p.label);
 }
 
-export function checkLength(body: string, min = 1500, max = 2200): { ok: boolean; length: number } {
+export function checkLength(body: string, min = 1200, max = 2200): { ok: boolean; length: number } {
   const length = body.replace(/\s/g, '').length;
   return { ok: length >= min && length <= max, length };
 }
