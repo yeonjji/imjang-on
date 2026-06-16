@@ -47,6 +47,12 @@ describe('listPublishedPosts', () => {
     const mine = rows.filter((r) => r.slug.startsWith(MARK));
     expect(mine[0].slug).toBe(`${MARK}new`);
   });
+  it('목록 행에 sourceName을 포함한다', async () => {
+    await prisma.post.create({ data: postData({ slug: `${MARK}src`, sourceName: '금융위원회' }) });
+    const { rows } = await listPublishedPosts({ page: 1 });
+    const mine = rows.find((r) => r.slug === `${MARK}src`);
+    expect(mine?.sourceName).toBe('금융위원회');
+  });
 });
 describe('getPublishedPostBySlug', () => {
   it('PUBLISHED 글을 slug로 가져온다', async () => {

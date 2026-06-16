@@ -7,9 +7,8 @@ export const PAGE_SIZE = 12;
 export interface PostListItem {
   slug: string;
   title: string;
-  summary: string;
   category: PostCategory;
-  sourceDate: Date;
+  sourceName: string;
   publishedAt: Date;
 }
 
@@ -27,7 +26,7 @@ export async function listPublishedPosts(
     prisma.post.count({ where }),
     prisma.post.findMany({
       where,
-      select: { slug: true, title: true, summary: true, category: true, sourceDate: true, publishedAt: true },
+      select: { slug: true, title: true, category: true, sourceName: true, publishedAt: true },
       orderBy: { publishedAt: 'desc' },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
