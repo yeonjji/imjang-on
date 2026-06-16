@@ -17,7 +17,7 @@ interface ListParams { page: number; category?: PostCategory; }
 export async function listPublishedPosts(
   params: ListParams,
 ): Promise<{ rows: PostListItem[]; total: number; totalPages: number }> {
-  const page = Math.max(1, params.page);
+  const page = Number.isFinite(params.page) ? Math.max(1, Math.floor(params.page)) : 1;
   const where = {
     status: 'PUBLISHED' as const,
     ...(params.category ? { category: params.category } : {}),

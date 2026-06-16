@@ -53,6 +53,11 @@ describe('listPublishedPosts', () => {
     const mine = rows.find((r) => r.slug === `${MARK}src`);
     expect(mine?.sourceName).toBe('금융위원회');
   });
+  it('잘못된 page 값(NaN)도 1페이지로 안전 처리한다(throw 없음)', async () => {
+    await prisma.post.create({ data: postData({ slug: `${MARK}nan` }) });
+    const { rows } = await listPublishedPosts({ page: Number.NaN });
+    expect(rows.some((r) => r.slug === `${MARK}nan`)).toBe(true);
+  });
 });
 describe('getPublishedPostBySlug', () => {
   it('PUBLISHED 글을 slug로 가져온다', async () => {

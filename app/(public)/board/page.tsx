@@ -54,7 +54,8 @@ function chipClass(active: boolean): string {
 export default async function BoardListPage({ searchParams }: Props) {
   const sp = await searchParams;
   if (!canViewBoard(sp.preview)) notFound();
-  const page = Math.max(1, Number(sp.page ?? 1));
+  const parsedPage = Number(sp.page ?? 1);
+  const page = Number.isFinite(parsedPage) && parsedPage >= 1 ? Math.floor(parsedPage) : 1;
   const category = isCategory(sp.category) ? sp.category : undefined;
   // 미리보기 모드에서는 상세 링크에도 토큰을 이어붙여 404 방지.
   const previewQs = sp.preview ? `?preview=${encodeURIComponent(sp.preview)}` : '';
