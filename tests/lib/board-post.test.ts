@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { prisma } from '@/lib/db';
 import { assertLocalDatabase } from '../_helpers/assert-local-db';
-import { listPublishedPosts, getPublishedPostBySlug, normalizeSlug, PAGE_SIZE } from '@/lib/board/post';
+import { listPublishedPosts, getPublishedPostBySlug, normalizeSlug, PAGE_SIZE, getBoardCategoryCounts, getBoardSourceOrgs } from '@/lib/board/post';
+import { BOARD_CATEGORIES } from '@/lib/board/labels';
 import type { Prisma } from '@prisma/client';
 
 assertLocalDatabase();
@@ -46,6 +47,17 @@ describe('listPublishedPosts', () => {
     const mine = rows.filter((r) => r.slug.startsWith(MARK));
     expect(mine[0].slug).toBe(`${MARK}new`);
   });
+  it('목록 행에 sourceName을 포함한다', async () => {
+    await prisma.post.create({ data: postData({ slug: `${MARK}src`, sourceName: '금융위원회' }) });
+    const { rows } = await listPublishedPosts({ page: 1 });
+    const mine = rows.find((r) => r.slug === `${MARK}src`);
+    expect(mine?.sourceName).toBe('금융위원회');
+  });
+  it('잘못된 page 값(NaN)도 1페이지로 안전 처리한다(throw 없음)', async () => {
+    await prisma.post.create({ data: postData({ slug: `${MARK}nan` }) });
+    const { rows } = await listPublishedPosts({ page: Number.NaN });
+    expect(rows.some((r) => r.slug === `${MARK}nan`)).toBe(true);
+  });
 });
 describe('getPublishedPostBySlug', () => {
   it('PUBLISHED 글을 slug로 가져온다', async () => {
@@ -82,3 +94,43 @@ describe('getPublishedPostBySlug 한글 slug (라우트 인코딩 회귀)', () =
 });
 
 describe('PAGE_SIZE', () => { it('양의 정수다', () => { expect(PAGE_SIZE).toBeGreaterThan(0); }); });
+
+describe('getBoardCategoryCounts', () => {
+  it('모든 카테고리 키를 0 이상의 숫자로 반환한다', async () => {
+    const counts = await getBoardCategoryCounts();
+    for (const { value: key } of BOARD_CATEGORIES) {
+      expect(typeof counts[key]).toBe('number');
+      expect(counts[key]).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('PUBLISHED 글을 카테고리별로 집계한다(증가분 단언)', async () => {
+    // 공유 DB·병렬 실행을 고려해 정확값 대신 증가분(>=)으로 단언한다.
+    const before = await getBoardCategoryCounts();
+    await prisma.post.create({ data: postData({ slug: `${MARK}re1`, category: 'REALESTATE', status: 'PUBLISHED' }) });
+    await prisma.post.create({ data: postData({ slug: `${MARK}re2`, category: 'REALESTATE', status: 'PUBLISHED' }) });
+    await prisma.post.create({ data: postData({ slug: `${MARK}re3`, category: 'REALESTATE', status: 'DRAFT' }) });
+    const after = await getBoardCategoryCounts();
+    expect(after.REALESTATE - before.REALESTATE).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('getBoardSourceOrgs', () => {
+  it('PUBLISHED 글의 출처기관을 distinct로 반환하고 DRAFT는 제외한다', async () => {
+    // 고유 sourceName으로 격리 → 공유 DB에서도 결정적으로 검증.
+    const pubOrg = `${MARK}출처PUB`;
+    const draftOrg = `${MARK}출처DRAFT`;
+    await prisma.post.create({ data: postData({ slug: `${MARK}o1`, sourceName: pubOrg, status: 'PUBLISHED' }) });
+    await prisma.post.create({ data: postData({ slug: `${MARK}o2`, sourceName: pubOrg, status: 'PUBLISHED' }) });
+    await prisma.post.create({ data: postData({ slug: `${MARK}o3`, sourceName: draftOrg, status: 'DRAFT' }) });
+    const orgs = await getBoardSourceOrgs(1000);
+    expect(orgs).toContain(pubOrg);
+    expect(orgs).not.toContain(draftOrg);
+    expect(orgs.filter((o) => o === pubOrg)).toHaveLength(1); // distinct
+  });
+
+  it('limit으로 개수를 제한한다', async () => {
+    const orgs = await getBoardSourceOrgs(3);
+    expect(orgs.length).toBeLessThanOrEqual(3);
+  });
+});
