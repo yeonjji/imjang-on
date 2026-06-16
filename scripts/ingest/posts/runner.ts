@@ -4,7 +4,7 @@ import { env } from '@/lib/env';
 import { notify } from '@/scripts/ingest/notify';
 import { BOARD_FEEDS } from '@/lib/board/feed-registry';
 import { fetchFeed, type FeedItem } from './rss';
-import { isRelevant, categoryHint } from './relevance';
+import { isRelevant, categoryHint, MIN_SOURCE_CHARS } from './relevance';
 import { naverNewsCount } from './detect-issues';
 import { dedupeKey, kstDateISO } from './keys';
 import { generateDraft, createOpenAiClient } from '@/lib/board/generate';
@@ -27,7 +27,8 @@ async function collectCandidates(): Promise<{ candidates: Candidate[]; feedError
       for (const it of items) {
         const agency = it.agency ?? feed.defaultAgency;
         const cand: Candidate = { ...it, agency, feedKey: feed.key, dedupeKey: dedupeKey(it.link) };
-        if (it.link && isRelevant(cand)) {
+        // 주제 적합 ∧ 생성 가능한 최소 본문 길이(짧으면 가드레일 reject → 사전 제외)
+        if (it.link && isRelevant(cand) && cand.bodyText.length >= MIN_SOURCE_CHARS) {
           all.push(cand);
           kept++;
         }
