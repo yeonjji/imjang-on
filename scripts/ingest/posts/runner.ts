@@ -151,23 +151,25 @@ async function main() {
       errors,
       feedErrors,
     };
-    const hadFailure = errors > 0 || feedErrors > 0;
+    // 생성 예외(errors)만 잡 실패로 본다. 일시적 단일 피드 fetch 실패(feedErrors)는
+    // 다른 피드·FIRST_PARTY가 살아 있으므로 warn으로만 알리고 잡은 통과시킨다.
+    const hadError = errors > 0;
     await prisma.ingestionRun.update({
       where: { id: run.id },
       data: {
-        status: hadFailure ? 'ERROR' : 'OK',
+        status: hadError ? 'ERROR' : 'OK',
         rowsUpserted: created ? 1 : 0,
         errorMessage: rejectReasons.slice(0, 5).join(' | ') || null,
         finishedAt: new Date(),
       },
     });
     await notify(
-      hadFailure ? 'warn' : 'info',
+      hadError || feedErrors > 0 ? 'warn' : 'info',
       created ? `오늘 게시판 초안 1건 대기: ${created.title}` : '오늘 생성된 게시판 초안 없음',
       summary,
     );
     logger.info(summary, 'board ingest done');
-    if (hadFailure) process.exitCode = 1;
+    if (hadError) process.exitCode = 1;
   } catch (err) {
     await prisma.ingestionRun
       .update({ where: { id: run.id }, data: { status: 'ERROR', errorMessage: String(err), finishedAt: new Date() } })
