@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { getPublishedPostBySlug } from '@/lib/board/post';
+import { isBoardPublic } from '@/lib/board/visibility';
 import { categoryLabel } from '@/lib/board/labels';
 import { PostSource } from '@/components/ui/post-source';
 import { JsonLd, articleSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
@@ -26,6 +27,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function BoardDetailPage({ params }: Params) {
+  if (!isBoardPublic()) notFound();
   const { slug } = await params;
   const post = await getPublishedPostBySlug(slug);
   if (!post) notFound();

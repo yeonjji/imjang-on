@@ -5,6 +5,7 @@ import { SITE_URL } from '@/lib/site';
 import { getAllSigungus } from '@/lib/region';
 import { AMENITY_CATEGORIES, AMENITY_SLUGS } from '@/lib/amenity/category';
 import { STATIC_ENTRIES } from './static-entries';
+import { isBoardPublic } from '@/lib/board/visibility';
 
 export const CHUNK_SIZE = 10_000;
 
@@ -261,7 +262,8 @@ export const SOURCE_ORDER: SitemapSource[] = [
   pharmacy,
   hospital,
   loan,
-  post,
+  // 게시판 비공개 동안 사이트맵에서도 제외(끝 항목이라 다른 샤드 인덱스 불변).
+  ...(isBoardPublic() ? [post] : []),
 ];
 
 export const SOURCE_MAP: Record<string, SitemapSource> = Object.fromEntries(

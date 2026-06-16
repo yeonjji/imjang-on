@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { SoonModal } from './soon-modal';
 import { MobileDrawer } from './mobile-drawer';
 import { LifeDropdown } from './life-dropdown';
+import { isBoardPublic } from '@/lib/board/visibility';
 
 export function Nav() {
   const [soonOpen, setSoonOpen] = useState<string | null>(null);
@@ -32,7 +33,7 @@ export function Nav() {
             <Link href="/list">실거래가</Link>
             <Link href="/subscription">청약</Link>
             <Link href="/finance">금융정보</Link>
-            <Link href="/board">소식</Link>
+            {isBoardPublic() && <Link href="/board">소식</Link>}
             <LifeDropdown onSoon={(topic) => setSoonOpen(topic)} />
           </div>
 

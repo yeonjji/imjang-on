@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { listPublishedPosts } from '@/lib/board/post';
+import { isBoardPublic } from '@/lib/board/visibility';
 import { BOARD_CATEGORIES, categoryLabel } from '@/lib/board/labels';
 import type { PostCategory } from '@prisma/client';
 import type { Metadata } from 'next';
@@ -27,6 +29,7 @@ function pageNums(current: number, total: number): number[] {
 }
 
 export default async function BoardListPage({ searchParams }: Props) {
+  if (!isBoardPublic()) notFound();
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page ?? 1));
   const category = isCategory(sp.category) ? sp.category : undefined;
