@@ -6,6 +6,7 @@ import { X, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { SearchInput } from './search-input';
 import { LIFE_GROUPS } from './life-menu';
+import { isBoardPublic } from '@/lib/board/visibility';
 
 interface Props {
   open: boolean;
@@ -18,6 +19,7 @@ const links = [
   { href: '/list', label: '실거래가' },
   { href: '/subscription', label: '청약' },
   { href: '/finance', label: '금융정보' },
+  ...(isBoardPublic() ? [{ href: '/board', label: '소식' }] : []),
 ];
 
 export function MobileDrawer({ open, onClose, onSoonClick }: Props) {

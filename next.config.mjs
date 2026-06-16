@@ -10,6 +10,7 @@ const nextConfig = {
   // (파라미터 없는 루트 /opengraph-image는 정적 생성되어 영향 없었음)
   outputFileTracingIncludes: {
     '**/opengraph-image': ['./lib/seo/fonts/Pretendard-Bold.otf'],
+    '**/thumbnail': ['./lib/seo/fonts/Pretendard-Bold.otf'],
   },
   images: {
     remotePatterns: [],

@@ -5,6 +5,7 @@ import { SITE_URL } from '@/lib/site';
 import { getAllSigungus } from '@/lib/region';
 import { AMENITY_CATEGORIES, AMENITY_SLUGS } from '@/lib/amenity/category';
 import { STATIC_ENTRIES } from './static-entries';
+import { isBoardPublic } from '@/lib/board/visibility';
 
 export const CHUNK_SIZE = 10_000;
 
@@ -232,6 +233,25 @@ const loan = dbSource({
   }),
 });
 
+const post = dbSource({
+  key: 'post',
+  count: () => prisma.post.count({ where: { status: 'PUBLISHED' } }),
+  findMany: (skip, take) =>
+    prisma.post.findMany({
+      where: { status: 'PUBLISHED' },
+      select: { slug: true, updatedAt: true },
+      orderBy: { id: 'asc' },
+      skip,
+      take,
+    }),
+  toEntry: (p) => ({
+    url: `${SITE_URL}/board/${p.slug}`,
+    lastModified: p.updatedAt,
+    changeFrequency: 'weekly',
+    priority: 0.6,
+  }),
+});
+
 /** 샤드 id 부여 순서(고정). 변경 시 기존 인덱스 매핑이 바뀌므로 끝에만 추가할 것. */
 export const SOURCE_ORDER: SitemapSource[] = [
   core,
@@ -242,6 +262,8 @@ export const SOURCE_ORDER: SitemapSource[] = [
   pharmacy,
   hospital,
   loan,
+  // 게시판 비공개 동안 사이트맵에서도 제외(끝 항목이라 다른 샤드 인덱스 불변).
+  ...(isBoardPublic() ? [post] : []),
 ];
 
 export const SOURCE_MAP: Record<string, SitemapSource> = Object.fromEntries(
