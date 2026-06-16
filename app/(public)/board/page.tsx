@@ -126,8 +126,8 @@ export default async function BoardListPage({ searchParams }: Props) {
                           {p.title}
                         </Link>
                       </td>
-                      <td className="hidden truncate px-2 py-3 align-middle text-xs text-[var(--color-muted)] sm:table-cell">
-                        {p.sourceName}
+                      <td className="hidden px-2 py-3 align-middle text-xs text-[var(--color-muted)] sm:table-cell">
+                        <span className="block truncate">{p.sourceName}</span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-right align-middle text-xs text-[var(--color-muted)]">
                         {p.publishedAt.toISOString().slice(0, 10)}
