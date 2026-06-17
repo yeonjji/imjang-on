@@ -71,7 +71,7 @@ describe('buildInfraCategories', () => {
         { id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', distanceMeters: 80 },
         { id: 2n, name: '스타벅스', address: '', industryCode: 'I21201', industryName: '카페', distanceMeters: 120 },
       ],
-      hospitals: [{ id: 9n, name: '내과', typeName: '의원', address: '', distanceMeters: 100 }],
+      hospitals: [{ id: 9n, name: '내과', typeName: '의원', address: '', sigunguCode: null, distanceMeters: 100 }],
       parking: [{ id: 7n, name: '공영주차장', address: '', prkplceSe: '공영', prkcmprt: 120, distanceMeters: 150 }],
     });
     expect(cats.map((c) => c.key)).toEqual(['store', 'cafe', 'hospital', 'parking']);
@@ -80,7 +80,7 @@ describe('buildInfraCategories', () => {
 
   it('items가 fetch 한도에 도달하면 capped=true', () => {
     const hospitals = Array.from({ length: INFRA_FETCH_LIMIT }, (_, i) => ({
-      id: BigInt(i + 1), name: `병원${i}`, typeName: '의원', address: '', distanceMeters: 100 + i,
+      id: BigInt(i + 1), name: `병원${i}`, typeName: '의원', address: '', sigunguCode: null, distanceMeters: 100 + i,
     }));
     const cats = buildInfraCategories({ ...empty, hospitals });
     expect(cats.find((c) => c.key === 'hospital')?.capped).toBe(true);
@@ -89,7 +89,7 @@ describe('buildInfraCategories', () => {
   it('items가 한도 미만이면 capped=false', () => {
     const cats = buildInfraCategories({
       ...empty,
-      pharmacies: [{ id: 1n, name: '약국', address: '', tel: null, distanceMeters: 100 }],
+      pharmacies: [{ id: 1n, name: '약국', address: '', tel: null, sigunguCode: null, distanceMeters: 100 }],
     });
     expect(cats.find((c) => c.key === 'pharmacy')?.capped).toBe(false);
   });
@@ -124,7 +124,7 @@ describe('buildInfraCategories', () => {
   it('어린이집은 기타 앞, 마지막 직전에 배치된다', () => {
     const cats = buildInfraCategories({
       ...empty,
-      hospitals: [{ id: 9n, name: '내과', typeName: '의원', address: '', distanceMeters: 100 }],
+      hospitals: [{ id: 9n, name: '내과', typeName: '의원', address: '', sigunguCode: null, distanceMeters: 100 }],
       stores: [{ id: 1n, name: '무인문구', address: '', industryCode: 'Z999', industryName: '기타', distanceMeters: 200 }],
       childcare: [{ id: 5n, name: '햇살어린이집', address: '', sigunguCode: null, crType: '국공립', capacity: 60, distanceMeters: 90 }],
     });
