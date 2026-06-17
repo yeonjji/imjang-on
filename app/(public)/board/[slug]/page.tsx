@@ -52,6 +52,12 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
           ]),
         ]}
       />
+      <div className="mb-6 rounded-[18px] border border-[var(--color-line)] bg-[var(--color-soft)] px-5 py-4">
+        <p className="text-sm font-black tracking-tight text-[var(--color-blue)]">임장온 소식</p>
+        <p className="mt-1 text-xs font-bold text-[var(--color-muted)]">
+          {categoryLabel(post.category)} · {post.sourceName}
+        </p>
+      </div>
       <span className="inline-block rounded-full bg-[var(--color-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">
         {categoryLabel(post.category)}
       </span>
@@ -61,15 +67,6 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
       <p className="mt-2 text-sm text-[var(--color-muted)]">
         기준일 {post.sourceDate.toISOString().slice(0, 10)}
       </p>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={`/board/${post.slug}/thumbnail`}
-        alt={post.title}
-        width={1200}
-        height={630}
-        className="mb-6 mt-6 aspect-[1200/630] w-full rounded-[18px] border border-[var(--color-line)] object-cover"
-      />
-
       <div className="board-prose mt-8 text-[15px] leading-relaxed text-[var(--color-text)]">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.body}</ReactMarkdown>
       </div>

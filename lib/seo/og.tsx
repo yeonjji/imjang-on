@@ -23,7 +23,7 @@ export function OgFrame({ title, subtitle }: { title: string; subtitle?: string 
         flexDirection: 'column',
         justifyContent: 'space-between',
         padding: 72,
-        backgroundColor: '#0b3d91',
+        backgroundColor: '#1e3a8a',
         color: '#ffffff',
         fontFamily: 'Pretendard',
       }}
