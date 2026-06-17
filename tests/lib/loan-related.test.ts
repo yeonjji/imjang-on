@@ -72,4 +72,17 @@ describe('recommendLoans', () => {
     const c2 = r.find((x) => x.seq === 2)!;
     expect(c2.summaryLine).toBe('주거·전월세 · 청년·대학생 대상');
   });
+
+  it('여러 카테고리 라벨을 정의 순서로 정렬한다(입력 태그 순서 무관)', () => {
+    const p = row({ seq: 30, usageTags: ['주거', '창업'], targetTags: ['청년'] });
+    const c = row({ seq: 31, usageTags: ['창업', '주거'], targetTags: ['청년'] }); // 태그 입력 순서 뒤집힘
+    const r = recommendLoans(p, [p, c]);
+    const got = r.find((x) => x.seq === 31)!;
+    // USAGE_CATEGORIES 정의 순서: biz(창업·운영) → house(주거·전월세)
+    expect(got.summaryLine).toBe('창업·운영·주거·전월세 · 청년·대학생 대상');
+    expect(got.reasons.map((x) => x.label)).toEqual([
+      '같은 목적·창업·운영',
+      '같은 목적·주거·전월세',
+    ]);
+  });
 });

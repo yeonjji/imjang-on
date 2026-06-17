@@ -32,10 +32,17 @@ function intersect(values: string[], set: Set<string>): string[] {
   return values.filter((v) => set.has(v));
 }
 
+// 라벨 시퀀스를 카테고리 정의 순서로 고정한다(입력 태그 순서에 의존하지 않도록).
+function orderByDef(slugs: string[], defs: CategoryDef[]): string[] {
+  return defs.filter((d) => slugs.includes(d.slug)).map((d) => d.slug);
+}
+
 function summaryLineFor(item: LoanSummary): string {
-  const usageLabels = usageSlugs(item.usageTags).map((s) => labelOf(s, USAGE_CATEGORIES));
-  const targetLabels = meaningfulTargetSlugs(item.targetTags).map((s) =>
-    labelOf(s, TARGET_CATEGORIES),
+  const usageLabels = orderByDef(usageSlugs(item.usageTags), USAGE_CATEGORIES).map((s) =>
+    labelOf(s, USAGE_CATEGORIES),
+  );
+  const targetLabels = orderByDef(meaningfulTargetSlugs(item.targetTags), TARGET_CATEGORIES).map(
+    (s) => labelOf(s, TARGET_CATEGORIES),
   );
   const parts: string[] = [];
   if (usageLabels.length) parts.push(usageLabels.join('·'));
@@ -63,8 +70,11 @@ export function recommendLoans(
   for (const c of all) {
     if (c.seq === current.seq) continue;
 
-    const sharedUsage = intersect(usageSlugs(c.usageTags), pUsage);
-    const sharedTarget = intersect(meaningfulTargetSlugs(c.targetTags), pTarget);
+    const sharedUsage = orderByDef(intersect(usageSlugs(c.usageTags), pUsage), USAGE_CATEGORIES);
+    const sharedTarget = orderByDef(
+      intersect(meaningfulTargetSlugs(c.targetTags), pTarget),
+      TARGET_CATEGORIES,
+    );
     if (sharedUsage.length + sharedTarget.length < 1) continue;
 
     const sharedRegion = c.regionTags.some((r) => pRegion.has(r));
