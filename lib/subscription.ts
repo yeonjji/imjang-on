@@ -367,6 +367,26 @@ export function assembleWeeklyBoard(rows: WeeklyNoticeRow[], today: Date = new D
   return { weekStart, weekEnd, days, summary, total: rows.length };
 }
 
+/**
+ * 주간 보드(일자 버킷)를 컴팩트 리스트로 평탄화한다.
+ * 진행중·예정 우선(TONE_ORDER) 정렬 후 id 중복 제거, 상위 limit개.
+ */
+export function flattenWeeklyBoard(board: WeeklyBoard, limit: number): WeeklyBoardItem[] {
+  const seen = new Set<string>();
+  const items: WeeklyBoardItem[] = [];
+  for (const day of board.days) {
+    for (const it of day.items) {
+      if (seen.has(it.id)) continue;
+      seen.add(it.id);
+      items.push(it);
+    }
+  }
+  items.sort(
+    (a, b) => TONE_ORDER[a.tone] - TONE_ORDER[b.tone] || a.name.localeCompare(b.name, 'ko'),
+  );
+  return items.slice(0, limit);
+}
+
 export async function getWeeklySubscriptions(today: Date = new Date()): Promise<WeeklyBoard> {
   const { weekStart, weekEnd } = getWeekRange(today);
   const rows = await prisma.$queryRaw<
