@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { SubscriptionBoardItem } from '@/app/(public)/_components/subscription-board-item';
-import { PropertyCard } from '@/app/(public)/_components/property-card';
+import { DiscoveryPropertyCard } from './discovery-property-card';
 import type { LoanDiscovery } from '@/lib/loan/discovery';
 
 export function LoanDiscoverySection({ discovery }: { discovery: LoanDiscovery }) {
@@ -24,9 +24,9 @@ export function LoanDiscoverySection({ discovery }: { discovery: LoanDiscovery }
               실거래가 더 보기 →
             </Link>
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {properties.map((p) => (
-              <PropertyCard key={String(p.id)} property={p} />
+              <DiscoveryPropertyCard key={String(p.id)} property={p} />
             ))}
           </div>
         </div>
