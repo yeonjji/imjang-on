@@ -11,6 +11,7 @@ export interface InfraItem {
   name: string;
   sub: string | null;
   distanceMeters: number;
+  href: string | null;
 }
 
 export type InfraCategoryKey =
@@ -68,25 +69,25 @@ export function buildInfraCategories(raw: RawInfra): InfraCategory[] {
 
   const cats: Omit<InfraCategory, 'capped'>[] = [
     { key: 'store', label: '편의·마트', icon: '🛒', radiusLabel: '반경 500m 내',
-      items: mart.map((s) => ({ id: String(s.id), name: s.name, sub: s.industryName ?? null, distanceMeters: s.distanceMeters })) },
+      items: mart.map((s) => ({ id: String(s.id), name: s.name, sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: infraHref('store', String(s.id)) })) },
     { key: 'cafe', label: '카페', icon: '☕', radiusLabel: '반경 500m 내',
-      items: cafe.map((s) => ({ id: String(s.id), name: s.name, sub: s.industryName ?? null, distanceMeters: s.distanceMeters })) },
+      items: cafe.map((s) => ({ id: String(s.id), name: s.name, sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: infraHref('cafe', String(s.id)) })) },
     { key: 'hospital', label: '병원', icon: '🏥', radiusLabel: '반경 500m 내',
-      items: raw.hospitals.map((h) => ({ id: String(h.id), name: h.name, sub: h.typeName ?? null, distanceMeters: h.distanceMeters })) },
+      items: raw.hospitals.map((h) => ({ id: String(h.id), name: h.name, sub: h.typeName ?? null, distanceMeters: h.distanceMeters, href: infraHref('hospital', String(h.id), h.sigunguCode) })) },
     { key: 'pharmacy', label: '약국', icon: '💊', radiusLabel: '반경 500m 내',
-      items: raw.pharmacies.map((p) => ({ id: String(p.id), name: p.name, sub: p.address ?? null, distanceMeters: p.distanceMeters })) },
+      items: raw.pharmacies.map((p) => ({ id: String(p.id), name: p.name, sub: p.address ?? null, distanceMeters: p.distanceMeters, href: infraHref('pharmacy', String(p.id), p.sigunguCode) })) },
     { key: 'park', label: '공원', icon: '🌳', radiusLabel: '반경 1km 내',
-      items: raw.parks.map((p) => ({ id: String(p.id), name: p.name, sub: parkSub(p), distanceMeters: p.distanceMeters })) },
+      items: raw.parks.map((p) => ({ id: String(p.id), name: p.name, sub: parkSub(p), distanceMeters: p.distanceMeters, href: infraHref('park', String(p.id)) })) },
     { key: 'market', label: '전통시장', icon: '🏬', radiusLabel: '반경 1km 내',
-      items: raw.markets.map((m) => ({ id: String(m.id), name: m.name, sub: m.marketType ?? null, distanceMeters: m.distanceMeters })) },
+      items: raw.markets.map((m) => ({ id: String(m.id), name: m.name, sub: m.marketType ?? null, distanceMeters: m.distanceMeters, href: infraHref('market', String(m.id)) })) },
     { key: 'charger', label: '전기차 충전소', icon: '⚡', radiusLabel: '반경 500m 내',
-      items: raw.chargers.map((c) => ({ id: String(c.id), name: c.name, sub: `${c.chargeSpeed} · ${c.chargerCount}기`, distanceMeters: c.distanceMeters })) },
+      items: raw.chargers.map((c) => ({ id: String(c.id), name: c.name, sub: `${c.chargeSpeed} · ${c.chargerCount}기`, distanceMeters: c.distanceMeters, href: infraHref('charger', String(c.id)) })) },
     { key: 'parking', label: '주차장', icon: '🅿️', radiusLabel: '반경 500m 내',
-      items: raw.parking.map((p) => ({ id: String(p.id), name: p.name, sub: parkingSub(p), distanceMeters: p.distanceMeters })) },
+      items: raw.parking.map((p) => ({ id: String(p.id), name: p.name, sub: parkingSub(p), distanceMeters: p.distanceMeters, href: infraHref('parking', String(p.id)) })) },
     { key: 'childcare', label: '어린이집', icon: '👶', radiusLabel: '반경 1km 내',
-      items: (raw.childcare ?? []).map((c) => ({ id: String(c.id), name: c.name, sub: c.crType ?? null, distanceMeters: c.distanceMeters })) },
+      items: (raw.childcare ?? []).map((c) => ({ id: String(c.id), name: c.name, sub: c.crType ?? null, distanceMeters: c.distanceMeters, href: infraHref('childcare', String(c.id), c.sigunguCode) })) },
     { key: 'etc', label: '기타 생활편의', icon: '🏪', radiusLabel: '반경 500m 내',
-      items: etc.map((s) => ({ id: String(s.id), name: s.name, sub: s.industryName ?? null, distanceMeters: s.distanceMeters })) },
+      items: etc.map((s) => ({ id: String(s.id), name: s.name, sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: infraHref('etc', String(s.id)) })) },
   ];
 
   return cats
@@ -98,4 +99,24 @@ export function buildInfraCategories(raw: RawInfra): InfraCategory[] {
       // 직렬화(Server→Client)를 위해 선언 타입(number)에 맞춰 정규화한다.
       items: c.items.map((it) => ({ ...it, distanceMeters: Number(it.distanceMeters) })),
     }));
+}
+
+/** 인프라 항목 → 해당 시설 상세 페이지 경로. sigunguCode가 필요한데 없으면 null(비클릭). */
+export function infraHref(
+  key: InfraCategoryKey,
+  id: string,
+  sigunguCode?: string | null,
+): string | null {
+  switch (key) {
+    case 'store':     return `/amenity/mart/${id}`;
+    case 'cafe':      return `/amenity/cafe/${id}`;
+    case 'etc':       return `/amenity/convenience/${id}`;
+    case 'market':    return `/amenity/market/${id}`;
+    case 'park':      return `/urban/park/${id}`;
+    case 'parking':   return `/urban/parking/${id}`;
+    case 'charger':   return `/urban/charger/${id}`;
+    case 'hospital':  return sigunguCode ? `/medical/hospital/${sigunguCode}/${id}` : null;
+    case 'pharmacy':  return sigunguCode ? `/medical/pharmacy/${sigunguCode}/${id}` : null;
+    case 'childcare': return sigunguCode ? `/childcare/${sigunguCode}/${id}` : null;
+  }
 }

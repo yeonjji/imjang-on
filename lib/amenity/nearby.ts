@@ -235,6 +235,7 @@ export interface NearbyPharmacy {
   name: string;
   address: string;
   tel: string | null;
+  sigunguCode: string | null;
   distanceMeters: number;
 }
 
@@ -247,7 +248,7 @@ export async function getNearbyPharmacies(
 ): Promise<NearbyPharmacy[]> {
   const rows = await prisma.$queryRaw<NearbyPharmacy[]>`
     SELECT
-      id, name, address, tel,
+      id, name, address, tel, "sigunguCode",
       ROUND(ST_Distance(
         location::geography,
         ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
@@ -270,6 +271,7 @@ export interface NearbyHospital {
   name: string;
   typeName: string;
   address: string;
+  sigunguCode: string | null;
   distanceMeters: number;
 }
 
@@ -282,7 +284,7 @@ export async function getNearbyHospitals(
 ): Promise<NearbyHospital[]> {
   const rows = await prisma.$queryRaw<NearbyHospital[]>`
     SELECT
-      id, name, "typeName", address,
+      id, name, "typeName", address, "sigunguCode",
       ROUND(ST_Distance(
         location::geography,
         ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography

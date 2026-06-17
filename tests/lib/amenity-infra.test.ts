@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyStore, buildInfraCategories, INFRA_FETCH_LIMIT, type RawInfra } from '@/lib/amenity/infra';
+import { classifyStore, buildInfraCategories, infraHref, INFRA_FETCH_LIMIT, type RawInfra } from '@/lib/amenity/infra';
 
 describe('classifyStore', () => {
   it('편의점·마트·슈퍼 prefix는 mart', () => {
@@ -71,7 +71,7 @@ describe('buildInfraCategories', () => {
         { id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', distanceMeters: 80 },
         { id: 2n, name: '스타벅스', address: '', industryCode: 'I21201', industryName: '카페', distanceMeters: 120 },
       ],
-      hospitals: [{ id: 9n, name: '내과', typeName: '의원', address: '', distanceMeters: 100 }],
+      hospitals: [{ id: 9n, name: '내과', typeName: '의원', address: '', sigunguCode: null, distanceMeters: 100 }],
       parking: [{ id: 7n, name: '공영주차장', address: '', prkplceSe: '공영', prkcmprt: 120, distanceMeters: 150 }],
     });
     expect(cats.map((c) => c.key)).toEqual(['store', 'cafe', 'hospital', 'parking']);
@@ -80,7 +80,7 @@ describe('buildInfraCategories', () => {
 
   it('items가 fetch 한도에 도달하면 capped=true', () => {
     const hospitals = Array.from({ length: INFRA_FETCH_LIMIT }, (_, i) => ({
-      id: BigInt(i + 1), name: `병원${i}`, typeName: '의원', address: '', distanceMeters: 100 + i,
+      id: BigInt(i + 1), name: `병원${i}`, typeName: '의원', address: '', sigunguCode: null, distanceMeters: 100 + i,
     }));
     const cats = buildInfraCategories({ ...empty, hospitals });
     expect(cats.find((c) => c.key === 'hospital')?.capped).toBe(true);
@@ -89,7 +89,7 @@ describe('buildInfraCategories', () => {
   it('items가 한도 미만이면 capped=false', () => {
     const cats = buildInfraCategories({
       ...empty,
-      pharmacies: [{ id: 1n, name: '약국', address: '', tel: null, distanceMeters: 100 }],
+      pharmacies: [{ id: 1n, name: '약국', address: '', tel: null, sigunguCode: null, distanceMeters: 100 }],
     });
     expect(cats.find((c) => c.key === 'pharmacy')?.capped).toBe(false);
   });
@@ -124,11 +124,29 @@ describe('buildInfraCategories', () => {
   it('어린이집은 기타 앞, 마지막 직전에 배치된다', () => {
     const cats = buildInfraCategories({
       ...empty,
-      hospitals: [{ id: 9n, name: '내과', typeName: '의원', address: '', distanceMeters: 100 }],
+      hospitals: [{ id: 9n, name: '내과', typeName: '의원', address: '', sigunguCode: null, distanceMeters: 100 }],
       stores: [{ id: 1n, name: '무인문구', address: '', industryCode: 'Z999', industryName: '기타', distanceMeters: 200 }],
       childcare: [{ id: 5n, name: '햇살어린이집', address: '', sigunguCode: null, crType: '국공립', capacity: 60, distanceMeters: 90 }],
     });
     expect(cats.map((c) => c.key)).toEqual(['hospital', 'childcare', 'etc']);
+  });
+
+  it('각 항목에 시설 상세 href를 세팅한다', () => {
+    const cats = buildInfraCategories({
+      ...empty,
+      stores: [{ id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', distanceMeters: 80 }],
+      hospitals: [{ id: 9n, name: '세브란스의원', typeName: '의원', address: '', sigunguCode: '11680', distanceMeters: 100 }],
+    });
+    expect(cats.find((c) => c.key === 'store')?.items[0].href).toBe('/amenity/mart/1');
+    expect(cats.find((c) => c.key === 'hospital')?.items[0].href).toBe('/medical/hospital/11680/9');
+  });
+
+  it('sigunguCode 없는 병원 항목은 href=null', () => {
+    const cats = buildInfraCategories({
+      ...empty,
+      hospitals: [{ id: 9n, name: '내과', typeName: '의원', address: '', sigunguCode: null, distanceMeters: 100 }],
+    });
+    expect(cats.find((c) => c.key === 'hospital')?.items[0].href).toBeNull();
   });
 
   it('park/parking/charger 빈 카테고리는 결과에서 제외된다', () => {
@@ -152,5 +170,27 @@ describe('buildInfraCategories', () => {
     expect(excluded.find((c) => c.key === 'park')).toBeUndefined();
     expect(excluded.find((c) => c.key === 'parking')).toBeUndefined();
     expect(excluded.find((c) => c.key === 'charger')).toBeUndefined();
+  });
+});
+
+describe('infraHref', () => {
+  it('id만으로 해석되는 카테고리는 올바른 경로를 만든다', () => {
+    expect(infraHref('store', '10')).toBe('/amenity/mart/10');
+    expect(infraHref('cafe', '11')).toBe('/amenity/cafe/11');
+    expect(infraHref('etc', '12')).toBe('/amenity/convenience/12');
+    expect(infraHref('market', '13')).toBe('/amenity/market/13');
+    expect(infraHref('park', '14')).toBe('/urban/park/14');
+    expect(infraHref('parking', '15')).toBe('/urban/parking/15');
+    expect(infraHref('charger', '16')).toBe('/urban/charger/16');
+  });
+
+  it('병원·약국·어린이집은 sigunguCode가 있으면 경로, 없으면 null', () => {
+    expect(infraHref('hospital', '20', '11680')).toBe('/medical/hospital/11680/20');
+    expect(infraHref('pharmacy', '21', '11680')).toBe('/medical/pharmacy/11680/21');
+    expect(infraHref('childcare', '22', '11680')).toBe('/childcare/11680/22');
+
+    expect(infraHref('hospital', '20', null)).toBeNull();
+    expect(infraHref('pharmacy', '21', undefined)).toBeNull();
+    expect(infraHref('childcare', '22', null)).toBeNull();
   });
 });
