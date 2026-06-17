@@ -170,6 +170,16 @@ export function sidoFromPrefix(prefix: string): string | undefined {
   return PREFIX_TO_SIDO[prefix];
 }
 
+/**
+ * 시도 허브 코드 판별. /region 인덱스의 RegionCard가 시도 10자리 코드를 5자리로 잘라
+ * `/region/{prefix}000`(예 '11000'=서울)으로 링크하므로, 이 형태면 시도 단축명을 반환한다.
+ * 시군구 코드(끝 3자리 ≠ '000')·미지의 prefix는 null.
+ */
+export function sidoFromHubCode(code: string): string | null {
+  if (!/^\d{2}000$/.test(code)) return null;
+  return sidoFromPrefix(code.slice(0, 2)) ?? null;
+}
+
 export interface PopularRegion {
   sigunguCode: string;
   sido: string;
