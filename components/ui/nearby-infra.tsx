@@ -42,7 +42,7 @@ export function NearbyInfra({ categories }: { categories: InfraCategory[] }) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 [grid-auto-rows:1fr] md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 items-start md:grid-cols-2 md:[grid-auto-rows:1fr] md:items-stretch">
         {categories.map((c) => (
           <InfraBlock key={c.key} category={c} />
         ))}
