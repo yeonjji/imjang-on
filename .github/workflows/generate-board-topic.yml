@@ -1,0 +1,32 @@
+name: generate-board-topic
+
+# 토픽 지정 1건 생성(수동). 피드에 안 잡히는 주제를 손으로 DRAFT로 올릴 때 사용.
+# 현재 주제는 scripts/board/generate-topic.ts의 SOURCE에 하드코딩(서울시 희망두배 청년통장).
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'true면 생성만 하고 DB에 안 씀(Actions 로그로 본문 확인)'
+        required: false
+        default: 'false'
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      LOG_LEVEL: info
+      PRISMA_INGEST: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma generate
+      - run: pnpm tsx scripts/board/generate-topic.ts ${{ inputs.dry_run == 'true' && '--dry-run' || '' }}
+        timeout-minutes: 10
