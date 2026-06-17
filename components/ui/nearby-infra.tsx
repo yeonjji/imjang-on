@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import type { InfraCategory, InfraCategoryKey } from '@/lib/amenity/infra';
@@ -65,20 +66,36 @@ function InfraBlock({ category }: { category: InfraCategory }) {
         <span className="ml-1 text-xs font-semibold text-[var(--color-muted)]">{category.items.length}{category.capped ? '+' : ''}곳</span>
       </div>
       <ul>
-        {visible.map((it) => (
-          <li
-            key={it.id}
-            className="flex items-center justify-between gap-2.5 border-b border-[var(--color-line)] py-2 last:border-0"
-          >
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-[var(--color-text)]">{it.name}</p>
-              {it.sub && <p className="truncate text-xs text-[var(--color-muted)]">{it.sub}</p>}
-            </div>
-            <span className="shrink-0 rounded-full bg-[var(--color-sky-soft)] px-2 py-0.5 text-xs font-bold text-[var(--color-blue)]">
-              {it.distanceMeters}m
-            </span>
-          </li>
-        ))}
+        {visible.map((it) => {
+          const inner = (
+            <>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-[var(--color-text)]">{it.name}</p>
+                {it.sub && <p className="truncate text-xs text-[var(--color-muted)]">{it.sub}</p>}
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <span className="rounded-full bg-[var(--color-sky-soft)] px-2 py-0.5 text-xs font-bold text-[var(--color-blue)]">
+                  {it.distanceMeters}m
+                </span>
+                {it.href && <span aria-hidden className="text-[var(--color-muted)]">›</span>}
+              </div>
+            </>
+          );
+          return (
+            <li key={it.id} className="border-b border-[var(--color-line)] last:border-0">
+              {it.href ? (
+                <Link
+                  href={it.href}
+                  className="-mx-1.5 flex items-center justify-between gap-2.5 rounded-lg px-1.5 py-2 transition-colors hover:bg-[var(--color-sky-soft)]"
+                >
+                  {inner}
+                </Link>
+              ) : (
+                <div className="flex items-center justify-between gap-2.5 py-2">{inner}</div>
+              )}
+            </li>
+          );
+        })}
       </ul>
       {hiddenCount > 0 && !expanded ? (
         <button
