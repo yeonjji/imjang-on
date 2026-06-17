@@ -107,14 +107,14 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
           })}
 
           <SourceCaption ids={['kinfa-loan']} />
+
+          <RelatedLoans items={related} />
         </main>
 
         <aside className="min-w-0">
           <LoanSidebar product={product} rltsite={rltsite} />
         </aside>
       </div>
-
-      <RelatedLoans items={related} />
     </div>
   );
 }
