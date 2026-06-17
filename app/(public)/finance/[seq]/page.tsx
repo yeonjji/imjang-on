@@ -7,6 +7,9 @@ import { JsonLd, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { SITE_URL } from '@/lib/site';
 import { LoanHero } from './_components/loan-hero';
 import { LoanSidebar } from './_components/loan-sidebar';
+import { getLoanSummaries } from '@/lib/loan/list';
+import { recommendLoans, MAX_RELATED } from '@/lib/loan/related';
+import { RelatedLoans } from './_components/related-loans';
 
 export const revalidate = 86_400;
 
@@ -46,6 +49,7 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
 
   const raw = product.rawJson as Record<string, unknown>;
   const rltsite = isDisplayable(raw.rltsite) ? String(raw.rltsite) : null;
+  const related = recommendLoans(product, await getLoanSummaries(), MAX_RELATED);
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
@@ -109,6 +113,8 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
           <LoanSidebar product={product} rltsite={rltsite} />
         </aside>
       </div>
+
+      <RelatedLoans items={related} />
     </div>
   );
 }
