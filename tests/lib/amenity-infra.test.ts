@@ -131,6 +131,24 @@ describe('buildInfraCategories', () => {
     expect(cats.map((c) => c.key)).toEqual(['hospital', 'childcare', 'etc']);
   });
 
+  it('각 항목에 시설 상세 href를 세팅한다', () => {
+    const cats = buildInfraCategories({
+      ...empty,
+      stores: [{ id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', distanceMeters: 80 }],
+      hospitals: [{ id: 9n, name: '세브란스의원', typeName: '의원', address: '', sigunguCode: '11680', distanceMeters: 100 }],
+    });
+    expect(cats.find((c) => c.key === 'store')?.items[0].href).toBe('/amenity/mart/1');
+    expect(cats.find((c) => c.key === 'hospital')?.items[0].href).toBe('/medical/hospital/11680/9');
+  });
+
+  it('sigunguCode 없는 병원 항목은 href=null', () => {
+    const cats = buildInfraCategories({
+      ...empty,
+      hospitals: [{ id: 9n, name: '내과', typeName: '의원', address: '', sigunguCode: null, distanceMeters: 100 }],
+    });
+    expect(cats.find((c) => c.key === 'hospital')?.items[0].href).toBeNull();
+  });
+
   it('park/parking/charger 빈 카테고리는 결과에서 제외된다', () => {
     const base = {
       ...empty,
