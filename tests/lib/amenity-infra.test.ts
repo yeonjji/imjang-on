@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyStore, buildInfraCategories, INFRA_FETCH_LIMIT, type RawInfra } from '@/lib/amenity/infra';
+import { classifyStore, buildInfraCategories, infraHref, INFRA_FETCH_LIMIT, type RawInfra } from '@/lib/amenity/infra';
 
 describe('classifyStore', () => {
   it('편의점·마트·슈퍼 prefix는 mart', () => {
@@ -152,5 +152,27 @@ describe('buildInfraCategories', () => {
     expect(excluded.find((c) => c.key === 'park')).toBeUndefined();
     expect(excluded.find((c) => c.key === 'parking')).toBeUndefined();
     expect(excluded.find((c) => c.key === 'charger')).toBeUndefined();
+  });
+});
+
+describe('infraHref', () => {
+  it('id만으로 해석되는 카테고리는 올바른 경로를 만든다', () => {
+    expect(infraHref('store', '10')).toBe('/amenity/mart/10');
+    expect(infraHref('cafe', '11')).toBe('/amenity/cafe/11');
+    expect(infraHref('etc', '12')).toBe('/amenity/convenience/12');
+    expect(infraHref('market', '13')).toBe('/amenity/market/13');
+    expect(infraHref('park', '14')).toBe('/urban/park/14');
+    expect(infraHref('parking', '15')).toBe('/urban/parking/15');
+    expect(infraHref('charger', '16')).toBe('/urban/charger/16');
+  });
+
+  it('병원·약국·어린이집은 sigunguCode가 있으면 경로, 없으면 null', () => {
+    expect(infraHref('hospital', '20', '11680')).toBe('/medical/hospital/11680/20');
+    expect(infraHref('pharmacy', '21', '11680')).toBe('/medical/pharmacy/11680/21');
+    expect(infraHref('childcare', '22', '11680')).toBe('/childcare/11680/22');
+
+    expect(infraHref('hospital', '20', null)).toBeNull();
+    expect(infraHref('pharmacy', '21', undefined)).toBeNull();
+    expect(infraHref('childcare', '22', null)).toBeNull();
   });
 });

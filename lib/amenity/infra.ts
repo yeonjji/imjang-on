@@ -99,3 +99,23 @@ export function buildInfraCategories(raw: RawInfra): InfraCategory[] {
       items: c.items.map((it) => ({ ...it, distanceMeters: Number(it.distanceMeters) })),
     }));
 }
+
+/** 인프라 항목 → 해당 시설 상세 페이지 경로. sigunguCode가 필요한데 없으면 null(비클릭). */
+export function infraHref(
+  key: InfraCategoryKey,
+  id: string,
+  sigunguCode?: string | null,
+): string | null {
+  switch (key) {
+    case 'store':     return `/amenity/mart/${id}`;
+    case 'cafe':      return `/amenity/cafe/${id}`;
+    case 'etc':       return `/amenity/convenience/${id}`;
+    case 'market':    return `/amenity/market/${id}`;
+    case 'park':      return `/urban/park/${id}`;
+    case 'parking':   return `/urban/parking/${id}`;
+    case 'charger':   return `/urban/charger/${id}`;
+    case 'hospital':  return sigunguCode ? `/medical/hospital/${sigunguCode}/${id}` : null;
+    case 'pharmacy':  return sigunguCode ? `/medical/pharmacy/${sigunguCode}/${id}` : null;
+    case 'childcare': return sigunguCode ? `/childcare/${sigunguCode}/${id}` : null;
+  }
+}
