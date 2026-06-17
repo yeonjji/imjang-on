@@ -216,12 +216,15 @@ export async function getPropertyList({
   };
 }
 
-export async function getTopPropertiesByVolume({ types, sigunguCode, limit = 10 }: { types: PropertyType[]; sigunguCode?: string; limit?: number }) {
+export async function getTopPropertiesByVolume({ types, sigunguCode, sidoPrefixes, limit = 10 }: { types: PropertyType[]; sigunguCode?: string; sidoPrefixes?: string[]; limit?: number }) {
   return prisma.property.findMany({
     where: {
       propertyType: { in: types },
       txCount12m: { gt: 0 },
       ...(sigunguCode ? { sigunguCode } : {}),
+      ...(sidoPrefixes && sidoPrefixes.length > 0
+        ? { OR: sidoPrefixes.map((p) => ({ sigunguCode: { startsWith: p } })) }
+        : {}),
     },
     include: { region: true },
     orderBy: { txCount12m: 'desc' },

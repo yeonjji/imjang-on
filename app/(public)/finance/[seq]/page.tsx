@@ -10,6 +10,8 @@ import { LoanSidebar } from './_components/loan-sidebar';
 import { getLoanSummaries } from '@/lib/loan/list';
 import { recommendLoans, MAX_RELATED } from '@/lib/loan/related';
 import { RelatedLoans } from './_components/related-loans';
+import { getLoanDiscovery } from '@/lib/loan/discovery';
+import { LoanDiscoverySection } from './_components/loan-discovery-section';
 
 export const revalidate = 86_400;
 
@@ -50,6 +52,7 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
   const raw = product.rawJson as Record<string, unknown>;
   const rltsite = isDisplayable(raw.rltsite) ? String(raw.rltsite) : null;
   const related = recommendLoans(product, await getLoanSummaries(), MAX_RELATED);
+  const discovery = await getLoanDiscovery(product);
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
@@ -109,6 +112,7 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
           <SourceCaption ids={['kinfa-loan']} />
 
           <RelatedLoans items={related} />
+          <LoanDiscoverySection discovery={discovery} />
         </main>
 
         <aside className="min-w-0">
