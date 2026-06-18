@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { prisma } from '@/lib/db';
 import { assertLocalDatabase } from '../_helpers/assert-local-db';
-import { listPublishedPosts, getPublishedPostBySlug, normalizeSlug, PAGE_SIZE, getBoardCategoryCounts, getBoardSourceOrgs } from '@/lib/board/post';
+import { listPublishedPosts, getPublishedPostBySlug, normalizeSlug, PAGE_SIZE, getBoardCategoryCounts, getBoardSourceOrgs, getHomeLatestPosts } from '@/lib/board/post';
 import { BOARD_CATEGORIES } from '@/lib/board/labels';
 import type { Prisma } from '@prisma/client';
 
@@ -132,5 +132,38 @@ describe('getBoardSourceOrgs', () => {
   it('limit으로 개수를 제한한다', async () => {
     const orgs = await getBoardSourceOrgs(3);
     expect(orgs.length).toBeLessThanOrEqual(3);
+  });
+});
+
+describe('getHomeLatestPosts', () => {
+  it('PUBLISHED만 노출하고 DRAFT는 제외한다', async () => {
+    await prisma.post.create({ data: postData({ slug: `${MARK}home-pub`, status: 'PUBLISHED', publishedAt: new Date('2999-01-02') }) });
+    await prisma.post.create({ data: postData({ slug: `${MARK}home-draft`, status: 'DRAFT', publishedAt: new Date('2999-01-03') }) });
+    const rows = await getHomeLatestPosts(5);
+    const slugs = rows.map((r) => r.slug);
+    expect(slugs).toContain(`${MARK}home-pub`);
+    expect(slugs).not.toContain(`${MARK}home-draft`);
+  });
+
+  it('publishedAt 내림차순으로 정렬하고 limit을 지킨다', async () => {
+    await prisma.post.create({ data: postData({ slug: `${MARK}home-A`, publishedAt: new Date('2999-02-01') }) });
+    await prisma.post.create({ data: postData({ slug: `${MARK}home-B`, publishedAt: new Date('2999-02-05') }) });
+    const rows = await getHomeLatestPosts(2);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].slug).toBe(`${MARK}home-B`);
+    expect(rows[1].slug).toBe(`${MARK}home-A`);
+  });
+
+  it('대표 카드용 summary를 포함한다', async () => {
+    await prisma.post.create({ data: postData({ slug: `${MARK}home-sum`, summary: '홈요약텍스트', publishedAt: new Date('2999-03-01') }) });
+    const rows = await getHomeLatestPosts(5);
+    const mine = rows.find((r) => r.slug === `${MARK}home-sum`);
+    expect(mine?.summary).toBe('홈요약텍스트');
+  });
+
+  it('기본 limit은 5 이하의 배열을 반환한다', async () => {
+    const rows = await getHomeLatestPosts();
+    expect(Array.isArray(rows)).toBe(true);
+    expect(rows.length).toBeLessThanOrEqual(5);
   });
 });

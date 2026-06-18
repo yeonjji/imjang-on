@@ -91,3 +91,23 @@ export async function getBoardSourceOrgs(limit = 8): Promise<string[]> {
   });
   return grouped.map((g) => g.sourceName);
 }
+
+export interface HomePostItem {
+  slug: string;
+  title: string;
+  summary: string;
+  category: PostCategory;
+  sourceName: string;
+  publishedAt: Date;
+}
+
+/** 홈 '오늘의 소식'용: PUBLISHED 글 최신 N건(대표 카드 summary 포함). */
+export async function getHomeLatestPosts(limit = 5): Promise<HomePostItem[]> {
+  const rows = await prisma.post.findMany({
+    where: { status: 'PUBLISHED' },
+    select: { slug: true, title: true, summary: true, category: true, sourceName: true, publishedAt: true },
+    orderBy: { publishedAt: 'desc' },
+    take: limit,
+  });
+  return rows.map((r) => ({ ...r, publishedAt: r.publishedAt! }));
+}
