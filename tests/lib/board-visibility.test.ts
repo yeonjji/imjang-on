@@ -11,19 +11,11 @@ afterEach(() => {
 });
 
 describe('isBoardPublic', () => {
-  it('기본(미설정)은 비공개', () => {
+  it('상시 공개 — env와 무관하게 항상 true', () => {
     delete process.env.NEXT_PUBLIC_BOARD_ENABLED;
-    expect(isBoardPublic()).toBe(false);
-  });
-  it('"true"일 때만 공개', () => {
-    process.env.NEXT_PUBLIC_BOARD_ENABLED = 'true';
     expect(isBoardPublic()).toBe(true);
-  });
-  it('"false"·기타 값은 비공개', () => {
     process.env.NEXT_PUBLIC_BOARD_ENABLED = 'false';
-    expect(isBoardPublic()).toBe(false);
-    process.env.NEXT_PUBLIC_BOARD_ENABLED = '1';
-    expect(isBoardPublic()).toBe(false);
+    expect(isBoardPublic()).toBe(true);
   });
 });
 
@@ -41,15 +33,10 @@ describe('isBoardPreview', () => {
 });
 
 describe('canViewBoard', () => {
-  it('공개 OFF + 토큰 일치면 미리보기 허용', () => {
+  it('상시 공개라 토큰 없이도 항상 허용', () => {
     delete process.env.NEXT_PUBLIC_BOARD_ENABLED;
-    process.env.BOARD_PREVIEW_TOKEN = 'secret123';
-    expect(canViewBoard('secret123')).toBe(true);
-    expect(canViewBoard('nope')).toBe(false);
-    expect(canViewBoard(undefined)).toBe(false);
-  });
-  it('공개 ON이면 토큰 없이도 허용', () => {
-    process.env.NEXT_PUBLIC_BOARD_ENABLED = 'true';
+    delete process.env.BOARD_PREVIEW_TOKEN;
     expect(canViewBoard(undefined)).toBe(true);
+    expect(canViewBoard('anything')).toBe(true);
   });
 });
