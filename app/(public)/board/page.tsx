@@ -102,7 +102,7 @@ export default async function BoardListPage({ searchParams }: Props) {
                 <caption className="sr-only">오늘의 이슈 목록</caption>
                 <thead>
                   <tr className="border-b border-[var(--color-line)]">
-                    <th scope="col" className="w-[84px] px-4 py-2.5 text-left text-xs font-bold text-[var(--color-muted)]">분류</th>
+                    <th scope="col" className="w-[96px] px-4 py-2.5 text-left text-xs font-bold text-[var(--color-muted)]">분류</th>
                     <th scope="col" className="px-2 py-2.5 text-left text-xs font-bold text-[var(--color-muted)]">제목</th>
                     <th scope="col" className="hidden w-[140px] px-2 py-2.5 text-left text-xs font-bold text-[var(--color-muted)] sm:table-cell">출처</th>
                     <th scope="col" className="w-[92px] px-4 py-2.5 text-right text-xs font-bold text-[var(--color-muted)]">등록일</th>
@@ -115,7 +115,7 @@ export default async function BoardListPage({ searchParams }: Props) {
                       className="border-b border-[var(--color-line)] transition last:border-b-0 hover:bg-[var(--color-soft)]"
                     >
                       <td className="px-4 py-3 align-middle">
-                        <span className="inline-block rounded-full bg-[var(--color-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">
+                        <span className="inline-block whitespace-nowrap rounded-full bg-[var(--color-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">
                           {categoryLabel(p.category)}
                         </span>
                       </td>
