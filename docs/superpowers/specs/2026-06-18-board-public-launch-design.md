@@ -80,3 +80,15 @@
 - 배포 후 모바일 햄버거: `금융정보` 아래·`생활편의` 위에 **"오늘의 소식"** 노출 → 클릭 시 `/board` 이동 후 drawer 닫힘
 - `/board`·`/board/[slug]` 200 응답, PUBLISHED 12건 렌더
 - 사이트맵에 `/board` 포함, `robots.txt`가 `/board/` 크롤 허용
+
+---
+
+## 변경 (2026-06-18): 토글 제거 — 상시 공개
+
+위 설계는 "env 스위치를 켜서 공개"였으나, 사용자 요청으로 **`NEXT_PUBLIC_BOARD_ENABLED` 토글 자체를 제거하고 게시판을 상시 공개**로 전환한다. env 설정·재배포 트릭 없이, 배포만 하면 공개된다.
+
+- `lib/board/visibility.ts`: `isBoardPublic()`을 `true` 상수로. (게시판 공개 여부의 단일 제어점은 유지 — 7개 사용처가 그대로 이 함수를 본다.)
+- 미리보기(`isBoardPreview`/`canViewBoard`/`?preview`)는 상시 공개라 무의미해지지만 무해해 그대로 둔다(별도 정리 가능).
+- `.env.example`에서 `NEXT_PUBLIC_BOARD_ENABLED` 줄 제거, 토글을 단언하던 테스트(`board-visibility`·`sitemap`·`sitemap-post-source`)를 상시 공개 기준으로 수정.
+- **운영 단계 변경:** Vercel env 설정 단계 불필요 → PR 머지 후 재배포만 하면 공개.
+- 검증: `pnpm lint`/`typecheck` ✔, unit 595/595 ✔, **env 미설정 로컬에서 나브 "오늘의 소식"·`/board` 200 확인**.

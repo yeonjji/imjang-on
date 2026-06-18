@@ -150,3 +150,19 @@ Expected: 빌드 green. (메모리 기준 main push에 git auto-deploy가 안 �
 **2. Placeholder scan:** `<BOARD_PREVIEW_TOKEN>`은 시크릿 값 placeholder(하드코딩 금지)로 의도적. lint/typecheck 스크립트명은 package.json 확인 안내를 명시. 그 외 TODO/TBD 없음. ✅
 
 **3. Type consistency:** 코드 변경은 JSX 텍스트·객체 리터럴 `label` 문자열뿐 — 시그니처/타입 변경 없음. ✅
+
+---
+
+## 추가 (2026-06-18): 토글 제거 — 상시 공개
+
+Task 1(라벨) 완료 후, 사용자 요청으로 **env 스위치 없이 상시 공개**로 전환. 따라서 Task 3의 "Vercel env `NEXT_PUBLIC_BOARD_ENABLED=true` 설정" 단계는 **불필요**해지고, PR 머지 + 재배포만으로 공개된다.
+
+**변경 파일 (구현·검증 완료):**
+- `lib/board/visibility.ts` — `isBoardPublic()` → `return true` (단일 제어점 유지)
+- `.env.example` — `NEXT_PUBLIC_BOARD_ENABLED` 줄 제거
+- `lib/sitemap/static-entries.ts` — 토글 주석 갱신
+- `tests/lib/board-visibility.test.ts` · `sitemap.test.ts` · `sitemap-post-source.test.ts` — 상시 공개 기준으로 수정
+
+**검증:** `pnpm lint` ✔ · `pnpm typecheck` ✔ · `pnpm test:unit` 595/595 ✔ · env 미설정 로컬 dev에서 나브 "오늘의 소식" 노출·`/board` 200·게시글 12건 렌더 육안 확인.
+
+**남은 운영 단계:** PR #137 머지 → `vercel --prod` 재배포. (env 설정 단계 삭제됨.) 미리보기/`?preview` 코드는 무해하게 잔존 — 원하면 별도 정리 PR.

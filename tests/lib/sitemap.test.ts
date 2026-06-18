@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { STATIC_ENTRIES } from '@/lib/sitemap/static-entries';
 import { SOURCE_ORDER } from '@/lib/sitemap/sources';
 import { LIFE_GROUPS } from '@/app/(public)/_components/life-menu';
@@ -28,25 +28,8 @@ describe('sitemap SOURCE_ORDER', () => {
   });
 });
 
-describe('sitemap STATIC_ENTRIES 게시판 게이팅', () => {
-  const orig = process.env.NEXT_PUBLIC_BOARD_ENABLED;
-  afterEach(() => {
-    if (orig === undefined) delete process.env.NEXT_PUBLIC_BOARD_ENABLED;
-    else process.env.NEXT_PUBLIC_BOARD_ENABLED = orig;
-    vi.resetModules();
-  });
-
-  it('게시판 비공개면 /board 를 사이트맵에서 제외한다', async () => {
-    delete process.env.NEXT_PUBLIC_BOARD_ENABLED;
-    vi.resetModules();
-    const { STATIC_ENTRIES: entries } = await import('@/lib/sitemap/static-entries');
-    expect(entries.some((e) => e.url.endsWith('/board'))).toBe(false);
-  });
-
-  it('게시판 공개면 /board 를 사이트맵에 포함한다', async () => {
-    process.env.NEXT_PUBLIC_BOARD_ENABLED = 'true';
-    vi.resetModules();
-    const { STATIC_ENTRIES: entries } = await import('@/lib/sitemap/static-entries');
-    expect(entries.some((e) => e.url.endsWith('/board'))).toBe(true);
+describe('sitemap STATIC_ENTRIES 게시판', () => {
+  it('게시판은 상시 공개이므로 /board 를 사이트맵에 포함한다', () => {
+    expect(STATIC_ENTRIES.some((e) => e.url.endsWith('/board'))).toBe(true);
   });
 });
