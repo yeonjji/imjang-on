@@ -5,10 +5,13 @@ import { StatsBar } from './_components/stats-bar';
 import { AmenityHub } from './_components/amenity-hub';
 import { MarketBriefing } from './_components/market-briefing';
 import { WeeklySubscriptionBoard } from './_components/weekly-subscription-board';
+import { HomeNews } from './_components/home-news';
 import { getSidoList } from '@/lib/region';
 import { getHomeStats } from '@/lib/stats';
 import { getWeeklySubscriptions } from '@/lib/subscription';
 import { readHomeSnapshot } from '@/lib/dashboard-snapshot';
+import { getHomeLatestPosts } from '@/lib/board/post';
+import { isBoardPublic } from '@/lib/board/visibility';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -34,7 +37,7 @@ async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
 }
 
 export default async function HomePage() {
-  const [sidoList, stats, snapshot, weeklyBoard] = await Promise.all([
+  const [sidoList, stats, snapshot, weeklyBoard, latestPosts] = await Promise.all([
     getSidoList(),
     safe(getHomeStats(), { transactions: 0, properties: 0, schools: 0, lifeFacilities: 0 }),
     // 브리핑·인기지역은 5M행 집계라 요청 경로에서 너무 느리다. 일일 ingest가 미리 계산해 둔 스냅샷을 즉시 읽는다.
@@ -46,6 +49,7 @@ export default async function HomePage() {
       summary: { open: 0, upcoming: 0, closed: 0 },
       total: 0,
     }),
+    safe(isBoardPublic() ? getHomeLatestPosts(5) : Promise.resolve([]), []),
   ]);
   const { briefing, popularRegions } = snapshot;
 
@@ -68,6 +72,8 @@ export default async function HomePage() {
       <WeeklySubscriptionBoard board={weeklyBoard} />
 
       <AmenityHub />
+
+      <HomeNews posts={latestPosts} />
     </section>
   );
 }
