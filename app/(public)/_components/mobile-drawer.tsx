@@ -19,7 +19,6 @@ const links = [
   { href: '/list', label: '실거래가' },
   { href: '/subscription', label: '청약' },
   { href: '/finance', label: '금융정보' },
-  ...(isBoardPublic() ? [{ href: '/board', label: '오늘의 소식' }] : []),
 ];
 
 export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
@@ -134,6 +133,16 @@ export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
               </div>
             ))}
           </div>
+        )}
+
+        {isBoardPublic() && (
+          <Link
+            href="/board"
+            onClick={onClose}
+            className="rounded-lg px-2 py-3 text-[15px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-soft)]"
+          >
+            오늘의 소식
+          </Link>
         )}
 
       </div>
