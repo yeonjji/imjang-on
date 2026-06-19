@@ -12,6 +12,7 @@ import { recommendLoans, MAX_RELATED } from '@/lib/loan/related';
 import { RelatedLoans } from './_components/related-loans';
 import { getLoanDiscovery } from '@/lib/loan/discovery';
 import { LoanDiscoverySection } from './_components/loan-discovery-section';
+import { BoardBriefingSection } from '../../_components/board-briefing-section';
 
 export const revalidate = 86_400;
 
@@ -113,6 +114,7 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
 
           <RelatedLoans items={related} />
           <LoanDiscoverySection discovery={discovery} />
+          <BoardBriefingSection />
         </main>
 
         <aside className="min-w-0">

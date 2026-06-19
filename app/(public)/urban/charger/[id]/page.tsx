@@ -22,6 +22,7 @@ import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
+import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 
 export const revalidate = 60;
@@ -118,6 +119,7 @@ export default async function ChargerDetailPage({ params }: Params) {
           {coord && <NearbySubway data={subway} />}
           {coord && <NearbyInfra categories={infra} />}
           <MainSourceBlock id="kepco-ev" />
+          <BoardBriefingSection />
         </main>
         <aside>
           <UrbanDetailSidebar

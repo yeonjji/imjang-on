@@ -27,6 +27,7 @@ import { JsonLd, residenceSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { staticMapUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
+import { BoardBriefingSection } from '../../_components/board-briefing-section';
 
 export const revalidate = 21_600;
 
@@ -144,6 +145,7 @@ export default async function OffiDetailPage({ params }: Params) {
           <NearbySubway data={subway} />
           <NearbyInfra categories={infra} />
           <MainSourceBlock id="molit-rtms" />
+          <BoardBriefingSection />
         </main>
         <aside>
           <DetailSidebar property={property} />

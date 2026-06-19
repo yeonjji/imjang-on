@@ -19,6 +19,7 @@ import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
+import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
 import type { Metadata } from 'next';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 
@@ -113,6 +114,7 @@ export default async function AmenityDetailPage({ params }: Params) {
           {coord && <NearbySubway data={subway} />}
           {coord && <NearbyInfra categories={infra} />}
           <MainSourceBlock id={AMENITY_SOURCE[def.slug]} />
+          <BoardBriefingSection />
         </main>
         <aside><AmenityDetailSidebar others={others} def={def} sigunguCode={item.sigunguCode} /></aside>
       </div>

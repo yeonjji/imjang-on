@@ -141,7 +141,7 @@ export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
             onClick={onClose}
             className="rounded-lg px-2 py-3 text-[15px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-soft)]"
           >
-            오늘의 소식
+            임장ON 브리핑
           </Link>
         )}
 

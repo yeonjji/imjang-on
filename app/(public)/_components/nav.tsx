@@ -34,7 +34,7 @@ export function Nav() {
             <Link href="/subscription">청약</Link>
             <Link href="/finance">금융정보</Link>
             <LifeDropdown onSoon={(topic) => setSoonOpen(topic)} />
-            {isBoardPublic() && <Link href="/board">오늘의 소식</Link>}
+            {isBoardPublic() && <Link href="/board">임장ON 브리핑</Link>}
           </div>
 
           <div className="ml-auto hidden w-48 md:block lg:w-64">
