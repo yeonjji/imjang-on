@@ -145,12 +145,12 @@ export default async function OffiDetailPage({ params }: Params) {
           <NearbySubway data={subway} />
           <NearbyInfra categories={infra} />
           <MainSourceBlock id="molit-rtms" />
+          <BoardBriefingSection />
         </main>
         <aside>
           <DetailSidebar property={property} />
         </aside>
       </div>
-      <BoardBriefingSection />
     </div>
   );
 }

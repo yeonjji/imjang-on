@@ -114,13 +114,13 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
 
           <RelatedLoans items={related} />
           <LoanDiscoverySection discovery={discovery} />
+          <BoardBriefingSection />
         </main>
 
         <aside className="min-w-0">
           <LoanSidebar product={product} rltsite={rltsite} />
         </aside>
       </div>
-      <BoardBriefingSection />
     </div>
   );
 }

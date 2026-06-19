@@ -45,7 +45,7 @@ export default async function LifeGroupHubPage({ params }: Params) {
           <LifeItemCard key={item.label} item={item} emoji={LIFE_ITEM_EMOJI[item.label] ?? '📍'} />
         ))}
       </div>
-      <BoardBriefingSection />
+      <BoardBriefingSection className="mt-16" />
     </section>
   );
 }

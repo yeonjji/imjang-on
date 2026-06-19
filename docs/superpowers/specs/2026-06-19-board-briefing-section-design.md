@@ -33,13 +33,15 @@
 자기완결형(self-contained) async 서버 컴포넌트로 만들어, 각 상세 페이지에는 한 줄만 추가되도록 한다.
 
 ```
-export async function BoardBriefingSection() {
+export async function BoardBriefingSection({ className }: { className?: string }) {
   if (!isBoardPublic()) return null;          // 게시판 비공개면 미노출
   const posts = await getHomeLatestPosts(4);   // 기존 함수 재사용 — 새 쿼리 없음
   if (posts.length === 0) return null;         // 글 없으면 미노출
-  // <section> 렌더
+  // <section className={className}> 렌더
 }
 ```
+
+- **상단 여백:** 컴포넌트 자체는 마진을 갖지 않는다. 2단 레이아웃의 `<main>`(flex flex-col gap-N) 안에 들어가면 부모의 `gap`이 위 섹션들과 동일한 간격을 만든다. 단일 컬럼인 생활편의 허브에서는 `className="mt-16"`을 넘겨 간격을 준다.
 
 - **섹션 제목:** `최신 부동산·청약·금융 소식`
 - **우측 링크:** `전체 보기 →` → `/board`
@@ -50,20 +52,27 @@ export async function BoardBriefingSection() {
 
 ### 설계 선택: 자기완결형 컴포넌트
 
-페이지마다 `fetch + props 전달` 방식 대신 자기완결형 컴포넌트를 택한 이유 — 6개 페이지 수정을 `import 1줄 + JSX 1줄`로 최소화하기 위함(외과적 변경). 데이터는 기존 `getHomeLatestPosts`(`lib/board/post.ts`)를 재사용하므로 새 쿼리·새 모델·새 데이터 함수가 없다.
+페이지마다 `fetch + props 전달` 방식 대신 자기완결형 컴포넌트를 택한 이유 — 13개 페이지 수정을 `import 1줄 + JSX 1줄`로 최소화하기 위함(외과적 변경). 데이터는 기존 `getHomeLatestPosts`(`lib/board/post.ts`)를 재사용하므로 새 쿼리·새 모델·새 데이터 함수가 없다.
 
 ## 3. 삽입 위치
 
-각 상세 페이지 본문 맨 아래(2단 레이아웃이면 두 컬럼 아래 풀폭)에 `<BoardBriefingSection />`을 배치한다. 페이지당 변경은 import 1줄 + JSX 1줄.
+2단(콘텐츠+사이드바) 레이아웃 페이지에서는 `<BoardBriefingSection />`을 **콘텐츠 컬럼(`<main>`/`<div>`)의 마지막 자식**으로 둔다. 이렇게 하면 (a) 너비가 위쪽 섹션들과 정확히 일치하고(풀폭 아님), (b) 콘텐츠 컬럼이 길어져 우측 `sticky` 사이드바가 브리핑 영역까지 따라 내려온다. 페이지당 변경은 import 1줄 + JSX 1줄.
 
-| 페이지 | 파일 |
-|---|---|
-| 아파트 상세 | `app/(public)/apt/[id]/page.tsx` |
-| 빌라 상세 | `app/(public)/villa/[id]/page.tsx` |
-| 오피스텔 상세 | `app/(public)/officetel/[id]/page.tsx` |
-| 청약 상세 | `app/(public)/subscription/[id]/page.tsx` |
-| 금융 상세 | `app/(public)/finance/[seq]/page.tsx` |
-| 생활편의 허브 | `app/(public)/life/[group]/page.tsx` |
+| 구분 | 페이지 | 파일 |
+|---|---|---|
+| 실거래가 | 아파트 상세 | `app/(public)/apt/[id]/page.tsx` |
+| 실거래가 | 빌라 상세 | `app/(public)/villa/[id]/page.tsx` |
+| 실거래가 | 오피스텔 상세 | `app/(public)/officetel/[id]/page.tsx` |
+| 청약 | 청약 상세 | `app/(public)/subscription/[id]/page.tsx` |
+| 금융 | 금융 상세 | `app/(public)/finance/[seq]/page.tsx` |
+| 생활편의 | 학교 상세 | `app/(public)/school/[sigunguCode]/[id]/page.tsx` |
+| 생활편의 | 어린이집 상세 | `app/(public)/childcare/[sigunguCode]/[id]/page.tsx` |
+| 생활편의 | 병원 상세 | `app/(public)/medical/hospital/[sigunguCode]/[id]/page.tsx` |
+| 생활편의 | 약국 상세 | `app/(public)/medical/pharmacy/[sigunguCode]/[id]/page.tsx` |
+| 생활편의 | 상권·편의 상세 | `app/(public)/amenity/[category]/[id]/page.tsx` |
+| 생활편의 | 도시인프라 상세 | `app/(public)/urban/[category]/[id]/page.tsx` |
+| 생활편의 | 충전소 상세 | `app/(public)/urban/charger/[id]/page.tsx` |
+| 생활편의 | 그룹 허브(단일 컬럼) | `app/(public)/life/[group]/page.tsx` (`className="mt-16"`) |
 
 ## 4. 렌더링 / 신선도
 

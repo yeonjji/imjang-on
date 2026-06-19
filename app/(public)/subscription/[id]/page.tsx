@@ -111,12 +111,12 @@ export default async function SubscriptionDetailPage({ params }: Params) {
             </div>
           )}
           <MainSourceBlock id={subscriptionSource(notice.category)} />
+          <BoardBriefingSection />
         </main>
         <aside className="min-w-0">
           <SubscriptionSidebar notice={notice} />
         </aside>
       </div>
-      <BoardBriefingSection />
     </div>
   );
 }

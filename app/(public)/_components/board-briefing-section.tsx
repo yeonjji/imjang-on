@@ -15,13 +15,13 @@ function shortDate(d: Date): string {
  * 카테고리 매칭 없이 PUBLISHED 글 최신 4건을 카드로 노출한다.
  * 게시판이 비공개이거나 글이 없으면 렌더하지 않는다.
  */
-export async function BoardBriefingSection() {
+export async function BoardBriefingSection({ className }: { className?: string }) {
   if (!isBoardPublic()) return null;
   const posts = await getHomeLatestPosts(4);
   if (posts.length === 0) return null;
 
   return (
-    <section className="mt-16">
+    <section className={className}>
       <div className="flex flex-wrap items-end justify-between gap-x-2.5 gap-y-1">
         <div>
           <h2 className="text-xl font-black tracking-tight md:text-[22px]">최신 부동산·청약·금융 소식</h2>
