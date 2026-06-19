@@ -66,7 +66,7 @@ export function PostEditor({ id, title, summary, body: initialBody, type, catego
         <div className="text-sm font-semibold text-[var(--color-muted)]">
           미리보기
           <div className="board-prose mt-1 rounded-lg border border-[var(--color-line)] bg-white px-4 py-3 text-[15px] leading-relaxed text-[var(--color-text)]">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[[remarkGfm, { singleTilde: false }]]}>{body}</ReactMarkdown>
           </div>
         </div>
       </div>

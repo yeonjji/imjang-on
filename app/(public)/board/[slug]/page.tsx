@@ -68,7 +68,7 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
         기준일 {post.sourceDate.toISOString().slice(0, 10)}
       </p>
       <div className="board-prose mt-8 text-[15px] leading-relaxed text-[var(--color-text)]">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.body}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[[remarkGfm, { singleTilde: false }]]}>{post.body}</ReactMarkdown>
       </div>
 
       <PostSource
