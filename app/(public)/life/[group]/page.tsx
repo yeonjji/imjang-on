@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { LIFE_GROUPS, LIFE_ITEM_EMOJI } from '../../_components/life-menu';
 import { LifeItemCard } from '../_components/life-item-card';
 import type { Metadata } from 'next';
+import { BoardBriefingSection } from '../../_components/board-briefing-section';
 
 export const revalidate = 86_400;
 
@@ -44,6 +45,7 @@ export default async function LifeGroupHubPage({ params }: Params) {
           <LifeItemCard key={item.label} item={item} emoji={LIFE_ITEM_EMOJI[item.label] ?? '📍'} />
         ))}
       </div>
+      <BoardBriefingSection />
     </section>
   );
 }

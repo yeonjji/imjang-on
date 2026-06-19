@@ -30,6 +30,7 @@ import { JsonLd, residenceSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { staticMapUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
+import { BoardBriefingSection } from '../../_components/board-briefing-section';
 
 export const revalidate = 21_600;
 
@@ -164,6 +165,7 @@ export default async function AptDetailPage({ params }: Params) {
           <DetailSidebar property={property} />
         </aside>
       </div>
+      <BoardBriefingSection />
     </div>
   );
 }

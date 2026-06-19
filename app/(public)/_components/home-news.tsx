@@ -9,7 +9,7 @@ function shortDate(d: Date): string {
   return `${mm}.${dd}`;
 }
 
-/** 홈 맨 아래 '오늘의 소식': 대표글 1 + 리스트 4. 글이 없으면 렌더하지 않는다. */
+/** 홈 맨 아래 '임장ON 브리핑': 대표글 1 + 리스트 4. 글이 없으면 렌더하지 않는다. */
 export function HomeNews({ posts }: { posts: HomePostItem[] }) {
   if (posts.length === 0) return null;
   const [featured, ...rest] = posts;
@@ -19,7 +19,7 @@ export function HomeNews({ posts }: { posts: HomePostItem[] }) {
     <section className="mt-16">
       <div className="flex flex-wrap items-end justify-between gap-x-2.5 gap-y-1">
         <div>
-          <h2 className="text-xl font-black tracking-tight md:text-[22px]">📰 오늘의 소식</h2>
+          <h2 className="text-xl font-black tracking-tight md:text-[22px]">📰 임장ON 브리핑</h2>
           <p className="mt-1 text-[13px] text-[var(--color-muted)]">공공기관 보도자료·고시를 사실 위주로 정리</p>
         </div>
         <Link href="/board" className="text-[13px] font-bold text-[var(--color-blue)] hover:underline">
