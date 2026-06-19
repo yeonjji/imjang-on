@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { decodeEntities } from '@/lib/text/decode-entities';
 
 export interface LoanField {
   key: string; // rawJson 키
@@ -65,18 +66,8 @@ export function isDisplayable(v: unknown): boolean {
   return s !== '' && s !== '-';
 }
 
-// 원본 데이터에 HTML 엔티티가 박혀 있음(예: '원&#40;리&#41;금' = '원(리)금'). 표시 전 디코딩.
-export function decodeEntities(s: string): string {
-  return s
-    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCodePoint(parseInt(h, 16)))
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;|&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&');
-}
+// HTML 엔티티 디코딩은 공용 유틸(@/lib/text/decode-entities)로 이동. 기존 import 경로 호환용 re-export.
+export { decodeEntities };
 
 // 연 단위 필드에서 비현실적 값(50년 초과 숫자 포함)은 소스 데이터 오류로 보고 숨긴다.
 // 단, 단위/맥락이 있는 텍스트("5(최대 60개월…)")는 판단하지 않고 그대로 둔다(순수 숫자형만 검사).
