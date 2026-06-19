@@ -64,9 +64,10 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
       <h1 className="mt-3 text-2xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-3xl">
         {post.title}
       </h1>
-      <p className="mt-2 text-sm text-[var(--color-muted)]">
-        기준일 {post.sourceDate.toISOString().slice(0, 10)}
-      </p>
+      <div className="mt-2 flex items-center justify-between text-sm text-[var(--color-muted)]">
+        <span>기준일 {post.sourceDate.toISOString().slice(0, 10)}</span>
+        <span>작성자 : 임장ON 편집부</span>
+      </div>
       <div className="board-prose mt-8 text-[15px] leading-relaxed text-[var(--color-text)]">
         <ReactMarkdown remarkPlugins={[[remarkGfm, { singleTilde: false }]]}>{post.body}</ReactMarkdown>
       </div>
