@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: '개인정보 처리방침',
-  description: '임장온 개인정보 처리방침 — 수집 항목, 이용 목적, 쿠키 및 광고(Google AdSense) 안내.',
+  description: '임장ON 개인정보 처리방침 — 수집 항목, 이용 목적, 쿠키 및 광고(Google AdSense) 안내.',
   alternates: { canonical: '/privacy' },
 };
 
@@ -61,7 +61,7 @@ const SECTIONS: { heading: string; body: React.ReactNode[] }[] = [
     heading: '7. 개인정보 보호책임자',
     body: [
       <>
-        임장온 운영자 / 연락처:{' '}
+        임장ON 운영자 / 연락처:{' '}
         <a href="mailto:contact@imjangon.co.kr" className="underline">contact@imjangon.co.kr</a>
       </>,
     ],

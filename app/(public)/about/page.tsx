@@ -3,17 +3,17 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: '서비스 소개',
-  description: '임장온 서비스 소개 — 공공데이터 기반 부동산 실거래가·생활편의 정보를 제공하는 방식과 운영 안내.',
+  description: '임장ON 서비스 소개 — 공공데이터 기반 부동산 실거래가·생활편의 정보를 제공하는 방식과 운영 안내.',
   alternates: { canonical: '/about' },
 };
 
 export default function AboutPage() {
   return (
     <article className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="text-3xl font-black text-[var(--color-blue-dark)]">임장온 소개</h1>
+      <h1 className="text-3xl font-black text-[var(--color-blue-dark)]">임장ON 소개</h1>
 
       <p className="mt-5 text-[var(--color-text)]">
-        임장온은 국토교통부 실거래가, 한국부동산원 청약홈, 건강보험심사평가원, 교육부, 보건복지부,
+        임장ON은 국토교통부 실거래가, 한국부동산원 청약홈, 건강보험심사평가원, 교육부, 보건복지부,
         행정안전부, 국가철도공단 등 공공데이터를 가공·통합해 제공하는 비상업 부동산 정보 플랫폼입니다.
       </p>
 
@@ -27,7 +27,7 @@ export default function AboutPage() {
 
       <h2 className="mt-10 text-xl font-bold text-[var(--color-text)]">운영 안내</h2>
       <p className="mt-3 text-[var(--color-text)]">
-        임장온은 개인이 운영하는 비상업 정보 서비스이며, 회원가입·결제·중개 기능을 제공하지 않습니다.
+        임장ON은 개인이 운영하는 비상업 정보 서비스이며, 회원가입·결제·중개 기능을 제공하지 않습니다.
         문의는{' '}
         <a href="mailto:contact@imjangon.co.kr" className="underline hover:text-[var(--color-blue-dark)]">
           contact@imjangon.co.kr

@@ -14,7 +14,7 @@ export function LoanDiscoverySection({ discovery }: { discovery: LoanDiscovery }
 
   return (
     <section className="mt-10 rounded-[22px] bg-[var(--color-soft)] p-6">
-      <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">임장온에서 더 살펴보기</h2>
+      <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">임장ON에서 더 살펴보기</h2>
 
       {hasProperties && (
         <div>

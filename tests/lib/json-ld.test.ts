@@ -11,7 +11,7 @@ describe('organizationSchema', () => {
   it('has Organization type and name', () => {
     const s = organizationSchema();
     expect(s['@type']).toBe('Organization');
-    expect(s.name).toBe('임장온');
+    expect(s.name).toBe('임장ON');
     expect(typeof s.url).toBe('string');
   });
 });

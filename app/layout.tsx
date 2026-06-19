@@ -9,15 +9,15 @@ import { JsonLd, organizationSchema, webSiteSchema } from '@/lib/seo/json-ld';
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: '임장온 — 공공데이터 부동산 실거래가',
-    template: '%s | 임장온',
+    default: '임장ON — 공공데이터 부동산 실거래가',
+    template: '%s | 임장ON',
   },
   description: '공공데이터로 보는 전국 아파트·오피스텔·연립다세대 실거래가 통합 정보',
   alternates: { canonical: '/' },
   openGraph: {
     locale: 'ko_KR',
     type: 'website',
-    siteName: '임장온',
+    siteName: '임장ON',
   },
   twitter: {
     card: 'summary_large_image',

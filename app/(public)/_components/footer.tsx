@@ -5,7 +5,7 @@ export function Footer() {
     <footer className="mt-24 border-t border-[var(--color-line)] bg-white">
       <div className="mx-auto grid max-w-[1180px] gap-8 px-6 py-12 md:grid-cols-4">
         <div>
-          <p className="text-lg font-black text-[var(--color-blue-dark)]">임장온</p>
+          <p className="text-lg font-black text-[var(--color-blue-dark)]">임장ON</p>
           <p className="mt-2 text-sm text-[var(--color-muted)]">
             공공데이터 기반 부동산 실거래가 통합 정보
           </p>
@@ -46,7 +46,7 @@ export function Footer() {
       </div>
       <div className="border-t border-[var(--color-line)]">
         <p className="mx-auto max-w-[1180px] px-6 py-4 text-xs text-[var(--color-muted)]">
-          © 2026 임장온. 본 사이트는 공공데이터를 가공해 제공합니다. 실거래 신고 지연으로 최신성·정확성이 100% 보장되지 않습니다.
+          © 2026 임장ON. 본 사이트는 공공데이터를 가공해 제공합니다. 실거래 신고 지연으로 최신성·정확성이 100% 보장되지 않습니다.
         </p>
       </div>
     </footer>

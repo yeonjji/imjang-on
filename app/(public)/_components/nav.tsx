@@ -21,7 +21,7 @@ export function Nav() {
           <Link href="/" className="flex items-center">
             <Image
               src="/logo.png"
-              alt="임장온"
+              alt="임장ON"
               width={1814}
               height={867}
               priority

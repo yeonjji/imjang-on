@@ -7,7 +7,7 @@ import { kstDateISO } from '../keys';
 import type { BoardCandidate } from '../candidate';
 
 /** FIRST_PARTY 청약 후보: 우리 청약 DB(청약홈·LH) 집계로 "현재 청약 일정" 글 1건을 만든다. */
-export const SUBSCRIPTION_SOURCE_NAME = '임장온 청약 집계(원자료: 청약홈·LH)';
+export const SUBSCRIPTION_SOURCE_NAME = '임장ON 청약 집계(원자료: 청약홈·LH)';
 export const MIN_NOTICES = 3; // 이보다 적으면 기사화할 substance 부족 → 후보 생성 안 함
 
 export interface DigestNotice {
@@ -61,7 +61,7 @@ export function buildSubscriptionDigest(
 
   const todayLabel = `${today.getUTCFullYear()}년 ${today.getUTCMonth() + 1}월 ${today.getUTCDate()}일`;
   const bodyText =
-    `임장온이 청약홈과 LH 사전청약 공고를 집계한 자료다. ${todayLabel} 기준으로 ` +
+    `임장ON이 청약홈과 LH 사전청약 공고를 집계한 자료다. ${todayLabel} 기준으로 ` +
     `현재 접수 중이거나 접수 예정인 청약은 모두 ${rows.length}건이다.\n\n` +
     lines.join('\n\n');
 
