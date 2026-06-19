@@ -5,7 +5,7 @@
 export interface BoardCandidate {
   /** 출처 식별자: 'korea' | 'bok' | 'fp:subscription' 등. detectedFrom 폴백·로깅용. */
   sourceKey: string;
-  /** Post.sourceName (예: '국토교통부', '임장온 청약 집계(원자료: 청약홈·LH)'). */
+  /** Post.sourceName (예: '국토교통부', '임장ON 청약 집계(원자료: 청약홈·LH)'). */
   agency: string;
   /** 랭킹/제목 힌트. 최종 제목은 LLM이 생성. */
   title: string;

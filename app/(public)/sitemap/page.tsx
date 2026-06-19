@@ -4,7 +4,7 @@ import { LIFE_GROUPS } from '../_components/life-menu';
 
 export const metadata: Metadata = {
   title: '사이트맵',
-  description: '임장온 사이트맵 — 아파트·오피스텔·연립다세대·지역·생활편의 전체 페이지 안내.',
+  description: '임장ON 사이트맵 — 아파트·오피스텔·연립다세대·지역·생활편의 전체 페이지 안내.',
   alternates: { canonical: '/sitemap' },
 };
 

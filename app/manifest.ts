@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: '임장온',
-    short_name: '임장온',
+    name: '임장ON',
+    short_name: '임장ON',
     description: '공공데이터 부동산 실거래가',
     start_url: '/',
     display: 'standalone',

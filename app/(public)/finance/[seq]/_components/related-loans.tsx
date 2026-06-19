@@ -15,7 +15,7 @@ export function RelatedLoans({ items }: { items: RelatedLoan[] }) {
       <div className="mt-4">
         <SourceCaption ids={['kinfa-loan']} />
         <p className="mt-1 text-xs text-[var(--color-muted)]">
-          추천 순서는 임장온이 공개 태그(목적·대상·지역)로 산정했습니다.
+          추천 순서는 임장ON이 공개 태그(목적·대상·지역)로 산정했습니다.
         </p>
       </div>
     </section>

@@ -28,7 +28,7 @@ export function OgFrame({ title, subtitle }: { title: string; subtitle?: string 
         fontFamily: 'Pretendard',
       }}
     >
-      <div style={{ display: 'flex', fontSize: 40, opacity: 0.85 }}>임장온</div>
+      <div style={{ display: 'flex', fontSize: 40, opacity: 0.85 }}>임장ON</div>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', fontSize: 64, lineHeight: 1.2 }}>{title}</div>
         {subtitle ? (

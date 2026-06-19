@@ -3,7 +3,7 @@ import { dataSourcesByCategory } from '@/lib/data-sources';
 
 export const metadata: Metadata = {
   title: '데이터 출처',
-  description: '임장온 데이터 출처 — 국토교통부 실거래가, 청약홈, 건강보험심사평가원 등 공공데이터 출처 안내.',
+  description: '임장ON 데이터 출처 — 국토교통부 실거래가, 청약홈, 건강보험심사평가원 등 공공데이터 출처 안내.',
   alternates: { canonical: '/data-source' },
 };
 
@@ -13,7 +13,7 @@ export default function DataSourcePage() {
     <article className="mx-auto max-w-2xl px-6 py-16">
       <h1 className="text-3xl font-black text-[var(--color-blue-dark)]">데이터 출처 및 면책</h1>
       <p className="mt-4 text-[var(--color-text)]">
-        임장온은 아래 공공데이터 및 외부 서비스를 가공해 정보를 제공합니다.
+        임장ON은 아래 공공데이터 및 외부 서비스를 가공해 정보를 제공합니다.
       </p>
 
       <div className="mt-8 space-y-8">

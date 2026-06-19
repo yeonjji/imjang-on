@@ -53,7 +53,7 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
         ]}
       />
       <div className="mb-6 rounded-[18px] border border-[var(--color-line)] bg-[var(--color-soft)] px-5 py-4">
-        <p className="text-sm font-black tracking-tight text-[var(--color-blue)]">임장온 소식</p>
+        <p className="text-sm font-black tracking-tight text-[var(--color-blue)]">임장ON 소식</p>
         <p className="mt-1 text-xs font-bold text-[var(--color-muted)]">
           {categoryLabel(post.category)} · {post.sourceName}
         </p>

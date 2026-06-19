@@ -31,7 +31,7 @@ const SOURCE = {
   sourceUrl: 'https://news.seoul.go.kr/welfare/archives/581505',
   sourceDate: new Date('2026-06-15T00:00:00+09:00'),
   detectedFrom: 'topic:youth-asset-accounts',
-  sourceText: `[청년 자산형성 통장 안내 — 임장온 정리]
+  sourceText: `[청년 자산형성 통장 안내 — 임장ON 정리]
 원자료: 서울특별시 복지정책과(2026년 6월 15일), 보건복지부 자활정책과.
 아래는 일하는 청년이 본인 저축액에 공공기관이 같은 금액 이상을 얹어 목돈을 만들어 주는 '매칭형 자산형성 통장' 두 가지의 사실 정리다.
 

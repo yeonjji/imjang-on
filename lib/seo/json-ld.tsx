@@ -8,7 +8,7 @@ export function organizationSchema(): Json {
   return {
     ...ctx,
     '@type': 'Organization',
-    name: '임장온',
+    name: '임장ON',
     url: SITE_URL,
     logo: `${SITE_URL}/icon-512.png`,
   };
@@ -18,7 +18,7 @@ export function webSiteSchema(): Json {
   return {
     ...ctx,
     '@type': 'WebSite',
-    name: '임장온',
+    name: '임장ON',
     url: SITE_URL,
     potentialAction: {
       '@type': 'SearchAction',
@@ -112,7 +112,7 @@ export function articleSchema(input: {
     url: input.url,
     datePublished: input.datePublished,
     image: input.image,
-    publisher: { '@type': 'Organization', name: '임장온', url: SITE_URL },
+    publisher: { '@type': 'Organization', name: '임장ON', url: SITE_URL },
   };
 }
 
