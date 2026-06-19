@@ -1,4 +1,5 @@
 import { parseXml, getItems, getTotalCount } from '@/scripts/ingest/xml-parse';
+import { decodeEntities } from '@/lib/text/decode-entities';
 import type { NormalizedTraditionalMarket } from './types';
 import { createHash } from 'node:crypto';
 
@@ -32,9 +33,11 @@ export function parseTraditionalMarketXml(xml: string): {
     const lng = Number.isFinite(rawLng) && rawLng !== 0 ? rawLng : null;
 
     rows.push({
+      // sourceId는 원본 name+address 해시로 유지(디코딩 시 해시가 바뀌면 기존 행과 매칭 깨져 중복 발생).
+      // 저장값만 디코딩한다.
       sourceId: marketSourceId(name, address),
-      name,
-      address,
+      name: decodeEntities(name),
+      address: decodeEntities(address),
       lat,
       lng,
       marketType: item.mrktType ? String(item.mrktType).trim() : null,

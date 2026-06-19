@@ -1,4 +1,5 @@
 import { parseXml, getItems, getTotalCount } from '@/scripts/ingest/xml-parse';
+import { decodeEntities } from '@/lib/text/decode-entities';
 import type { NormalizedStore } from './types';
 
 const BASE_URL = 'https://apis.data.go.kr/B553077/api/open/sdsc2/storeListInUpjong';
@@ -51,8 +52,9 @@ export function parseStoreXml(
 
     rows.push({
       sourceId,
-      name: String(item.bizesNm ?? '').trim(),
-      address: String(item.rdnmAdr ?? '').trim(),
+      // 공공데이터가 이름·주소를 HTML 엔티티로 인코딩해 내려주는 경우가 있어(예: '&lt;주&gt;세븐') 저장 전 디코딩.
+      name: decodeEntities(String(item.bizesNm ?? '').trim()),
+      address: decodeEntities(String(item.rdnmAdr ?? '').trim()),
       lat,
       lng,
       // 가장 구체적인 분류(소→중→대)를 우선 저장해 '편의점'/'약국'처럼 의미있게 표시
