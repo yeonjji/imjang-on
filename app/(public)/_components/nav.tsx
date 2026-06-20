@@ -22,10 +22,10 @@ export function Nav() {
             <Image
               src="/logo.png"
               alt="임장ON"
-              width={1814}
-              height={867}
+              width={744}
+              height={256}
               priority
-              className="h-14 w-auto md:h-14"
+              className="h-9 w-auto md:h-9"
             />
           </Link>
 
