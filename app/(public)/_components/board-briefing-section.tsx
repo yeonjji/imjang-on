@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { isBoardPublic } from '@/lib/board/visibility';
 import { getHomeLatestPosts } from '@/lib/board/post';
+import { boardPath } from '@/lib/board/slug';
 import { categoryLabel } from '@/lib/board/labels';
 
 /** publishedAt → "MM.DD" (등록일 보조 표기). */
@@ -36,7 +37,7 @@ export async function BoardBriefingSection({ className }: { className?: string }
         {posts.map((p) => (
           <Link
             key={p.slug}
-            href={`/board/${p.slug}`}
+            href={boardPath(p.id)}
             className="flex flex-col rounded-[20px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-blue)]"
           >
             <span className="inline-block w-fit rounded-full bg-[var(--color-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">

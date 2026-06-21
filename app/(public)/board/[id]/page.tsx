@@ -1,7 +1,8 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { getPublishedPostBySlug } from '@/lib/board/post';
+import { getPublishedPostById, getPublishedPostBySlug } from '@/lib/board/post';
+import { boardPath } from '@/lib/board/slug';
 import { canViewBoard } from '@/lib/board/visibility';
 import { categoryLabel } from '@/lib/board/labels';
 import { PostSource } from '@/components/ui/post-source';
@@ -12,27 +13,38 @@ import type { Metadata } from 'next';
 export const revalidate = 3_600;
 
 interface Params {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ id: string }>;
   searchParams: Promise<{ preview?: string }>;
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const { slug } = await params;
-  const post = await getPublishedPostBySlug(slug).catch(() => null);
+  const { id } = await params;
+  if (!/^\d+$/.test(id)) return {};
+  const post = await getPublishedPostById(BigInt(id)).catch(() => null);
   if (!post) return {};
   return {
     title: post.title,
     description: post.summary,
-    alternates: { canonical: `/board/${post.slug}` },
+    alternates: { canonical: boardPath(post.id) },
   };
 }
 
 export default async function BoardDetailPage({ params, searchParams }: Params) {
   const { preview } = await searchParams;
   if (!canViewBoard(preview)) notFound();
-  const { slug } = await params;
-  const post = await getPublishedPostBySlug(slug);
+  const { id } = await params;
+
+  // 레거시: 옛 한글 slug URL(`/board/<slug>`) → id 경로로 영구 리다이렉트
+  if (!/^\d+$/.test(id)) {
+    const legacy = await getPublishedPostBySlug(id).catch(() => null);
+    if (!legacy) notFound();
+    permanentRedirect(boardPath(legacy.id));
+  }
+
+  const post = await getPublishedPostById(BigInt(id));
   if (!post) notFound();
+
+  const url = `${SITE_URL}${boardPath(post.id)}`;
 
   return (
     <article className="mx-auto max-w-[760px] px-6 py-12">
@@ -40,15 +52,15 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
         data={[
           articleSchema({
             headline: post.title,
-            url: `${SITE_URL}/board/${post.slug}`,
+            url,
             datePublished: post.publishedAt.toISOString().slice(0, 10),
             description: post.summary,
-            image: `${SITE_URL}/board/${post.slug}/thumbnail`,
+            image: `${SITE_URL}/board/${post.id}/thumbnail`,
           }),
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
             { name: '소식', url: `${SITE_URL}/board` },
-            { name: post.title, url: `${SITE_URL}/board/${post.slug}` },
+            { name: post.title, url },
           ]),
         ]}
       />

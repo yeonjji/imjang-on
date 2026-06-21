@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { listPostsByStatus } from '@/lib/board/admin';
+import { boardPath } from '@/lib/board/slug';
 import { categoryLabel, typeLabel } from '@/lib/board/labels';
 import type { PostStatus } from '@prisma/client';
 
@@ -71,7 +72,7 @@ export default async function AdminPostsPage({ searchParams }: Props) {
                   </Link>
                   {previewToken && r.status === 'PUBLISHED' && (
                     <a
-                      href={`/board/${r.slug}?preview=${previewToken}`}
+                      href={`${boardPath(r.id)}?preview=${previewToken}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="ml-2 text-xs text-[var(--color-muted)] underline"

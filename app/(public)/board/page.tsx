@@ -6,6 +6,7 @@ import {
   getBoardSourceOrgs,
 } from '@/lib/board/post';
 import { canViewBoard } from '@/lib/board/visibility';
+import { boardPath } from '@/lib/board/slug';
 import { BOARD_CATEGORIES, categoryLabel } from '@/lib/board/labels';
 import type { PostCategory } from '@prisma/client';
 import type { Metadata } from 'next';
@@ -121,7 +122,7 @@ export default async function BoardListPage({ searchParams }: Props) {
                       </td>
                       <td className="px-2 py-3 align-middle">
                         <Link
-                          href={`/board/${p.slug}${previewQs}`}
+                          href={`${boardPath(p.id)}${previewQs}`}
                           className="block truncate text-sm font-semibold text-[var(--color-blue-dark)] hover:underline"
                         >
                           {p.title}

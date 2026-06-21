@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getPostForAdmin } from '@/lib/board/admin';
+import { boardPath } from '@/lib/board/slug';
 import { PostEditor } from './post-editor';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +28,7 @@ export default async function AdminPostEditPage({ params }: Params) {
         <span className="rounded-full bg-[var(--color-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">{post.status}</span>
         {previewToken && post.status === 'PUBLISHED' && (
           <a
-            href={`/board/${post.slug}?preview=${previewToken}`}
+            href={`${boardPath(post.id)}?preview=${previewToken}`}
             target="_blank"
             rel="noopener noreferrer"
             className="ml-auto text-sm font-semibold text-[var(--color-blue)] underline"

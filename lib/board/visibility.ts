@@ -2,7 +2,7 @@
  * 공개 게시판(/board) 노출 여부. 게시판은 상시 공개한다.
  *
  * (2026-06-18: `NEXT_PUBLIC_BOARD_ENABLED` 토글 제거 — env 스위치 없이 전체 공개.)
- * 내비 메뉴·`/board`·`/board/[slug]`·사이트맵·robots 모두 이 함수로 공개 여부를 본다.
+ * 내비 메뉴·`/board`·`/board/[id]`·사이트맵·robots 모두 이 함수로 공개 여부를 본다.
  */
 export function isBoardPublic(): boolean {
   return true;
