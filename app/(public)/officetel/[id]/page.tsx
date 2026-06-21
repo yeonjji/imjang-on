@@ -29,7 +29,7 @@ import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 import { BoardBriefingSection } from '../../_components/board-briefing-section';
 
-export const revalidate = 21_600;
+export const revalidate = 86_400;
 
 interface Params {
   params: Promise<{ id: string }>;
