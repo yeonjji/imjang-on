@@ -5,12 +5,16 @@ import { z } from 'zod';
 const Body = z.object({
   email: z.string().email(),
   topic: z.string().min(1).max(40),
+  company: z.string().optional(), // 허니팟
 });
 
 export async function POST(req: Request) {
   try {
     const parsed = Body.safeParse(await req.json());
     if (!parsed.success) throw new ApiError('BAD_REQUEST', 'invalid body', 400);
+    if (parsed.data.company && parsed.data.company.trim() !== '') {
+      return Response.json({ ok: true });
+    }
     await prisma.emailSignup.upsert({
       where: { email: parsed.data.email },
       create: { email: parsed.data.email, topic: parsed.data.topic },
