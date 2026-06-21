@@ -7,6 +7,7 @@ import { useState } from 'react';
 
 export function SoonModal({ open, topic, onClose }: { open: boolean; topic: string | null; onClose: () => void }) {
   const [email, setEmail] = useState('');
+  const [company, setCompany] = useState(''); // 허니팟
   const [status, setStatus] = useState<'idle' | 'submitting' | 'done' | 'error'>('idle');
 
   async function submit(e: React.FormEvent) {
@@ -17,7 +18,7 @@ export function SoonModal({ open, topic, onClose }: { open: boolean; topic: stri
       const res = await fetch('/api/subscribe-soon', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, topic }),
+        body: JSON.stringify({ email, topic, company }),
       });
       setStatus(res.ok ? 'done' : 'error');
     } catch {
@@ -36,6 +37,18 @@ export function SoonModal({ open, topic, onClose }: { open: boolean; topic: stri
           <p className="text-sm text-[var(--color-muted)]">
             실거래가에 이어 청약·생활편의·전세대출을 단계적으로 추가합니다. 출시 알림을 받으시려면 이메일을 남겨주세요 (선택).
           </p>
+          <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}>
+            <label htmlFor="company">회사명</label>
+            <input
+              type="text"
+              id="company"
+              name="company"
+              tabIndex={-1}
+              autoComplete="off"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+            />
+          </div>
           <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="이메일 주소" required />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={onClose}>닫기</Button>
