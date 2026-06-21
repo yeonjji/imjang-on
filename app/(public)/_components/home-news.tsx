@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { HomePostItem } from '@/lib/board/post';
+import { boardPath } from '@/lib/board/slug';
 import { categoryLabel } from '@/lib/board/labels';
 
 /** publishedAt → "MM.DD" (등록일 보조 표기). */
@@ -30,7 +31,7 @@ export function HomeNews({ posts }: { posts: HomePostItem[] }) {
       <div className="mt-[18px] grid grid-cols-1 gap-5 md:grid-cols-[1.12fr_0.88fr] md:items-stretch">
         {/* 대표(최신 1건) */}
         <Link
-          href={`/board/${featured.slug}`}
+          href={boardPath(featured.id)}
           className="flex flex-col rounded-[20px] border border-[var(--color-line)] bg-[var(--color-soft)] p-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-blue)]"
         >
           <span className="inline-block w-fit rounded-full bg-white px-2.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">
@@ -55,7 +56,7 @@ export function HomeNews({ posts }: { posts: HomePostItem[] }) {
             {list.map((p) => (
               <li key={p.slug} className="border-b border-[var(--color-line)] last:border-0">
                 <Link
-                  href={`/board/${p.slug}`}
+                  href={boardPath(p.id)}
                   className="flex items-center gap-2.5 px-2 py-3 transition hover:bg-[var(--color-soft)]"
                 >
                   <span className="inline-block flex-none rounded-full bg-[var(--color-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">

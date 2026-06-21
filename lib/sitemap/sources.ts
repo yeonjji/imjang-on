@@ -6,6 +6,7 @@ import { getAllSigungus } from '@/lib/region';
 import { AMENITY_CATEGORIES, AMENITY_SLUGS } from '@/lib/amenity/category';
 import { STATIC_ENTRIES } from './static-entries';
 import { isBoardPublic } from '@/lib/board/visibility';
+import { boardPath } from '@/lib/board/slug';
 
 export const CHUNK_SIZE = 10_000;
 
@@ -239,13 +240,13 @@ const post = dbSource({
   findMany: (skip, take) =>
     prisma.post.findMany({
       where: { status: 'PUBLISHED' },
-      select: { slug: true, updatedAt: true },
+      select: { id: true, updatedAt: true },
       orderBy: { id: 'asc' },
       skip,
       take,
     }),
   toEntry: (p) => ({
-    url: `${SITE_URL}/board/${p.slug}`,
+    url: `${SITE_URL}${boardPath(p.id)}`,
     lastModified: p.updatedAt,
     changeFrequency: 'weekly',
     priority: 0.6,

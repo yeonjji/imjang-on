@@ -37,9 +37,8 @@ export async function publishPostAction(fd: FormData) {
   await updatePostRow(id, readFields(fd));
   await publishPostRow(id);
   revalidatePath('/board');
-  // 한글 slug 경로를 직접 넘기면 revalidate가 헤더(ByteString)에 한글을 실어 500.
-  // 동적 라우트 패턴으로 게시글 상세 전체를 revalidate한다.
-  revalidatePath('/board/[slug]', 'page');
+  // 상세 경로는 id 기반(ASCII)이라 해당 글만 정확히 revalidate한다.
+  revalidatePath(`/board/${id}`);
   revalidatePath('/admin/posts');
   redirect('/admin/posts');
 }

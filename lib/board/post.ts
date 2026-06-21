@@ -5,6 +5,7 @@ import { BOARD_CATEGORIES } from '@/lib/board/labels';
 export const PAGE_SIZE = 12;
 
 export interface PostListItem {
+  id: bigint;
   slug: string;
   title: string;
   category: PostCategory;
@@ -26,7 +27,7 @@ export async function listPublishedPosts(
     prisma.post.count({ where }),
     prisma.post.findMany({
       where,
-      select: { slug: true, title: true, category: true, sourceName: true, publishedAt: true },
+      select: { id: true, slug: true, title: true, category: true, sourceName: true, publishedAt: true },
       orderBy: { publishedAt: 'desc' },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -54,13 +55,26 @@ export function normalizeSlug(slug: string): string {
   return decoded.normalize('NFC');
 }
 
+const POST_DETAIL_SELECT = {
+  id: true, slug: true, title: true, summary: true, body: true, type: true,
+  category: true, sourceName: true, sourceUrl: true, sourceDate: true, publishedAt: true,
+} as const;
+
+/** 레거시 slug 조회용(옛 `/board/<slug>` URL → 새 canonical 리다이렉트에 사용). */
 export async function getPublishedPostBySlug(slug: string) {
   const post = await prisma.post.findFirst({
     where: { slug: normalizeSlug(slug), status: 'PUBLISHED' },
-    select: {
-      slug: true, title: true, summary: true, body: true, type: true,
-      category: true, sourceName: true, sourceUrl: true, sourceDate: true, publishedAt: true,
-    },
+    select: POST_DETAIL_SELECT,
+  });
+  if (!post || !post.publishedAt) return null;
+  return { ...post, publishedAt: post.publishedAt };
+}
+
+/** 상세 페이지 정규 조회 키: id. PUBLISHED 글만 반환한다. */
+export async function getPublishedPostById(id: bigint) {
+  const post = await prisma.post.findFirst({
+    where: { id, status: 'PUBLISHED' },
+    select: POST_DETAIL_SELECT,
   });
   if (!post || !post.publishedAt) return null;
   return { ...post, publishedAt: post.publishedAt };
@@ -93,6 +107,7 @@ export async function getBoardSourceOrgs(limit = 8): Promise<string[]> {
 }
 
 export interface HomePostItem {
+  id: bigint;
   slug: string;
   title: string;
   summary: string;
@@ -105,7 +120,7 @@ export interface HomePostItem {
 export async function getHomeLatestPosts(limit = 5): Promise<HomePostItem[]> {
   const rows = await prisma.post.findMany({
     where: { status: 'PUBLISHED' },
-    select: { slug: true, title: true, summary: true, category: true, sourceName: true, publishedAt: true },
+    select: { id: true, slug: true, title: true, summary: true, category: true, sourceName: true, publishedAt: true },
     orderBy: { publishedAt: 'desc' },
     take: limit,
   });

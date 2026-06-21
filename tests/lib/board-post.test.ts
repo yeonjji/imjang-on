@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { prisma } from '@/lib/db';
 import { assertLocalDatabase } from '../_helpers/assert-local-db';
-import { listPublishedPosts, getPublishedPostBySlug, normalizeSlug, PAGE_SIZE, getBoardCategoryCounts, getBoardSourceOrgs, getHomeLatestPosts } from '@/lib/board/post';
+import { listPublishedPosts, getPublishedPostBySlug, getPublishedPostById, normalizeSlug, PAGE_SIZE, getBoardCategoryCounts, getBoardSourceOrgs, getHomeLatestPosts } from '@/lib/board/post';
 import { BOARD_CATEGORIES } from '@/lib/board/labels';
 import type { Prisma } from '@prisma/client';
 
@@ -70,6 +70,19 @@ describe('getPublishedPostBySlug', () => {
   it('DRAFT 글은 null을 반환한다', async () => {
     await prisma.post.create({ data: postData({ slug: `${MARK}hidden`, status: 'DRAFT' }) });
     expect(await getPublishedPostBySlug(`${MARK}hidden`)).toBeNull();
+  });
+});
+describe('getPublishedPostById', () => {
+  it('PUBLISHED 글을 id로 가져온다', async () => {
+    const created = await prisma.post.create({ data: postData({ slug: `${MARK}byid` }), select: { id: true } });
+    const post = await getPublishedPostById(created.id);
+    expect(post).not.toBeNull();
+    expect(post!.id).toBe(created.id);
+    expect(post!.sourceName).toBe('국토교통부');
+  });
+  it('DRAFT 글은 null을 반환한다', async () => {
+    const created = await prisma.post.create({ data: postData({ slug: `${MARK}byid-d`, status: 'DRAFT' }), select: { id: true } });
+    expect(await getPublishedPostById(created.id)).toBeNull();
   });
 });
 describe('normalizeSlug', () => {
