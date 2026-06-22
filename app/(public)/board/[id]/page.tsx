@@ -6,6 +6,8 @@ import { boardPath } from '@/lib/board/slug';
 import { canViewBoard } from '@/lib/board/visibility';
 import { categoryLabel } from '@/lib/board/labels';
 import { PostSource } from '@/components/ui/post-source';
+import { BoardDetailCta } from './_components/board-detail-cta';
+import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
 import { JsonLd, articleSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
@@ -89,6 +91,9 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
         sourceUrl={post.sourceUrl}
         sourceDate={post.sourceDate}
       />
+
+      <BoardDetailCta />
+      <BoardBriefingSection className="mt-16" heading="다른 브리핑 글" excludeId={post.id} />
     </article>
   );
 }
