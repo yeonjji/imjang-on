@@ -117,9 +117,9 @@ export interface HomePostItem {
 }
 
 /** 홈 '오늘의 소식'용: PUBLISHED 글 최신 N건(대표 카드 summary 포함). */
-export async function getHomeLatestPosts(limit = 5): Promise<HomePostItem[]> {
+export async function getHomeLatestPosts(limit = 5, excludeId?: bigint): Promise<HomePostItem[]> {
   const rows = await prisma.post.findMany({
-    where: { status: 'PUBLISHED' },
+    where: { status: 'PUBLISHED', ...(excludeId !== undefined ? { id: { not: excludeId } } : {}) },
     select: { id: true, slug: true, title: true, summary: true, category: true, sourceName: true, publishedAt: true },
     orderBy: { publishedAt: 'desc' },
     take: limit,
