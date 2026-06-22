@@ -8,6 +8,7 @@ import { isRelevant, categoryHint, MIN_SOURCE_CHARS } from './relevance';
 import { naverNewsCount } from './detect-issues';
 import { dedupeKey, kstDateISO } from './keys';
 import { collectSubscriptionCandidates } from './sources/subscription';
+import { collectNaverNewsCandidates } from './sources/naver-news';
 import type { BoardCandidate } from './candidate';
 import { generateDraft, createOpenAiClient } from '@/lib/board/generate';
 import { createDraft } from '@/lib/board/create-draft';
@@ -84,7 +85,13 @@ async function main() {
     } catch (err) {
       logger.error({ err }, 'first-party subscription collect failed');
     }
-    const candidates = [...feedCands, ...fpCands];
+    let naverCands: BoardCandidate[] = [];
+    try {
+      naverCands = await collectNaverNewsCandidates();
+    } catch (err) {
+      logger.error({ err }, 'naver news collect failed');
+    }
+    const candidates = [...feedCands, ...fpCands, ...naverCands];
     const fresh = await dropExisting(candidates);
     const ranked = await rank(fresh);
     logger.info(

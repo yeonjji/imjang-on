@@ -49,14 +49,14 @@ export function buildSubscriptionDigest(
 
   const lines = rows.map((r, i) => {
     const st = deriveStatus(r.receiptBegin, r.receiptEnd, today);
-    const statusLabel = st.status === 'OPEN' ? '접수중' : st.status === 'UPCOMING' ? '접수 예정' : '마감';
-    const supply = r.totalSupply != null ? `${r.totalSupply.toLocaleString('ko-KR')}세대` : '미상';
-    return [
-      `${i + 1}. ${r.name} — ${regionShort(r.address, r.regionName)}`,
-      `   유형: ${categoryLabel(r.category)} / 공급: ${supply} / 상태: ${statusLabel}`,
-      `   청약 접수: ${fmtDate(r.receiptBegin)} ~ ${fmtDate(r.receiptEnd)}`,
-      `   당첨자 발표: ${fmtDate(r.winnerDate)} / 입주 예정: ${fmtMoveIn(r.moveInYm)}`,
-    ].join('\n');
+    const statusLabel = st.status === 'OPEN' ? '현재 접수 중' : st.status === 'UPCOMING' ? '접수 예정' : '마감';
+    const supply = r.totalSupply != null ? `총 ${r.totalSupply.toLocaleString('ko-KR')}세대` : '공급 세대 미정';
+    const region = regionShort(r.address, r.regionName);
+    return (
+      `${i + 1}. ${r.name}(${region})은 ${categoryLabel(r.category)} 유형으로 ${supply}를 공급한다. ` +
+      `청약 접수는 ${fmtDate(r.receiptBegin)}부터 ${fmtDate(r.receiptEnd)}까지이며 ${statusLabel}이다. ` +
+      `당첨자는 ${fmtDate(r.winnerDate)}에 발표되고, 입주 예정 시기는 ${fmtMoveIn(r.moveInYm)}이다.`
+    );
   });
 
   const todayLabel = `${today.getUTCFullYear()}년 ${today.getUTCMonth() + 1}월 ${today.getUTCDate()}일`;

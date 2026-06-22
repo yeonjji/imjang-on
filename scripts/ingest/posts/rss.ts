@@ -90,8 +90,7 @@ export function parseRssItems(xml: string): FeedItem[] {
   });
 }
 
-/** RSS URL을 받아 fetch + 파싱. 실패 시 throw. */
-export async function fetchFeed(url: string): Promise<FeedItem[]> {
+async function fetchOnce(url: string): Promise<FeedItem[]> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
@@ -101,10 +100,22 @@ export async function fetchFeed(url: string): Promise<FeedItem[]> {
     });
     if (!res.ok) throw new Error(`RSS HTTP ${res.status} for ${url}`);
     return parseRssItems(await res.text());
-  } catch (err) {
-    logger.warn({ err, url }, 'fetchFeed failed');
-    throw err;
   } finally {
     clearTimeout(t);
+  }
+}
+
+/** RSS URL을 받아 fetch + 파싱. 타임아웃/네트워크 오류는 1회 재시도. */
+export async function fetchFeed(url: string): Promise<FeedItem[]> {
+  try {
+    return await fetchOnce(url);
+  } catch (firstErr) {
+    logger.warn({ err: firstErr, url }, 'fetchFeed failed, retrying once');
+    try {
+      return await fetchOnce(url);
+    } catch (err) {
+      logger.warn({ err, url }, 'fetchFeed failed');
+      throw err;
+    }
   }
 }

@@ -30,7 +30,7 @@ describe('buildSubscriptionDigest', () => {
     expect(out.bodyText).toContain('강서한강자이');
     expect(out.bodyText).toContain('강서구'); // 주소에서 구 추출
     expect(out.bodyText).toContain('500세대');
-    expect(out.bodyText).toContain('접수중'); // 06-10~06-20, today 06-16
+    expect(out.bodyText).toContain('현재 접수 중'); // 06-10~06-20, today 06-16
     expect(out.bodyText).toContain('접수 예정'); // 06-22~ 미래
     expect(out.bodyText).toContain('2026.06.20'); // 마감일 표기
   });
