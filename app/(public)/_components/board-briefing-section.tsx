@@ -16,16 +16,24 @@ function shortDate(d: Date): string {
  * 카테고리 매칭 없이 PUBLISHED 글 최신 4건을 카드로 노출한다.
  * 게시판이 비공개이거나 글이 없으면 렌더하지 않는다.
  */
-export async function BoardBriefingSection({ className }: { className?: string }) {
+export async function BoardBriefingSection({
+  className,
+  excludeId,
+  heading,
+}: {
+  className?: string;
+  excludeId?: bigint;
+  heading?: string;
+}) {
   if (!isBoardPublic()) return null;
-  const posts = await getHomeLatestPosts(4);
+  const posts = await getHomeLatestPosts(4, excludeId);
   if (posts.length === 0) return null;
 
   return (
     <section className={className}>
       <div className="flex flex-wrap items-end justify-between gap-x-2.5 gap-y-1">
         <div>
-          <h2 className="text-xl font-black tracking-tight md:text-[22px]">최신 부동산·청약·금융 소식</h2>
+          <h2 className="text-xl font-black tracking-tight md:text-[22px]">{heading ?? '최신 부동산·청약·금융 소식'}</h2>
           <p className="mt-1 text-[13px] text-[var(--color-muted)]">공공기관 보도자료·고시를 사실 위주로 정리</p>
         </div>
         <Link href="/board" className="text-[13px] font-bold text-[var(--color-blue)] hover:underline">

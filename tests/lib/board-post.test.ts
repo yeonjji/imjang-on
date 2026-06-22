@@ -180,3 +180,51 @@ describe('getHomeLatestPosts', () => {
     expect(rows.length).toBeLessThanOrEqual(5);
   });
 });
+
+describe('getHomeLatestPosts excludeId', () => {
+  const MARK2 = 'test-hlp-';
+  beforeEach(async () => {
+    await prisma.post.deleteMany({ where: { dedupeKey: { startsWith: MARK2 } } });
+  });
+  afterEach(async () => {
+    await prisma.post.deleteMany({ where: { dedupeKey: { startsWith: MARK2 } } });
+  });
+
+  async function seedPost(n: number, publishedAt: Date): Promise<bigint> {
+    await prisma.post.create({
+      data: {
+        slug: `${MARK2}${n}`,
+        title: `제목${n}`,
+        summary: '요약',
+        body: '본문',
+        type: 'TREND',
+        category: 'ECONOMY',
+        status: 'PUBLISHED',
+        sourceName: '출처',
+        sourceUrl: 'https://example.com',
+        sourceDate: new Date('2026-06-01'),
+        sourceExcerpt: '원문',
+        dedupeKey: `${MARK2}${n}`,
+        publishedAt,
+      },
+    });
+    const row = await prisma.post.findUnique({ where: { dedupeKey: `${MARK2}${n}` } });
+    return row!.id;
+  }
+
+  it('excludeId로 지정한 글은 결과에서 빠진다', async () => {
+    const idA = await seedPost(1, new Date('2099-01-01'));
+    const idB = await seedPost(2, new Date('2099-01-02'));
+    const ids = (await getHomeLatestPosts(50, idA)).map((p) => p.id);
+    expect(ids).toContain(idB);
+    expect(ids).not.toContain(idA);
+  });
+
+  it('excludeId 미전달 시 둘 다 포함된다', async () => {
+    const idA = await seedPost(1, new Date('2099-01-01'));
+    const idB = await seedPost(2, new Date('2099-01-02'));
+    const ids = (await getHomeLatestPosts(50)).map((p) => p.id);
+    expect(ids).toContain(idA);
+    expect(ids).toContain(idB);
+  });
+});

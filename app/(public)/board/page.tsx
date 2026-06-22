@@ -14,7 +14,7 @@ import type { Metadata } from 'next';
 export const revalidate = 3_600;
 
 export const metadata: Metadata = {
-  title: '소식 — 오늘의 이슈',
+  title: '임장ON 브리핑',
   description:
     '금융·대출·경제·청약·부동산 분야의 공공자료 기반 이슈 해설을 매일 업데이트합니다.',
   alternates: { canonical: '/board' },
@@ -72,7 +72,7 @@ export default async function BoardListPage({ searchParams }: Props) {
       <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] md:p-7">
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">소식</p>
         <h1 className="text-2xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-3xl">
-          오늘의 이슈
+          임장ON 브리핑
         </h1>
       </div>
 
@@ -100,7 +100,7 @@ export default async function BoardListPage({ searchParams }: Props) {
           ) : (
             <div className="overflow-hidden border-t-2 border-[var(--color-blue-dark)] bg-white">
               <table className="w-full table-fixed">
-                <caption className="sr-only">오늘의 이슈 목록</caption>
+                <caption className="sr-only">임장ON 브리핑 목록</caption>
                 <thead>
                   <tr className="border-b border-[var(--color-line)]">
                     <th scope="col" className="w-[96px] px-4 py-2.5 text-left text-xs font-bold text-[var(--color-muted)]">분류</th>

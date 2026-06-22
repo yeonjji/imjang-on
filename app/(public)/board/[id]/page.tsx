@@ -6,6 +6,8 @@ import { boardPath } from '@/lib/board/slug';
 import { canViewBoard } from '@/lib/board/visibility';
 import { categoryLabel } from '@/lib/board/labels';
 import { PostSource } from '@/components/ui/post-source';
+import { BoardDetailCta } from './_components/board-detail-cta';
+import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
 import { JsonLd, articleSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
@@ -65,7 +67,7 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
         ]}
       />
       <div className="mb-6 rounded-[18px] border border-[var(--color-line)] bg-[var(--color-soft)] px-5 py-4">
-        <p className="text-sm font-black tracking-tight text-[var(--color-blue)]">임장ON 소식</p>
+        <p className="text-sm font-black tracking-tight text-[var(--color-blue)]">임장ON 브리핑</p>
         <p className="mt-1 text-xs font-bold text-[var(--color-muted)]">
           {categoryLabel(post.category)} · {post.sourceName}
         </p>
@@ -89,6 +91,9 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
         sourceUrl={post.sourceUrl}
         sourceDate={post.sourceDate}
       />
+
+      <BoardDetailCta />
+      <BoardBriefingSection className="mt-16" heading="다른 브리핑 글" excludeId={post.id} />
     </article>
   );
 }
