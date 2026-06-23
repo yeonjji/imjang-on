@@ -23,12 +23,25 @@ function readFields(fd: FormData) {
   };
 }
 
-/** 수정 내용만 저장하고 편집 화면에 머문다. */
-export async function savePostAction(fd: FormData) {
-  const id = parseId(fd);
-  await updatePostRow(id, readFields(fd));
-  revalidatePath(`/admin/posts/${id}`);
-  revalidatePath('/admin/posts');
+/** 수정 내용만 저장하고 편집 화면에 머문다. useActionState용 서명. */
+export async function savePostAction(
+  _prev: { ok: boolean } | null,
+  fd: FormData,
+): Promise<{ ok: boolean }> {
+  let id: bigint;
+  try {
+    id = BigInt(String(fd.get('id')));
+  } catch {
+    return { ok: false };
+  }
+  try {
+    await updatePostRow(id, readFields(fd));
+    revalidatePath(`/admin/posts/${String(id)}`);
+    revalidatePath('/admin/posts');
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
 }
 
 /** 수정 내용 저장 후 게시 → 공개 경로 revalidate → 목록으로. */

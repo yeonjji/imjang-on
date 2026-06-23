@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useActionState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { PostType, PostCategory } from '@prisma/client';
@@ -22,9 +22,10 @@ interface Props {
 
 export function PostEditor({ id, title, summary, body: initialBody, type, category }: Props) {
   const [body, setBody] = useState(initialBody);
+  const [saveState, saveAction, saving] = useActionState(savePostAction, null);
 
   return (
-    <form className="flex flex-col gap-4">
+    <form action={saveAction} className="flex flex-col gap-4">
       <input type="hidden" name="id" value={id} />
 
       <label className="text-sm font-semibold text-[var(--color-muted)]">
@@ -71,8 +72,12 @@ export function PostEditor({ id, title, summary, body: initialBody, type, catego
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <button formAction={savePostAction} className="rounded-lg border border-[var(--color-line)] px-4 py-2 font-semibold text-[var(--color-text)]">저장</button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="submit" disabled={saving} className="rounded-lg border border-[var(--color-line)] px-4 py-2 font-semibold text-[var(--color-text)] disabled:opacity-50">
+          {saving ? '저장 중…' : '저장'}
+        </button>
+        {saveState?.ok === true && <span className="text-sm font-medium text-green-600">저장됨</span>}
+        {saveState?.ok === false && <span className="text-sm font-medium text-red-600">저장 실패</span>}
         <button formAction={publishPostAction} className="rounded-lg bg-[var(--color-blue)] px-4 py-2 font-semibold text-white">게시</button>
         <button formAction={rejectPostAction} className="rounded-lg border border-[var(--color-line)] px-4 py-2 font-semibold text-[var(--color-muted)]">반려</button>
         <button formAction={deletePostAction} className="rounded-lg border border-red-300 px-4 py-2 font-semibold text-red-600">삭제</button>
