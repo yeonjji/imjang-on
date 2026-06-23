@@ -2,7 +2,7 @@ name: generate-board-posts
 
 on:
   schedule:
-    - cron: '0 2 * * *' # 매일 11:00 KST (보도자료 발표 이후)
+    - cron: '0 2 * * 1' # 매주 월요일 11:00 KST (청약 집계가 주 1회 cadence)
   workflow_dispatch:
     inputs:
       dry_run:
