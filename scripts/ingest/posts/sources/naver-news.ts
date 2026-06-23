@@ -50,32 +50,10 @@ async function searchNews(q: string, clientId: string, secret: string): Promise<
   }
 }
 
-/** n.news.naver.com 기사 본문 추출. dic_area 안의 텍스트를 평문으로 반환. */
-async function fetchArticleBody(url: string): Promise<string | null> {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-  try {
-    const res = await fetch(url, {
-      signal: ctrl.signal,
-      headers: { 'User-Agent': 'imjang-on/1.0 (+https://imjang-on.com)' },
-    });
-    if (!res.ok) return null;
-    const html = await res.text();
-    const idx = html.indexOf('id="dic_area"');
-    if (idx === -1) return null;
-    const bodyStart = html.indexOf('>', idx) + 1;
-    const text = htmlToText(html.slice(bodyStart, bodyStart + 6000));
-    return text.length >= MIN_SOURCE_CHARS ? text : null;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(t);
-  }
-}
-
 /**
- * 네이버 뉴스 API로 부처별 최신 뉴스를 검색하고, n.news.naver.com 본문을
- * 원문 소스로 사용하는 후보를 반환한다.
+ * 네이버 뉴스 API로 부처별 최신 뉴스를 검색한다.
+ * API가 제공하는 description(요약 스니펫)만 사용하며, 언론사 기사 본문은 수집하지 않는다.
+ * description이 MIN_SOURCE_CHARS 미만인 경우(대부분) 후보에서 제외된다.
  * 자격증명 미설정 시 빈 배열 반환(graceful).
  */
 export async function collectNaverNewsCandidates(): Promise<BoardCandidate[]> {
@@ -93,13 +71,11 @@ export async function collectNaverNewsCandidates(): Promise<BoardCandidate[]> {
       if (seen.has(sourceUrl)) continue;
       seen.add(sourceUrl);
 
-      // 본문 fetch는 n.news.naver.com만 지원 (구조 일관성 보장)
-      if (!item.link.includes('n.news.naver.com')) continue;
-
       const title = htmlToText(item.title);
-      const bodyText = await fetchArticleBody(item.link);
-      if (!bodyText) continue;
+      const bodyText = htmlToText(item.description);
 
+      // API 스니펫은 대부분 MIN_SOURCE_CHARS 미만 — 생성 불가로 사전 제외
+      if (bodyText.length < MIN_SOURCE_CHARS) continue;
       if (!isRelevant({ agency, title, bodyText })) continue;
 
       candidates.push({
