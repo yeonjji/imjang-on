@@ -25,6 +25,7 @@ describe('createDraft', () => {
     const row = await prisma.post.findUnique({ where: { dedupeKey: `${MARK}k1` } });
     expect(row!.status).toBe('DRAFT');
     expect(row!.slug.startsWith('2026-06-15-')).toBe(true);
+    if (r.status === 'created') expect(String(r.id)).toBe(String(row!.id));
   });
   it('가드레일 실패(금지표현)면 만들지 않고 status=rejected', async () => {
     const r = await createDraft(input({ gen: { type: 'TREND', category: 'ECONOMY', title: 't', summary: 's', body: '상승할 것으로 보입니다. '.repeat(180) } }));

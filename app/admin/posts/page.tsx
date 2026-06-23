@@ -3,8 +3,10 @@ import { listPostsByStatus } from '@/lib/board/admin';
 import { boardPath } from '@/lib/board/slug';
 import { categoryLabel, typeLabel } from '@/lib/board/labels';
 import type { PostStatus } from '@prisma/client';
+import { NewPostForm } from './new-post-form';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // 동기 생성(검색+추출+gpt-4.1) 대비. Vercel 플랜 상한(Hobby 60s) 확인.
 
 const TABS: { value: PostStatus; label: string }[] = [
   { value: 'DRAFT', label: '대기' },
@@ -39,6 +41,8 @@ export default async function AdminPostsPage({ searchParams }: Props) {
           </a>
         )}
       </div>
+
+      <NewPostForm />
 
       <div className="mt-5 flex gap-2">
         {TABS.map((t) => (
