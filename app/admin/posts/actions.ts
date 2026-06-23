@@ -4,10 +4,9 @@ import { redirect, notFound } from 'next/navigation';
 import type { PostType, PostCategory } from '@prisma/client';
 import { publishPostRow, rejectPostRow, updatePostRow, deletePostRow } from '@/lib/board/admin';
 import { env } from '@/lib/env';
-import { prisma } from '@/lib/db';
 import { createOpenAiClient, generateDraft } from '@/lib/board/generate';
 import { createDraft } from '@/lib/board/create-draft';
-import { researchTopic, type SourceMeta } from '@/lib/board/research';
+import { researchTopic, MAX_SOURCE_TEXT_CHARS, type SourceMeta } from '@/lib/board/research';
 import { manualDedupeKey, manualSlug, kstDateISO } from '@/lib/board/manual-draft';
 
 /** 폼의 id를 BigInt로 파싱한다. 누락/비정상이면 404(잘못된 요청에 500 대신 깔끔히 종료). */
@@ -98,6 +97,7 @@ export async function generateFromTopicAction(
 
   const topic = String(fd.get('topic') ?? '').trim();
   if (!topic) return { status: 'error', message: '주제를 입력하세요.' };
+  if (!manualSlug(topic)) return { status: 'error', message: '유효한 주제를 입력하세요(문자·숫자 포함).' };
 
   const pasted = String(fd.get('pastedSource') ?? '').trim();
   const pastedName = String(fd.get('pastedSourceName') ?? '').trim();
@@ -121,7 +121,7 @@ export async function generateFromTopicAction(
       sourceName = pastedName;
       sourceUrl = pastedUrl;
       sourceDate = now;
-      sourceText = pasted;
+      sourceText = pasted.slice(0, MAX_SOURCE_TEXT_CHARS);
       sourceExcerpt = `[출처: ${pastedName} · ${pastedUrl}]\n${pasted}`.slice(0, 4000);
     } else {
       const r = await researchTopic(topic, now);
@@ -148,9 +148,8 @@ export async function generateFromTopicAction(
     });
 
     if (res.status === 'created') {
-      const row = await prisma.post.findUnique({ where: { dedupeKey }, select: { id: true } });
       revalidatePath('/admin/posts');
-      return { status: 'created', id: String(row!.id) };
+      return { status: 'created', id: String(res.id) };
     }
     if (res.status === 'duplicate') return { status: 'duplicate' };
     return { status: 'rejected', violations: res.violations };

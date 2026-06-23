@@ -14,7 +14,7 @@ export interface CreateDraftInput {
   detectedFrom?: string;
 }
 export type CreateDraftResult =
-  | { status: 'created'; slug: string }
+  | { status: 'created'; slug: string; id: bigint }
   | { status: 'rejected'; violations: string[] }
   | { status: 'duplicate' };
 
@@ -30,7 +30,7 @@ export async function createDraft(input: CreateDraftInput): Promise<CreateDraftR
     slug = buildBoardSlug(input.gen.title, input.dateISO, i);
   }
 
-  await prisma.post.create({
+  const created = await prisma.post.create({
     data: {
       slug,
       title: input.gen.title,
@@ -46,6 +46,7 @@ export async function createDraft(input: CreateDraftInput): Promise<CreateDraftR
       dedupeKey: input.dedupeKey,
       detectedFrom: input.detectedFrom,
     },
+    select: { id: true },
   });
-  return { status: 'created', slug };
+  return { status: 'created', slug, id: created.id };
 }

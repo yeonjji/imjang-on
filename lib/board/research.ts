@@ -9,6 +9,8 @@ const FETCH_TIMEOUT_MS = 10_000;
 const MAX_CANDIDATES = 5; // 추출 시도 상한(레이턴시·타임박스)
 /** 추출 본문(공백제외) 최소 길이. 이보다 짧으면 1,000자 기사로 못 키워 배제. spike로 튜닝. */
 export const MIN_SOURCE_CHARS = 800;
+/** generateDraft에 넘기는 sourceText 상한(레이턴시·토큰 통제). 기사 1편엔 충분. */
+export const MAX_SOURCE_TEXT_CHARS = 16_000;
 
 export interface ResearchDeps {
   fetchImpl?: typeof fetch;
@@ -92,6 +94,8 @@ async function fetchAndExtract(url: string, deps: ResearchDeps): Promise<{ text:
       headers: { 'User-Agent': 'imjang-on/1.0 (+https://imjang-on.com)' },
     });
     if (!res.ok) return null;
+    // 리다이렉트로 허용외 호스트에 도달했으면 배제(공공저작물 보증·SSRF 방지). 테스트 fake엔 res.url이 없어 스킵.
+    if (res.url && !isAllowedDomain(res.url)) return null;
     const html = await res.text();
     return { text: htmlToText(html), koglType: detectKoglType(html) };
   } catch {
@@ -103,25 +107,31 @@ async function fetchAndExtract(url: string, deps: ResearchDeps): Promise<{ text:
 
 /** 대표 출처 우선순위: korea.kr > 기타, 그다음 본문 길이 내림차순. */
 function rankUsable(a: SourceMeta, b: SourceMeta): number {
-  const score = (m: SourceMeta) => (m.domain.endsWith('korea.kr') ? 0 : 1);
+  const score = (m: SourceMeta) => (m.domain === 'korea.kr' || m.domain === 'www.korea.kr' ? 0 : 1);
   return score(a) - score(b) || b.chars - a.chars;
 }
 
 /** 주제 → 공공누리 이용가능 공식 근거 수집 + 대표출처 collapse. */
 export async function researchTopic(topic: string, today: Date, deps: ResearchDeps = {}): Promise<ResearchResult> {
   const raw = await searchTopic(topic, deps);
-  const allowed = raw.filter((c) => isAllowedDomain(c.url)).slice(0, MAX_CANDIDATES);
+  // 허용 도메인만 + 동일 URL 중복 제거(웹검색이 같은 canonical URL을 여러 번 반환) — 첫 항목 유지.
+  const allowed = [...new Map(raw.filter((c) => isAllowedDomain(c.url)).map((c) => [c.url, c])).values()].slice(
+    0,
+    MAX_CANDIDATES,
+  );
 
+  // 후보 페이지를 동시 추출(순차 N×timeout으로 maxDuration 초과 방지).
+  const exts = await Promise.all(allowed.map((c) => fetchAndExtract(c.url, deps)));
   const metas: SourceMeta[] = [];
   const bodies = new Map<string, string>();
-  for (const c of allowed) {
-    const ext = await fetchAndExtract(c.url, deps);
+  allowed.forEach((c, i) => {
+    const ext = exts[i];
     const koglType: KoglType = ext?.koglType ?? 'unknown';
     const chars = ext ? ext.text.replace(/\s/g, '').length : 0;
     const usable = !!ext && isUsableLicense(koglType) && chars >= MIN_SOURCE_CHARS;
     metas.push({ url: c.url, domain: hostOf(c.url), koglType, usable, title: c.title, chars });
     if (ext) bodies.set(c.url, ext.text);
-  }
+  });
 
   const usable = metas.filter((m) => m.usable).sort(rankUsable);
   if (usable.length === 0) {
@@ -131,7 +141,10 @@ export async function researchTopic(topic: string, today: Date, deps: ResearchDe
 
   const rep = usable[0];
   const header = (m: SourceMeta) => `[출처: ${domainLabel(m.domain)} · 공공누리 제${m.koglType}유형 · ${m.url}]`;
-  const sourceText = usable.map((m) => `${header(m)}\n${bodies.get(m.url) ?? ''}`).join('\n\n');
+  const sourceText = usable
+    .map((m) => `${header(m)}\n${bodies.get(m.url) ?? ''}`)
+    .join('\n\n')
+    .slice(0, MAX_SOURCE_TEXT_CHARS);
   const sourceExcerpt = `${header(rep)}\n${bodies.get(rep.url) ?? ''}`.slice(0, 4000);
 
   return {

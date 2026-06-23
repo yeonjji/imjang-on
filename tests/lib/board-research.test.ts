@@ -58,4 +58,50 @@ describe('researchTopic', () => {
     expect(r.grounded).toBeNull();
     expect(r.candidates).toEqual([]);
   });
+
+  it('동일 URL 중복은 한 번만 처리(중복 React key·이중 근거 방지)', async () => {
+    const search = {
+      items: [
+        { title: 'a', link: 'https://www.korea.kr/news/a', description: 's' },
+        { title: 'a 중복', link: 'https://www.korea.kr/news/a', description: 's' },
+      ],
+    };
+    const pages = { 'https://www.korea.kr/news/a': `<p>${LONG}</p>공공누리 제1유형` };
+    const r = await researchTopic('x', TODAY, { ...CREDS, fetchImpl: routedFetch({ search, pages }) });
+    expect(r.candidates).toHaveLength(1);
+    expect(r.grounded!.used).toHaveLength(1);
+  });
+
+  it('복수 사용가능 출처: korea.kr 대표, sourceText엔 둘 다·excerpt는 대표만', async () => {
+    const goBody = `GOKR고유본문 ${'국토부 정책 상세 내용. '.repeat(100)}`;
+    const search = {
+      items: [
+        { title: 'go', link: 'https://www.molit.go.kr/p', description: 's' },
+        { title: 'korea', link: 'https://www.korea.kr/news/b', description: 's' },
+      ],
+    };
+    const pages = {
+      'https://www.molit.go.kr/p': `<p>${goBody}</p>공공누리 제1유형`,
+      'https://www.korea.kr/news/b': `<p>${LONG}</p>공공누리 제1유형`,
+    };
+    const r = await researchTopic('x', TODAY, { ...CREDS, fetchImpl: routedFetch({ search, pages }) });
+    expect(r.grounded!.sourceUrl).toBe('https://www.korea.kr/news/b'); // korea.kr 우선
+    expect(r.grounded!.used).toHaveLength(2);
+    expect(r.grounded!.sourceText).toContain('GOKR고유본문'); // 두 출처 모두 근거에
+    expect(r.grounded!.sourceText).toContain('국토교통부는');
+    expect(r.grounded!.sourceExcerpt).not.toContain('GOKR고유본문'); // excerpt는 대표(korea)만
+  });
+
+  it('리다이렉트로 허용외 호스트 도달 시 배제', async () => {
+    const fetchImpl = (async (input: string | URL) => {
+      const u = typeof input === 'string' ? input : input.toString();
+      if (u.includes('openapi.naver.com')) {
+        return { ok: true, json: async () => ({ items: [{ title: 't', link: 'https://www.korea.kr/r', description: 's' }] }) } as Response;
+      }
+      // 최종 도달 URL이 허용외 호스트(리다이렉트)
+      return { ok: true, url: 'https://evil.com/x', text: async () => `<p>${LONG}</p>공공누리 제1유형` } as Response;
+    }) as unknown as typeof fetch;
+    const r = await researchTopic('x', TODAY, { ...CREDS, fetchImpl });
+    expect(r.grounded).toBeNull();
+  });
 });

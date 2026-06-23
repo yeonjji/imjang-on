@@ -33,6 +33,15 @@ describe('detectKoglType', () => {
   it('공공누리는 있으나 유형 불명이면 unknown', () => {
     expect(detectKoglType('본 저작물은 공공누리에 따라 이용 가능')).toBe('unknown');
   });
+  it('서로 다른 유형이 섞이면(제2유형 본문 + 푸터 type01 배지) 보수적으로 unknown', () => {
+    expect(detectKoglType('공공누리 제2유형 <img src="opentype01.png">')).toBe('unknown');
+  });
+  it('CSS/JS 파일명의 stray type1 토큰만으론 제1유형으로 오인하지 않는다', () => {
+    expect(detectKoglType('공공누리 <link href="content-type01.css">')).toBe('unknown');
+  });
+  it('제3유형 본문 + 무관한 type1.css → 제3유형으로 인식(상충 아님)', () => {
+    expect(detectKoglType('공공누리 제3유형 <link href="type1.css">')).toBe('3');
+  });
 });
 
 describe('isUsableLicense', () => {
