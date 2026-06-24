@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isAllowedDomain, detectKoglType, isUsableLicense, domainLabel } from '@/lib/board/source-policy';
+import { isAllowedDomain, detectKoglType, isUsableLicense, domainLabel, licenseLabel } from '@/lib/board/source-policy';
 
 describe('isAllowedDomain', () => {
   it('korea.kr / go.kr 허용', () => {
@@ -33,8 +33,11 @@ describe('detectKoglType', () => {
   it('공공누리는 있으나 유형 불명이면 unknown', () => {
     expect(detectKoglType('본 저작물은 공공누리에 따라 이용 가능')).toBe('unknown');
   });
-  it('서로 다른 유형이 섞이면(제2유형 본문 + 푸터 type01 배지) 보수적으로 unknown', () => {
-    expect(detectKoglType('공공누리 제2유형 <img src="opentype01.png">')).toBe('unknown');
+  it('제한 유형이 섞이면(제2유형 본문 + 푸터 type01 배지) 가장 제한적인 제2유형 반환(배제 대상)', () => {
+    expect(detectKoglType('공공누리 제2유형 <img src="opentype01.png">')).toBe('2');
+  });
+  it('제4유형이 있으면 제4유형(최제한) 반환', () => {
+    expect(detectKoglType('공공누리 제1유형 제4유형')).toBe('4');
   });
   it('CSS/JS 파일명의 stray type1 토큰만으론 제1유형으로 오인하지 않는다', () => {
     expect(detectKoglType('공공누리 <link href="content-type01.css">')).toBe('unknown');
@@ -45,10 +48,19 @@ describe('detectKoglType', () => {
 });
 
 describe('isUsableLicense', () => {
-  it('제1유형만 사용 가능', () => {
+  it('제1유형·마커없음(unknown)은 사용 가능, 제2·3·4유형은 배제', () => {
     expect(isUsableLicense('1')).toBe(true);
+    expect(isUsableLicense('unknown')).toBe(true);
     expect(isUsableLicense('2')).toBe(false);
-    expect(isUsableLicense('unknown')).toBe(false);
+    expect(isUsableLicense('3')).toBe(false);
+    expect(isUsableLicense('4')).toBe(false);
+  });
+});
+
+describe('licenseLabel', () => {
+  it('유형 알려지면 공공누리 제N유형, unknown은 공공저작물 표기', () => {
+    expect(licenseLabel('1')).toBe('공공누리 제1유형');
+    expect(licenseLabel('unknown')).toContain('공공저작물');
   });
 });
 
