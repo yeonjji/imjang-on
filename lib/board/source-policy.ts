@@ -22,10 +22,10 @@ export function isAllowedDomain(url: string): boolean {
 const KOGL_HINT = /공공누리|kogl/i;
 
 /**
- * 페이지 HTML에서 공공누리 유형(1~4)을 탐지. 마커가 없으면(불명) 'unknown',
- * 서로 다른 유형이 2개 이상 섞여 있으면(상충) 보수적으로 'unknown'을 반환한다.
- * (unknown은 근거에서 배제 — isUsableLicense=false)
- *
+ * 페이지 HTML에서 공공누리 유형(1~4)을 탐지.
+ * - 공공누리 마커가 없으면 'unknown'.
+ * - 명시적 제한 유형(제2·3·4유형)이 하나라도 있으면 가장 제한적인 유형을 반환(→ 이용 배제 대상).
+ * - 제1유형만 있으면 '1'.
  * 느슨한 매칭으로 CSS/JS 파일명의 stray 'type1' 토큰이 제1유형으로 오인되지 않도록,
  * 텍스트 마커("제N유형"/"유형 N")와 배지 이미지 파일명(opentypeNN.png 등)·kogl-typeN만 인정한다.
  */
@@ -39,12 +39,27 @@ export function detectKoglType(html: string): KoglType {
     );
     if (re.test(html)) found.add(t);
   }
-  return found.size === 1 ? [...found][0] : 'unknown';
+  // 제한 유형(2·3·4)이 하나라도 있으면 가장 제한적인 것을 반환(상업·변형 불가 → 배제).
+  if (found.has('4')) return '4';
+  if (found.has('3')) return '3';
+  if (found.has('2')) return '2';
+  return found.has('1') ? '1' : 'unknown';
 }
 
-/** 우리는 상업·변형 이용을 하므로 제1유형만 사용 가능. 그 외/unknown은 배제(보수적). */
+/**
+ * 우리 이용 형태(상업·변형) 기준 사용 가능 여부.
+ * 제1유형 또는 마커 없음(unknown)은 사용 가능, 제2·3·4유형(상업금지/변경금지)은 배제.
+ * unknown 허용 근거: 저작권법 제24조의2(공공저작물 자유이용) — 공공누리 배지가 없어도
+ * 국가·지자체·공공기관이 업무상 작성·공표한 저작물은 자유 이용 가능. 신뢰 기준은
+ * 엄선된 공식 도메인 allowlist + 뉴스 본문 비복제 + 사람 검수. 명시적 제한 표시만 존중해 배제.
+ */
 export function isUsableLicense(type: KoglType): boolean {
-  return type === '1';
+  return type === '1' || type === 'unknown';
+}
+
+/** 표시용 라벨. unknown은 공공누리 표시가 없는 공공저작물(자유이용 근거: 저작권법 제24조의2). */
+export function licenseLabel(type: KoglType): string {
+  return type === 'unknown' ? '공공저작물(공공누리 표시 없음)' : `공공누리 제${type}유형`;
 }
 
 const DOMAIN_LABEL: Record<string, string> = {

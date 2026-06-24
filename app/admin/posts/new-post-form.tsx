@@ -2,6 +2,7 @@
 import { useState, useActionState } from 'react';
 import Link from 'next/link';
 import { generateFromTopicAction, type TopicGenResult } from './actions';
+import { licenseLabel } from '@/lib/board/source-policy';
 
 const card = 'mt-6 rounded-xl border border-[var(--color-line)] bg-white p-5';
 const input = 'w-full rounded-lg border border-[var(--color-line)] px-3 py-2 text-base text-[var(--color-text)]';
@@ -63,7 +64,7 @@ export function NewPostForm() {
             <ul className="mt-2 list-disc pl-5 text-xs text-[var(--color-muted)]">
               {state.sources.map((s) => (
                 <li key={s.url}>
-                  {s.domain} · 공공누리 {s.koglType} · {s.usable ? '사용가능' : '배제'} — {s.url}
+                  {s.domain} · {s.usable ? '사용가능' : '배제'} · {licenseLabel(s.koglType)} — {s.url}
                 </li>
               ))}
             </ul>

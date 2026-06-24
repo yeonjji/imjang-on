@@ -44,13 +44,31 @@ describe('researchTopic', () => {
     expect(r.grounded!.sourceText).toContain('국토교통부는');
   });
 
-  it('공공누리 마커 없으면(unknown) 배제 → grounded null', async () => {
+  it('마커 없어도(unknown) 공식 도메인이면 사용 → grounded 생성(공공저작물 자유이용)', async () => {
     const search = { items: [{ title: 't', link: 'https://www.korea.kr/news/a', description: 's' }] };
-    const pages = { 'https://www.korea.kr/news/a': `<p>${LONG}</p>` }; // 마커 없음
+    const pages = { 'https://www.korea.kr/news/a': `<p>${LONG}</p>` }; // 공공누리 마커 없음
     const r = await researchTopic('전세 사기', TODAY, { ...CREDS, fetchImpl: routedFetch({ search, pages }) });
-    expect(r.grounded).toBeNull();
+    expect(r.grounded).not.toBeNull();
     expect(r.candidates[0].koglType).toBe('unknown');
+    expect(r.candidates[0].usable).toBe(true);
+  });
+
+  it('명시적 공공누리 제2유형(상업금지)은 배제 → grounded null', async () => {
+    const search = { items: [{ title: 't', link: 'https://www.korea.kr/news/a', description: 's' }] };
+    const pages = { 'https://www.korea.kr/news/a': `<p>${LONG}</p>공공누리 제2유형` };
+    const r = await researchTopic('x', TODAY, { ...CREDS, fetchImpl: routedFetch({ search, pages }) });
+    expect(r.grounded).toBeNull();
+    expect(r.candidates[0].koglType).toBe('2');
     expect(r.candidates[0].usable).toBe(false);
+  });
+
+  it('script/style 내용은 근거 본문에서 제거된다', async () => {
+    const search = { items: [{ title: 't', link: 'https://www.korea.kr/news/a', description: 's' }] };
+    const pages = { 'https://www.korea.kr/news/a': `<script>var x='SCRIPTNOISE토큰';</script><p>${LONG}</p>` };
+    const r = await researchTopic('x', TODAY, { ...CREDS, fetchImpl: routedFetch({ search, pages }) });
+    expect(r.grounded).not.toBeNull();
+    expect(r.grounded!.sourceText).not.toContain('SCRIPTNOISE토큰');
+    expect(r.grounded!.sourceText).toContain('국토교통부는');
   });
 
   it('자격증명 없으면 검색 0건 → grounded null(graceful)', async () => {

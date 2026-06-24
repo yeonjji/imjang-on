@@ -1,7 +1,7 @@
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { htmlToText } from '@/lib/board/html-text';
-import { isAllowedDomain, detectKoglType, isUsableLicense, domainLabel, type KoglType } from '@/lib/board/source-policy';
+import { isAllowedDomain, detectKoglType, isUsableLicense, domainLabel, licenseLabel, type KoglType } from '@/lib/board/source-policy';
 
 const WEBKR_URL = 'https://openapi.naver.com/v1/search/webkr.json';
 const SEARCH_TIMEOUT_MS = 8_000;
@@ -97,7 +97,10 @@ async function fetchAndExtract(url: string, deps: ResearchDeps): Promise<{ text:
     // 리다이렉트로 허용외 호스트에 도달했으면 배제(공공저작물 보증·SSRF 방지). 테스트 fake엔 res.url이 없어 스킵.
     if (res.url && !isAllowedDomain(res.url)) return null;
     const html = await res.text();
-    return { text: htmlToText(html), koglType: detectKoglType(html) };
+    // 공공누리 마커는 원본 HTML에서 판정하고, 본문은 script/style 제거 후 추출(JS·CSS 노이즈 차단).
+    const koglType = detectKoglType(html);
+    const cleaned = html.replace(/<(script|style|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ');
+    return { text: htmlToText(cleaned), koglType };
   } catch {
     return null;
   } finally {
@@ -140,7 +143,7 @@ export async function researchTopic(topic: string, today: Date, deps: ResearchDe
   }
 
   const rep = usable[0];
-  const header = (m: SourceMeta) => `[출처: ${domainLabel(m.domain)} · 공공누리 제${m.koglType}유형 · ${m.url}]`;
+  const header = (m: SourceMeta) => `[출처: ${domainLabel(m.domain)} · ${licenseLabel(m.koglType)} · ${m.url}]`;
   const sourceText = usable
     .map((m) => `${header(m)}\n${bodies.get(m.url) ?? ''}`)
     .join('\n\n')
