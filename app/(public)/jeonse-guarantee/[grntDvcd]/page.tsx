@@ -53,7 +53,7 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
         data={[
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
-            { name: '전세자금보증 찾기', url: `${SITE_URL}/jeonse-guarantee` },
+            { name: '맞춤 전세보증 찾기', url: `${SITE_URL}/jeonse-guarantee` },
             { name: product.rcmdProdNm, url: `${SITE_URL}/jeonse-guarantee/${grntDvcd}` },
           ]),
         ]}
@@ -62,7 +62,7 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
       <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
         <Link href="/">홈</Link>
         <span>›</span>
-        <Link href="/jeonse-guarantee">전세자금보증 찾기</Link>
+        <Link href="/jeonse-guarantee">맞춤 전세보증 찾기</Link>
         <span>›</span>
         <span className="font-semibold text-[var(--color-blue-dark)]">{product.rcmdProdNm}</span>
       </nav>
