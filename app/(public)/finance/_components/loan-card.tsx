@@ -16,11 +16,16 @@ export function LoanCard({ item }: { item: LoanSummary }) {
             </span>
           )}
         </div>
-        <p className="mb-3 text-sm text-[var(--color-muted)]">
+        <p className={`text-sm text-[var(--color-muted)] ${item.operPeriod ? 'mb-1' : 'mb-3'}`}>
           {item.ofrinstnm ?? '—'}
           {item.instCtg ? ` · ${item.instCtg}` : ''}
           {item.irt ? ` · 금리 ${item.irt}` : ''}
         </p>
+        {item.operPeriod && (
+          <p className="mb-3 text-xs text-[var(--color-muted)]">
+            <span className="font-semibold">운영기간</span> · {item.operPeriod}
+          </p>
+        )}
         {item.usageTags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {item.usageTags.map((t) => (

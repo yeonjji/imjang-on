@@ -51,6 +51,7 @@ export const LOAN_SECTIONS: LoanSection[] = [
   {
     title: '신청',
     fields: [
+      { key: 'prdoprprid', label: '운영기간(접수)' },
       { key: 'jnmthd', label: '가입방법' },
       { key: 'hdlinst', label: '취급기관' },
       { key: 'hdlinstdtlvw', label: '취급기관 상세' },
