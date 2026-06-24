@@ -199,6 +199,36 @@ model LoanProduct {
   @@index([finprdnm])
 }
 
+model JeonseGuaranteeProduct {
+  grntDvcd               String   @id // 보증구분코드 (API 자연키)
+  rcmdProdNm             String // 추천상품명
+  rcmdGrntProdDvcd       String? // 01 일반 / 02 협약 / 03 특례
+  grntReqTrgtDvcd        String? // 00 전체 / 01 청년 / 02 신혼부부 / 03 기타
+  reqTrgtCont            String? // 신청대상 요약('|' 구분, 길이제한 없음)
+  exptGrfeRateCont       String? // 예상 보증료율(텍스트)
+  intSprtCont            String? // 이자지원 내용
+  grntPrmeCont           String? // 우대내용
+  rentGrntMaxLoanLmtRate Float? // 임차보증금액 대비 최대대출한도비율(%)
+  maxLoanLmtAmt          Int? // 상품 최대대출한도(원, <2.1B)
+  trtBankCont            String? // 취급은행 금융기관코드('|' 구분)
+  guidUrl                String? // 안내링크
+  rawJson                Json
+  updatedAt              DateTime @default(now())
+
+  @@index([grntReqTrgtDvcd])
+}
+
+model JeonseRegionLimit {
+  id             BigInt   @id @default(autoincrement())
+  grntDvcd       String // 보증구분코드(상품)
+  trgtLwdgCd     String // 목적물주소 법정동코드(시도 단위)
+  maxRentGrntAmt Int // 최대임차보증금액(원)
+  updatedAt      DateTime @default(now())
+
+  @@unique([grntDvcd, trgtLwdgCd])
+  @@index([trgtLwdgCd])
+}
+
 model EmailSignup {
   id        BigInt   @id @default(autoincrement())
   email     String   @unique @db.VarChar(120)
