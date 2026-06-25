@@ -1,0 +1,27 @@
+name: ingest-jeonse-guarantee
+
+on:
+  schedule:
+    - cron: '0 20 2 * *' # 매월 2일 (loan ingest는 1일 — 하루 차이로 부하 분산)
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      PUBLIC_DATA_KEY: ${{ secrets.PUBLIC_DATA_KEY }}
+      REVALIDATE_TOKEN: ${{ secrets.REVALIDATE_TOKEN }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      LOG_LEVEL: info
+      PRISMA_INGEST: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma generate
+      - run: pnpm tsx scripts/ingest/jeonse-guarantee/runner.ts
+        timeout-minutes: 10

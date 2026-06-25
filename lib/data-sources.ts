@@ -16,7 +16,8 @@ export type DataSourceId =
   | 'subway'
   | 'mois-bdong'
   | 'kakao-local'
-  | 'kinfa-loan';
+  | 'kinfa-loan'
+  | 'hf-jeonse-guarantee';
 
 export type DataSourceCategory =
   | '부동산 거래'
@@ -143,6 +144,13 @@ export const DATA_SOURCES: Record<DataSourceId, DataSource> = {
     provider: '서민금융진흥원',
     dataset: '대출상품한눈에',
     url: 'https://www.kinfa.or.kr',
+    category: '주거금융',
+  },
+  'hf-jeonse-guarantee': {
+    id: 'hf-jeonse-guarantee',
+    provider: '한국주택금융공사',
+    dataset: '전세자금보증상품 추천서비스',
+    url: 'https://www.hf.go.kr',
     category: '주거금융',
   },
 };

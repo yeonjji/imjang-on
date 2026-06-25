@@ -6,6 +6,7 @@ import { X, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { SearchInput } from './search-input';
 import { LIFE_GROUPS } from './life-menu';
+import { FINANCE_ITEMS } from './finance-menu';
 import { isBoardPublic } from '@/lib/board/visibility';
 
 interface Props {
@@ -18,15 +19,16 @@ const links = [
   { href: '/', label: '홈' },
   { href: '/list', label: '실거래가' },
   { href: '/subscription', label: '청약' },
-  { href: '/finance', label: '금융정보' },
 ];
 
 export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const [lifeOpen, setLifeOpen] = useState(false);
+  const [financeOpen, setFinanceOpen] = useState(false);
   useEffect(() => {
     if (!open) {
       setLifeOpen(false);
+      setFinanceOpen(false);
       return;
     }
     const prev = document.body.style.overflow;
@@ -85,6 +87,30 @@ export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
             {l.label}
           </Link>
         ))}
+
+        <button
+          type="button"
+          onClick={() => setFinanceOpen((v) => !v)}
+          aria-expanded={financeOpen}
+          className="inline-flex items-center justify-between rounded-lg px-2 py-3 text-left text-[15px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-soft)]"
+        >
+          금융정보
+          <ChevronDown size={18} className={`transition-transform ${financeOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {financeOpen && (
+          <div className="mb-1 flex flex-col gap-0.5 pl-2">
+            {FINANCE_ITEMS.map((it) => (
+              <Link
+                key={it.href}
+                href={it.href}
+                onClick={onClose}
+                className="block rounded-lg px-3 py-2 text-[14px] text-[var(--color-text)] hover:bg-[var(--color-soft)]"
+              >
+                {it.label}
+              </Link>
+            ))}
+          </div>
+        )}
 
         <button
           type="button"

@@ -27,6 +27,7 @@ export const STATIC_ENTRIES: MetadataRoute.Sitemap = [
   { url: `${SITE_URL}/urban/parking?sido=${encodeURIComponent('서울')}`, changeFrequency: 'weekly', priority: 0.6 },
   { url: `${SITE_URL}/subscription`, changeFrequency: 'daily', priority: 0.9 },
   { url: `${SITE_URL}/finance`, changeFrequency: 'monthly', priority: 0.8 },
+  { url: `${SITE_URL}/jeonse-guarantee`, changeFrequency: 'monthly', priority: 0.8 },
   // 게시판 공개 여부는 isBoardPublic()로 일원화. 현재 상시 공개라 /board를 항상 포함한다.
   ...(isBoardPublic()
     ? ([{ url: `${SITE_URL}/board`, changeFrequency: 'daily', priority: 0.8 }] as MetadataRoute.Sitemap)

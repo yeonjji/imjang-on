@@ -253,6 +253,24 @@ const post = dbSource({
   }),
 });
 
+const jeonseGuarantee = dbSource({
+  key: 'jeonse-guarantee',
+  count: () => prisma.jeonseGuaranteeProduct.count(),
+  findMany: (skip, take) =>
+    prisma.jeonseGuaranteeProduct.findMany({
+      select: { grntDvcd: true, updatedAt: true },
+      orderBy: { grntDvcd: 'asc' },
+      skip,
+      take,
+    }),
+  toEntry: (j) => ({
+    url: `${SITE_URL}/jeonse-guarantee/${j.grntDvcd}`,
+    lastModified: j.updatedAt,
+    changeFrequency: 'monthly',
+    priority: 0.6,
+  }),
+});
+
 /** 샤드 id 부여 순서(고정). 변경 시 기존 인덱스 매핑이 바뀌므로 끝에만 추가할 것. */
 export const SOURCE_ORDER: SitemapSource[] = [
   core,
@@ -265,6 +283,7 @@ export const SOURCE_ORDER: SitemapSource[] = [
   loan,
   // 게시판 비공개 동안 사이트맵에서도 제외(끝 항목이라 다른 샤드 인덱스 불변).
   ...(isBoardPublic() ? [post] : []),
+  jeonseGuarantee, // 끝에 추가 — 기존 샤드 인덱스(core..post) 불변
 ];
 
 export const SOURCE_MAP: Record<string, SitemapSource> = Object.fromEntries(

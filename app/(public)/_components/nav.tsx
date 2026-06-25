@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { SoonModal } from './soon-modal';
 import { MobileDrawer } from './mobile-drawer';
 import { LifeDropdown } from './life-dropdown';
+import { FinanceDropdown } from './finance-dropdown';
 import { isBoardPublic } from '@/lib/board/visibility';
 
 export function Nav() {
@@ -32,7 +33,7 @@ export function Nav() {
           <div className="hidden gap-6 text-[15px] font-semibold text-[var(--color-muted)] md:flex md:items-center">
             <Link href="/list">실거래가</Link>
             <Link href="/subscription">청약</Link>
-            <Link href="/finance">금융정보</Link>
+            <FinanceDropdown />
             <LifeDropdown onSoon={(topic) => setSoonOpen(topic)} />
             {isBoardPublic() && <Link href="/board">임장ON 브리핑</Link>}
           </div>
