@@ -177,7 +177,7 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
                 href={product.guidUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-xl bg-amber-700 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-amber-800"
+                className="block rounded-full bg-[var(--color-blue)] px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-[var(--color-blue-dark)]"
               >
                 HF에서 신청·자세히 보기 ↗
               </a>
