@@ -204,7 +204,11 @@ export function JeonseFinder({
             조건에 맞는 보증상품이 없습니다. 지역·대상 조건을 넓혀 보세요.
           </p>
         ) : (
-          rows.map((r) => <ResultCard key={r.product.grntDvcd} row={r} />)
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {rows.map((r) => (
+              <ResultCard key={r.product.grntDvcd} row={r} />
+            ))}
+          </div>
         )}
 
         <p className="rounded-xl bg-[var(--color-soft)] px-4 py-3 text-[12px] leading-relaxed text-[var(--color-muted)]">

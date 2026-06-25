@@ -129,22 +129,19 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
           {regions.length > 0 && (
             <Card>
               <h2 className="mb-3 text-lg font-bold text-[var(--color-blue-dark)]">지역별 최대 임차보증금</h2>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs uppercase text-[var(--color-muted)]">
-                    <th className="py-2">지역</th>
-                    <th>최대 임차보증금</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {regions.map((r) => (
-                    <tr key={r.trgtLwdgCd} className="border-t border-[var(--color-line)]">
-                      <td className="py-2">{shortSidoFromRegionCode(r.trgtLwdgCd) ?? r.trgtLwdgCd}</td>
-                      <td className="font-semibold text-[var(--color-blue-dark)]">{formatWon(r.maxRentGrntAmt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <ul className="grid grid-cols-1 gap-x-10 lg:grid-cols-2">
+                {regions.map((r) => (
+                  <li
+                    key={r.trgtLwdgCd}
+                    className="flex items-center justify-between border-t border-[var(--color-line)] py-2 text-sm"
+                  >
+                    <span className="text-[var(--color-text)]">
+                      {shortSidoFromRegionCode(r.trgtLwdgCd) ?? r.trgtLwdgCd}
+                    </span>
+                    <span className="font-semibold text-[var(--color-blue-dark)]">{formatWon(r.maxRentGrntAmt)}</span>
+                  </li>
+                ))}
+              </ul>
             </Card>
           )}
 
@@ -180,7 +177,7 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
                 href={product.guidUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-xl bg-[var(--color-blue)] px-4 py-3 text-center text-sm font-semibold text-white hover:opacity-90"
+                className="block rounded-xl bg-amber-700 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-amber-800"
               >
                 HF에서 신청·자세히 보기 ↗
               </a>
