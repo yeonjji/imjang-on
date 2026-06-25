@@ -30,7 +30,8 @@ export default async function FinancePage() {
           서민금융 대출상품
         </h1>
         <p className="mt-2 break-keep text-sm text-[var(--color-muted)]">
-          서민금융진흥원이 모은 정부·정책·지자체·민간 대출상품입니다. 자금용도·대상·지역으로 좁혀 보세요.
+          서민금융진흥원이 모은 정부·정책·지자체·민간 대출상품입니다. 자금용도·대상·지역으로 좁혀 보세요. 운영기간은 상품
+          안내 기준이며, 실제 신청 가능 여부·잔여 한도는 취급기관에 확인하세요.
         </p>
       </div>
 

@@ -19,6 +19,9 @@ export interface LoanSummary {
   usageTags: string[];
   targetTags: string[];
   regionTags: string[];
+  // 상품운영기간(prdoprprid) — 안내용 텍스트('상시' / '자금소진시까지' / 날짜 등).
+  // optional: 전체 LoanProduct를 LoanSummary로 넘기는 곳(상세 페이지 recommendLoans)과의 구조적 호환 유지.
+  operPeriod?: string | null;
 }
 
 export interface FacetCount {
@@ -98,11 +101,19 @@ export function filterLoans(rows: LoanSummary[], c: LoanFilterCriteria): LoanSum
 }
 
 export async function getLoanSummaries(): Promise<LoanSummary[]> {
-  return prisma.loanProduct.findMany({
+  const rows = await prisma.loanProduct.findMany({
     select: {
       seq: true, finprdnm: true, ofrinstnm: true, instCtg: true,
       lnlmt: true, irt: true, usageTags: true, targetTags: true, regionTags: true,
+      rawJson: true,
     },
     orderBy: { finprdnm: 'asc' },
+  });
+  // 운영기간(prdoprprid)은 rawJson에만 있어 서버에서 작은 문자열로 추출한다.
+  // (전체 rawJson은 반환 객체에서 빼므로 클라이언트로 전송되지 않음 — 페이로드 보존)
+  return rows.map(({ rawJson, ...rest }) => {
+    const prd = (rawJson as Record<string, unknown> | null)?.prdoprprid;
+    const operPeriod = typeof prd === 'string' && prd.trim() !== '' && prd.trim() !== '-' ? prd.trim() : null;
+    return { ...rest, operPeriod };
   });
 }

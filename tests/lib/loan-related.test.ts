@@ -12,6 +12,7 @@ function row(p: Partial<LoanSummary> & { seq: number }): LoanSummary {
     usageTags: [],
     targetTags: [],
     regionTags: [],
+    operPeriod: null,
     ...p,
   };
 }
