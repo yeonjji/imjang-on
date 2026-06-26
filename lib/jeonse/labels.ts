@@ -59,6 +59,15 @@ export function bankNames(trtBankCont: string | null): string[] {
     .map((c) => BANK_LABELS[c] ?? c);
 }
 
+/** 데이터 스냅샷 기준일 → "YYYY.MM.DD"(KST). 서버 TZ와 무관하게 한국 날짜로 표기. */
+export function formatAsOf(d: Date): string {
+  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  const y = kst.getUTCFullYear();
+  const m = String(kst.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(kst.getUTCDate()).padStart(2, '0');
+  return `${y}.${m}.${day}`;
+}
+
 /** 원 단위 금액 → "N억 N,NNN만원" 한국어 표기. */
 export function formatWon(won: number): string {
   if (!Number.isFinite(won) || won <= 0) return '0원';

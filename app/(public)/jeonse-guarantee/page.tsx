@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getJeonseProducts, getRegionLimits } from '@/lib/jeonse/list';
+import { getJeonseProducts, getRegionLimits, getJeonseDataAsOf } from '@/lib/jeonse/list';
+import { formatAsOf } from '@/lib/jeonse/labels';
 import { getSidoList, getAllSigungus } from '@/lib/region';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { JeonseFinder } from './_components/jeonse-finder';
@@ -15,11 +16,12 @@ export const metadata: Metadata = {
 export const revalidate = 86_400;
 
 export default async function JeonseGuaranteePage() {
-  const [products, regions, sidoList, sigungus] = await Promise.all([
+  const [products, regions, sidoList, sigungus, dataAsOf] = await Promise.all([
     getJeonseProducts(),
     getRegionLimits(),
     getSidoList(),
     getAllSigungus(),
+    getJeonseDataAsOf(),
   ]);
 
   return (
@@ -36,6 +38,10 @@ export default async function JeonseGuaranteePage() {
         <p className="mt-2 break-keep text-sm text-[var(--color-muted)]">
           지역과 전세보증금 등 내 조건을 입력하면, 한국주택금융공사(HF) 전세자금보증 상품 중 신청 가능한 상품을 찾아드립니다.
           한도는 상품 기준 상한이며, 정확한 금액은 소득·부채 등에 따라 달라집니다.
+        </p>
+        <p className="mt-3 break-keep text-[12px] leading-relaxed text-[var(--color-muted)]">
+          {dataAsOf && <>데이터 기준일 {formatAsOf(dataAsOf)} · </>}상품 운영 여부와 세부 조건은 변경될 수 있어{' '}
+          <strong className="font-semibold">실제와 다를 수 있습니다</strong>. 신청 전 한국주택금융공사(HF)에서 확인하세요.
         </p>
       </div>
 
