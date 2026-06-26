@@ -1,0 +1,43 @@
+name: verify-board-generate
+
+# 검증 전용(수동). 출처 텍스트로 글생성을 mini·gpt-4.1 양쪽으로 돌려
+# 공백 제외 글자수와 가드레일 PASS/FAIL만 로그로 출력한다. DB에 저장하지 않는다(게시 없음).
+# source_text를 비우면 내장 레버리지 ETF 샘플로 돈다.
+on:
+  workflow_dispatch:
+    inputs:
+      source_name:
+        description: '출처명 (예: 한국거래소)'
+        required: false
+        default: '한국거래소'
+      source_text:
+        description: '근거 자료 본문 (비우면 내장 레버리지 ETF 샘플). 한 줄로 붙여넣기.'
+        required: false
+        default: ''
+      models:
+        description: '테스트할 모델'
+        required: false
+        type: choice
+        default: 'both'
+        options:
+          - both
+          - mini
+          - full
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      VERIFY_SOURCE_NAME: ${{ inputs.source_name }}
+      VERIFY_SOURCE_TEXT: ${{ inputs.source_text }}
+      VERIFY_MODELS: ${{ inputs.models }}
+      LOG_LEVEL: info
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm tsx scripts/board/verify-generate.ts
+        timeout-minutes: 10
