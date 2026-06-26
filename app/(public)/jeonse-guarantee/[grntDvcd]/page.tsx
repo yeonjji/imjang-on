@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getJeonseProduct, getProductRegions, getAllGrntDvcds } from '@/lib/jeonse/detail';
-import { reqTargetLabel, prodKindLabel, formatWon, bankNames } from '@/lib/jeonse/labels';
+import { reqTargetLabel, prodKindLabel, formatWon, bankNames, formatAsOf } from '@/lib/jeonse/labels';
 import { getTransactionTeaser } from '@/lib/board/detail-teasers';
 import { getWeeklySubscriptions, flattenWeeklyBoard } from '@/lib/subscription';
 import { getLoanSummaries, type LoanSummary } from '@/lib/loan/list';
@@ -197,8 +197,9 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
               </a>
             )}
             <p className="mt-3 text-[12px] leading-relaxed text-[var(--color-muted)]">
-              실제 보증·대출 한도와 금리는 소득·부채 등 개인 상황에 따라 달라집니다. 정확한 내용은 한국주택금융공사(HF)에서
-              확인하세요.
+              데이터 기준일 {formatAsOf(product.updatedAt)} · 상품 운영 여부와 세부 조건은 변경될 수 있어{' '}
+              <strong className="font-semibold">실제와 다를 수 있습니다</strong>. 실제 보증·대출 한도와 금리는 소득·부채 등
+              개인 상황에 따라 달라지니, 정확한 내용은 한국주택금융공사(HF)에서 확인하세요.
             </p>
           </Card>
         </aside>
