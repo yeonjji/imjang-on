@@ -204,13 +204,15 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
         </aside>
       </div>
 
-      <JeonseDiscoverySection
-        briefing={briefing}
-        weeklySubscriptions={weeklySubscriptions}
-        relatedLoans={relatedLoans}
-      />
+      <div className="lg:w-[calc(100%_-_352px)]">
+        <JeonseDiscoverySection
+          briefing={briefing}
+          weeklySubscriptions={weeklySubscriptions}
+          relatedLoans={relatedLoans}
+        />
 
-      <BoardBriefingSection heading="임장ON 브리핑" className="mt-10" />
+        <BoardBriefingSection heading="임장ON 브리핑" className="mt-10" />
+      </div>
     </div>
   );
 }
