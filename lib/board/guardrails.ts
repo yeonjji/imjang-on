@@ -13,7 +13,9 @@ export function findForbiddenPhrases(text: string): string[] {
   return FORBIDDEN_PATTERNS.filter((p) => p.re.test(text)).map((p) => p.label);
 }
 
-export function checkLength(body: string, min = 1000, max = 2200): { ok: boolean; length: number } {
+// 하한 800: 레버리지 ETF 등 사실 빈약 공공공시는 충실하게 써도 ~800자가 한계(gpt-4.1 실측 803).
+// 패딩으로 1,000자를 억지로 채우는 건 과장 금지 원칙에 어긋나, 정직한 길이에 기준을 맞춘다.
+export function checkLength(body: string, min = 800, max = 2200): { ok: boolean; length: number } {
   const length = body.replace(/\s/g, '').length;
   return { ok: length >= min && length <= max, length };
 }

@@ -13,8 +13,8 @@ describe('findForbiddenPhrases', () => {
   });
 });
 describe('checkLength', () => {
-  it('범위 안이면 ok', () => { expect(checkLength('가'.repeat(1600)).ok).toBe(true); });
-  it('너무 짧으면 실패', () => { expect(checkLength('가'.repeat(500)).ok).toBe(false); });
+  it('하한(800) 이상이면 ok', () => { expect(checkLength('가'.repeat(900)).ok).toBe(true); });
+  it('너무 짧으면(800 미만) 실패', () => { expect(checkLength('가'.repeat(700)).ok).toBe(false); });
 });
 describe('runGuardrails', () => {
   it('출처 누락이면 위반', () => {
