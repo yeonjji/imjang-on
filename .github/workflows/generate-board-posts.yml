@@ -17,7 +17,9 @@ jobs:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
+      # 짧은 출처(레버리지 ETF 등)에서 mini는 분량 하한(800)을 못 넘김(실측 651 vs gpt-4.1 803).
+      # 풀 모델 고정 — topic 워크플로우와 동일 정책. 주 1회·최대 1건이라 비용 영향 미미.
+      OPENAI_MODEL: gpt-4.1
       NAVER_SEARCH_CLIENT_ID: ${{ secrets.NAVER_SEARCH_CLIENT_ID }}
       NAVER_SEARCH_CLIENT_SECRET: ${{ secrets.NAVER_SEARCH_CLIENT_SECRET }}
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
