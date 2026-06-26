@@ -3,6 +3,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getJeonseProduct, getProductRegions, getAllGrntDvcds } from '@/lib/jeonse/detail';
 import { reqTargetLabel, prodKindLabel, formatWon, bankNames, formatAsOf } from '@/lib/jeonse/labels';
+import { getTransactionTeaser } from '@/lib/board/detail-teasers';
+import { getWeeklySubscriptions, flattenWeeklyBoard } from '@/lib/subscription';
+import { getLoanSummaries, type LoanSummary } from '@/lib/loan/list';
+import { relatedLoansForJeonse } from '@/lib/jeonse/related-loans';
+import { JeonseDiscoverySection } from './_components/jeonse-discovery-section';
+import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
 import { shortSidoFromRegionCode } from '@/lib/region';
 import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
@@ -36,6 +42,14 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
   const product = await getJeonseProduct(grntDvcd);
   if (!product) notFound();
   const regions = await getProductRegions(grntDvcd);
+
+  const [briefing, weeklyBoard, allLoans] = await Promise.all([
+    getTransactionTeaser(),
+    getWeeklySubscriptions().catch(() => null),
+    getLoanSummaries().catch(() => [] as LoanSummary[]),
+  ]);
+  const weeklySubscriptions = weeklyBoard ? flattenWeeklyBoard(weeklyBoard, 4) : [];
+  const relatedLoans = relatedLoansForJeonse(product, allLoans, 3);
 
   const kind = prodKindLabel(product.rcmdGrntProdDvcd);
   const target = reqTargetLabel(product.grntReqTrgtDvcd);
@@ -189,6 +203,16 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
             </p>
           </Card>
         </aside>
+      </div>
+
+      <div className="lg:w-[calc(100%_-_352px)]">
+        <JeonseDiscoverySection
+          briefing={briefing}
+          weeklySubscriptions={weeklySubscriptions}
+          relatedLoans={relatedLoans}
+        />
+
+        <BoardBriefingSection heading="임장ON 브리핑" className="mt-10" />
       </div>
     </div>
   );
