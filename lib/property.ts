@@ -4,13 +4,6 @@ import type { Prisma, Property, Region } from '@prisma/client';
 import { normalizeName } from '@/lib/slug';
 import { sidoFullName } from '@/lib/region';
 
-/**
- * 매물 색인 임곗값. 최근 12개월 거래가 이 값 미만이면 고유 데이터가 빈약(thin)하여
- * 색인에서 제외한다 — 사이트맵 게이트와 상세 페이지 noindex가 이 상수를 공유한다.
- * docs/adsense/thin-content-diagnosis.md 참고.
- */
-export const MIN_INDEXABLE_TX = 3;
-
 export type PropertyTypeSlug = 'apt' | 'officetel' | 'villa';
 
 export function slugToType(slug: PropertyTypeSlug): PropertyType[] {

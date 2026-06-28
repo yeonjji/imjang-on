@@ -50,8 +50,6 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title: `${item.name} — ${item.crType ?? '어린이집'} 정원 ${item.capacity ?? '-'}`,
     description: `${item.name}${type}${stat}. 도보권 아파트 실거래가와 보육정보를 한눈에.`,
     alternates: { canonical: `/childcare/${sigunguCode}/${id}` },
-    // 공공 레지스트리 미러(고유 서술 0) — 색인 제외, 링크는 follow 유지
-    robots: { index: false, follow: true },
   };
 }
 
