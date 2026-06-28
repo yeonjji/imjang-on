@@ -73,17 +73,13 @@ export default async function SubscriptionPage({
         </aside>
 
         <main className="min-w-0 flex-1">
-          <Suspense
-            fallback={<div className="h-96 animate-pulse rounded-[22px] bg-[var(--color-soft)]" />}
-          >
-            <SubscriptionList
-              categories={categories}
-              sido={sido}
-              status={status}
-              sort={sort}
-              page={page}
-            />
-          </Suspense>
+          <SubscriptionList
+            categories={categories}
+            sido={sido}
+            status={status}
+            sort={sort}
+            page={page}
+          />
           <SourceCaption ids={['applyhome', 'lh-presub']} />
         </main>
       </div>
