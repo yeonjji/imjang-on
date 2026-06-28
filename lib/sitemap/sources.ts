@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { prisma } from '@/lib/db';
 import { SITE_URL } from '@/lib/site';
 import { getAllSigungus } from '@/lib/region';
+import { MIN_INDEXABLE_TX } from '@/lib/property';
 import { STATIC_ENTRIES } from './static-entries';
 import { isBoardPublic } from '@/lib/board/visibility';
 import { boardPath } from '@/lib/board/slug';
@@ -91,10 +92,10 @@ const core: SitemapSource = {
 
 const property = dbSource({
   key: 'property',
-  count: () => prisma.property.count({ where: { txCount12m: { gt: 0 } } }),
+  count: () => prisma.property.count({ where: { txCount12m: { gte: MIN_INDEXABLE_TX } } }),
   findMany: (skip, take) =>
     prisma.property.findMany({
-      where: { txCount12m: { gt: 0 } },
+      where: { txCount12m: { gte: MIN_INDEXABLE_TX } },
       select: { id: true, propertyType: true, updatedAt: true },
       orderBy: { id: 'asc' },
       skip,

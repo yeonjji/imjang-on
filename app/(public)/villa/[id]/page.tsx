@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getPropertyById, getPropertyLatLng } from '@/lib/property';
+import { getPropertyById, getPropertyLatLng, MIN_INDEXABLE_TX } from '@/lib/property';
 import {
   getMonthlyChartData,
   getAreaSummary,
@@ -53,6 +53,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       txCount12m: p.txCount12m,
     }),
     alternates: { canonical: `/villa/${p.id}` },
+    // 최근 12개월 거래가 적은 롱테일 매물은 고유 데이터 빈약 — 색인 제외(사이트맵 게이트와 동기화)
+    robots: p.txCount12m < MIN_INDEXABLE_TX ? { index: false, follow: true } : undefined,
   };
 }
 
