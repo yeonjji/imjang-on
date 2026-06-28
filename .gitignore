@@ -55,12 +55,7 @@ logs/
 
 # QA 시각 검증 스크린샷 (로컬 산출물)
 qa-*.png
+# OMC/codex 로컬 툴링 (레포에서 추적하지 않음)
 .omx/
-.codex/*
-!.codex/agents/
-!.codex/agents/**
-!.codex/skills/
-!.codex/skills/**
-.codex/skills/.system/**
-!.codex/prompts/
-!.codex/prompts/**
+.codex/
+AGENTS.md
