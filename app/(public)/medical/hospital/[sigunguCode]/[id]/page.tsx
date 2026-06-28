@@ -35,8 +35,6 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title: `${hospital.name} — ${hospital.typeName} 정보·주변 아파트`,
     description: `${hospital.name} ${hospital.typeName}${docs}. 진료·시설·교통 정보와 도보권 아파트 실거래가를 함께 확인하세요.`,
     alternates: { canonical: `/medical/hospital/${hospital.sigunguCode}/${id}` },
-    // 공공 레지스트리 미러(고유 서술 0) — 색인 제외, 링크는 follow 유지
-    robots: { index: false, follow: true },
   };
 }
 

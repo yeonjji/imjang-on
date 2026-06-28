@@ -35,8 +35,6 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title: `${pharmacy.name} — 약국 정보·주변 아파트`,
     description: `${pharmacy.name} 위치·연락처와 도보권 아파트 실거래가. ${regionPart}주변 생활 인프라를 한눈에 확인하세요.`,
     alternates: { canonical: `/medical/pharmacy/${pharmacy.sigunguCode}/${id}` },
-    // 공공 레지스트리 미러(고유 서술 0) — 색인 제외, 링크는 follow 유지
-    robots: { index: false, follow: true },
   };
 }
 

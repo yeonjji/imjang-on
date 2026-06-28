@@ -34,8 +34,6 @@ export async function generateMetadata({
     title: `${p.rcmdProdNm} — 전세자금보증`,
     description: `${p.rcmdProdNm}의 신청 대상·예상 보증료율·최대 한도·취급은행을 한눈에. 한국주택금융공사(HF) 전세자금보증 상품 안내.`,
     alternates: { canonical: `/jeonse-guarantee/${grntDvcd}` },
-    // 상품 라벨-값 템플릿(고유 서술 0) — 색인 제외, 링크는 follow 유지
-    robots: { index: false, follow: true },
   };
 }
 
