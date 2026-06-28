@@ -39,6 +39,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title: `${notice.name} 청약 · ${categoryLabel(notice.category)}`,
     description: `${region}${notice.name} 청약${supply}. 접수 일정·주택형별 분양가와 주변 단지 시세를 한눈에 확인하세요.`,
     alternates: { canonical: `/subscription/${notice.id}` },
+    // 공고 템플릿 상세(고유 서술 0) — 색인 제외, 링크는 follow 유지
+    robots: { index: false, follow: true },
   };
 }
 

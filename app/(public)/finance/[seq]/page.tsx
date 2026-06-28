@@ -42,6 +42,8 @@ export async function generateMetadata({
     title: `${product.finprdnm} 한도·금리 — 주거금융`,
     description: `${provider}${product.finprdnm}${limit}${target}. 금리·자격요건·신청방법을 한눈에 확인하세요.`,
     alternates: { canonical: `/finance/${seq}` },
+    // 상품 라벨-값 템플릿(고유 서술 0) — 색인 제외, 링크는 follow 유지
+    robots: { index: false, follow: true },
   };
 }
 
