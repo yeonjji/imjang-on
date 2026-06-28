@@ -47,6 +47,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title: `${school.name} — ${school.schoolKind ?? '학교'} 정보·주변 아파트`,
     description: `${school.name}${tagPart} ${school.schoolKind ?? '학교'} 정보와 도보권 아파트 실거래가. ${regionPart}배정·통학 정보를 공공데이터로 확인하세요.`,
     alternates: { canonical: `/school/${sigunguCode}/${id}` },
+    // 공공 레지스트리 미러(고유 서술 0) — 색인 제외, 링크는 follow 유지
+    robots: { index: false, follow: true },
   };
 }
 

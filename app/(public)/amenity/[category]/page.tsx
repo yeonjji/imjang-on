@@ -40,6 +40,8 @@ export async function generateMetadata({ params, searchParams }: Params): Promis
           ? `/amenity/${def.slug}?sido=${encodeURIComponent(sp.sido)}`
           : `/amenity/${def.slug}`,
     },
+    // 지역 필터된 디렉터리 리스트(고유 서술 0)는 색인 제외. 파라미터 없는 허브만 색인.
+    robots: sp.region || sp.sido ? { index: false, follow: true } : undefined,
   };
 }
 
