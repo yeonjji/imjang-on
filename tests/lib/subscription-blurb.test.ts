@@ -18,6 +18,18 @@ describe('subscriptionBlurb', () => {
     expect(text).toContain('청약입니다');
   });
 
+  it('접수 시작일만 있으면 "...부터"로 폴백한다', () => {
+    const text = subscriptionBlurb({
+      name: '시작만단지',
+      regionName: '경기 성남시',
+      categoryLabel: '민영',
+      totalSupply: 300,
+      receiptBegin: new Date('2026-07-01'),
+      receiptEnd: null,
+    });
+    expect(text).toContain('2026.07.01부터');
+  });
+
   it('데이터가 비면 우아하게 폴백한다(세대수 생략, 일정 안내문)', () => {
     const text = subscriptionBlurb({
       name: '무명단지',
