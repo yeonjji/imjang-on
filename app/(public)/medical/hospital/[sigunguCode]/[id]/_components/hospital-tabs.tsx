@@ -35,7 +35,7 @@ export function HospitalTabs({ hospital }: Props) {
           </button>
         ))}
       </div>
-      {active === 'diagnosis' && (
+      <div hidden={active !== 'diagnosis'}>
         <HospitalTabDiagnosis
           depts={hospital.depts}
           staff={hospital.staff}
@@ -43,17 +43,17 @@ export function HospitalTabs({ hospital }: Props) {
           specialTreatments={hospital.specialTreatments}
           nursingGrades={hospital.nursingGrades}
         />
-      )}
-      {active === 'facility' && (
+      </div>
+      <div hidden={active !== 'facility'}>
         <HospitalTabFacility
           facility={hospital.facility}
           equipment={hospital.equipment}
           mealSurcharges={hospital.mealSurcharges}
         />
-      )}
-      {active === 'operation' && (
+      </div>
+      <div hidden={active !== 'operation'}>
         <HospitalTabOperation detail={hospital.detail} transits={hospital.transits} />
-      )}
+      </div>
     </Card>
   );
 }
