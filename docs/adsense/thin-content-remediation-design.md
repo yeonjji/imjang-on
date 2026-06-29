@@ -116,12 +116,19 @@
 | 신규 `/guide`가 얇으면 또 thin | 카테고리당 1편이라도 충분한 고유 해설 길이 + 출처표기. **양보다 질**(MVP 10~12편), 라벨-값 금지. |
 | 병원 탭 SSR 전환이 인터랙션 회귀 | 콘텐츠는 항상 DOM, 가시성만 토글 → 동작 동일. 회귀 테스트로 확인. |
 
-## 7. 검증 계획
+## 7. 검증 계획 (현재 baseline 실측 → 목표)
 
-- **봇 가독성:** 대표 페이지(병원·villa·약국)를 JS 미실행 fetch → 핵심 콘텐츠·FAQ가 HTML에 존재.
-- **구조화:** FAQPage/Place/Breadcrumb JSON-LD 파싱 검증(기존 sitemap/seo 테스트 옆에 추가).
-- **맥락성:** 카테고리별 브리핑 목록 차이 스냅샷.
-- **재심사:** 변경 배포 + 사이트맵 재제출 후 AdSense 재심사.
+> **baseline: 2026-06-29 운영 사이트(imjangon.co.kr) raw HTML(JS 미실행, curl) 실측.** 아래 자동 체크가 구현 후 pass/fail 게이트가 된다.
+
+| 항목 | 측정 방법 | 현재값 (baseline) | 목표값 |
+|---|---|---|---|
+| **봇 가독성** | 병원 상세 no-JS fetch에 운영·시설 탭 텍스트 존재? | ❌ **진료시간·응급실·병상 누락**(클릭-게이트), 진료과목(기본탭)만 존재 | ✅ 진료시간·응급실·병상이 raw HTML에 존재 **(L1)** |
+| **구조화(JSON-LD)** | 상세 raw HTML의 `@type` | 병원=Hospital·아파트=Residence·약국=Pharmacy + Breadcrumb·Org·WebSite / **FAQPage·Dataset 없음** | ✅ POI·매물에 FAQPage 추가 **(L3)** |
+| **맥락성** | 병원·아파트·약국의 board 링크 비교 | ❌ **3페이지 전역 동일**(`/board/24·23·22·21`, 약국에 'ETF' 뉴스) | ✅ 페이지 카테고리별로 다름 **(L4)** |
+| **빈 페이지** | 저거래 villa no-JS fetch에 주변 셸+문단 존재? | 차트·면적·주변비교가 null로 붕괴하는 저거래 페이지 존재 **(L2 대상)** | ✅ 주변 셸+맥락문단 항상 렌더, 빈 페이지 0 **(L2)** |
+
+- **측정 방식:** raw HTML을 curl로 받아 ① JSON-LD `<script>` `@type` 파싱 ② 콘텐츠 마커 grep ③ `/board` 링크 추출. (이번 baseline에 쓴 스크립트를 회귀 테스트로 고정)
+- **재심사:** Phase A 배포 → 위 게이트 재실행 PASS 확인 → Search Console 사이트맵 재제출 → AdSense 콘솔 검토 재요청(수일~수주 소요, 직접 실행 필요).
 
 ## 8. 미결 결정 (plan에서 확정)
 
