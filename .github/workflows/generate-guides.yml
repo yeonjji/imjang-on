@@ -1,0 +1,33 @@
+name: generate-guides
+
+# 상록(evergreen) 가이드 시드를 순회하며 DRAFT를 생성한다(수동 트리거).
+# 가이드는 유한 시드라 cron이 아닌 workflow_dispatch로 1회성 실행한다.
+# 생성물은 status=DRAFT — 공개 전 /admin/guides 검수·게시 필요. dedupeKey로 중복 생성 방지.
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: '특정 시드 1개만 생성(시드 key). 비우면 전체 시드 순회.'
+        required: false
+        default: ''
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GUIDE_MODEL: gpt-4.1
+      LOG_LEVEL: info
+      # 스크립트(장시간 단일 연결)는 pooler 대신 직결(DIRECT_URL)을 쓴다. board 생성 워크플로와 동일.
+      PRISMA_INGEST: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma generate
+      - run: pnpm tsx scripts/generate-guides.ts ${{ inputs.only != '' && format('--only={0}', inputs.only) || '' }}
+        timeout-minutes: 15
