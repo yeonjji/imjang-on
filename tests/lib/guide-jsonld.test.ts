@@ -12,5 +12,6 @@ describe('guideArticleSchema', () => {
     expect(s['@type']).toBe('Article');
     expect(s.headline).toBe('실거래가 읽는 법');
     expect((s.publisher as { name: string }).name).toBe('임장ON');
+    expect((s.author as { name: string }).name).toBe('임장ON 편집부');
   });
 });

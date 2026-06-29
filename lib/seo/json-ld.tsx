@@ -132,6 +132,7 @@ export function guideArticleSchema(input: {
     description: input.description,
     url: input.url,
     datePublished: input.datePublished,
+    author: { '@type': 'Organization', name: '임장ON 편집부' },
     ...(input.dateModified ? { dateModified: input.dateModified } : {}),
     ...(input.image ? { image: input.image } : {}),
     publisher: { '@type': 'Organization', name: '임장ON', url: SITE_URL },

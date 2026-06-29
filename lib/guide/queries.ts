@@ -39,7 +39,7 @@ export async function listPublishedGuides(
 
 const GUIDE_DETAIL_SELECT = {
   id: true, slug: true, title: true, summary: true, body: true, category: true,
-  sourceName: true, sourceUrl: true, sourceDate: true, publishedAt: true,
+  sourceName: true, sourceUrl: true, sourceDate: true, publishedAt: true, updatedAt: true,
 } as const;
 
 export async function getPublishedGuideBySlug(slug: string) {

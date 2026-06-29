@@ -35,7 +35,13 @@ export default async function GuideDetailPage({ params }: Params) {
     <article className="mx-auto max-w-[760px] px-6 py-12">
       <JsonLd
         data={[
-          guideArticleSchema({ headline: guide.title, url, description: guide.summary, datePublished: published }),
+          guideArticleSchema({
+            headline: guide.title,
+            url,
+            description: guide.summary,
+            datePublished: published,
+            dateModified: guide.updatedAt.toISOString().slice(0, 10),
+          }),
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
             { name: '가이드', url: `${SITE_URL}/guide` },
