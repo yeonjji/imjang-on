@@ -8,7 +8,7 @@
 
 - **무엇이 thin이고 왜 거절됐나** → `thin-content-diagnosis.md` (원인 ①POI 디렉터리 142,700 ②청약·금융·전세 6,150 ③매물 롱테일 ④board 20건).
 - **무엇을 할 것인가** → 본 문서. 8개 레버 + 단계 + 수용기준.
-- **무게중심(중요):** 통과 필수 = **L1·L2·L9(승자 공통: 크롤 가능 + 빈 페이지 방지) + 원본 콘텐츠 분량(L7 `/guide` 신설로 확보, board 확대 아님)**. 나머지(L3·L4·L5)는 **ilsangkit식 polish — ayo는 없이 통과.** 특히 **에디토리얼 링크 축에서 imjang-on은 이미 통과 사이트(ayo)와 동일 상태**(둘 다 비맥락 전역 링크)라 **L4(맥락화)는 순수 품질 향상**이다.
+- **무게중심(중요, 2026-06-29 재스코프):** 통과 필수 = **L1(병원 SSR, ✅완료) + 원본 콘텐츠 분량(L7 `/guide` 신설)**. 재스코프로 L2(villa)는 이미 적정·L9는 subscription 산문 polish로 축소(통과 필수 아님). 나머지(L3·L4·L5)는 **ilsangkit식 polish — ayo는 없이 통과.** 특히 **에디토리얼 링크 축에서 imjang-on은 이미 통과 사이트(ayo)와 동일 상태**(둘 다 비맥락 전역 링크)라 **L4(맥락화)는 순수 품질 향상**이다.
 
 ## 1. 신규 증거 — 같은 종류 사이트 2곳이 어떻게 통과했나
 
@@ -48,9 +48,9 @@
 3. **오리지널 콘텐츠 앵커 = `/guide`.** board(소식)는 현행 유지, 원본 분량 신호는 **신규 `/guide` 상록 가이드 수십 편**이 책임(board 확대 아님). 단 **지역 곱 양산 금지**(thin 재발).
 4. **출처·E-E-A-T 보존.** imjang-on 최강 자산, 건드리지 않음.
 
-## 3. 레버 (8개) — L1·L2·L9 통과 필수, L7 원본 앵커, L3·L4·L5 polish, L6 선택
+## 3. 레버 — L1 통과 필수(완료), L7 원본 앵커, 나머지 polish/선택
 
-> **근거 등급:** L1·L2·L9 = **둘 다 하는 것(통과 필수, 코드)**. **L7 = 원본 콘텐츠 앵커**(둘 다 코퍼스 보유 → 분량 신호, **통과 관련**). L3·L4 = ilsangkit식 polish(ayo는 없이 통과). L5 = L4용 board 태깅(값싼 연동). L6 = ayo만(선택). → 통과 무게중심 = **L1·L2 + L7**, 나머지는 polish.
+> **근거 등급(2026-06-29 재스코프 반영):** **L1 = 통과 필수(✅완료)** — 유일한 실측 크롤 갭(병원 25%). **L7 = 원본 콘텐츠 앵커**(둘 다 코퍼스 보유 → 분량 신호, 통과 관련). **L2(villa) = 이미 적정, action 없음.** **L9 = subscription 산문 polish(축소).** L3·L4 = ilsangkit식 polish(ayo는 없이 통과). L5 = L4용 board 태깅. L6 = ayo만(선택). → 통과 무게중심 = **L1(완료) + L7**.
 
 ### L1 — 병원 탭 SSR화 [최고 ROI · 색인 25%]
 - **문제:** `HospitalTabs`가 `'use client'` useState. 초기 HTML에는 기본 `diagnosis` 탭만, **시설(병상·장비)·운영(진료시간·응급실·주차·교통) 탭이 client-only로 크롤 HTML에서 누락.** 79,562 페이지(25.3%)에 영향.
@@ -58,17 +58,16 @@
 - **파일:** `app/(public)/medical/hospital/[sigunguCode]/[id]/_components/hospital-tabs.tsx`
 - **수용기준:** 임의 병원 상세를 **JS 미실행 fetch**(WebFetch/curl) 시 진료시간·시설·운영 텍스트가 본문 HTML에 존재.
 
-### L2 — 저거래 villa 폴백 셸 보장 [최고 ROI · 색인 35%] *(정정됨)*
-- **문제:** 사이트맵 게이트가 `txCount12m > 0`이라 색인 villa는 모두 거래 ≥1이지만, **거래 1~2건 롱테일**은 차트·면적비교·주변비교가 null로 붕괴 → hero+라벨+폴백문구만 남음(110,753개, 35.2%).
-- **접근(noindex 아님):** 좌표가 있으면 **geo 주변 셸(주변 아파트 실거래가·지하철·인프라) + 지역 맥락 한 문단을 거래 수와 무관하게 항상 렌더.** ayo가 "정보없음" 페이지를 지탱한 방식과 동일. noindex는 **좌표 부재로 주변 셸 자체가 불가능한 잔여**에만 한정(ilsangkit 와이파이 등가물).
-- **파일:** `app/(public)/villa/[id]/page.tsx`, `lib/seo/blurb.ts`(맥락 문단 생성), Nearby* 렌더 게이트.
-- **수용기준:** 거래 1건짜리 villa 표본에서도 주변 셸 + 맥락 문단이 렌더되고 "빈 페이지" 0건. 동일 패턴을 officetel 롱테일에도 적용.
+### L2 — villa: 재스코프 결과 **이미 적정**(action 없음) *(2026-06-29 코드 확인)*
+- **재스코프:** audit의 "거래 1~2건 → 섹션 붕괴"는 **부정확.** `app/(public)/villa/[id]/page.tsx`는 **blurb(산문)·실거래표·가격그래프·면적비교·주변단지비교(좌표 무관)·사이드바·브리핑을 거래 수와 무관하게 항상 렌더**한다(`propertyBlurb`가 이미 저거래·무거래 케이스를 문장으로 처리). `coord`만 지도·지하철·인프라를 가리며, 그때도 페이지가 비지 않는다.
+- **결론:** villa는 손댈 것 없음 → **Phase A에서 제외.** 좌표 없는 극소 잔여만 추후 측정 후 noindex 여부 판단(현재는 보류).
 
-### L9 — 청약·금융·전세보증 빈페이지 폴백 [통과 관련 · L2 확장]
-- **문제:** 진단 **원인②** — subscription(5,780)·finance(323)·jeonse(47)는 자체 산문 0 템플릿이고, 좌표·세대수·데이터가 없으면 빈 상태로 붕괴(audit). 특히 **subscription 5,780**이 핵심.
-- **접근:** L2와 동일 원칙 — **데이터 희박해도 geo 주변 셸(가능 시) + 데이터 기반 맥락 문단을 항상 렌더, 빈 페이지 0.** subscription은 NearbyApartments/Subway/Infra 보유 → 그대로 적용. finance/jeonse는 geo가 약하므로 **맥락 문단 + 같은 카테고리 관련 목록**으로 최소 채움.
-- **파일:** `app/(public)/subscription/[id]/page.tsx` · `finance/[seq]/page.tsx` · `jeonse-guarantee/[grntDvcd]/page.tsx`, `lib/seo/blurb.ts`(해당 타입 맥락 문단).
-- **수용기준:** 세 템플릿의 데이터 희박 표본도 셸+문단이 렌더되고 "빈 페이지" 0(JS 미실행 fetch 확인).
+### L9 — subscription 산문 blurb 보강 (소폭 polish) *(2026-06-29 재스코프됨)*
+- **재스코프:** 네 템플릿(청약·금융·전세) 모두 구조화 섹션 + 내부링크를 거래/데이터와 무관하게 항상 렌더 → audit의 "빈 페이지 붕괴"는 과장. finance(323)·jeonse(47)는 물량 미미 + cross-link 보유 → 제외. 유일하게 의미 있는 건 **subscription(5,780)의 산문 부재**(라벨-값만).
+- **접근:** `lib/seo/blurb.ts`에 `subscriptionBlurb()`(데이터 기반 한 문단) 추가 → `subscription/[id]/page.tsx`의 Hero 아래에 villa와 동일 스타일로 렌더. **새 데이터 의존 없음**(기존 notice 필드 사용).
+- **파일:** `lib/seo/blurb.ts`, `app/(public)/subscription/[id]/page.tsx`, `tests/lib/subscription-blurb.test.ts`(신규).
+- **수용기준:** subscription 상세에 단지명·지역·세대수·접수일정을 담은 고유 산문 문단이 SSR 렌더되고, 데이터 누락 시 우아한 폴백.
+- **범위 밖:** coord-null 같은지역 청약 링크(사이드바·"위치정보없음" 박스·브리핑이 이미 dead-end 방지) · villa/finance/jeonse(이미 적정).
 
 ### L3 — FAQ + FAQPage 스키마 [전 템플릿 · ilsangkit only 차별화]
 - **문제:** 전 템플릿 FAQ 전무(승자 중 ilsangkit 보유). JSON-LD에 `faqSchema` 부재.
@@ -103,8 +102,8 @@
 
 ## 4. 단계 (ROI 순)
 
-- **Phase A — 통과 필수 · 코드만 (최대 볼륨):** L1 · L2 · L9
-  → 병원 25% SSR 복구 + villa 35% 폴백 + 청약·금융·전세 빈페이지 방지. **전부 "빈 페이지 안 만들기/크롤 가능"(승자 공통)** 이고 콘텐츠 생산 0. 색인 60%+ 를 코드로 개선.
+- **Phase A — 통과 필수 · 코드만:** **L1 (✅완료)** — 병원 25% SSR 복구.
+  → 재스코프 결과 L2(villa)는 이미 적정(제외), L9는 subscription 산문 polish로 축소. 실측 크롤 갭은 L1뿐이었고 이미 닫힘.
 - **Phase B — 콘텐츠 (L7=원본 앵커·통과 관련 / L3·L4=polish):** L7 · L3 · L4 · L5
   → **`/guide` 수십 편 신설 = 원본 콘텐츠 앵커**(둘 다 보유하는 분량 격차 해소, **통과 관련**, board 확대 대체) + FAQ/FAQPage·에디토리얼 맥락화(L4)·board 카테고리 태깅(L5)(이쪽은 ilsangkit식 polish). **L7을 선두에**(L4 가이드 링크가 L7에 의존). ⚠️ `/guide`는 지역 곱 양산 금지.
 - **Phase C — 선택·운영:** L6
@@ -133,7 +132,7 @@
 | **봇 가독성** | 병원 상세 no-JS fetch에 운영·시설 탭 텍스트 존재? | ❌ **진료시간·응급실·병상 누락**(클릭-게이트), 진료과목(기본탭)만 존재 | ✅ 진료시간·응급실·병상이 raw HTML에 존재 **(L1)** |
 | **구조화(JSON-LD)** | 상세 raw HTML의 `@type` | 병원=Hospital·아파트=Residence·약국=Pharmacy + Breadcrumb·Org·WebSite / **FAQPage·Dataset 없음** | ✅ POI·매물에 FAQPage 추가 **(L3)** |
 | 맥락성 *(품질 지표 · 게이트 아님)* | 병원·아파트·약국의 board 링크 비교 | 3페이지 전역 동일(`/board/24·23·22·21`) — **단 ayo도 동일 비맥락으로 통과** | (선택) 페이지 카테고리별로 다름 **(L4)** |
-| **빈 페이지** | 저거래 villa no-JS fetch에 주변 셸+문단 존재? | 차트·면적·주변비교가 null로 붕괴하는 저거래 페이지 존재 **(L2 대상)** | ✅ 주변 셸+맥락문단 항상 렌더, 빈 페이지 0 **(L2)** |
+| subscription 산문 *(품질)* | subscription 상세 no-JS fetch에 고유 산문 문단 존재? | 라벨-값만, 산문 0 **(L9 대상)** | ✅ 단지·지역·세대수·일정 산문 문단 렌더 **(L9)** · ※villa는 재스코프 결과 이미 적정 |
 
 - **측정 방식:** raw HTML을 curl로 받아 ① JSON-LD `<script>` `@type` 파싱 ② 콘텐츠 마커 grep ③ `/board` 링크 추출. (이번 baseline에 쓴 스크립트를 회귀 테스트로 고정)
 - **재심사:** Phase A 배포 → 위 게이트 재실행 PASS 확인 → Search Console 사이트맵 재제출 → AdSense 콘솔 검토 재요청(수일~수주 소요, 직접 실행 필요).
