@@ -142,3 +142,31 @@ export function propertyMetaDescription(i: PropertyMetaInput): string {
 
   return `${i.name} ${price}. ${spec}${i.regionFullName} 실거래가를 공공데이터로 확인하세요.`;
 }
+
+export interface SubscriptionBlurbInput {
+  name: string;
+  regionName: string | null;
+  categoryLabel: string;
+  totalSupply: number | null;
+  receiptBegin: Date | null;
+  receiptEnd: Date | null;
+}
+
+/** 청약 공고를 한 문단으로 요약. 데이터 누락 시 우아하게 생략·폴백한다. */
+export function subscriptionBlurb(i: SubscriptionBlurbInput): string {
+  const subject = josa(i.name, '은', '는');
+  const where = i.regionName ? `${i.regionName}에서 공급되는` : '공급되는';
+  const supply = i.totalSupply
+    ? ` 총 ${i.totalSupply.toLocaleString('ko-KR')}세대 규모이며,`
+    : '';
+  const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '.');
+  let schedule: string;
+  if (i.receiptBegin && i.receiptEnd) {
+    schedule = ` 청약 접수는 ${fmt(i.receiptBegin)}~${fmt(i.receiptEnd)}입니다.`;
+  } else if (i.receiptBegin) {
+    schedule = ` 청약 접수는 ${fmt(i.receiptBegin)}부터입니다.`;
+  } else {
+    schedule = ' 접수 일정은 공고에서 확인하세요.';
+  }
+  return `${subject} ${where} ${i.categoryLabel} 청약입니다.${supply}${schedule} 주변 단지 실거래가와 생활 인프라를 함께 확인하세요.`;
+}

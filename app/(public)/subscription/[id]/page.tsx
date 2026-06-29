@@ -18,6 +18,7 @@ import { SourceCaption } from '@/components/ui/source-caption';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { subscriptionSource } from '@/lib/data-sources';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/json-ld';
+import { subscriptionBlurb } from '@/lib/seo/blurb';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 import { BoardBriefingSection } from '../../_components/board-briefing-section';
@@ -89,6 +90,16 @@ export default async function SubscriptionDetailPage({ params }: Params) {
         ]}
       />
       <SubscriptionHero notice={notice} />
+      <p className="mt-5 rounded-2xl bg-[var(--color-soft)] px-5 py-4 leading-relaxed text-[var(--color-text)]">
+        {subscriptionBlurb({
+          name: notice.name,
+          regionName: notice.regionName,
+          categoryLabel: categoryLabel(notice.category),
+          totalSupply: notice.totalSupply,
+          receiptBegin: notice.receiptBegin,
+          receiptEnd: notice.receiptEnd,
+        })}
+      </p>
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex min-w-0 flex-col gap-8">
           <ScheduleTimeline notice={notice} />

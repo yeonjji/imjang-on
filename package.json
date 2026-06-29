@@ -14,7 +14,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:unit": "dotenv -e .env.test -- vitest run tests/lib tests/ingest",
+    "test:unit": "dotenv -e .env.test -- vitest run tests/lib tests/ingest tests/components",
     "test:integration": "dotenv -e .env.test -- vitest run tests/integration",
     "test:e2e": "dotenv -e .env.test -- playwright test",
     "test:db:migrate": "dotenv -e .env.test -- prisma migrate deploy",
