@@ -829,3 +829,40 @@ model Post {
   @@index([status, publishedAt(sort: Desc)])
   @@index([category, status])
 }
+
+enum GuideCategory {
+  REALESTATE
+  SUBSCRIPTION
+  FINANCE
+  MEDICAL
+  CHILDCARE
+  SCHOOL
+  LIFE
+}
+
+// 상록(evergreen) 가이드 — board(Post, 뉴스)와 분리된 별도 콘텐츠.
+model Guide {
+  id       BigInt        @id @default(autoincrement())
+  slug     String        @unique @db.VarChar(200)
+  title    String        @db.VarChar(200)
+  summary  String        @db.Text
+  body     String        @db.Text
+  category GuideCategory
+  status   PostStatus    @default(DRAFT)
+
+  // 근거(출처) — 과장금지·E-E-A-T 원칙상 필수
+  sourceName    String   @db.VarChar(120)
+  sourceUrl     String   @db.VarChar(500)
+  sourceDate    DateTime @db.Date
+  sourceExcerpt String   @db.Text
+
+  dedupeKey   String    @unique @db.VarChar(120)
+  generatedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, publishedAt(sort: Desc)])
+  @@index([category, status])
+}
