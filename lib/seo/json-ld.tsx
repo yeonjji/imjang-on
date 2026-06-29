@@ -116,6 +116,29 @@ export function articleSchema(input: {
   };
 }
 
+/** 상록 가이드용 Article JSON-LD(board의 NewsArticle과 구분). */
+export function guideArticleSchema(input: {
+  headline: string;
+  url: string;
+  description: string;
+  datePublished: string; // YYYY-MM-DD
+  dateModified?: string;
+  image?: string;
+}): Json {
+  return {
+    ...ctx,
+    '@type': 'Article',
+    headline: input.headline,
+    description: input.description,
+    url: input.url,
+    datePublished: input.datePublished,
+    author: { '@type': 'Organization', name: '임장ON 편집부' },
+    ...(input.dateModified ? { dateModified: input.dateModified } : {}),
+    ...(input.image ? { image: input.image } : {}),
+    publisher: { '@type': 'Organization', name: '임장ON', url: SITE_URL },
+  };
+}
+
 /** JSON-LD를 <script>로 렌더한다. 페이지/레이아웃에서 직접 사용. */
 export function JsonLd({ data }: { data: Json | Json[] }) {
   return (
