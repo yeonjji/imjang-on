@@ -72,8 +72,10 @@ model Guide {
 - [ ] **Step 2: 스키마 검증** — Run: `pnpm exec prisma format && pnpm exec prisma validate`
   Expected: "The schema ... is valid 🚀" (에러 없음).
 
-- [ ] **Step 3: docker 테스트 DB에 마이그레이션 생성** — Run: `pnpm exec dotenv -e .env.test -- prisma migrate dev --name add_guide_table`
-  Expected: `add_guide_table` 마이그레이션 생성·적용 성공. ⚠️ docker가 꺼져 있으면 먼저 docker compose로 테스트 DB를 띄울 것(README/.env.test 참고). 운영(.env.local)엔 절대 실행 금지.
+- [ ] **Step 3: 마이그레이션 적용** — ⚠️ **`migrate dev` 사용 금지(repo 드리프트).** 이 repo의 schema에는 Prisma가 왕복 못 하는 raw-SQL 기능(생성컬럼 `Property.sigunguCode`·`Region.sigunguCode`, GIN/GiST/trgm 인덱스, postgis 확장)이 있어 `migrate dev`가 매번 파괴적 DROP/ALTER를 생성·실패한다. 대신 **수기 additive 마이그레이션 + `migrate deploy`**(shadow 재생 없이 파일 그대로 적용):
+  1. `prisma/migrations/20260629000000_add_guide_table/migration.sql`을 손으로 작성 — **CREATE TYPE "GuideCategory" + CREATE TABLE "Guide" + 인덱스 4개만**(기존 `add_post_model` SQL 관용구 그대로, PostStatus는 이미 존재해 CREATE 안 함).
+  2. Run: `pnpm exec dotenv -e .env.test -- prisma migrate deploy` → `Applying ... add_guide_table` 확인.
+  운영(.env.local)엔 절대 실행 금지(머지 전 수동 `prisma:deploy` 게이트).
 
 - [ ] **Step 4: 새 마이그레이션 폴더만 좁게 stage** — Run: `git status --short prisma/migrations`
   새로 생긴 `prisma/migrations/<ts>_add_guide_table/`만 확인하고, **그 폴더와 schema.prisma만** add(잔여 마이그레이션이 같이 잡히면 제외):
