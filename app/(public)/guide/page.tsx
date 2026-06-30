@@ -86,14 +86,8 @@ async function SectionContent() {
     <div className="flex flex-col gap-10">
       {sections.map((section) => (
         <section key={section.category}>
-          <div className="mb-3 flex items-baseline justify-between border-b border-[var(--color-line)] pb-2">
+          <div className="mb-3 border-b border-[var(--color-line)] pb-2">
             <h2 className="text-lg font-black text-[var(--color-blue-dark)]">{section.label} 가이드</h2>
-            <Link
-              href={buildHref({ category: section.category })}
-              className="text-sm font-semibold text-[var(--color-blue)] hover:underline"
-            >
-              더보기
-            </Link>
           </div>
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {section.items.map((g) => (
