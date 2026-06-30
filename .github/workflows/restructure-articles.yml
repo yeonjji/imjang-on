@@ -1,0 +1,49 @@
+name: restructure-articles
+
+# 기존 게시글(board)·가이드(guide)를 핵심요약+섹션 구조로 1회성 재구조화한다(수동).
+# 사실은 보존하고 구조만 바꾼 뒤 DRAFT로 되돌려 /admin 검수 큐로 보낸다.
+# 재실행 안전: 이미 '## 핵심 요약'이 있는 글은 건너뛴다.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '대상'
+        type: choice
+        options: [board, guide, both]
+        default: board
+      dry_run:
+        description: 'true면 미리보기만(DB 미변경, Actions 로그로 결과 확인)'
+        type: boolean
+        default: true
+      limit:
+        description: '한 번에 처리할 글 수(배치)'
+        required: false
+        default: '5'
+
+jobs:
+  restructure:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # 재구조화는 사실 보존이 중요해 풀 모델 고정(topic 생성과 동일).
+      OPENAI_MODEL: gpt-4.1
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      LOG_LEVEL: info
+      PRISMA_INGEST: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma generate
+      - name: restructure board
+        if: ${{ inputs.target == 'board' || inputs.target == 'both' }}
+        run: pnpm tsx scripts/board/restructure.ts --limit ${{ inputs.limit }} ${{ inputs.dry_run && '--dry-run' || '' }}
+        timeout-minutes: 15
+      - name: restructure guide
+        if: ${{ inputs.target == 'guide' || inputs.target == 'both' }}
+        run: pnpm tsx scripts/guide/restructure.ts --limit ${{ inputs.limit }} ${{ inputs.dry_run && '--dry-run' || '' }}
+        timeout-minutes: 15
