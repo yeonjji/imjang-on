@@ -35,7 +35,7 @@ async function main() {
   logger.info({ count: posts.length, dryRun }, 'board restructure 대상');
 
   for (const post of posts) {
-    const newBody = await restructureBody(client, post.body, env.OPENAI_MODEL);
+    const newBody = await restructureBody(client, post.body, env.OPENAI_MODEL, 2200);
     const guard = runGuardrails({ body: newBody, sourceName: post.sourceName, sourceUrl: post.sourceUrl });
     const charCount = newBody.replace(/\s/g, '').length;
     logger.info({ id: String(post.id), title: post.title, charCount, guardOk: guard.ok }, 'restructured');

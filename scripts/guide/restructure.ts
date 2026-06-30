@@ -11,7 +11,7 @@ import { logger } from '@/lib/logger';
 import { env } from '@/lib/env';
 import { createOpenAiClient } from '@/lib/board/generate';
 import { restructureBody } from '@/lib/board/restructure';
-import { runGuardrails } from '@/lib/board/guardrails';
+import { runGuideGuardrails } from '@/lib/guide/guardrails';
 
 function argNum(flag: string, def: number): number {
   const i = process.argv.indexOf(flag);
@@ -33,8 +33,8 @@ async function main() {
   logger.info({ count: guides.length, dryRun }, 'guide restructure 대상');
 
   for (const guide of guides) {
-    const newBody = await restructureBody(client, guide.body, env.OPENAI_MODEL);
-    const guard = runGuardrails({ body: newBody, sourceName: guide.sourceName, sourceUrl: guide.sourceUrl });
+    const newBody = await restructureBody(client, guide.body, env.OPENAI_MODEL, 6000);
+    const guard = runGuideGuardrails({ body: newBody, sourceName: guide.sourceName, sourceUrl: guide.sourceUrl });
     const charCount = newBody.replace(/\s/g, '').length;
     logger.info({ id: String(guide.id), title: guide.title, charCount, guardOk: guard.ok }, 'restructured');
     console.log(`\n[#${guide.id}] ${guide.title}\n${'-'.repeat(60)}\n${newBody}\n${'-'.repeat(60)}\n가드레일: ${guard.ok ? 'PASS ✅' : 'FAIL ❌ → ' + guard.violations.join(', ')} (공백제외 ${charCount}자)\n`);

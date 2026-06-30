@@ -17,4 +17,9 @@ describe('생성 프롬프트 섹션 골격', () => {
     expect(BOARD_PROMPT).toContain('추측');
     expect(BOARD_PROMPT).toContain('전망');
   });
+
+  it('guide 프롬프트는 금지 표현 규칙을 유지한다', () => {
+    expect(GUIDE_PROMPT).toContain('추천');
+    expect(GUIDE_PROMPT).toContain('유망');
+  });
 });

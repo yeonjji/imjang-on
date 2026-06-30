@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { restructureBody, RESTRUCTURE_SYSTEM_PROMPT } from '@/lib/board/restructure';
+import { restructureBody, buildRestructureSystemPrompt } from '@/lib/board/restructure';
 import type { OpenAiLike } from '@/lib/board/generate';
 
 function mockClient(returnText: string, capture?: (args: unknown) => void): OpenAiLike {
@@ -22,8 +22,10 @@ describe('restructureBody', () => {
   });
 
   it('프롬프트는 사실 보존·추가 금지를 명시한다', () => {
-    expect(RESTRUCTURE_SYSTEM_PROMPT).toContain('보존');
-    expect(RESTRUCTURE_SYSTEM_PROMPT).toContain('## 핵심 요약');
+    expect(buildRestructureSystemPrompt(2200)).toContain('보존');
+    expect(buildRestructureSystemPrompt(2200)).toContain('## 핵심 요약');
+    expect(buildRestructureSystemPrompt(2200)).toContain('2,200');
+    expect(buildRestructureSystemPrompt(6000)).toContain('6,000');
   });
 
   it('원본 본문을 user 메시지로 전달한다', async () => {
