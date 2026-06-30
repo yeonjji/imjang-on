@@ -127,8 +127,8 @@ export default async function SchoolDetailPage({ params }: Params) {
           {coord && <NearbyChildcare items={nearbyChildren} />}
           {coord && <NearbySubway data={subway} />}
           {coord && <NearbyInfra categories={infra} />}
-          <MainSourceBlock id="neis" />
           <BoardBriefingSection />
+          <MainSourceBlock id="neis" />
         </main>
         <aside><SchoolDetailSidebar basePath={basePath} others={others} /></aside>
       </div>
