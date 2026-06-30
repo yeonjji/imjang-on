@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getLoanSummaries, collectFacets } from '@/lib/loan/list';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { LoanExplorer } from './_components/loan-explorer';
+import { Faq } from '../_components/faq';
 
 export const metadata: Metadata = {
   title: '서민금융 대출상품 — 주거금융',
@@ -40,6 +41,8 @@ export default async function FinancePage() {
       <div className="mt-6">
         <SourceCaption ids={['kinfa-loan']} />
       </div>
+
+      <Faq category="finance" />
     </div>
   );
 }
