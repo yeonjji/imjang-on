@@ -311,13 +311,14 @@ import { ArticleSummary } from '@/app/(public)/_components/article-summary';
 ```tsx
   const { summary, rest } = splitSummary(post.body);
 ```
-기존 본문 블록(85–87행)을 아래로 교체:
+기존 본문 블록(85–87행)을 아래로 교체(핵심 요약 콜아웃은 본문 **아래**, 출처 위에 둔다):
 ```tsx
-      {summary && <ArticleSummary markdown={summary} />}
       <div className="board-prose mt-8 text-[15px] leading-relaxed text-[var(--color-text)]">
         <ReactMarkdown remarkPlugins={[[remarkGfm, { singleTilde: false }]]}>{rest}</ReactMarkdown>
       </div>
+      {summary && <ArticleSummary markdown={summary} />}
 ```
+(다음 줄의 `<PostSource ... />`는 그대로 둔다 — 순서는 본문 → 핵심 요약 → 출처.)
 
 - [ ] **Step 2: guide 상세 페이지 수정**
 
@@ -330,13 +331,14 @@ import { ArticleSummary } from '@/app/(public)/_components/article-summary';
 ```tsx
   const { summary, rest } = splitSummary(guide.body);
 ```
-기존 본문 블록(59–61행)을 아래로 교체:
+기존 본문 블록(59–61행)을 아래로 교체(핵심 요약 콜아웃은 본문 **아래**, 출처 위에 둔다):
 ```tsx
-      {summary && <ArticleSummary markdown={summary} />}
       <div className="board-prose mt-8 text-[15px] leading-relaxed text-[var(--color-text)]">
         <ReactMarkdown remarkPlugins={[[remarkGfm, { singleTilde: false }]]}>{rest}</ReactMarkdown>
       </div>
+      {summary && <ArticleSummary markdown={summary} />}
 ```
+(다음 줄의 `<PostSource ... />`는 그대로 둔다 — 순서는 본문 → 핵심 요약 → 출처.)
 
 - [ ] **Step 3: 타입 확인**
 
