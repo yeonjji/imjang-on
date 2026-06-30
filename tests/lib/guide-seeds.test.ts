@@ -15,4 +15,16 @@ describe('guide seeds', () => {
       expect(s.source.url).toMatch(/^https?:\/\//);
     }
   });
+  it('각 시드는 내부 링크 CTA(related)를 갖는다', () => {
+    for (const s of GUIDE_SEEDS) {
+      expect(s.related.label.length).toBeGreaterThan(0);
+      expect(s.related.href.startsWith('/')).toBe(true);
+    }
+  });
+  it('카테고리당 정확히 2편이다(총 14편)', () => {
+    const byCat = new Map<string, number>();
+    for (const s of GUIDE_SEEDS) byCat.set(s.category, (byCat.get(s.category) ?? 0) + 1);
+    for (const n of byCat.values()) expect(n).toBe(2);
+    expect(GUIDE_SEEDS.length).toBe(14);
+  });
 });
