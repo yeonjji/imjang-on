@@ -10,6 +10,7 @@ const seed: GuideSeed = {
   title: '테스트 가이드 실거래가 읽는 법',
   angle: '테스트',
   source: { name: '국토교통부', url: 'https://rt.molit.go.kr', date: '2026-01-01', excerpt: '실거래가 공개' },
+  related: { label: '실거래가 조회하기', href: '/list' },
 };
 const goodBody = '실거래가는 실제 신고된 거래 가격입니다. '.repeat(60); // 가드레일 통과(공백제외 ~1080자, 800~6000 범위, 금지표현 없음)
 

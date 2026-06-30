@@ -41,9 +41,11 @@ export async function saveGuideAction(_prev: { ok: boolean } | null, fd: FormDat
 export async function publishGuideAction(fd: FormData) {
   const id = parseId(fd);
   await updateGuideRow(id, readFields(fd));
-  const { slug } = await publishGuideRow(id);
+  await publishGuideRow(id);
   revalidatePath('/guide');
-  revalidatePath(`/guide/${slug}`);
+  // 동적 라우트 형태로 무효화한다. 가이드 slug는 한글(비ASCII)이라
+  // `/guide/${slug}`를 넘기면 Vercel이 캐시 태그를 HTTP 헤더(Latin-1)에 실으며 ByteString 변환 오류로 500이 난다.
+  revalidatePath('/guide/[slug]', 'page');
   revalidatePath('/admin/guides');
   redirect('/admin/guides');
 }

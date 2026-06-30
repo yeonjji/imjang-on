@@ -24,7 +24,15 @@ async function main() {
     try {
       const llm = await generateGuideDraft(
         client,
-        { category: seed.category, topic: seed.title, angle: seed.angle, sourceText: seed.source.excerpt, sourceName: seed.source.name },
+        {
+          category: seed.category,
+          topic: seed.title,
+          angle: seed.angle,
+          sourceText: seed.source.excerpt,
+          sourceName: seed.source.name,
+          relatedLabel: seed.related.label,
+          relatedHref: seed.related.href,
+        },
         model,
       );
       const res = await createGuideDraft(seed, llm);

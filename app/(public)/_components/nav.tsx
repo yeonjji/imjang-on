@@ -33,9 +33,9 @@ export function Nav() {
           <div className="hidden gap-6 text-[15px] font-semibold text-[var(--color-muted)] md:flex md:items-center">
             <Link href="/list">실거래가</Link>
             <Link href="/subscription">청약</Link>
-            <Link href="/guide">가이드</Link>
             <FinanceDropdown />
             <LifeDropdown onSoon={(topic) => setSoonOpen(topic)} />
+            <Link href="/guide">가이드</Link>
             {isBoardPublic() && <Link href="/board">임장ON 브리핑</Link>}
           </div>
 

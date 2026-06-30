@@ -19,7 +19,6 @@ const links = [
   { href: '/', label: '홈' },
   { href: '/list', label: '실거래가' },
   { href: '/subscription', label: '청약' },
-  { href: '/guide', label: '가이드' },
 ];
 
 export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
@@ -161,6 +160,14 @@ export function MobileDrawer({ open, onClose, onSoonClick }: Props) {
             ))}
           </div>
         )}
+
+        <Link
+          href="/guide"
+          onClick={onClose}
+          className="rounded-lg px-2 py-3 text-[15px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-soft)]"
+        >
+          가이드
+        </Link>
 
         {isBoardPublic() && (
           <Link
