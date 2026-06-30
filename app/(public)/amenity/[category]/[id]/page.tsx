@@ -113,8 +113,8 @@ export default async function AmenityDetailPage({ params }: Params) {
           <NearbyApartments items={apts} />
           {coord && <NearbySubway data={subway} />}
           {coord && <NearbyInfra categories={infra} />}
-          <MainSourceBlock id={AMENITY_SOURCE[def.slug]} />
           <BoardBriefingSection />
+          <MainSourceBlock id={AMENITY_SOURCE[def.slug]} />
         </main>
         <aside><AmenityDetailSidebar others={others} def={def} sigunguCode={item.sigunguCode} /></aside>
       </div>

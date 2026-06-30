@@ -159,8 +159,8 @@ export default async function AptDetailPage({ params }: Params) {
           )}
           <NearbySubway data={subway} />
           <NearbyInfra categories={infra} />
-          <MainSourceBlock id="molit-rtms" />
           <BoardBriefingSection />
+          <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>
           <DetailSidebar property={property} />
