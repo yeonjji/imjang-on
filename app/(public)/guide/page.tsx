@@ -89,7 +89,7 @@ async function SectionContent() {
           <div className="mb-3 flex items-baseline justify-between border-b border-[var(--color-line)] pb-2">
             <h2 className="text-lg font-black text-[var(--color-blue-dark)]">{section.label} 가이드</h2>
             <Link
-              href={`/guide?category=${section.category}`}
+              href={buildHref({ category: section.category })}
               className="text-sm font-semibold text-[var(--color-blue)] hover:underline"
             >
               더보기
@@ -144,7 +144,7 @@ async function GridContent({ page, category }: { page: number; category: GuideCa
           {pageNums(page, totalPages).map((p) => (
             <Link
               key={p}
-              href={`/guide?category=${category}${p > 1 ? `&page=${p}` : ''}`}
+              href={buildHref({ category, page: p })}
               className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold transition ${
                 page === p ? 'bg-[var(--color-blue)] text-white' : 'border border-[var(--color-line)] text-[var(--color-muted)] hover:border-[var(--color-blue)]'
               }`}
