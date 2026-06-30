@@ -139,6 +139,18 @@ export function guideArticleSchema(input: {
   };
 }
 
+export function faqSchema(items: { q: string; a: string }[]): Json {
+  return {
+    ...ctx,
+    '@type': 'FAQPage',
+    mainEntity: items.map((it) => ({
+      '@type': 'Question',
+      name: it.q,
+      acceptedAnswer: { '@type': 'Answer', text: it.a },
+    })),
+  };
+}
+
 /** JSON-LD를 <script>로 렌더한다. 페이지/레이아웃에서 직접 사용. */
 export function JsonLd({ data }: { data: Json | Json[] }) {
   return (

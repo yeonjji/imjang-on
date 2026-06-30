@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { LIFE_GROUPS, LIFE_ITEM_EMOJI } from '../_components/life-menu';
 import { LifeItemCard } from './_components/life-item-card';
 import type { Metadata } from 'next';
+import { Faq } from '../_components/faq';
 
 export const metadata: Metadata = {
   title: '생활편의 — 학교·병원·상권·도시인프라',
@@ -43,6 +44,8 @@ export default function LifeHubPage() {
           </section>
         ))}
       </div>
+
+      <Faq category="life" />
     </section>
   );
 }

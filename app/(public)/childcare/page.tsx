@@ -8,6 +8,7 @@ import { ChildcareCard } from './_components/childcare-card';
 import { ChildcarePagination } from './_components/childcare-pagination';
 import { SiblingTabs } from '../_components/sibling-tabs';
 import type { Metadata } from 'next';
+import { Faq } from '../_components/faq';
 
 export const metadata: Metadata = {
   title: '어린이집찾기 — 전국 국공립·민간·가정',
@@ -88,6 +89,8 @@ export default async function ChildcareListPage({ searchParams }: Props) {
           )}
         </main>
       </div>
+
+      <Faq category="childcare" />
     </div>
   );
 }

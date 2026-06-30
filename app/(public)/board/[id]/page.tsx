@@ -10,6 +10,8 @@ import { BoardDetailCta } from './_components/board-detail-cta';
 import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
 import { JsonLd, articleSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { SITE_URL } from '@/lib/site';
+import { splitSummary } from '@/lib/board/summary-split';
+import { ArticleSummary } from '@/app/(public)/_components/article-summary';
 import type { Metadata } from 'next';
 
 export const revalidate = 3_600;
@@ -45,6 +47,7 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
 
   const post = await getPublishedPostById(BigInt(id));
   if (!post) notFound();
+  const { summary, rest } = splitSummary(post.body);
 
   const url = `${SITE_URL}${boardPath(post.id)}`;
 
@@ -83,8 +86,9 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
         <span>작성자 : 임장ON 편집부</span>
       </div>
       <div className="board-prose mt-8 text-[15px] leading-relaxed text-[var(--color-text)]">
-        <ReactMarkdown remarkPlugins={[[remarkGfm, { singleTilde: false }]]}>{post.body}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[[remarkGfm, { singleTilde: false }]]}>{rest}</ReactMarkdown>
       </div>
+      {summary && <ArticleSummary markdown={summary} />}
 
       <PostSource
         sourceName={post.sourceName}

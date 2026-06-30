@@ -3,6 +3,7 @@ import { PropertyCard } from '../_components/property-card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { PropertyType } from '@prisma/client';
 import type { Metadata } from 'next';
+import { Faq } from '../_components/faq';
 
 export const metadata: Metadata = {
   title: '전국 연립·다세대 실거래가',
@@ -39,6 +40,8 @@ export default async function VillaHubPage() {
       </div>
 
       <SourceCaption ids={['molit-rtms']} />
+
+      <Faq category="villa" />
     </section>
   );
 }

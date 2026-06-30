@@ -7,6 +7,7 @@ import { HospitalMobileFilterSheet } from './_components/hospital-mobile-filter-
 import { SiblingTabs } from '../../_components/sibling-tabs';
 import { SourceCaption } from '@/components/ui/source-caption';
 import type { Metadata } from 'next';
+import { Faq } from '../../_components/faq';
 
 export const revalidate = 86_400;
 
@@ -112,6 +113,8 @@ export default async function HospitalListPage({ searchParams }: Props) {
           <SourceCaption ids={['hira']} />
         </main>
       </div>
+
+      <Faq category="hospital" />
     </div>
   );
 }

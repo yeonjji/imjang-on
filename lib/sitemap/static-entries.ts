@@ -33,6 +33,7 @@ export const STATIC_ENTRIES: MetadataRoute.Sitemap = [
     ? ([{ url: `${SITE_URL}/board`, changeFrequency: 'daily', priority: 0.8 }] as MetadataRoute.Sitemap)
     : []),
   { url: `${SITE_URL}/about`, changeFrequency: 'monthly', priority: 0.3 },
+  { url: `${SITE_URL}/faq`, changeFrequency: 'monthly', priority: 0.3 },
   { url: `${SITE_URL}/data-source`, changeFrequency: 'monthly', priority: 0.3 },
   { url: `${SITE_URL}/terms`, changeFrequency: 'monthly', priority: 0.3 },
   { url: `${SITE_URL}/privacy`, changeFrequency: 'monthly', priority: 0.3 },

@@ -38,8 +38,22 @@ a {
 }
 
 /* 게시글 마크다운 본문 — 표·목록 가독성(브랜드 톤) */
-.board-prose h2 { font-size: 1.125rem; font-weight: 700; color: var(--color-blue-dark); margin: 2rem 0 0.75rem; }
-.board-prose h3 { font-size: 1rem; font-weight: 700; color: var(--color-blue-dark); margin: 1.5rem 0 0.5rem; }
+.board-prose h2 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-blue-dark);
+  margin: 2.5rem 0 1rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--color-line);
+  line-height: 1.35;
+}
+.board-prose h2:first-child { margin-top: 0; }
+.board-prose h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-blue-dark);
+  margin: 1.75rem 0 0.6rem;
+}
 .board-prose p { margin: 0.75rem 0; }
 .board-prose ul, .board-prose ol { margin: 0.75rem 0; padding-left: 1.25rem; list-style: revert; }
 .board-prose li { margin: 0.25rem 0; }
