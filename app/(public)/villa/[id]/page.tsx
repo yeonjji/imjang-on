@@ -149,8 +149,8 @@ export default async function VillaDetailPage({ params }: Params) {
           <NearbyPriceComparison id="nearby" items={nearby} slug="villa" />
           <NearbySubway data={subway} />
           <NearbyInfra categories={infra} />
-          <MainSourceBlock id="molit-rtms" />
           <BoardBriefingSection />
+          <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>
           <DetailSidebar property={property} />

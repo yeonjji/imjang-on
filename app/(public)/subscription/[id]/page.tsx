@@ -121,8 +121,8 @@ export default async function SubscriptionDetailPage({ params }: Params) {
               위치 정보가 없어 주변 실거래가·편의시설 정보를 제공하지 않습니다.
             </div>
           )}
-          <MainSourceBlock id={subscriptionSource(notice.category)} />
           <BoardBriefingSection />
+          <MainSourceBlock id={subscriptionSource(notice.category)} />
         </main>
         <aside className="min-w-0">
           <SubscriptionSidebar notice={notice} />

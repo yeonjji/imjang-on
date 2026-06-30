@@ -144,8 +144,8 @@ export default async function OffiDetailPage({ params }: Params) {
           <NearbyPriceComparison id="nearby" items={nearby} slug="officetel" />
           <NearbySubway data={subway} />
           <NearbyInfra categories={infra} />
-          <MainSourceBlock id="molit-rtms" />
           <BoardBriefingSection />
+          <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>
           <DetailSidebar property={property} />
