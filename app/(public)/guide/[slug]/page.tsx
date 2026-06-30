@@ -6,6 +6,8 @@ import { guideCategoryLabel } from '@/lib/guide/labels';
 import { PostSource } from '@/components/ui/post-source';
 import { JsonLd, guideArticleSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { SITE_URL } from '@/lib/site';
+import { splitSummary } from '@/lib/board/summary-split';
+import { ArticleSummary } from '@/app/(public)/_components/article-summary';
 import type { Metadata } from 'next';
 
 export const revalidate = 86_400;
@@ -27,6 +29,7 @@ export default async function GuideDetailPage({ params }: Params) {
   const { slug } = await params;
   const guide = await getPublishedGuideBySlug(slug);
   if (!guide) notFound();
+  const { summary, rest } = splitSummary(guide.body);
 
   const url = `${SITE_URL}/guide/${guide.slug}`;
   const published = guide.publishedAt.toISOString().slice(0, 10);
@@ -57,8 +60,9 @@ export default async function GuideDetailPage({ params }: Params) {
       </h1>
       <p className="mt-2 text-sm text-[var(--color-muted)]">임장ON 가이드 · {guideCategoryLabel(guide.category)}</p>
       <div className="board-prose mt-8 text-[15px] leading-relaxed text-[var(--color-text)]">
-        <ReactMarkdown remarkPlugins={[[remarkGfm, { singleTilde: false }]]}>{guide.body}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[[remarkGfm, { singleTilde: false }]]}>{rest}</ReactMarkdown>
       </div>
+      {summary && <ArticleSummary markdown={summary} />}
       <PostSource sourceName={guide.sourceName} sourceUrl={guide.sourceUrl} sourceDate={guide.sourceDate} />
     </article>
   );
