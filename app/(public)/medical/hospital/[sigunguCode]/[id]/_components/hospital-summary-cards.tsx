@@ -36,7 +36,7 @@ export function HospitalSummaryCards({ totalDoctors, facility, detail }: Props) 
   const cards: ComponentProps<typeof SummaryCard>[] = [];
 
   if (totalDoctors != null) {
-    cards.push({ icon: '👨‍⚕️', label: '의료진', value: `전문의 ${totalDoctors}명` });
+    cards.push({ icon: '👨‍⚕️', label: '의료진', value: `의사 ${totalDoctors}명` });
   }
 
   if (facility) {
