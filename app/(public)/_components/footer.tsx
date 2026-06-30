@@ -37,6 +37,7 @@ export function Footer() {
           <ul className="space-y-2 text-sm">
             <li><Link href="/about">서비스 소개</Link></li>
             <li><Link href="/data-source">데이터 안내</Link></li>
+            <li><Link href="/faq">자주 묻는 질문</Link></li>
             <li><Link href="/terms">이용약관</Link></li>
             <li><Link href="/privacy">개인정보 처리방침</Link></li>
             <li><Link href="/contact">문의</Link></li>

@@ -5,6 +5,7 @@ import { formatAsOf } from '@/lib/jeonse/labels';
 import { getSidoList, getAllSigungus } from '@/lib/region';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { JeonseFinder } from './_components/jeonse-finder';
+import { Faq } from '../_components/faq';
 
 export const metadata: Metadata = {
   title: '맞춤 전세보증 찾기 — 주거금융',
@@ -50,6 +51,8 @@ export default async function JeonseGuaranteePage() {
       <div className="mt-6">
         <SourceCaption ids={['hf-jeonse-guarantee']} />
       </div>
+
+      <Faq category="jeonse-guarantee" />
     </div>
   );
 }

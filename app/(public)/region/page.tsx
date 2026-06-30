@@ -1,6 +1,7 @@
 import { getSidoList } from '@/lib/region';
 import { RegionCard } from '../_components/region-card';
 import type { Metadata } from 'next';
+import { Faq } from '../_components/faq';
 
 export const metadata: Metadata = {
   title: '시도별 부동산 실거래가',
@@ -26,6 +27,8 @@ export default async function RegionHubPage() {
           <RegionCard key={s.code} code={s.code} name={s.sido} />
         ))}
       </div>
+
+      <Faq category="region" />
     </section>
   );
 }

@@ -7,6 +7,7 @@ import { SubscriptionMobileFilterSheet } from './_components/subscription-mobile
 import { SubscriptionList } from './_components/subscription-list';
 import { SourceCaption } from '@/components/ui/source-caption';
 import type { Metadata } from 'next';
+import { Faq } from '../_components/faq';
 
 export const metadata: Metadata = {
   title: '청약·분양 정보',
@@ -83,6 +84,8 @@ export default async function SubscriptionPage({
           <SourceCaption ids={['applyhome', 'lh-presub']} />
         </main>
       </div>
+
+      <Faq category="subscription" />
     </div>
   );
 }

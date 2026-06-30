@@ -8,6 +8,7 @@ import { SchoolCard } from './_components/school-card';
 import { SchoolPagination } from './_components/school-pagination';
 import { SiblingTabs } from '../_components/sibling-tabs';
 import type { Metadata } from 'next';
+import { Faq } from '../_components/faq';
 
 export const metadata: Metadata = {
   title: '학교찾기 — 전국 초·중·고·특수학교',
@@ -89,6 +90,8 @@ export default async function SchoolListPage({ searchParams }: Props) {
           )}
         </main>
       </div>
+
+      <Faq category="school" />
     </div>
   );
 }

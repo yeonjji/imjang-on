@@ -5,6 +5,7 @@ import {
   breadcrumbSchema,
   residenceSchema,
   placeSchema,
+  faqSchema,
 } from '@/lib/seo/json-ld';
 
 describe('organizationSchema', () => {
@@ -76,5 +77,29 @@ describe('placeSchema', () => {
     });
     expect(s['@type']).toBe('Hospital');
     expect(s.name).toContain('온가족');
+  });
+});
+
+describe('faqSchema', () => {
+  const items = [
+    { q: '아파트 실거래가는 어디서 확인하나요?', a: '국토교통부 실거래가 공개시스템 신고 자료를 단지별로 정리해 제공합니다.' },
+    { q: '실거래가와 호가는 어떻게 다른가요?', a: '실거래가는 실제 체결·신고된 금액이고, 호가는 매도인의 희망 가격입니다.' },
+  ];
+
+  it('FAQPage 타입과 schema.org 컨텍스트를 가진다', () => {
+    const s = faqSchema(items) as Record<string, unknown>;
+    expect(s['@context']).toBe('https://schema.org');
+    expect(s['@type']).toBe('FAQPage');
+  });
+
+  it('각 항목을 Question/acceptedAnswer로 매핑한다', () => {
+    const s = faqSchema(items) as { mainEntity: Array<Record<string, unknown>> };
+    expect(s.mainEntity).toHaveLength(2);
+    const first = s.mainEntity[0];
+    expect(first['@type']).toBe('Question');
+    expect(first.name).toBe(items[0].q);
+    const ans = first.acceptedAnswer as Record<string, unknown>;
+    expect(ans['@type']).toBe('Answer');
+    expect(ans.text).toBe(items[0].a);
   });
 });
