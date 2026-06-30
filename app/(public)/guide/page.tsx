@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { listPublishedGuides } from '@/lib/guide/queries';
+import { listPublishedGuides, listAllPublishedGuides } from '@/lib/guide/queries';
+import { groupGuidesByCategory } from '@/lib/guide/group';
 import { GUIDE_CATEGORIES, guideCategoryLabel } from '@/lib/guide/labels';
 import type { GuideCategory } from '@prisma/client';
 import type { Metadata } from 'next';
@@ -44,16 +45,16 @@ export default async function GuideListPage({ searchParams }: Props) {
   const page = Number.isFinite(parsedPage) && parsedPage >= 1 ? Math.floor(parsedPage) : 1;
   const category = isCategory(sp.category) ? sp.category : undefined;
 
-  const { rows, totalPages } = await listPublishedGuides({ page, category });
-
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10">
+      {/* Hero card — shared */}
       <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] md:p-7">
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">가이드</p>
         <h1 className="text-2xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-3xl">생활·부동산 가이드</h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">공공데이터를 토대로 개념·절차를 쉽게 풀어 설명합니다.</p>
       </div>
 
+      {/* Chip filter — shared */}
       <div className="mb-6 flex flex-wrap gap-2">
         <Link href={buildHref({})} className={chipClass(!category)}>전체</Link>
         {GUIDE_CATEGORIES.map((c) => (
@@ -63,6 +64,61 @@ export default async function GuideListPage({ searchParams }: Props) {
         ))}
       </div>
 
+      {/* Content region — branched */}
+      {!category ? <SectionContent /> : <GridContent page={page} category={category} />}
+    </div>
+  );
+}
+
+async function SectionContent() {
+  const all = await listAllPublishedGuides();
+  const sections = groupGuidesByCategory(all);
+
+  if (sections.length === 0) {
+    return (
+      <div className="rounded-[22px] border border-[var(--color-line)] bg-white p-12 text-center text-[var(--color-muted)]">
+        아직 게시된 가이드가 없습니다.
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-10">
+      {sections.map((section) => (
+        <section key={section.category}>
+          <div className="mb-3 flex items-baseline justify-between border-b border-[var(--color-line)] pb-2">
+            <h2 className="text-lg font-black text-[var(--color-blue-dark)]">{section.label} 가이드</h2>
+            <Link
+              href={`/guide?category=${section.category}`}
+              className="text-sm font-semibold text-[var(--color-blue)] hover:underline"
+            >
+              더보기
+            </Link>
+          </div>
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {section.items.map((g) => (
+              <li key={g.slug} className="rounded-[18px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-blue)]">
+                <span className="inline-block rounded-full bg-[var(--color-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">
+                  {guideCategoryLabel(g.category)}
+                </span>
+                <Link href={`/guide/${g.slug}`} className="mt-2 block text-lg font-bold text-[var(--color-blue-dark)] hover:underline">
+                  {g.title}
+                </Link>
+                <p className="mt-1 line-clamp-2 text-sm text-[var(--color-muted)]">{g.summary}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+async function GridContent({ page, category }: { page: number; category: GuideCategory }) {
+  const { rows, totalPages } = await listPublishedGuides({ page, category });
+
+  return (
+    <>
       {rows.length === 0 ? (
         <div className="rounded-[22px] border border-[var(--color-line)] bg-white p-12 text-center text-[var(--color-muted)]">
           아직 게시된 가이드가 없습니다.
@@ -88,7 +144,7 @@ export default async function GuideListPage({ searchParams }: Props) {
           {pageNums(page, totalPages).map((p) => (
             <Link
               key={p}
-              href={buildHref({ category, page: p })}
+              href={`/guide?category=${category}${p > 1 ? `&page=${p}` : ''}`}
               className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold transition ${
                 page === p ? 'bg-[var(--color-blue)] text-white' : 'border border-[var(--color-line)] text-[var(--color-muted)] hover:border-[var(--color-blue)]'
               }`}
@@ -98,6 +154,6 @@ export default async function GuideListPage({ searchParams }: Props) {
           ))}
         </div>
       )}
-    </div>
+    </>
   );
 }

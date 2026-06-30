@@ -59,3 +59,14 @@ export async function getGuidesByCategory(category: GuideCategory, limit = 3): P
     take: limit,
   });
 }
+
+/** 섹션 뷰용: 전체 PUBLISHED 가이드(상한 100, 최신순). */
+export async function listAllPublishedGuides(): Promise<GuideListItem[]> {
+  const rows = await prisma.guide.findMany({
+    where: { status: 'PUBLISHED' },
+    select: { id: true, slug: true, title: true, summary: true, category: true, publishedAt: true },
+    orderBy: { publishedAt: 'desc' },
+    take: 100,
+  });
+  return rows.map((r) => ({ ...r, publishedAt: r.publishedAt! }));
+}
