@@ -13,6 +13,8 @@ const input = {
   angle: '실거래가의 의미와 호가와의 차이를 설명한다.',
   sourceText: '국토부 실거래가 공개시스템 안내문 원문',
   sourceName: '국토교통부 실거래가 공개시스템',
+  relatedLabel: '실거래가 조회하기',
+  relatedHref: '/list',
 };
 
 describe('generateGuideDraft', () => {
@@ -26,5 +28,17 @@ describe('generateGuideDraft', () => {
   it('빈 응답이면 에러', async () => {
     const empty: OpenAiLike = { chat: { completions: { create: async () => ({ choices: [{ message: { content: null } }] }) } } };
     await expect(generateGuideDraft(empty, input, 'm')).rejects.toThrow();
+  });
+  it('사용자 프롬프트에 마무리 CTA 링크를 그대로 주입한다', async () => {
+    let captured = '';
+    const spy: OpenAiLike = {
+      chat: { completions: { create: async (args: unknown) => {
+        const typedArgs = args as { messages: { role: string; content: string }[] };
+        captured = typedArgs.messages.map((m) => m.content).join('\n');
+        return { choices: [{ message: { content: JSON.stringify({ title: 't', summary: 's', body: 'b' }) } }] };
+      } } },
+    };
+    await generateGuideDraft(spy, input, 'm');
+    expect(captured).toContain('[실거래가 조회하기](/list)');
   });
 });
