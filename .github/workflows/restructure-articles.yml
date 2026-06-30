@@ -15,6 +15,10 @@ on:
         description: 'true면 미리보기만(DB 미변경, Actions 로그로 결과 확인)'
         type: boolean
         default: true
+      in_place:
+        description: 'true면 게시 유지한 채 본문만 수정(게시일 보존). false면 DRAFT로 내려 재검수'
+        type: boolean
+        default: true
       limit:
         description: '한 번에 처리할 글 수(배치)'
         required: false
@@ -41,9 +45,9 @@ jobs:
       - run: pnpm prisma generate
       - name: restructure board
         if: ${{ inputs.target == 'board' || inputs.target == 'both' }}
-        run: pnpm tsx scripts/board/restructure.ts --limit ${{ inputs.limit }} ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: pnpm tsx scripts/board/restructure.ts --limit ${{ inputs.limit }} ${{ inputs.dry_run && '--dry-run' || '' }} ${{ inputs.in_place && '--in-place' || '' }}
         timeout-minutes: 15
       - name: restructure guide
         if: ${{ inputs.target == 'guide' || inputs.target == 'both' }}
-        run: pnpm tsx scripts/guide/restructure.ts --limit ${{ inputs.limit }} ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: pnpm tsx scripts/guide/restructure.ts --limit ${{ inputs.limit }} ${{ inputs.dry_run && '--dry-run' || '' }} ${{ inputs.in_place && '--in-place' || '' }}
         timeout-minutes: 15
