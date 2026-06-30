@@ -118,8 +118,8 @@ export default async function ChargerDetailPage({ params }: Params) {
           {coord && <NearbyApartments items={apts} />}
           {coord && <NearbySubway data={subway} />}
           {coord && <NearbyInfra categories={infra} />}
-          <MainSourceBlock id="kepco-ev" />
           <BoardBriefingSection />
+          <MainSourceBlock id="kepco-ev" />
         </main>
         <aside>
           <UrbanDetailSidebar

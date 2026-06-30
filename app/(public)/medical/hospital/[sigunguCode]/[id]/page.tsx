@@ -122,8 +122,8 @@ export default async function HospitalDetailPage({ params }: Params) {
           <NearbyApartments items={apts} />
           {coord && <NearbySubway data={subway} />}
           {coord && <NearbyInfra categories={infra} />}
-          <MainSourceBlock id="hira" />
           <BoardBriefingSection />
+          <MainSourceBlock id="hira" />
         </div>
         <aside>
           <HospitalSidebar hospitals={others} sigunguCode={sigunguCode} />
