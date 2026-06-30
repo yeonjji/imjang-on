@@ -31,8 +31,9 @@ function buildWhereWithPrefix(f: UrbanListFilter, addrPrefix: string | null): Pr
   if (f.type) where.prkplceType = f.type;
   if (f.pwd === 'on') where.pwdbsPpkZoneYn = true;
   if (f.open24 === 'on') {
-    where.weekdayOpenHhmm = '0000';
-    where.weekdayCloseHhmm = '2400';
+    // 종일 개방은 데이터상 "00:00"~"23:59"로 저장됨 (콜론 포함 HH:MM)
+    where.weekdayOpenHhmm = '00:00';
+    where.weekdayCloseHhmm = '23:59';
   }
   if (f.q) where.name = { contains: f.q };
 
@@ -109,6 +110,8 @@ export const parkingDef: UrbanCategoryDef<ParkingRaw> = {
   detailFields: (item) => {
     const r = item.raw;
     return [
+      { label: '구분',         value: r.prkplceSe ?? '-' },
+      { label: '유형',         value: r.prkplceType ?? '-' },
       { label: '도로명 주소', value: r.rdnmadr ?? '-' },
       { label: '지번 주소',   value: r.lnmadr ?? '-' },
       { label: '운영기관',     value: r.institutionNm ?? r.insttNm ?? '-' },

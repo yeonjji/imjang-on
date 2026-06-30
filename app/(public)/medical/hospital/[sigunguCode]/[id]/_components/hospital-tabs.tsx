@@ -42,6 +42,12 @@ export function HospitalTabs({ hospital }: Props) {
           specialties={hospital.specialties}
           specialTreatments={hospital.specialTreatments}
           nursingGrades={hospital.nursingGrades}
+          doctors={{
+            med: { general: hospital.drMedGeneral, intern: hospital.drMedIntern, resident: hospital.drMedResident, specialist: hospital.drMedSpecialist },
+            dent: { general: hospital.drDentGeneral, intern: hospital.drDentIntern, resident: hospital.drDentResident, specialist: hospital.drDentSpecialist },
+            kor: { general: hospital.drKorGeneral, intern: hospital.drKorIntern, resident: hospital.drKorResident, specialist: hospital.drKorSpecialist },
+            midwife: hospital.midwifeCount,
+          }}
         />
       </div>
       <div hidden={active !== 'facility'}>

@@ -2,7 +2,8 @@ const HHMM = /^([01]\d|2[0-4])([0-5]\d)$/;
 
 function parse(hhmm: string | null | undefined): { h: number; m: number } | null {
   if (!hhmm) return null;
-  const m = HHMM.exec(hhmm);
+  // 데이터는 "HH:MM"(콜론) 또는 "HHMM"(4자리)으로 들어올 수 있다
+  const m = HHMM.exec(hhmm.replace(':', ''));
   if (!m) return null;
   return { h: Number(m[1]), m: Number(m[2]) };
 }
@@ -15,12 +16,17 @@ export function formatHourRange(open: string | null, close: string | null): stri
   const o = parse(open);
   const c = parse(close);
   if (!o || !c) return null;
-  if (open === '0000' && close === '2400') return '24시간 운영';
+  if (isOpen24(open, close)) return '24시간 운영';
+  if (o.h === c.h && o.m === c.m) return null; // 00:00~00:00 등 동일 시각 = 운영 안 함
   return `${pad(o.h)}:${pad(o.m)} ~ ${pad(c.h)}:${pad(c.m)}`;
 }
 
 export function isOpen24(open: string | null, close: string | null): boolean {
-  return open === '0000' && close === '2400';
+  if (!open || !close) return false;
+  // 종일 개방은 "00:00"~"23:59"(콜론) 또는 "0000"~"2400"(4자리)로 저장될 수 있다
+  const o = open.replace(':', '');
+  const c = close.replace(':', '');
+  return o === '0000' && (c === '2400' || c === '2359');
 }
 
 export interface HourBlocks {
