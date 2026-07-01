@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildAptNarrative, type AptInsightInput } from '@/lib/insights/apt';
+import { formatBillion } from '@/lib/format';
 
 const base: AptInsightInput = {
   name: '광교센트럴아파트',
@@ -99,5 +100,18 @@ describe('buildAptNarrative', () => {
       saleDeals: [{ contractDate: '2026-03-10', amountManwon: 72000 }, { contractDate: '2026-06-20', amountManwon: 70000 }],
     })!;
     expect(high.text).not.toEqual(low.text);
+  });
+
+  it('tTrend·pPeer가 같은 날짜 복수 거래에서 동일한 최근 실거래 값을 쓴다', () => {
+    // 같은 최근일에 90000·70000 두 건 → 두 모듈 모두 오름차순 마지막(70000)을 최근값으로.
+    const n = buildAptNarrative({
+      ...base,
+      saleDeals: [
+        { contractDate: '2026-06-20', amountManwon: 90000 },
+        { contractDate: '2026-06-20', amountManwon: 70000 },
+      ],
+    })!;
+    expect(n.text).toContain(formatBillion(70000));
+    expect(n.text).not.toContain(`최근 실거래 ${formatBillion(90000)}`);
   });
 });

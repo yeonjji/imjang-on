@@ -34,7 +34,9 @@ function tTrend(d: AptInsightInput): Insight | null {
 // P: 시군구 평균 대비 가격 위치 (벤치마크 = getRegionStats)
 function pPeer(d: AptInsightInput): Insight | null {
   if (!d.saleDeals.length || d.regionAvgSaleManwon == null || d.regionSampleCount < 5) return null;
-  const latest = [...d.saleDeals].sort((a, b) => b.contractDate.localeCompare(a.contractDate))[0].amountManwon;
+  // tTrend과 동일한 오름차순 정렬 후 마지막(=최근) 건을 써서 두 모듈의 '최근 실거래' 값을 일치시킨다.
+  const sorted = [...d.saleDeals].sort((a, b) => a.contractDate.localeCompare(b.contractDate));
+  const latest = sorted[sorted.length - 1].amountManwon;
   const avg = d.regionAvgSaleManwon;
   const diff = Math.round(((latest - avg) / avg) * 100);
   const judge = diff >= 15 ? `${d.sigunguName} 평균보다 뚜렷하게 높은 상위 가격대`
