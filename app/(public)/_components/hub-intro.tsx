@@ -9,12 +9,12 @@ export function HubIntro({ summary, category }: { summary: HubSummaryData | null
   return (
     <div className="mt-3 flex flex-col gap-3">
       {lines.length > 0 && (
-        <p className="max-w-[70ch] text-sm leading-relaxed text-[var(--color-muted)]">
+        <p className="break-keep text-sm leading-relaxed text-[var(--color-muted)]">
           {lines.join(' ')}
         </p>
       )}
       {guide && (
-        <p className="max-w-[70ch] border-t border-[var(--color-line)] pt-3 text-sm leading-relaxed text-[var(--color-muted)]">
+        <p className="break-keep border-t border-[var(--color-line)] pt-3 text-sm leading-relaxed text-[var(--color-muted)]">
           {guide}
         </p>
       )}
