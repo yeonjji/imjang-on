@@ -4,6 +4,8 @@ import { SourceCaption } from '@/components/ui/source-caption';
 import { PropertyType } from '@prisma/client';
 import type { Metadata } from 'next';
 import { Faq } from '../_components/faq';
+import { HubSummary } from '../_components/hub-summary';
+import { getPropertyHubStats } from '@/lib/hub-summary/property';
 
 export const metadata: Metadata = {
   title: '전국 오피스텔 실거래가',
@@ -17,17 +19,20 @@ export const dynamic = 'force-dynamic';
 
 export default async function OffiHubPage() {
   // 런타임 DB 블립 시에도 페이지가 죽지 않도록 빈 목록으로 폴백
-  const popular = await getTopPropertiesByVolume({ types: [PropertyType.OFFICETEL], limit: 30 })
-    .catch((err) => {
+  const [popular, summary] = await Promise.all([
+    getTopPropertiesByVolume({ types: [PropertyType.OFFICETEL], limit: 30 }).catch((err) => {
       console.error('OffiHubPage: popular query failed', err);
       return [];
-    });
+    }),
+    getPropertyHubStats([PropertyType.OFFICETEL], '오피스텔').catch(() => null),
+  ]);
 
   return (
     <section className="mx-auto max-w-[1180px] px-6 py-16">
       <h1 className="text-3xl font-black text-[var(--color-blue-dark)] md:text-4xl">
         전국 오피스텔 실거래가
       </h1>
+      <HubSummary data={summary} />
       <h2 className="mt-12 mb-5 text-xl font-bold text-[var(--color-blue-dark)]">
         거래 많은 오피스텔 TOP {popular.length}
       </h2>
