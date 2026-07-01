@@ -45,9 +45,19 @@ describe('buildHospitalNarrative', () => {
     expect(t).toContain('수술이 가능한 시설을 갖췄습니다'); // 응급실·중환자실 없고 수술실 있음
   });
   it('specialistTotal null이면 단순 의사수 문장', () => {
-    const n = buildHospitalNarrative({ ...base, specialistTotal: null })!;
+    const n = buildHospitalNarrative({ ...base, specialistTotal: null, deptWithSpecialistCount: 0 })!;
     expect(n.text).toContain('의사 12명이 근무합니다');
     expect(n.text).not.toContain('전문의가');
+  });
+  it('depts는 specialistTotal이 null이어도 deptWithSpecialistCount로 발화한다', () => {
+    const n = buildHospitalNarrative({
+      ...base,
+      specialistTotal: null,
+      deptWithSpecialistCount: 3,
+      topDeptNames: [],
+    })!;
+    expect(n.fired).toContain('depts');
+    expect(n.text).toContain('전문의가 배치된 과는 3개');
   });
   it('가드: 스타(진료과·의사수) 미발화 & 3모듈 미만이면 null', () => {
     const n = buildHospitalNarrative({

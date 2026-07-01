@@ -30,7 +30,7 @@ function depts(d: HospitalInsightInput): Insight | null {
   if (d.deptCount < 1) return null;
   const names = d.topDeptNames.filter(Boolean).slice(0, 3);
   const parts: string[] = [];
-  if (d.specialistTotal != null && d.deptWithSpecialistCount > 0) parts.push(`전문의가 배치된 과는 ${d.deptWithSpecialistCount}개`);
+  if (d.deptWithSpecialistCount > 0) parts.push(`전문의가 배치된 과는 ${d.deptWithSpecialistCount}개`);
   if (names.length) parts.push(`주요 진료과는 ${names.join('·')}`);
   if (!parts.length) return null;
   return { key: 'depts', text: `${parts.join(', ')}입니다.` };
@@ -58,7 +58,7 @@ function beds(d: HospitalInsightInput): Insight | null {
     : has('수술실') ? '수술이 가능한 시설을 갖췄습니다'
     : total >= 30 ? '입원 병상을 갖춘 규모입니다'
     : '소규모 병상을 운영합니다';
-  return { key: 'beds', text: `${list} 등 ${scale}` };
+  return { key: 'beds', text: `${list} 등 ${scale}.` };
 }
 
 export function buildHospitalNarrative(d: HospitalInsightInput): Narrative | null {
