@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 
 /**
- * 실거래가 상세(아파트·오피스텔·빌라)의 "한눈에 보기" 해석 요약 섹션.
+ * 실거래가·공공데이터 상세 공용 '한눈에 보기' 섹션.
  * 문장을 줄 단위로 나눠 스캔하기 쉽게 보여준다. 강조는 두 가지:
  *  - 핵심 수치(금액·변동률)는 굵기(색 아님 — Weight-Not-Family)
  *  - 상승/하락 방향은 색 신호(한국 관례: 상승 빨강 · 하락 파랑). 단어를 함께 두어
@@ -40,7 +40,7 @@ function renderSentence(sentence: string) {
   });
 }
 
-export function PropertyInsight({ sentences }: { sentences: string[] }) {
+export function InsightSection({ sentences }: { sentences: string[] }) {
   if (sentences.length === 0) return null;
   return (
     <section
