@@ -63,6 +63,11 @@ describe('buildAptNarrative', () => {
     expect(n.text).toContain('양호한 편입니다');
   });
 
+  it('aAccess: 역만 있고 인프라<2면 완결된 문장을 만든다', () => {
+    const n = buildAptNarrative({ ...base, infra: [{ label: '카페', count: 8 }] })!;
+    expect(n.text).toContain('도보 약 5분 거리입니다');
+  });
+
   it('bScale: 준공·세대 규모', () => {
     expect(buildAptNarrative(base)!.text).toContain('2013년 준공 · 998세대 단지입니다');
   });

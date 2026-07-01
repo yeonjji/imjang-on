@@ -42,31 +42,37 @@ function pPeer(d: AptInsightInput): Insight | null {
     : diff > -5 ? `${d.sigunguName} 평균과 비슷한 수준`
     : `${d.sigunguName} 평균보다 낮아 상대적으로 진입 부담이 적은 편`;
   return { key: 'peer', weight: 9,
-    text: `최근 실거래 ${formatBillion(latest)}은 ${judge}입니다(${d.sigunguName} 평균 ${formatBillion(avg)}).` };
+    text: `최근 실거래 ${josa(formatBillion(latest), '은', '는')} ${judge}입니다(${d.sigunguName} 평균 ${formatBillion(avg)}).` };
 }
 
 // A: 접근성 — 최근접 역 도보분 + 반경 인프라 밀도
 function aAccess(d: AptInsightInput): Insight | null {
-  const seg: string[] = [];
-  if (d.nearestStation) {
-    const walkMin = Math.max(1, Math.round(d.nearestStation.distanceMeters / 80));
-    const line = d.nearestStation.lines[0] ? `${d.nearestStation.lines[0]} ` : '';
-    seg.push(`인근 지하철역은 ${line}${d.nearestStation.name}으로 도보 약 ${walkMin}분`);
-  }
+  const station = d.nearestStation;
   const infraParts = d.infra.filter((c) => c.count > 0).map((c) => `${c.label} ${c.count}곳`);
-  if (infraParts.length >= 2) {
-    const dense = infraParts.length >= 3 ? '생활 편의가 양호한 편입니다' : '기본 생활 인프라를 갖췄습니다';
-    seg.push(`반경 도보권에 ${infraParts.join('·')}이 있어 ${dense}`);
+  const hasInfra = infraParts.length >= 2;
+  if (!station && !hasInfra) return null;
+  const dense = infraParts.length >= 3 ? '생활 편의가 양호한 편입니다' : '기본 생활 인프라를 갖췄습니다';
+  const walkMin = station ? Math.max(1, Math.round(station.distanceMeters / 80)) : 0;
+  const line = station && station.lines[0] ? `${station.lines[0]} ` : '';
+  const stationSeg = station
+    ? `인근 지하철역은 ${line}${josa(station.name, '으로', '로')} 도보 약 ${walkMin}분 거리`
+    : '';
+  let text: string;
+  if (station && hasInfra) {
+    text = `${stationSeg}이며, 반경 도보권에 ${infraParts.join('·')}이 있어 ${dense}.`;
+  } else if (station) {
+    text = `${stationSeg}입니다.`;
+  } else {
+    text = `반경 도보권에 ${infraParts.join('·')}이 있어 ${dense}.`;
   }
-  if (!seg.length) return null;
-  return { key: 'access', weight: 6, text: `${seg.join('이며, ')}.` };
+  return { key: 'access', weight: 6, text };
 }
 
 // 규모·연식 (맥락 보조)
 function bScale(d: AptInsightInput): Insight | null {
   const parts: string[] = [];
-  if (d.builtYear) parts.push(`${d.builtYear}년 준공`);
-  if (d.households) parts.push(`${d.households.toLocaleString('ko-KR')}세대`);
+  if (d.builtYear != null) parts.push(`${d.builtYear}년 준공`);
+  if (d.households != null) parts.push(`${d.households.toLocaleString('ko-KR')}세대`);
   if (!parts.length) return null;
   return { key: 'scale', weight: 4, text: `${parts.join(' · ')} 단지입니다.` };
 }
