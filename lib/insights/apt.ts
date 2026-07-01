@@ -1,3 +1,4 @@
+import type { Insight, Narrative } from './shared';
 import { formatBillion } from '@/lib/format';
 import { josa } from '@/lib/seo/josa';
 
@@ -13,15 +14,7 @@ export interface AptInsightInput {
   infra: { label: string; count: number }[];
 }
 
-export interface AptNarrative {
-  /** 문장 단위 배열(첫 문장에만 단지명 포함). 화면은 줄 단위로 렌더한다. */
-  sentences: string[];
-  /** 문장을 이은 한 줄(meta description 등 텍스트용). */
-  text: string;
-  fired: string[];
-}
-
-interface Insight { key: string; text: string; }
+export type AptNarrative = Narrative;
 
 // T: 최근 매매 추세 — 표 재서술이 아니라 건수·방향 판단
 function tTrend(d: AptInsightInput): Insight | null {
