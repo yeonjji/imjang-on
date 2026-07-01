@@ -55,6 +55,7 @@ export interface UrbanCategoryDef<TRow = unknown> {
   breadcrumbLabel: string;
   subFilters?: UrbanSubFilterDef;
   requiresSidoScope?: boolean;
+  getRegionBreakdown(filter: UrbanListFilter): Promise<{ sigunguCode: string; count: number }[]>;
   getList(filter: UrbanListFilter, page: number): Promise<UrbanListResult<TRow>>;
   getById(id: bigint): Promise<UrbanItem<TRow> | null>;
   getLatLng(id: bigint): Promise<{ lat: number; lng: number } | null>;
