@@ -22,7 +22,9 @@ describe('buildAptNarrative', () => {
     const n = buildAptNarrative(base)!;
     expect(n).not.toBeNull();
     expect(n.text.startsWith('광교센트럴아파트는')).toBe(true);
-    expect(n.fired).toEqual(['trend', 'peer', 'access', 'scale']); // weight desc
+    expect(n.fired).toEqual(['scale', 'trend', 'peer', 'access']); // 자연 읽기 순서
+    expect(n.sentences).toHaveLength(4);
+    expect(n.sentences[0].startsWith('광교센트럴아파트는')).toBe(true); // 첫 문장에만 단지명
   });
 
   it('tTrend: 상승 방향과 건수를 판단으로 표현', () => {

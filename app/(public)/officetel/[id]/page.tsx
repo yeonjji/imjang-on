@@ -22,6 +22,7 @@ import { NearbyPriceComparison } from '../../apt/[id]/_components/nearby-price-c
 import { DetailSidebar } from '../../apt/[id]/_components/detail-sidebar';
 import { propertyMetaDescription } from '@/lib/seo/blurb';
 import { JsonLd, residenceSchema, breadcrumbSchema, aptProvenanceNodes } from '@/lib/seo/json-ld';
+import { PropertyInsight } from '@/components/ui/property-insight';
 import {
   cachedPropertyById,
   cachedPropertyLatLng,
@@ -116,17 +117,7 @@ export default async function OffiDetailPage({ params }: Params) {
         ]}
       />
       <PropertyDetailHero property={property} region={property.region} />
-      {narrative && (
-        <section
-          aria-label="한눈에 보기"
-          className="mt-5 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-soft)] p-5 sm:p-6"
-        >
-          <h2 className="mb-2.5 text-lg font-bold text-[var(--color-blue-dark)]">한눈에 보기</h2>
-          <p className="break-keep text-[15px] leading-relaxed text-[var(--color-text)]">
-            {narrative.text}
-          </p>
-        </section>
-      )}
+      {narrative && <PropertyInsight sentences={narrative.sentences} />}
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-8">
           <DealSummarySection id="summary" property={property} />

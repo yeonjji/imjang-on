@@ -13,9 +13,15 @@ export interface AptInsightInput {
   infra: { label: string; count: number }[];
 }
 
-export interface AptNarrative { text: string; fired: string[]; }
+export interface AptNarrative {
+  /** 문장 단위 배열(첫 문장에만 단지명 포함). 화면은 줄 단위로 렌더한다. */
+  sentences: string[];
+  /** 문장을 이은 한 줄(meta description 등 텍스트용). */
+  text: string;
+  fired: string[];
+}
 
-interface Insight { key: string; weight: number; text: string; }
+interface Insight { key: string; text: string; }
 
 // T: 최근 매매 추세 — 표 재서술이 아니라 건수·방향 판단
 function tTrend(d: AptInsightInput): Insight | null {
@@ -27,7 +33,7 @@ function tTrend(d: AptInsightInput): Insight | null {
   const dir = diff >= 3 ? `직전 대비 약 ${diff}% 상승`
     : diff <= -3 ? `직전 대비 약 ${Math.abs(diff)}% 하락`
     : '큰 변동 없이 보합';
-  return { key: 'trend', weight: 10,
+  return { key: 'trend',
     text: `최근 매매 ${sales.length}건이 신고됐고 실거래가는 ${dir} 흐름입니다(최근 ${formatBillion(last)}).` };
 }
 
@@ -43,7 +49,7 @@ function pPeer(d: AptInsightInput): Insight | null {
     : diff >= 5 ? `${d.sigunguName} 평균을 웃도는 수준`
     : diff > -5 ? `${d.sigunguName} 평균과 비슷한 수준`
     : `${d.sigunguName} 평균보다 낮아 상대적으로 진입 부담이 적은 편`;
-  return { key: 'peer', weight: 9,
+  return { key: 'peer',
     text: `최근 실거래 ${josa(formatBillion(latest), '은', '는')} ${judge}입니다(${d.sigunguName} 평균 ${formatBillion(avg)}).` };
 }
 
@@ -67,22 +73,24 @@ function aAccess(d: AptInsightInput): Insight | null {
   } else {
     text = `반경 도보권에 ${infraParts.join('·')}이 있어 ${dense}.`;
   }
-  return { key: 'access', weight: 6, text };
+  return { key: 'access', text };
 }
 
-// 규모·연식 (맥락 보조)
+// 규모·연식 — 단지 소개(맨 앞 문장)
 function bScale(d: AptInsightInput): Insight | null {
   const parts: string[] = [];
   if (d.builtYear != null) parts.push(`${d.builtYear}년 준공`);
   if (d.households != null) parts.push(`${d.households.toLocaleString('ko-KR')}세대`);
   if (!parts.length) return null;
-  return { key: 'scale', weight: 4, text: `${parts.join(' · ')} 단지입니다.` };
+  return { key: 'scale', text: `${parts.join(' · ')} 단지입니다.` };
 }
 
 export function buildAptNarrative(d: AptInsightInput): AptNarrative | null {
+  // 자연스러운 읽기 순서: 규모·연식(소개) → 추세 → 가격 위치 → 입지.
   const mods = [bScale, tTrend, pPeer, aAccess].map((fn) => fn(d)).filter(Boolean) as Insight[];
   // 가드: 발화 ≥3 AND (추세 또는 또래 발화). 미달 → null(=서술 생략+noindex).
   if (mods.length < 3 || !mods.some((m) => m.key === 'trend' || m.key === 'peer')) return null;
-  const ordered = mods.sort((a, b) => b.weight - a.weight);
-  return { text: `${josa(d.name, '은', '는')} ${ordered.map((m) => m.text).join(' ')}`, fired: ordered.map((m) => m.key) };
+  // 첫 문장에만 단지명을 붙인다.
+  const sentences = mods.map((m, i) => (i === 0 ? `${josa(d.name, '은', '는')} ${m.text}` : m.text));
+  return { sentences, text: sentences.join(' '), fired: mods.map((m) => m.key) };
 }
