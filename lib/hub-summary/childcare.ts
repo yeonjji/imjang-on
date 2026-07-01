@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import type { HubSummaryData } from './types';
 
 const nf = (n: number) => n.toLocaleString('ko-KR');
