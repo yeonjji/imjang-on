@@ -9,9 +9,8 @@ import { SchoolPagination } from './_components/school-pagination';
 import { SiblingTabs } from '../_components/sibling-tabs';
 import type { Metadata } from 'next';
 import { Faq } from '../_components/faq';
-import { HubGuide } from '../_components/hub-guide';
-import { HubSummary } from '../_components/hub-summary';
 import { getSchoolHubSummary } from '@/lib/hub-summary/school';
+import { HubIntro } from '../_components/hub-intro';
 
 export const metadata: Metadata = {
   title: '학교찾기 — 전국 초·중·고·특수학교',
@@ -54,8 +53,7 @@ export default async function SchoolListPage({ searchParams }: Props) {
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">생활편의 · 학교찾기</p>
         <h1 className="text-3xl font-black tracking-tight text-[var(--color-blue-dark)]">학교찾기</h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">지역·학교급으로 좁혀보세요. 학교를 누르면 주변 아파트 실거래가까지 확인할 수 있어요.</p>
-        <HubSummary data={summary} />
-        <HubGuide category="school" />
+        <HubIntro summary={summary} category="school" />
         <Link
           href="/school/regions"
           className="mt-4 inline-flex items-center gap-1 rounded-xl border border-[var(--color-line)] bg-[var(--color-soft)] px-4 py-2 text-sm font-semibold text-[var(--color-blue)] transition hover:border-[var(--color-sky)]"

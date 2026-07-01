@@ -4,8 +4,7 @@ import { SourceCaption } from '@/components/ui/source-caption';
 import { PropertyType } from '@prisma/client';
 import type { Metadata } from 'next';
 import { Faq } from '../_components/faq';
-import { HubSummary } from '../_components/hub-summary';
-import { HubGuide } from '../_components/hub-guide';
+import { HubIntro } from '../_components/hub-intro';
 import { getPropertyHubStats } from '@/lib/hub-summary/property';
 
 export const metadata: Metadata = {
@@ -36,8 +35,7 @@ export default async function VillaHubPage() {
       <h1 className="text-3xl font-black text-[var(--color-blue-dark)] md:text-4xl">
         전국 연립·다세대 실거래가
       </h1>
-      <HubSummary data={summary} />
-      <HubGuide category="villa" />
+      <HubIntro summary={summary} category="villa" />
       <h2 className="mt-12 mb-5 text-xl font-bold text-[var(--color-blue-dark)]">
         거래 많은 단지/건물 TOP {popular.length}
       </h2>

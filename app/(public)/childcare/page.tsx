@@ -9,9 +9,8 @@ import { ChildcarePagination } from './_components/childcare-pagination';
 import { SiblingTabs } from '../_components/sibling-tabs';
 import type { Metadata } from 'next';
 import { Faq } from '../_components/faq';
-import { HubGuide } from '../_components/hub-guide';
-import { HubSummary } from '../_components/hub-summary';
 import { getChildcareHubSummary } from '@/lib/hub-summary/childcare';
+import { HubIntro } from '../_components/hub-intro';
 
 export const metadata: Metadata = {
   title: '어린이집찾기 — 전국 국공립·민간·가정',
@@ -53,8 +52,7 @@ export default async function ChildcareListPage({ searchParams }: Props) {
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">생활편의 · 어린이집찾기</p>
         <h1 className="text-3xl font-black tracking-tight text-[var(--color-blue-dark)]">어린이집찾기</h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">지역·운영유형으로 좁혀보세요. 어린이집을 누르면 정원·연령별 현황과 주변 아파트 실거래가까지 확인할 수 있어요.</p>
-        <HubSummary data={summary} />
-        <HubGuide category="childcare" />
+        <HubIntro summary={summary} category="childcare" />
         <Link
           href="/childcare/regions"
           className="mt-4 inline-flex items-center gap-1 rounded-xl border border-[var(--color-line)] bg-[var(--color-soft)] px-4 py-2 text-sm font-semibold text-[var(--color-blue)] transition hover:border-[var(--color-sky)]"
