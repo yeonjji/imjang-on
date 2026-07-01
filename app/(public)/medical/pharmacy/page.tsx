@@ -6,8 +6,10 @@ import { PharmacyFilterPanel } from './_components/pharmacy-filter-panel';
 import { PharmacyMobileFilterSheet } from './_components/pharmacy-mobile-filter-sheet';
 import { SiblingTabs } from '../../_components/sibling-tabs';
 import { SourceCaption } from '@/components/ui/source-caption';
+import { getMedicalRegionBreakdown } from '@/lib/hub-summary/medical';
 import type { Metadata } from 'next';
 import { Faq } from '../../_components/faq';
+import { HubIntro } from '../../_components/hub-intro';
 
 export const revalidate = 86_400;
 
@@ -30,9 +32,10 @@ export default async function PharmacyListPage({ searchParams }: Props) {
   const page = Math.max(1, Number(sp.page ?? 1));
   const sigunguCode = sp.region;
 
-  const [{ rows, total, totalPages }, regions] = await Promise.all([
+  const [{ rows, total, totalPages }, regions, summary] = await Promise.all([
     getPharmacyList({ sigunguCode }, page),
     getPharmacyRegions(),
+    getMedicalRegionBreakdown('pharmacy', '약국', sigunguCode).catch(() => null),
   ]);
 
   return (
@@ -50,6 +53,7 @@ export default async function PharmacyListPage({ searchParams }: Props) {
           약국
         </h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">전국 {total.toLocaleString('ko-KR')}개</p>
+          <HubIntro summary={summary} category="pharmacy" />
       </div>
 
       <SiblingTabs currentHref="/medical/pharmacy" />

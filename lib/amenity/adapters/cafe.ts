@@ -103,12 +103,23 @@ async function getCountsBySigungu(): Promise<Map<string, number>> {
   return map;
 }
 
+export async function cafeRegionBreakdown(f: AmenityListFilter): Promise<{ sigunguCode: string; count: number }[]> {
+  const where = buildCafeWhere(f);
+  const groups = await prisma.store.groupBy({
+    by: ['sigunguCode'],
+    where,
+    _count: { _all: true },
+  });
+  return groups.map((g) => ({ sigunguCode: g.sigunguCode, count: g._count._all }));
+}
+
 export const cafeDef: AmenityCategoryDef = {
   slug: 'cafe',
   label: '카페',
   emoji: '☕',
   breadcrumbLabel: '카페',
   getList,
+  getRegionBreakdown: cafeRegionBreakdown,
   getById,
   getLatLng,
   inferRowSummary: (row) => row.industryName ?? null,

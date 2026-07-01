@@ -110,6 +110,18 @@ async function getCountsBySigungu(): Promise<Map<string, number>> {
   return map;
 }
 
+export async function marketRegionBreakdown(f: AmenityListFilter): Promise<{ sigunguCode: string; count: number }[]> {
+  const where = buildMarketWhere(f);
+  const groups = await prisma.traditionalMarket.groupBy({
+    by: ['sigunguCode'],
+    where,
+    _count: { _all: true },
+  });
+  return groups
+    .filter((g): g is typeof g & { sigunguCode: string } => g.sigunguCode !== null)
+    .map((g) => ({ sigunguCode: g.sigunguCode, count: g._count._all }));
+}
+
 function inferRowSummary(row: AmenityItem): string | null {
   const v = (row.marketType ?? '').trim();
   if (!v) return null;
@@ -142,6 +154,7 @@ export const marketDef: AmenityCategoryDef = {
     ],
   },
   getList,
+  getRegionBreakdown: marketRegionBreakdown,
   getById,
   getLatLng,
   inferRowSummary,

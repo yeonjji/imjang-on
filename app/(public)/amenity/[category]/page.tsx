@@ -10,6 +10,8 @@ import { AmenityCard } from './_components/amenity-card';
 import { AmenityPagination } from './_components/amenity-pagination';
 import { SiblingTabs } from '../../_components/sibling-tabs';
 import { SourceCaption } from '@/components/ui/source-caption';
+import { getAmenityHubSummary } from '@/lib/hub-summary/amenity';
+import { HubIntro } from '../../_components/hub-intro';
 import type { Metadata } from 'next';
 
 export const revalidate = 21_600;
@@ -32,7 +34,7 @@ export async function generateMetadata({ params, searchParams }: Params): Promis
   const scope = region?.fullName ?? sp.sido ?? '전국';
   return {
     title: `${scope} ${def.label}`,
-    description: `${scope}의 ${def.label} 목록과 위치, 주변 아파트 실거래가.`,
+    description: `${scope}에 등록된 ${def.label} 현황을 지역별 분포와 함께 정리했습니다. 주변 아파트 실거래가도 함께 확인하세요.`,
     alternates: {
       canonical: sp.region
         ? `/amenity/${def.slug}?region=${sp.region}`
@@ -75,6 +77,10 @@ export default async function AmenityListPage({ params, searchParams }: Params) 
   const defView = toAmenityCategoryView(def);
   const scopeLabel = region?.fullName ?? (effectiveSido ?? '전국');
 
+  const summary = await getAmenityHubSummary(def.slug, def.label, {
+    sigunguCode: sp.region, sido: effectiveSido, q: sp.q, sub: sp[subKey],
+  }, scopeLabel).catch(() => null);
+
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-8">
       <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
@@ -92,6 +98,7 @@ export default async function AmenityListPage({ params, searchParams }: Params) 
         <p className="mt-2 text-sm text-[var(--color-muted)]">
           전체 {total.toLocaleString('ko-KR')}개
         </p>
+        <HubIntro summary={summary} category={def.slug} />
       </div>
 
       <SiblingTabs currentHref={`/amenity/${category}`} />

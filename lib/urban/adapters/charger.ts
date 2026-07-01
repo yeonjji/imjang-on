@@ -70,6 +70,10 @@ async function getById(id: bigint): Promise<UrbanItem<ChargerRaw> | null> {
   return row ? toItem(row as ChargerRaw) : null;
 }
 
+async function getRegionBreakdown(_f: UrbanListFilter): Promise<{ sigunguCode: string; count: number }[]> {
+  return []; // EvCharger 모델은 sigunguCode 컬럼 미보유(주소 파싱 기반) → 분포 생략
+}
+
 async function getLatLng(id: bigint): Promise<{ lat: number; lng: number } | null> {
   const rows = await prisma.$queryRaw<{ lat: number; lng: number }[]>`
     SELECT ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng
@@ -94,6 +98,7 @@ export const chargerDef: UrbanCategoryDef<ChargerRaw> = {
       { slug: '완속', label: '완속' },
     ],
   },
+  getRegionBreakdown,
   getList,
   getById,
   getLatLng,

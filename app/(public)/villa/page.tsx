@@ -4,6 +4,8 @@ import { SourceCaption } from '@/components/ui/source-caption';
 import { PropertyType } from '@prisma/client';
 import type { Metadata } from 'next';
 import { Faq } from '../_components/faq';
+import { HubIntro } from '../_components/hub-intro';
+import { getPropertyHubStats } from '@/lib/hub-summary/property';
 
 export const metadata: Metadata = {
   title: '전국 연립·다세대 실거래가',
@@ -17,19 +19,23 @@ export const dynamic = 'force-dynamic';
 
 export default async function VillaHubPage() {
   // 런타임 DB 블립 시에도 페이지가 죽지 않도록 빈 목록으로 폴백
-  const popular = await getTopPropertiesByVolume({
-    types: [PropertyType.ROW_HOUSE, PropertyType.MULTIPLEX],
-    limit: 30,
-  }).catch((err) => {
-    console.error('VillaHubPage: popular query failed', err);
-    return [];
-  });
+  const [popular, summary] = await Promise.all([
+    getTopPropertiesByVolume({
+      types: [PropertyType.ROW_HOUSE, PropertyType.MULTIPLEX],
+      limit: 30,
+    }).catch((err) => {
+      console.error('VillaHubPage: popular query failed', err);
+      return [];
+    }),
+    getPropertyHubStats([PropertyType.ROW_HOUSE, PropertyType.MULTIPLEX], '연립·다세대').catch(() => null),
+  ]);
 
   return (
     <section className="mx-auto max-w-[1180px] px-6 py-16">
       <h1 className="text-3xl font-black text-[var(--color-blue-dark)] md:text-4xl">
         전국 연립·다세대 실거래가
       </h1>
+      <HubIntro summary={summary} category="villa" />
       <h2 className="mt-12 mb-5 text-xl font-bold text-[var(--color-blue-dark)]">
         거래 많은 단지/건물 TOP {popular.length}
       </h2>

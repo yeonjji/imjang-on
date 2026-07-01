@@ -66,6 +66,7 @@ export interface AmenityCategoryDef {
    */
   requiresSidoScope?: boolean;
   getList(filter: AmenityListFilter, page: number): Promise<AmenityListResult>;
+  getRegionBreakdown(filter: AmenityListFilter): Promise<{ sigunguCode: string; count: number }[]>;
   getById(id: bigint): Promise<AmenityItem | null>;
   getLatLng(id: bigint): Promise<{ lat: number; lng: number } | null>;
   /** 카드 보조 라벨 (예: '대형마트', '상설시장') */

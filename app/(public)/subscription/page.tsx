@@ -8,6 +8,8 @@ import { SubscriptionList } from './_components/subscription-list';
 import { SourceCaption } from '@/components/ui/source-caption';
 import type { Metadata } from 'next';
 import { Faq } from '../_components/faq';
+import { getSubscriptionHubSummary } from '@/lib/hub-summary/subscription';
+import { HubIntro } from '../_components/hub-intro';
 
 export const metadata: Metadata = {
   title: '청약·분양 정보',
@@ -36,7 +38,11 @@ export default async function SubscriptionPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const [sp, sidoList] = await Promise.all([searchParams, getSidoList()]);
+  const [sp, sidoList, summary] = await Promise.all([
+    searchParams,
+    getSidoList(),
+    getSubscriptionHubSummary().catch(() => null),
+  ]);
 
   const categories = slugsToCategories((sp.category ?? '').split(',').filter(Boolean));
   const sido = sp.sido || undefined;
@@ -58,6 +64,7 @@ export default async function SubscriptionPage({
         <p className="mt-2 break-keep text-sm text-[var(--color-muted)]">
           아파트·오피스텔·공공/민간임대·사전청약 분양 공고를 접수 일정과 분양가로 한 번에 확인하세요.
         </p>
+        <HubIntro summary={summary} category="subscription" />
       </div>
 
       <Suspense>

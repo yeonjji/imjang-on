@@ -56,6 +56,10 @@ async function getById(id: bigint): Promise<UrbanItem<ParkRaw> | null> {
   return row ? toItem(row) : null;
 }
 
+async function getRegionBreakdown(_f: UrbanListFilter): Promise<{ sigunguCode: string; count: number }[]> {
+  return []; // Park 모델은 sigunguCode 컬럼 미보유(주소 파싱 기반) → 분포 생략
+}
+
 async function getLatLng(id: bigint): Promise<{ lat: number; lng: number } | null> {
   const rows = await prisma.$queryRaw<{ lat: number; lng: number }[]>`
     SELECT ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng
@@ -85,6 +89,7 @@ export const parkDef: UrbanCategoryDef<ParkRaw> = {
       { slug: '문화공원', label: '문화공원' },
     ],
   },
+  getRegionBreakdown,
   getList,
   getById,
   getLatLng,
