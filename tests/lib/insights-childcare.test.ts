@@ -37,7 +37,7 @@ describe('buildChildcareNarrative', () => {
     expect(buildChildcareNarrative(base)!.text).toContain('만 0세가 35명(약 90%)');
     expect(buildChildcareNarrative(base)!.text).toContain('경쟁이 특히 치열');
   });
-  it('교사당 원아: 57/17≈3.4명', () => {
+  it('교직원당 원아: 57/17≈3.4명', () => {
     expect(buildChildcareNarrative(base)!.text).toContain('원아 약 3.4명');
   });
   it('시설: 원아 1인당 보육실 면적·CCTV·통학차량', () => {
@@ -58,5 +58,23 @@ describe('buildChildcareNarrative', () => {
     const a = buildChildcareNarrative(base)!;
     const b = buildChildcareNarrative({ ...base, currentCount: 40 })!;
     expect(a.text).not.toEqual(b.text);
+  });
+  it('충원율 구간: ≥90% → 정원에 거의 찬 편', () => {
+    const n = buildChildcareNarrative({ ...base, currentCount: 66 })!; // 66/69=95.6%→96%
+    expect(n.text).toContain('정원에 거의 찬 편');
+  });
+
+  it('대기: 최다 연령 share<60%면 "가장 많습니다"(치열 아님)', () => {
+    const n = buildChildcareNarrative({
+      ...base,
+      waitByAge: [{ label: '만 0세', count: 2 }, { label: '만 1세', count: 2 }], // top share 50%
+    })!;
+    expect(n.text).toContain('가장 많습니다');
+    expect(n.text).not.toContain('경쟁이 특히 치열');
+  });
+
+  it('시설: vehicleOp 미운영이면 통학차량 문구 없음', () => {
+    const n = buildChildcareNarrative({ ...base, vehicleOp: '미운영' })!;
+    expect(n.text).not.toContain('통학차량');
   });
 });

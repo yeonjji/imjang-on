@@ -31,7 +31,7 @@ function occupancy(d: ChildcareInsightInput): Insight | null {
   const judge = occ >= 0.9 ? '정원에 거의 찬 편입니다'
     : occ >= 0.7 ? '보통 수준입니다'
     : '정원에 여유가 있는 편입니다';
-  return { key: 'occupancy', text: `현원 ${d.currentCount}명으로 충원율 ${pct}%로 ${judge}.` };
+  return { key: 'occupancy', text: `현원 ${d.currentCount}명, 충원율 ${pct}%로 ${judge}.` };
 }
 
 function wait(d: ChildcareInsightInput): Insight | null {
