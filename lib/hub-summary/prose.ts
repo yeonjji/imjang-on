@@ -30,6 +30,7 @@ function identitySentence(d: HubSummaryData): string {
 export function buildHubSummaryLines(d: HubSummaryData): string[] {
   if (d.total <= 0) return [];
   const identity = identitySentence(d);
+  const extra = d.highlights ?? [];
 
   const canDistribute =
     d.scopeLevel !== 'sigungu' &&
@@ -37,16 +38,13 @@ export function buildHubSummaryLines(d: HubSummaryData): string[] {
     d.topRegions.length >= MIN_REGIONS_FOR_DISTRIBUTION &&
     d.concentrationPct != null;
 
-  if (!canDistribute) return [identity];
+  if (!canDistribute) return [identity, ...extra];
 
   const unit = regionUnitLabel(d.scopeLevel);
-  const top = d.topRegions
-    .slice(0, 3)
-    .map((r) => `${r.name}(${nf(r.count)})`)
-    .join('·');
+  const top = d.topRegions.slice(0, 3).map((r) => `${r.name}(${nf(r.count)})`).join('·');
   const distribution =
     `${unit}별 분포를 보면 ${top} 순으로 등록 수가 많고, ` +
     `상위 3개 ${unit}가 전체의 약 ${d.concentrationPct}% 비중입니다.`;
 
-  return [identity, distribution];
+  return [identity, distribution, ...extra];
 }

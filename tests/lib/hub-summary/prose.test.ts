@@ -74,6 +74,36 @@ describe('buildHubSummaryLines', () => {
     expect(lines).toHaveLength(1);
   });
 
+  it('highlights를 정체·분포 뒤에 이어 붙인다', () => {
+    const lines = buildHubSummaryLines({
+      kind: 'medical', categoryLabel: '병원·의원', scopeLabel: '전국', scopeLevel: 'nation',
+      total: 79562,
+      topRegions: [
+        { name: '경기도', count: 17234 }, { name: '서울특별시', count: 14012 }, { name: '부산광역시', count: 5210 },
+      ],
+      concentrationPct: 46,
+      highlights: ['종합병원 350곳·병원 3,900곳·의원 3.6만곳 등으로 구성됩니다.'],
+    });
+    expect(lines).toHaveLength(3);
+    expect(lines[2]).toBe('종합병원 350곳·병원 3,900곳·의원 3.6만곳 등으로 구성됩니다.');
+  });
+
+  it('폴백(정체만)일 때도 highlights는 이어 붙는다', () => {
+    const lines = buildHubSummaryLines({
+      kind: 'property', categoryLabel: '오피스텔', scopeLabel: '전국', scopeLevel: 'nation',
+      total: 12, topRegions: [], highlights: ['최근 1년 거래는 매매가 가장 많았습니다.'],
+    });
+    expect(lines).toHaveLength(2); // 정체 + highlight
+    expect(lines[1]).toBe('최근 1년 거래는 매매가 가장 많았습니다.');
+  });
+
+  it('total 0이면 highlights가 있어도 빈 배열', () => {
+    expect(buildHubSummaryLines({
+      kind: 'property', categoryLabel: '오피스텔', scopeLabel: '전국', scopeLevel: 'nation',
+      total: 0, topRegions: [], highlights: ['x'],
+    })).toEqual([]);
+  });
+
   it('근접중복 방지: 서로 다른 입력은 서로 다른 문자열', () => {
     const a = buildHubSummaryLines(sidoCase).join(' ');
     const b = buildHubSummaryLines({ ...sidoCase, scopeLabel: '부산',
