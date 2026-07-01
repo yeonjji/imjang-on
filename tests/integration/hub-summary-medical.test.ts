@@ -17,4 +17,10 @@ describe('getMedicalRegionBreakdown', () => {
     const counts = d.topRegions.map((r) => r.count);
     expect([...counts].sort((a, b) => b - a)).toEqual(counts);
   });
+
+  it('병원 전국: 종별 하이라이트 존재(데이터 있으면)', async () => {
+    const d = await getMedicalRegionBreakdown('hospital', '병원·의원');
+    if (d === null || !d.highlights) return;
+    expect(d.highlights.join(' ')).toContain('종별로는');
+  });
 });

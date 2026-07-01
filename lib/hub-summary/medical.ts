@@ -47,10 +47,28 @@ export async function getMedicalRegionBreakdown(
     if (total <= 0) return null;
     const top = rows.slice(0, 3);
     const top3 = top.reduce((s, r) => s + r.count, 0);
+
+    let highlights: string[] | undefined;
+    if (kind === 'hospital') {
+      const typeRows = await prisma.hospital.groupBy({
+        by: ['typeName'],
+        _count: { _all: true },
+      });
+      const topTypes = typeRows
+        .filter((t): t is typeof t & { typeName: string } => typeof t.typeName === 'string' && t.typeName.length > 0)
+        .map(t => ({ n: t.typeName, c: (t._count as { _all: number })._all }))
+        .sort((a, b) => b.c - a.c)
+        .slice(0, 4);
+      if (topTypes.length > 0) {
+        highlights = [`종별로는 ${topTypes.map(t => `${t.n} ${t.c.toLocaleString('ko-KR')}곳`).join('·')} 등으로 구성됩니다.`];
+      }
+    }
+
     return {
       kind: 'medical', categoryLabel, scopeLabel: '전국', scopeLevel: 'nation',
       total, topRegions: top,
       concentrationPct: Math.round((top3 / total) * 100),
+      highlights,
     };
   } catch (e) {
     console.error(`getMedicalRegionBreakdown(${kind}) failed`, e);
