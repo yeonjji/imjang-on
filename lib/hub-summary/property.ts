@@ -25,6 +25,21 @@ export async function getPropertyHubStats(
     if (total <= 0) return null;
     const top = mapped.slice(0, 3);
     const top3 = top.reduce((s, r) => s + r.count, 0);
+
+    const agg = await prisma.property.aggregate({
+      where: { propertyType: { in: types }, txCount12m: { gt: 0 } },
+      _sum: { saleCount12m: true, jeonseCount12m: true, wolseCount12m: true },
+    });
+    const sale = agg._sum.saleCount12m ?? 0;
+    const jeonse = agg._sum.jeonseCount12m ?? 0;
+    const wolse = agg._sum.wolseCount12m ?? 0;
+    const txTotal = sale + jeonse + wolse;
+    let highlights: string[] | undefined;
+    if (txTotal > 0) {
+      const pct = (n: number) => Math.round((n / txTotal) * 100);
+      highlights = [`최근 1년 거래는 매매 ${pct(sale)}%·전세 ${pct(jeonse)}%·월세 ${pct(wolse)}% 비중입니다.`];
+    }
+
     return {
       kind: 'property',
       categoryLabel,
@@ -33,6 +48,7 @@ export async function getPropertyHubStats(
       total,
       topRegions: top,
       concentrationPct: Math.round((top3 / total) * 100),
+      highlights,
     };
   } catch (e) {
     console.error('getPropertyHubStats failed', e);

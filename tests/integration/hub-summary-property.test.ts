@@ -18,4 +18,10 @@ describe('getPropertyHubStats', () => {
     if (d === null) return;
     expect(d.total).toBeGreaterThan(0);
   });
+
+  it('오피스텔: 거래유형 하이라이트', async () => {
+    const d = await getPropertyHubStats([PropertyType.OFFICETEL], '오피스텔');
+    if (d === null || !d.highlights) return;
+    expect(d.highlights.join(' ')).toContain('매매');
+  });
 });

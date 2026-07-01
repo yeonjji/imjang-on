@@ -1,10 +1,12 @@
 import { getTopPropertiesByVolume } from '@/lib/property';
+import { getPropertyHubStats } from '@/lib/hub-summary/property';
 import { PropertyCard } from '../_components/property-card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { PropertyType } from '@prisma/client';
 import type { Metadata } from 'next';
 import { Faq } from '../_components/faq';
 import { HubGuide } from '../_components/hub-guide';
+import { HubSummary } from '../_components/hub-summary';
 
 export const metadata: Metadata = {
   title: '전국 아파트 실거래가',
@@ -18,11 +20,13 @@ export const dynamic = 'force-dynamic';
 
 export default async function AptHubPage() {
   // 런타임 DB 블립 시에도 페이지가 죽지 않도록 빈 목록으로 폴백
-  const popular = await getTopPropertiesByVolume({ types: [PropertyType.APARTMENT], limit: 30 })
-    .catch((err) => {
+  const [popular, summary] = await Promise.all([
+    getTopPropertiesByVolume({ types: [PropertyType.APARTMENT], limit: 30 }).catch((err) => {
       console.error('AptHubPage: popular query failed', err);
       return [];
-    });
+    }),
+    getPropertyHubStats([PropertyType.APARTMENT], '아파트').catch(() => null),
+  ]);
 
   return (
     <section className="mx-auto max-w-[1180px] px-6 py-16">
@@ -32,6 +36,7 @@ export default async function AptHubPage() {
       <p className="mt-3 max-w-xl text-[var(--color-muted)]">
         공공데이터 기반 · 매일 갱신 · 매매/전세/월세 통합
       </p>
+      <HubSummary data={summary} />
       <HubGuide category="apt" />
 
       <h2 className="mt-12 mb-5 text-xl font-bold text-[var(--color-blue-dark)]">
