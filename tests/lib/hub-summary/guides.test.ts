@@ -24,6 +24,14 @@ describe('getHubGuide', () => {
     }
   });
 
+  it('금지 용어(밀도/밀집도)를 쓰지 않는다', () => {
+    const banned = ['밀도', '밀집도'];
+    for (const k of ALL_KEYS) {
+      const g = getHubGuide(k)!;
+      for (const w of banned) expect(g.includes(w), `${k}:${w}`).toBe(false);
+    }
+  });
+
   it('미지의 키는 null', () => {
     expect(getHubGuide('nope')).toBeNull();
   });
