@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getChildcareById, getChildcareLatLng, getChildcareList } from '@/lib/childcare';
+import { getChildcareList } from '@/lib/childcare';
 import { getSigunguByCode } from '@/lib/region';
-import { getNearbyApartments, getNearbyChildcare, getNearbyInfra } from '@/lib/amenity/nearby';
-import { getNearbySubwayStations } from '@/lib/subway/nearby';
+import { getNearbyChildcare } from '@/lib/amenity/nearby';
+import { loadChildcareInsight, cachedChildcareById, cachedChildcareLatLng, cachedNearbyApartments, cachedNearbyInfraCC, cachedNearbySubwayCC } from '@/lib/insights/childcare-loader';
 import { ChildcareHero } from './_components/childcare-hero';
 import { ChildcareInfo } from './_components/childcare-info';
 import { ChildcareFacility } from './_components/childcare-facility';
@@ -20,11 +20,11 @@ import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
-import { JsonLd, placeSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
+import { InsightSection } from '@/components/ui/insight-section';
+import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
 import { staticMapUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
-import type { NearbyApartment } from '@/lib/amenity/nearby';
 
 export const revalidate = 86_400;
 
@@ -38,8 +38,10 @@ function parseId(id: string): bigint | null {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { sigunguCode, id } = await params;
   const itemId = parseId(id);
-  const item = itemId == null ? null : await getChildcareById(itemId).catch(() => null);
+  const item = itemId == null ? null : await cachedChildcareById(itemId).catch(() => null);
   if (!item) return {};
+  const { narrative } = itemId == null ? { narrative: null } : await loadChildcareInsight(itemId);
+  const indexable = !!narrative && narrative.fired.length >= 3;
   const parts: string[] = [];
   if (item.capacity != null) parts.push(`정원 ${item.capacity.toLocaleString('ko-KR')}명`);
   if (item.currentCount != null) parts.push(`현원 ${item.currentCount.toLocaleString('ko-KR')}명`);
@@ -48,7 +50,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const type = item.crType ? `(${item.crType})` : '';
   return {
     title: `${item.name} — ${item.crType ?? '어린이집'} 정원 ${item.capacity ?? '-'}`,
-    description: `${item.name}${type}${stat}. 도보권 아파트 실거래가와 보육정보를 한눈에.`,
+    description: narrative?.text.slice(0, 150) ?? `${item.name}${type}${stat}. 도보권 아파트 실거래가와 보육정보를 한눈에.`,
+    robots: indexable ? { index: true, follow: true } : { index: false, follow: true },
     alternates: { canonical: `/childcare/${sigunguCode}/${id}` },
   };
 }
@@ -58,7 +61,7 @@ export default async function ChildcareDetailPage({ params }: Params) {
   const itemId = parseId(id);
   if (itemId == null) notFound();
   const [item, region] = await Promise.all([
-    getChildcareById(itemId),
+    cachedChildcareById(itemId),
     getSigunguByCode(sigunguCode),
   ]);
   if (!item || item.sigunguCode !== sigunguCode) notFound();
@@ -71,21 +74,23 @@ export default async function ChildcareDetailPage({ params }: Params) {
   };
 
   const basePath = `/childcare/${sigunguCode}`;
-  const coord = await getChildcareLatLng(itemId);
+  const coord = await cachedChildcareLatLng(itemId);
 
   const [apts, infra, nearbyChildren, otherList, subway] = await Promise.all([
-    coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
-    coord ? getNearbyInfra(coord.lat, coord.lng) : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
+    coord ? cachedNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as Awaited<ReturnType<typeof cachedNearbyApartments>>),
+    coord ? cachedNearbyInfraCC(coord.lat, coord.lng) : Promise.resolve([] as Awaited<ReturnType<typeof cachedNearbyInfraCC>>),
     coord ? getNearbyChildcare(coord.lat, coord.lng, 1000, 5, itemId) : Promise.resolve([]),
     getChildcareList({ sigunguCode }, 1),
     coord
-      ? getNearbySubwayStations(coord.lat, coord.lng)
+      ? cachedNearbySubwayCC(coord.lat, coord.lng)
       : Promise.resolve({ stations: [], fallback: false }),
   ]);
   const others = otherList.rows
     .filter((o) => o.id !== item.id)
     .slice(0, 4)
     .map((o) => ({ id: o.id, name: o.name }));
+
+  const { narrative, dateModified } = await loadChildcareInsight(itemId);
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10">
@@ -100,6 +105,8 @@ export default async function ChildcareDetailPage({ params }: Params) {
             url: `${SITE_URL}/childcare/${sigunguCode}/${id}`,
             image: coord ? staticMapUrl(coord) : undefined,
             telephone: item.tel,
+            id: `${SITE_URL}/childcare/${sigunguCode}/${id}#childcare`,
+            mainEntityOfPageId: `${SITE_URL}/childcare/${sigunguCode}/${id}#webpage`,
           }),
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
@@ -107,6 +114,13 @@ export default async function ChildcareDetailPage({ params }: Params) {
             { name: '어린이집찾기', url: `${SITE_URL}/childcare` },
             { name: item.name, url: `${SITE_URL}/childcare/${sigunguCode}/${id}` },
           ]),
+          ...provenanceNodes({
+            url: `${SITE_URL}/childcare/${sigunguCode}/${id}`,
+            name: item.name,
+            sourceId: 'childcare',
+            entityId: `${SITE_URL}/childcare/${sigunguCode}/${id}#childcare`,
+            dateModified,
+          }),
         ]}
       />
       <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
@@ -118,6 +132,7 @@ export default async function ChildcareDetailPage({ params }: Params) {
       </nav>
 
       <ChildcareHero item={item} />
+      {narrative && <InsightSection sentences={narrative.sentences} />}
 
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-6">
