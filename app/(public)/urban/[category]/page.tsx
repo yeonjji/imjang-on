@@ -13,6 +13,7 @@ import { SiblingTabs } from '../../_components/sibling-tabs';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { HubSummary } from '../../_components/hub-summary';
 import { getUrbanHubSummary } from '@/lib/hub-summary/urban';
+import { HubGuide } from '../../_components/hub-guide';
 
 export const revalidate = 21_600;
 
@@ -100,6 +101,7 @@ export default async function UrbanListPage({ params, searchParams }: Params) {
         </h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">전체 {total.toLocaleString('ko-KR')}개</p>
         <HubSummary data={summary} />
+        <HubGuide category={def.slug} />
       </div>
 
       <SiblingTabs currentHref={`/urban/${category}`} />

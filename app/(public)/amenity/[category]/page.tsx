@@ -12,6 +12,7 @@ import { SiblingTabs } from '../../_components/sibling-tabs';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { HubSummary } from '../../_components/hub-summary';
 import { getAmenityHubSummary } from '@/lib/hub-summary/amenity';
+import { HubGuide } from '../../_components/hub-guide';
 import type { Metadata } from 'next';
 
 export const revalidate = 21_600;
@@ -99,6 +100,7 @@ export default async function AmenityListPage({ params, searchParams }: Params) 
           전체 {total.toLocaleString('ko-KR')}개
         </p>
         <HubSummary data={summary} />
+        <HubGuide category={def.slug} />
       </div>
 
       <SiblingTabs currentHref={`/amenity/${category}`} />

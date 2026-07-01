@@ -4,6 +4,7 @@ import { SourceCaption } from '@/components/ui/source-caption';
 import { PropertyType } from '@prisma/client';
 import type { Metadata } from 'next';
 import { Faq } from '../_components/faq';
+import { HubGuide } from '../_components/hub-guide';
 
 export const metadata: Metadata = {
   title: '전국 아파트 실거래가',
@@ -31,6 +32,7 @@ export default async function AptHubPage() {
       <p className="mt-3 max-w-xl text-[var(--color-muted)]">
         공공데이터 기반 · 매일 갱신 · 매매/전세/월세 통합
       </p>
+      <HubGuide category="apt" />
 
       <h2 className="mt-12 mb-5 text-xl font-bold text-[var(--color-blue-dark)]">
         거래 많은 단지 TOP {popular.length}
