@@ -1,4 +1,5 @@
 import { accessInsight, priceContextInsight, assembleNarrative, type Insight, type Narrative } from './shared';
+import { josa } from '@/lib/seo/josa';
 
 export interface ChildcareInsightInput {
   name: string;
@@ -43,7 +44,7 @@ function wait(d: ChildcareInsightInput): Insight | null {
   return {
     key: 'wait',
     text: share >= 60
-      ? `대기 ${total}명 중 ${top.label}가 ${top.count}명(약 ${share}%)으로 ${top.label} 반 입소 경쟁이 특히 치열합니다.`
+      ? `대기 ${total}명 중 ${josa(top.label, '이', '가')} ${top.count}명(약 ${share}%)으로 ${top.label} 반 입소 경쟁이 특히 치열합니다.`
       : `총 ${total}명이 입소 대기 중이며 ${top.label} 대기가 가장 많습니다.`,
   };
 }

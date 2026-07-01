@@ -77,4 +77,13 @@ describe('buildChildcareNarrative', () => {
     const n = buildChildcareNarrative({ ...base, vehicleOp: '미운영' })!;
     expect(n.text).not.toContain('통학차량');
   });
+
+  it('대기 라벨이 자음 종성(6세 이상)이면 조사 "이" 처리', () => {
+    const n = buildChildcareNarrative({
+      ...base,
+      waitByAge: [{ label: '6세 이상', count: 10 }, { label: '만 0세', count: 1 }], // top share ~91%
+    })!;
+    expect(n.text).toContain('6세 이상이');
+    expect(n.text).not.toContain('6세 이상가');
+  });
 });
