@@ -234,10 +234,10 @@ async function ingestParks(): Promise<number> {
   for (let i = 0; i < rows.length; i += CHUNK) {
     const chunk = rows.slice(i, i + CHUNK);
     const values = chunk.map((r: NormalizedPark) =>
-      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.parkType ?? null}, ${r.area ?? null}, ${locationSql(r.lat, r.lng)}, NOW())`,
+      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.parkType ?? null}, ${r.area ?? null}, ${locationSql(r.lat, r.lng)}, ${r.referenceDate ?? null}, NOW())`,
     );
     await prisma.$executeRaw`
-      INSERT INTO "Park" ("sourceId", name, address, "parkType", area, location, "updatedAt")
+      INSERT INTO "Park" ("sourceId", name, address, "parkType", area, location, "referenceDate", "updatedAt")
       VALUES ${Prisma.join(values)}
       ON CONFLICT ("sourceId") DO UPDATE SET
         name = EXCLUDED.name,
@@ -245,6 +245,7 @@ async function ingestParks(): Promise<number> {
         "parkType" = EXCLUDED."parkType",
         area = EXCLUDED.area,
         location = EXCLUDED.location,
+        "referenceDate" = EXCLUDED."referenceDate",
         "updatedAt" = NOW()
     `;
   }

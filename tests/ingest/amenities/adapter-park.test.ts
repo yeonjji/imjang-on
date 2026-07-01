@@ -49,4 +49,12 @@ describe('adapter-park', () => {
     const park = rows.find((r) => r.sourceId === 'PK001');
     expect(park!.area).toBeNull();
   });
+
+  it('referenceDate가 있으면 Date로 파싱하고, 없으면 null', () => {
+    const { rows } = parseParkXml(xml);
+    const withRef = rows.find((r) => r.sourceId === 'PK001');
+    expect(withRef!.referenceDate).toEqual(new Date(Date.UTC(2025, 10, 5)));
+    const withoutRef = rows.find((r) => r.sourceId === 'PK002');
+    expect(withoutRef!.referenceDate).toBeNull();
+  });
 });

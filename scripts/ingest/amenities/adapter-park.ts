@@ -4,6 +4,14 @@ import type { NormalizedPark } from './types';
 const BASE_URL = 'https://api.data.go.kr/openapi/tn_pubr_public_cty_park_info_api';
 const PAGE_SIZE = 1000;
 
+function parseRefDate(v: unknown): Date | null {
+  if (v === undefined || v === null) return null;
+  const s = String(v).trim();
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return null;
+  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+}
+
 export function parseParkXml(xml: string): {
   rows: NormalizedPark[];
   totalCount: number;
@@ -39,6 +47,7 @@ export function parseParkXml(xml: string): {
       lng,
       parkType: item.parkSe ? String(item.parkSe).trim() : null,
       area,
+      referenceDate: parseRefDate(item.referenceDate),
     });
   }
 

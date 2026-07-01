@@ -47,6 +47,7 @@ export interface NormalizedPark {
   lng: number | null;
   parkType: string | null;
   area: number | null;
+  referenceDate: Date | null;
 }
 
 export interface NormalizedSchool {

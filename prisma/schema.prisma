@@ -304,6 +304,7 @@ model Park {
   location  Unsupported("geography(Point,4326)")?
   parkType  String?                               @db.VarChar(40)
   area      Float?
+  referenceDate DateTime?                          @db.Date
   updatedAt DateTime                              @updatedAt
 
   @@index([parkType])
