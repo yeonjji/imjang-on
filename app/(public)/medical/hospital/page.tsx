@@ -6,6 +6,8 @@ import { HospitalFilterPanel } from './_components/hospital-filter-panel';
 import { HospitalMobileFilterSheet } from './_components/hospital-mobile-filter-sheet';
 import { SiblingTabs } from '../../_components/sibling-tabs';
 import { SourceCaption } from '@/components/ui/source-caption';
+import { HubSummary } from '../../_components/hub-summary';
+import { getMedicalRegionBreakdown } from '@/lib/hub-summary/medical';
 import type { Metadata } from 'next';
 import { Faq } from '../../_components/faq';
 
@@ -31,10 +33,11 @@ export default async function HospitalListPage({ searchParams }: Props) {
   const sigunguCode = sp.region;
   const typeCode = sp.type;
 
-  const [{ rows, total, totalPages }, regions, typeCodes] = await Promise.all([
+  const [{ rows, total, totalPages }, regions, typeCodes, summary] = await Promise.all([
     getHospitalList({ sigunguCode, typeCode }, page),
     getHospitalRegions(),
     getHospitalTypeCodes(),
+    getMedicalRegionBreakdown('hospital', '병원·의원', sigunguCode).catch(() => null),
   ]);
 
   return (
@@ -52,6 +55,7 @@ export default async function HospitalListPage({ searchParams }: Props) {
           병원·의원
         </h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">전국 {total.toLocaleString('ko-KR')}개</p>
+          <HubSummary data={summary} />
       </div>
 
       <SiblingTabs currentHref="/medical/hospital" />
