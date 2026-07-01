@@ -22,6 +22,14 @@ export async function getUrbanHubSummary(
     }
 
     const groups = (await def.getRegionBreakdown(filter)).sort((a, b) => b.count - a.count);
+
+    // 분포 데이터 없음(모델에 sigunguCode 컬럼 미보유) → 실제 총계로 sido 요약만 반환
+    if (groups.length === 0) {
+      const { total: realTotal } = await getUrbanList(slug, filter, 1);
+      if (realTotal <= 0) return null;
+      return { kind: 'amenity', categoryLabel, scopeLabel, scopeLevel: 'sido', total: realTotal, topRegions: [] };
+    }
+
     const total = groups.reduce((s, g) => s + g.count, 0);
     if (total <= 0) return null;
 
