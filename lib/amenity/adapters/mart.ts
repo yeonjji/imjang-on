@@ -123,6 +123,16 @@ async function getCountsBySigungu(): Promise<Map<string, number>> {
   return map;
 }
 
+export async function martRegionBreakdown(f: AmenityListFilter): Promise<{ sigunguCode: string; count: number }[]> {
+  const where = buildMartWhere(f);
+  const groups = await prisma.store.groupBy({
+    by: ['sigunguCode'],
+    where,
+    _count: { _all: true },
+  });
+  return groups.map((g) => ({ sigunguCode: g.sigunguCode, count: g._count._all }));
+}
+
 function inferRowSummary(row: AmenityItem): string | null {
   const c = row.industryCode ?? '';
   if (c.startsWith(PREFIX_HYPER)) return '대형마트';
@@ -145,6 +155,7 @@ export const martDef: AmenityCategoryDef = {
     ],
   },
   getList,
+  getRegionBreakdown: martRegionBreakdown,
   getById,
   getLatLng,
   inferRowSummary,
