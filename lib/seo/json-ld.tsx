@@ -166,7 +166,10 @@ export function JsonLd({ data }: { data: Json | Json[] }) {
 
 const KOGL_LICENSE = 'https://www.kogl.or.kr/info/license.do';
 
-/** 아파트 상세 출처·신선도 노드(WebPage·GovernmentOrganization·Dataset). 국토부 실거래가 근거. */
+/**
+ * 실거래가 상세(아파트·오피스텔·빌라 공용) 출처·신선도 노드
+ * (WebPage·GovernmentOrganization·Dataset). 모두 국토부 실거래가 근거.
+ */
 export function aptProvenanceNodes(input: {
   url: string;
   name: string;

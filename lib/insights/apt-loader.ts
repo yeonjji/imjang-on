@@ -17,6 +17,8 @@ function toUtcDate(d: Date | null | undefined): string | undefined {
   return d ? d.toISOString().slice(0, 10) : undefined;
 }
 
+// 아파트·오피스텔·빌라 상세가 공용으로 쓴다(모두 국토부 실거래가 기반).
+// 벤치마크는 해당 매물의 propertyType으로 좁혀 또래끼리 비교한다.
 export const loadAptInsight = cache(
   async (propId: bigint): Promise<{ narrative: AptNarrative | null; dateModified?: string }> => {
     const property = await cachedPropertyById(propId);
@@ -25,7 +27,7 @@ export const loadAptInsight = cache(
     const coord = await cachedPropertyLatLng(propId);
     const [salesResult, region, subway, infra] = await Promise.all([
       getUnifiedTransactions(propId, { page: 1, perPage: 30, dealType: 'SALE' }),
-      getRegionStats(property.sigunguCode ?? ''),
+      getRegionStats(property.sigunguCode ?? '', property.propertyType),
       coord ? cachedNearbySubway(coord.lat, coord.lng) : Promise.resolve({ stations: [], fallback: false }),
       coord ? cachedNearbyInfra(coord.lat, coord.lng) : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
     ]);
