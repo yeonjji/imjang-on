@@ -24,7 +24,7 @@ function regionUnitLabel(level: HubScopeLevel): string {
 
 function identitySentence(d: HubSummaryData): string {
   const scope = d.scopeLevel === 'nation' ? '전국' : d.scopeLabel;
-  return `${scope}에 등록된 ${d.categoryLabel}${topicParticle(d.categoryLabel)} ${nf(d.total)}곳입니다.`;
+  return `${scope}에 등록된 ${d.categoryLabel}${topicParticle(d.categoryLabel)} ${nf(d.total)}${d.unit ?? '곳'}입니다.`;
 }
 
 export function buildHubSummaryLines(d: HubSummaryData): string[] {

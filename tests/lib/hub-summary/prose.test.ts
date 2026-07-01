@@ -104,6 +104,21 @@ describe('buildHubSummaryLines', () => {
     })).toEqual([]);
   });
 
+  it('unit 미지정 → 기본 "곳"으로 정체 문장 생성', () => {
+    const lines = buildHubSummaryLines({ ...sidoCase, topRegions: [], concentrationPct: undefined });
+    expect(lines[0]).toContain('곳입니다');
+    expect(lines[0]).not.toContain('건입니다');
+  });
+
+  it('unit "건" → 정체 문장에 "건입니다" 포함', () => {
+    const lines = buildHubSummaryLines({
+      kind: 'medical', categoryLabel: '청약 공고', scopeLabel: '전국', scopeLevel: 'nation',
+      total: 1234, topRegions: [], unit: '건',
+    });
+    expect(lines[0]).toBe('전국에 등록된 청약 공고는 1,234건입니다.');
+    expect(lines[0]).not.toContain('곳입니다');
+  });
+
   it('근접중복 방지: 서로 다른 입력은 서로 다른 문자열', () => {
     const a = buildHubSummaryLines(sidoCase).join(' ');
     const b = buildHubSummaryLines({ ...sidoCase, scopeLabel: '부산',
