@@ -120,10 +120,12 @@ export default async function AptDetailPage({ params }: Params) {
       {narrative && (
         <section
           aria-label="한눈에 보기"
-          className="mt-5 rounded-2xl bg-[var(--color-soft)] px-5 py-4 leading-relaxed text-[var(--color-text)]"
+          className="mt-5 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-soft)] p-5 sm:p-6"
         >
-          <h2 className="mb-2 text-base font-bold text-[var(--color-blue-dark)]">한눈에 보기</h2>
-          <p>{narrative.text}</p>
+          <h2 className="mb-2.5 text-lg font-bold text-[var(--color-blue-dark)]">한눈에 보기</h2>
+          <p className="break-keep text-[15px] leading-relaxed text-[var(--color-text)]">
+            {narrative.text}
+          </p>
         </section>
       )}
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
