@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { Prisma, PropertyType } from '@prisma/client';
+import { Prisma, type PropertyType } from '@prisma/client';
 import { sidoFromPrefix } from '@/lib/region';
 import type { HubSummaryData } from './types';
 
