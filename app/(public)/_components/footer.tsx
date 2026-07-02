@@ -15,9 +15,9 @@ export function Footer() {
           <ul className="space-y-2 text-sm">
             <li><Link href="/">홈</Link></li>
             <li><Link href="/list">실거래가</Link></li>
-            <li><Link href="/apt">아파트</Link></li>
-            <li><Link href="/officetel">오피스텔</Link></li>
-            <li><Link href="/villa">연립·다세대</Link></li>
+            <li><Link href="/list?type=apt">아파트</Link></li>
+            <li><Link href="/list?type=officetel">오피스텔</Link></li>
+            <li><Link href="/list?type=villa">연립·다세대</Link></li>
             <li><Link href="/subscription">청약</Link></li>
             <li><Link href="/life">생활편의</Link></li>
           </ul>
