@@ -380,3 +380,31 @@ export async function getNearbyInfra(
     childcare,
   });
 }
+
+export interface NearbySchoolCount {
+  kind: string;
+  count: number;
+}
+
+// 반경 내 학교를 schoolKind별로 집계(자기 자신 제외). 학군 밀도 판단용.
+export async function getNearbySchoolCounts(
+  lat: number,
+  lng: number,
+  excludeId: bigint,
+  radiusMeters = 1000,
+): Promise<NearbySchoolCount[]> {
+  const rows = await prisma.$queryRaw<{ kind: string; count: bigint }[]>`
+    SELECT "schoolKind" AS kind, COUNT(*)::bigint AS count
+    FROM "School"
+    WHERE location IS NOT NULL
+      AND "schoolKind" IS NOT NULL
+      AND id <> ${excludeId}
+      AND ST_DWithin(
+        location::geography,
+        ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
+        ${radiusMeters}
+      )
+    GROUP BY "schoolKind"
+  `;
+  return rows.map((r) => ({ kind: r.kind, count: Number(r.count) }));
+}
