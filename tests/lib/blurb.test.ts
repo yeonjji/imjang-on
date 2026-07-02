@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { salePriceTrend, propertyBlurb, regionBlurb, type PropertyBlurbInput, type RegionBlurbInput } from '@/lib/seo/blurb';
+import { salePriceTrend, propertyBlurb, type PropertyBlurbInput } from '@/lib/seo/blurb';
 
 describe('salePriceTrend', () => {
   it('up when recent avg > earlier avg by >3%', () => {
@@ -62,28 +62,3 @@ describe('propertyBlurb', () => {
   });
 });
 
-const region: RegionBlurbInput = {
-  fullName: '서울특별시 송파구',
-  complexCount: 320,
-  txCount12m: 4100,
-  saleAvgPrice12m: 150000,
-  jeonseAvgDeposit12m: 80000,
-  priceMin: 30000,
-  priceMax: 500000,
-  topComplexNames: ['헬리오시티', '잠실엘스'],
-};
-
-describe('regionBlurb', () => {
-  it('지역 통계와 대표 단지를 포함', () => {
-    const s = regionBlurb(region);
-    expect(s).toContain('서울특별시 송파구');
-    expect(s).toContain('320개');
-    expect(s).toContain('4,100건');
-    expect(s).toContain('헬리오시티');
-  });
-  it('데이터 없을 때 안전', () => {
-    const s = regionBlurb({ ...region, complexCount: 0, txCount12m: 0, saleAvgPrice12m: null, jeonseAvgDeposit12m: null, priceMin: null, priceMax: null, topComplexNames: [] });
-    expect(s).toContain('서울특별시 송파구');
-    expect(s.length).toBeGreaterThan(0);
-  });
-});

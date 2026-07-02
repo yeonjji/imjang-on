@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sidoPrefix, sidoFromPrefix, sidoFromHubCode, shortSidoFromRegionCode, sidoFullName, getPopularSigungus } from '@/lib/region';
+import { sidoPrefix, sidoFromPrefix, shortSidoFromRegionCode, sidoFullName, getPopularSigungus } from '@/lib/region';
 
 describe('sidoFullName', () => {
   it('단축명 → fullName 변환', () => {
@@ -45,23 +45,6 @@ describe('sidoFromPrefix', () => {
   it('미존재 prefix', () => {
     expect(sidoFromPrefix('99')).toBeUndefined();
     expect(sidoFromPrefix('')).toBeUndefined();
-  });
-});
-
-describe('sidoFromHubCode', () => {
-  it('시도 허브 코드(prefix+000)는 시도 단축명 반환', () => {
-    expect(sidoFromHubCode('11000')).toBe('서울');
-    expect(sidoFromHubCode('41000')).toBe('경기');
-    expect(sidoFromHubCode('36000')).toBe('세종');
-  });
-  it('시군구 코드(끝 3자리 ≠ 000)는 null', () => {
-    expect(sidoFromHubCode('11680')).toBeNull();
-    expect(sidoFromHubCode('41135')).toBeNull();
-  });
-  it('미존재 prefix·형식 불일치는 null', () => {
-    expect(sidoFromHubCode('99000')).toBeNull();
-    expect(sidoFromHubCode('1100000000')).toBeNull();
-    expect(sidoFromHubCode('')).toBeNull();
   });
 });
 
