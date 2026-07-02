@@ -4,6 +4,7 @@ import { LIFE_GROUPS, LIFE_ITEM_EMOJI } from '../../_components/life-menu';
 import { LifeItemCard } from '../_components/life-item-card';
 import type { Metadata } from 'next';
 import { BoardBriefingSection } from '../../_components/board-briefing-section';
+import { RelatedGuides } from '../../_components/related-guides';
 
 export const revalidate = 86_400;
 
@@ -46,6 +47,7 @@ export default async function LifeGroupHubPage({ params }: Params) {
         ))}
       </div>
       <BoardBriefingSection className="mt-16" />
+      <RelatedGuides pageKey="life" className="mt-16" />
     </section>
   );
 }

@@ -20,6 +20,7 @@ import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
+import { RelatedGuides } from '@/app/(public)/_components/related-guides';
 import type { Metadata } from 'next';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 
@@ -114,6 +115,7 @@ export default async function AmenityDetailPage({ params }: Params) {
           {coord && <NearbySubway data={subway} />}
           {coord && <NearbyInfra categories={infra} />}
           <BoardBriefingSection />
+          <RelatedGuides pageKey="amenity" />
           <MainSourceBlock id={AMENITY_SOURCE[def.slug]} />
         </main>
         <aside><AmenityDetailSidebar others={others} def={def} sigunguCode={item.sigunguCode} /></aside>

@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
+import { RelatedGuides } from '@/app/(public)/_components/related-guides';
 import { JsonLd, placeSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { staticMapUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
@@ -115,6 +116,7 @@ export default async function PharmacyDetailPage({ params }: Params) {
           {coord && <NearbySubway data={subway} />}
           {coord && <NearbyInfra categories={infra} />}
           <BoardBriefingSection />
+          <RelatedGuides pageKey="medical/pharmacy" />
           <MainSourceBlock id="hira" />
         </div>
         <aside>

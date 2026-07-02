@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
+import { RelatedGuides } from '@/app/(public)/_components/related-guides';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
 import { InsightSection } from '@/components/ui/insight-section';
 import { staticMapUrl } from '@/lib/seo/static-map';
@@ -141,6 +142,7 @@ export default async function SchoolDetailPage({ params }: Params) {
           {coord && <NearbySubway data={subway} />}
           {coord && <NearbyInfra categories={infra} />}
           <BoardBriefingSection />
+          <RelatedGuides pageKey="school" />
           <MainSourceBlock id="neis" />
         </main>
         <aside><SchoolDetailSidebar basePath={basePath} others={others} /></aside>
