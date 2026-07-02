@@ -77,37 +77,6 @@ export function propertyBlurb(i: PropertyBlurbInput): string {
   return `${subject} ${i.regionFullName}에 위치한 ${built} 단지입니다${households}. ${vol}${price}${trend}${jeonseStrong}${infra}`;
 }
 
-export interface RegionBlurbInput {
-  fullName: string;
-  complexCount: number;
-  txCount12m: number;
-  saleAvgPrice12m: number | null;
-  jeonseAvgDeposit12m: number | null;
-  priceMin: number | null;
-  priceMax: number | null;
-  topComplexNames: string[];
-}
-
-export function regionBlurb(i: RegionBlurbInput): string {
-  if (i.complexCount === 0) {
-    return `${i.fullName}의 아파트 실거래가 정보를 제공합니다. 최근 1년간 신고된 거래가 아직 충분하지 않습니다.`;
-  }
-  const ratio =
-    i.saleAvgPrice12m && i.jeonseAvgDeposit12m
-      ? Math.round((i.jeonseAvgDeposit12m / i.saleAvgPrice12m) * 100)
-      : null;
-  const pricePart = i.saleAvgPrice12m ? ` 평균 매매가는 ${formatBillion(i.saleAvgPrice12m)}` : '';
-  const rangePart =
-    i.priceMin && i.priceMax ? `(${formatBillion(i.priceMin)}~${formatBillion(i.priceMax)})` : '';
-  const ratioPart = ratio ? `, 전세가율은 약 ${ratio}%입니다` : i.saleAvgPrice12m ? '입니다' : '';
-  const topPart =
-    i.topComplexNames.length > 0
-      ? ` 거래가 활발한 단지로는 ${i.topComplexNames.slice(0, 3).join(', ')} 등이 있습니다.`
-      : '';
-
-  return `${i.fullName}에는 최근 1년 거래가 있는 아파트가 ${i.complexCount.toLocaleString('ko-KR')}개 단지이며, 총 ${i.txCount12m.toLocaleString('ko-KR')}건이 거래됐습니다.${pricePart}${rangePart}${ratioPart}.${topPart}`;
-}
-
 export interface PropertyMetaInput {
   name: string;
   typeLabel: string;           // '아파트' | '오피스텔' | '연립·다세대'

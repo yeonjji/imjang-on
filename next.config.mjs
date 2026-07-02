@@ -31,6 +31,18 @@ const nextConfig = {
         destination: '/amenity/:category/:id',
         permanent: true,
       },
+      // /region 서브트리 제거(thin-content) — 실콘텐츠 목록으로 308 승계.
+      // 시군구 코드는 parseListParams가 ?region=→sigunguCode로 매핑해 필터 착지.
+      {
+        source: '/region',
+        destination: '/list',
+        permanent: true,
+      },
+      {
+        source: '/region/:code',
+        destination: '/list?region=:code',
+        permanent: true,
+      },
     ];
   },
 };

@@ -18,7 +18,6 @@ export function Footer() {
             <li><Link href="/list?type=apt">아파트</Link></li>
             <li><Link href="/list?type=officetel">오피스텔</Link></li>
             <li><Link href="/list?type=villa">연립·다세대</Link></li>
-            <li><Link href="/region">지역별 시세</Link></li>
             <li><Link href="/subscription">청약</Link></li>
             <li><Link href="/life">생활편의</Link></li>
           </ul>

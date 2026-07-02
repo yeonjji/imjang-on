@@ -26,11 +26,7 @@ function propertyPrefix(type: string): string {
 /** core: 정적 + region/school/amenity 허브 동적 엔트리. DB 오류 시 STATIC_ENTRIES로 폴백. */
 async function coreEntries(): Promise<MetadataRoute.Sitemap> {
   try {
-    const [sigungus, schoolSigungus, amenityCountsBySlug] = await Promise.all([
-      prisma.region.findMany({
-        where: { level: 2, isAbolished: false },
-        select: { code: true },
-      }),
+    const [schoolSigungus, amenityCountsBySlug] = await Promise.all([
       getAllSigungus().catch(() => []),
       Promise.all(
         AMENITY_SLUGS.map(async (slug) => ({
@@ -44,13 +40,6 @@ async function coreEntries(): Promise<MetadataRoute.Sitemap> {
 
     const entries: MetadataRoute.Sitemap = [...STATIC_ENTRIES];
 
-    for (const r of sigungus) {
-      entries.push({
-        url: `${SITE_URL}/region/${r.code.slice(0, 5)}`,
-        changeFrequency: 'daily',
-        priority: 0.7,
-      });
-    }
     for (const s of schoolSigungus) {
       entries.push({
         url: `${SITE_URL}/school/${s.sigunguCode}`,
