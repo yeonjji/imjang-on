@@ -27,6 +27,17 @@ import type { ParkingRaw } from '@/lib/urban/adapters/parking';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { ParkInfo } from '../_components/park-info';
 import type { ParkRaw } from '@/lib/urban/adapters/park';
+import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
+import { InsightSection } from '@/components/ui/insight-section';
+import { staticMapUrl } from '@/lib/seo/static-map';
+import { SITE_URL } from '@/lib/site';
+import {
+  loadParkInsight,
+  cachedParkLatLng,
+  cachedNearbyAptsPark,
+  cachedNearbyInfraPark,
+  cachedNearbySubwayPark,
+} from '@/lib/insights/park-loader';
 
 export const revalidate = 86_400;
 
@@ -39,6 +50,18 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!def) return {};
   const item = await getUrbanById(def.slug, BigInt(id)).catch(() => null);
   if (!item) return {};
+  if (def.slug === 'park') {
+    const { narrative } = await loadParkInsight(BigInt(id));
+    const indexable = !!narrative && narrative.fired.length >= 2;
+    return {
+      title: `${item.name} — 공원 정보·주변 아파트`,
+      description:
+        narrative?.text.slice(0, 150) ??
+        `${item.name} 공원 정보와 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
+      robots: indexable ? { index: true, follow: true } : { index: false, follow: true },
+      alternates: { canonical: `/urban/park/${id}` },
+    };
+  }
   return {
     title: `${item.name} — ${def.label} 정보·주변 아파트`,
     description: `${item.name} ${def.label} 정보(운영시간·요금)와 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
@@ -61,7 +84,7 @@ export default async function UrbanDetailPage({ params }: Params) {
 
   const [region, coord] = await Promise.all([
     sigunguCode ? getSigunguByCode(sigunguCode).catch(() => null) : Promise.resolve(null),
-    getUrbanLatLng(def.slug, itemId),
+    def.slug === 'park' ? cachedParkLatLng(itemId) : getUrbanLatLng(def.slug, itemId),
   ]);
 
   const emptyList = { rows: [], total: 0, page: 1, perPage: 0, totalPages: 0 };
@@ -69,16 +92,25 @@ export default async function UrbanDetailPage({ params }: Params) {
   const exclude =
     def.slug === 'park' ? { excludeParkId: itemId } : { excludeParkingId: itemId };
 
+  const isPark = def.slug === 'park';
   const [apts, infra, otherList, subway] = await Promise.all([
-    coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
     coord
-      ? getNearbyInfra(coord.lat, coord.lng, { ...exclude, includeChildcare: true })
+      ? (isPark ? cachedNearbyAptsPark(coord.lat, coord.lng) : getNearbyApartments(coord.lat, coord.lng))
+      : Promise.resolve([] as NearbyApartment[]),
+    coord
+      ? (isPark
+          ? cachedNearbyInfraPark(coord.lat, coord.lng, itemId)
+          : getNearbyInfra(coord.lat, coord.lng, { ...exclude, includeChildcare: true }))
       : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
     sigunguCode ? getUrbanList(def.slug, { sigunguCode }, 1) : Promise.resolve(emptyList),
     coord
-      ? getNearbySubwayStations(coord.lat, coord.lng)
+      ? (isPark ? cachedNearbySubwayPark(coord.lat, coord.lng) : getNearbySubwayStations(coord.lat, coord.lng))
       : Promise.resolve({ stations: [], fallback: false }),
   ]);
+
+  const { narrative, dateModified } = isPark
+    ? await loadParkInsight(itemId)
+    : { narrative: null, dateModified: undefined as string | undefined };
 
   const others = otherList.rows.filter((s) => s.id !== item.id).slice(0, 4);
 
@@ -91,6 +123,37 @@ export default async function UrbanDetailPage({ params }: Params) {
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10">
+      {isPark && (
+        <JsonLd
+          data={[
+            placeSchema({
+              type: 'Park',
+              name: item.name,
+              address: item.address,
+              lat: coord?.lat,
+              lng: coord?.lng,
+              url: `${SITE_URL}/urban/park/${id}`,
+              image: coord ? staticMapUrl(coord) : undefined,
+              id: `${SITE_URL}/urban/park/${id}#park`,
+              mainEntityOfPageId: `${SITE_URL}/urban/park/${id}#webpage`,
+            }),
+            breadcrumbSchema([
+              { name: '홈', url: `${SITE_URL}/` },
+              { name: '생활편의', url: `${SITE_URL}/life` },
+              { name: '도시인프라', url: `${SITE_URL}/life/urban` },
+              { name: '공원', url: `${SITE_URL}/urban/park` },
+              { name: item.name, url: `${SITE_URL}/urban/park/${id}` },
+            ]),
+            ...provenanceNodes({
+              url: `${SITE_URL}/urban/park/${id}`,
+              name: item.name,
+              sourceId: 'mois-park',
+              entityId: `${SITE_URL}/urban/park/${id}#park`,
+              dateModified,
+            }),
+          ]}
+        />
+      )}
       <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
         <Link href="/">홈</Link><span>›</span>
         <Link href="/life">생활편의</Link><span>›</span>
@@ -101,6 +164,7 @@ export default async function UrbanDetailPage({ params }: Params) {
       </nav>
 
       <UrbanHero item={item} def={def} />
+      {narrative && <InsightSection sentences={narrative.sentences} />}
 
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-6">
