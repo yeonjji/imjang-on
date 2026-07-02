@@ -25,7 +25,7 @@ import { shortSidoFromRegionCode } from '@/lib/region';
 import { NearbySubscriptions } from './_components/nearby-subscriptions';
 import { propertyMetaDescription } from '@/lib/seo/blurb';
 import { JsonLd, residenceSchema, breadcrumbSchema, aptProvenanceNodes } from '@/lib/seo/json-ld';
-import { PropertyInsight } from '@/components/ui/property-insight';
+import { InsightSection } from '@/components/ui/insight-section';
 import { cachedPropertyById, cachedPropertyLatLng, cachedNearbySubway, cachedNearbyInfra, loadAptInsight } from '@/lib/insights/apt-loader';
 import { staticMapUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
@@ -118,7 +118,7 @@ export default async function AptDetailPage({ params }: Params) {
         ]}
       />
       <PropertyDetailHero property={property} region={property.region} />
-      {narrative && <PropertyInsight sentences={narrative.sentences} />}
+      {narrative && <InsightSection sentences={narrative.sentences} />}
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-8">
           <DealSummarySection id="summary" property={property} />

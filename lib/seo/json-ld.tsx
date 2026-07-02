@@ -1,5 +1,5 @@
 import { SITE_URL } from '@/lib/site';
-import { DATA_SOURCES } from '@/lib/data-sources';
+import { DATA_SOURCES, type DataSourceId } from '@/lib/data-sources';
 
 type Json = Record<string, unknown>;
 
@@ -86,10 +86,11 @@ export function residenceSchema(input: PlaceInput & { id?: string; mainEntityOfP
 
 export type PlaceType = 'School' | 'Hospital' | 'Pharmacy' | 'ChildCare';
 
-export function placeSchema(input: PlaceInput & { type: PlaceType }): Json {
+export function placeSchema(input: PlaceInput & { type: PlaceType; id?: string; mainEntityOfPageId?: string }): Json {
   return {
     ...ctx,
     '@type': input.type,
+    ...(input.id ? { '@id': input.id } : {}),
     name: input.name,
     url: input.url,
     address: postalAddress(input.address),
@@ -97,6 +98,7 @@ export function placeSchema(input: PlaceInput & { type: PlaceType }): Json {
     image: input.image,
     telephone: input.telephone || undefined,
     openingHours: input.openingHours || undefined,
+    ...(input.mainEntityOfPageId ? { mainEntityOfPage: { '@id': input.mainEntityOfPageId } } : {}),
   };
 }
 
@@ -167,20 +169,21 @@ export function JsonLd({ data }: { data: Json | Json[] }) {
 const KOGL_LICENSE = 'https://www.kogl.or.kr/info/license.do';
 
 /**
- * 실거래가 상세(아파트·오피스텔·빌라 공용) 출처·신선도 노드
- * (WebPage·GovernmentOrganization·Dataset). 모두 국토부 실거래가 근거.
+ * 실거래가/공공데이터 상세 공용 출처·신선도 노드
+ * (WebPage·GovernmentOrganization·Dataset). 출처는 DATA_SOURCES[sourceId]에서 주입.
  */
-export function aptProvenanceNodes(input: {
+export function provenanceNodes(input: {
   url: string;
   name: string;
-  dateModified?: string; // YYYY-MM-DD (UTC)
-  datasetSameAs?: string; // data.go.kr URL, 미전달 시 생략
+  sourceId: DataSourceId;
+  entityId: string;        // 엔티티 노드 @id (예: `${url}#childcare`)
+  dateModified?: string;   // YYYY-MM-DD UTC
+  datasetSameAs?: string;  // data.go.kr URL, 미전달 시 생략
 }): Json[] {
-  const src = DATA_SOURCES['molit-rtms'];
-  const orgId = `${SITE_URL}/#src-molit`;
+  const src = DATA_SOURCES[input.sourceId];
+  const orgId = `${SITE_URL}/#src-${input.sourceId}`;
   const pageId = `${input.url}#webpage`;
   const dsId = `${input.url}#dataset`;
-  const entId = `${input.url}#residence`;
   return [
     {
       ...ctx,
@@ -189,7 +192,7 @@ export function aptProvenanceNodes(input: {
       url: input.url,
       name: `${input.name} | 임장ON`,
       inLanguage: 'ko-KR',
-      mainEntity: { '@id': entId },
+      mainEntity: { '@id': input.entityId },
       isBasedOn: { '@id': dsId },
       sourceOrganization: { '@id': orgId },
       license: KOGL_LICENSE,
@@ -207,4 +210,13 @@ export function aptProvenanceNodes(input: {
       ...(input.datasetSameAs ? { sameAs: input.datasetSameAs } : {}),
     },
   ];
+}
+
+export function aptProvenanceNodes(input: {
+  url: string;
+  name: string;
+  dateModified?: string;
+  datasetSameAs?: string;
+}): Json[] {
+  return provenanceNodes({ ...input, sourceId: 'molit-rtms', entityId: `${input.url}#residence` });
 }
