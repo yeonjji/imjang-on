@@ -222,7 +222,7 @@ async function runOne(
       })),
     });
 
-    for (const { property, row } of resolved) {
+    for (const { property } of resolved) {
       affectedProps.add(property.id);
     }
 
