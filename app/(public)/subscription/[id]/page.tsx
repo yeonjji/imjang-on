@@ -22,6 +22,7 @@ import { subscriptionBlurb } from '@/lib/seo/blurb';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 import { BoardBriefingSection } from '../../_components/board-briefing-section';
+import { RelatedGuides } from '../../_components/related-guides';
 
 export const revalidate = 21_600;
 
@@ -122,6 +123,7 @@ export default async function SubscriptionDetailPage({ params }: Params) {
             </div>
           )}
           <BoardBriefingSection />
+          <RelatedGuides pageKey="subscription" />
           <MainSourceBlock id={subscriptionSource(notice.category)} />
         </main>
         <aside className="min-w-0">

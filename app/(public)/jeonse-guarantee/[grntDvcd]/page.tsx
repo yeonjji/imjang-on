@@ -9,6 +9,7 @@ import { getLoanSummaries, type LoanSummary } from '@/lib/loan/list';
 import { relatedLoansForJeonse } from '@/lib/jeonse/related-loans';
 import { JeonseDiscoverySection } from './_components/jeonse-discovery-section';
 import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
+import { RelatedGuides } from '@/app/(public)/_components/related-guides';
 import { shortSidoFromRegionCode } from '@/lib/region';
 import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
@@ -213,6 +214,7 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
         />
 
         <BoardBriefingSection heading="임장ON 브리핑" className="mt-10" />
+        <RelatedGuides pageKey="jeonse-guarantee" className="mt-10" />
       </div>
     </div>
   );

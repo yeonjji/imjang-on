@@ -34,6 +34,7 @@ import { staticMapUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 import { BoardBriefingSection } from '../../_components/board-briefing-section';
+import { RelatedGuides } from '../../_components/related-guides';
 
 export const revalidate = 86_400;
 
@@ -146,6 +147,7 @@ export default async function OffiDetailPage({ params }: Params) {
           <NearbySubway data={subway} />
           <NearbyInfra categories={infra} />
           <BoardBriefingSection />
+          <RelatedGuides pageKey="officetel" />
           <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>

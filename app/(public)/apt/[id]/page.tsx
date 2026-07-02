@@ -31,6 +31,7 @@ import { staticMapUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 import { BoardBriefingSection } from '../../_components/board-briefing-section';
+import { RelatedGuides } from '../../_components/related-guides';
 
 export const revalidate = 86_400;
 
@@ -155,6 +156,7 @@ export default async function AptDetailPage({ params }: Params) {
           <NearbySubway data={subway} />
           <NearbyInfra categories={infra} />
           <BoardBriefingSection />
+          <RelatedGuides pageKey="apt" />
           <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>
