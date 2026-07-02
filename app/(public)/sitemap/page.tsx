@@ -17,7 +17,6 @@ const PRIMARY: { heading: string; links: { href: string; label: string }[] }[] =
       { href: '/apt', label: '아파트' },
       { href: '/officetel', label: '오피스텔' },
       { href: '/villa', label: '연립·다세대' },
-      { href: '/region', label: '지역별 시세' },
     ],
   },
   {
