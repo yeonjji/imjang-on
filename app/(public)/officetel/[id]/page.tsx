@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import { getPropertyById, getPropertyLatLng } from '@/lib/property';
 import {
   getMonthlyChartData,
   getAreaSummary,
@@ -7,8 +6,7 @@ import {
   getTransactionCounts,
 } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
-import { getNearbyInfra } from '@/lib/amenity/nearby';
-import { getNearbySubwayStations } from '@/lib/subway/nearby';
+import type { getNearbyInfra } from '@/lib/amenity/nearby';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
@@ -22,8 +20,16 @@ import { PriceCharts } from '../../apt/[id]/_components/price-charts';
 import { AreaComparison } from '../../apt/[id]/_components/area-comparison';
 import { NearbyPriceComparison } from '../../apt/[id]/_components/nearby-price-comparison';
 import { DetailSidebar } from '../../apt/[id]/_components/detail-sidebar';
-import { propertyBlurb, salePriceTrend, propertyMetaDescription } from '@/lib/seo/blurb';
-import { JsonLd, residenceSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
+import { propertyMetaDescription } from '@/lib/seo/blurb';
+import { JsonLd, residenceSchema, breadcrumbSchema, aptProvenanceNodes } from '@/lib/seo/json-ld';
+import { PropertyInsight } from '@/components/ui/property-insight';
+import {
+  cachedPropertyById,
+  cachedPropertyLatLng,
+  cachedNearbySubway,
+  cachedNearbyInfra,
+  loadAptInsight,
+} from '@/lib/insights/apt-loader';
 import { staticMapUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
@@ -38,11 +44,13 @@ interface Params {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   if (!/^\d+$/.test(id)) return {};
-  const p = await getPropertyById(BigInt(id)).catch(() => null);
+  const p = await cachedPropertyById(BigInt(id)).catch(() => null);
   if (!p) return {};
+  const { narrative } = await loadAptInsight(BigInt(id));
+  const indexable = !!narrative && narrative.fired.length >= 3;
   return {
     title: `${p.name} 실거래가 · ${p.region.sigungu}`,
-    description: propertyMetaDescription({
+    description: narrative?.text.slice(0, 150) ?? propertyMetaDescription({
       name: p.name,
       typeLabel: '오피스텔',
       regionFullName: p.region.fullName,
@@ -52,6 +60,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       jeonseAvgDeposit12m: p.jeonseAvgDeposit12m ? Number(p.jeonseAvgDeposit12m) : null,
       txCount12m: p.txCount12m,
     }),
+    robots: indexable ? { index: true, follow: true } : { index: false, follow: true },
     alternates: { canonical: `/officetel/${p.id}` },
   };
 }
@@ -60,10 +69,10 @@ export default async function OffiDetailPage({ params }: Params) {
   const { id } = await params;
   if (!/^\d+$/.test(id)) notFound();
   const propId = BigInt(id);
-  const property = await getPropertyById(propId);
+  const property = await cachedPropertyById(propId);
   if (!property || property.propertyType !== PropertyType.OFFICETEL) notFound();
 
-  const coord = await getPropertyLatLng(propId);
+  const coord = await cachedPropertyLatLng(propId);
 
   const [unified, counts, chart, areaSummary, nearby, infra, subway] = await Promise.all([
     getUnifiedTransactions(propId, { page: 1, perPage: 15 }),
@@ -72,27 +81,14 @@ export default async function OffiDetailPage({ params }: Params) {
     getAreaSummary(propId),
     getNearbyProperties({ propertyId: propId, propertyType: PropertyType.OFFICETEL }),
     coord
-      ? getNearbyInfra(coord.lat, coord.lng, { includeChildcare: true })
+      ? cachedNearbyInfra(coord.lat, coord.lng)
       : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
     coord
-      ? getNearbySubwayStations(coord.lat, coord.lng)
+      ? cachedNearbySubway(coord.lat, coord.lng)
       : Promise.resolve({ stations: [], fallback: false }),
   ]);
 
-  const blurbText = propertyBlurb({
-    name: property.name,
-    regionFullName: property.region.fullName,
-    builtYear: property.builtYear,
-    households: property.households,
-    txCount12m: property.txCount12m,
-    saleCount12m: property.saleCount12m,
-    jeonseCount12m: property.jeonseCount12m,
-    saleAvgPrice12m: property.saleAvgPrice12m ? Number(property.saleAvgPrice12m) : null,
-    jeonseAvgDeposit12m: property.jeonseAvgDeposit12m ? Number(property.jeonseAvgDeposit12m) : null,
-    trend: salePriceTrend(chart.SALE.map((p) => ({ month: p.month, avg: p.avg }))),
-    subwayCount: subway.stations.length,
-    infra: infra.map((c) => ({ label: c.label, count: c.items.length })).filter((c) => c.count > 0).slice(0, 5),
-  });
+  const { narrative, dateModified } = await loadAptInsight(propId);
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
@@ -105,18 +101,23 @@ export default async function OffiDetailPage({ params }: Params) {
             lng: coord?.lng,
             url: `${SITE_URL}/officetel/${property.id}`,
             image: coord ? staticMapUrl(coord) : undefined,
+            id: `${SITE_URL}/officetel/${property.id}#residence`,
+            mainEntityOfPageId: `${SITE_URL}/officetel/${property.id}#webpage`,
           }),
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
             { name: '오피스텔', url: `${SITE_URL}/officetel` },
             { name: property.name, url: `${SITE_URL}/officetel/${property.id}` },
           ]),
+          ...aptProvenanceNodes({
+            url: `${SITE_URL}/officetel/${property.id}`,
+            name: property.name,
+            dateModified,
+          }),
         ]}
       />
       <PropertyDetailHero property={property} region={property.region} />
-      <p className="mt-5 rounded-2xl bg-[var(--color-soft)] px-5 py-4 leading-relaxed text-[var(--color-text)]">
-        {blurbText}
-      </p>
+      {narrative && <PropertyInsight sentences={narrative.sentences} />}
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-8">
           <DealSummarySection id="summary" property={property} />

@@ -1,4 +1,5 @@
 import { SITE_URL } from '@/lib/site';
+import { DATA_SOURCES } from '@/lib/data-sources';
 
 type Json = Record<string, unknown>;
 
@@ -69,15 +70,17 @@ function postalAddress(address: string): Json {
   return { '@type': 'PostalAddress', addressCountry: 'KR', streetAddress: address };
 }
 
-export function residenceSchema(input: PlaceInput): Json {
+export function residenceSchema(input: PlaceInput & { id?: string; mainEntityOfPageId?: string }): Json {
   return {
     ...ctx,
     '@type': 'Residence',
+    ...(input.id ? { '@id': input.id } : {}),
     name: input.name,
     url: input.url,
     address: postalAddress(input.address),
     geo: geoOf(input.lat, input.lng),
     image: input.image,
+    ...(input.mainEntityOfPageId ? { mainEntityOfPage: { '@id': input.mainEntityOfPageId } } : {}),
   };
 }
 
@@ -159,4 +162,49 @@ export function JsonLd({ data }: { data: Json | Json[] }) {
       dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
     />
   );
+}
+
+const KOGL_LICENSE = 'https://www.kogl.or.kr/info/license.do';
+
+/**
+ * 실거래가 상세(아파트·오피스텔·빌라 공용) 출처·신선도 노드
+ * (WebPage·GovernmentOrganization·Dataset). 모두 국토부 실거래가 근거.
+ */
+export function aptProvenanceNodes(input: {
+  url: string;
+  name: string;
+  dateModified?: string; // YYYY-MM-DD (UTC)
+  datasetSameAs?: string; // data.go.kr URL, 미전달 시 생략
+}): Json[] {
+  const src = DATA_SOURCES['molit-rtms'];
+  const orgId = `${SITE_URL}/#src-molit`;
+  const pageId = `${input.url}#webpage`;
+  const dsId = `${input.url}#dataset`;
+  const entId = `${input.url}#residence`;
+  return [
+    {
+      ...ctx,
+      '@type': 'WebPage',
+      '@id': pageId,
+      url: input.url,
+      name: `${input.name} | 임장ON`,
+      inLanguage: 'ko-KR',
+      mainEntity: { '@id': entId },
+      isBasedOn: { '@id': dsId },
+      sourceOrganization: { '@id': orgId },
+      license: KOGL_LICENSE,
+      ...(input.dateModified ? { dateModified: input.dateModified } : {}),
+    },
+    { ...ctx, '@type': 'GovernmentOrganization', '@id': orgId, name: src.provider, url: src.url },
+    {
+      ...ctx,
+      '@type': 'Dataset',
+      '@id': dsId,
+      name: src.dataset,
+      url: src.url,
+      creator: { '@id': orgId },
+      license: KOGL_LICENSE,
+      ...(input.datasetSameAs ? { sameAs: input.datasetSameAs } : {}),
+    },
+  ];
 }

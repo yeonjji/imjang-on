@@ -304,8 +304,11 @@ export interface RegionStats {
   priceMax: number | null;
 }
 
-/** 시군구 단위 아파트 집계(거래 있는 단지 대상). raw SQL로 BigInt 평균 안전 처리. */
-export async function getRegionStats(sigunguCode: string): Promise<RegionStats> {
+/** 시군구 단위 매물유형별 집계(거래 있는 단지 대상). raw SQL로 BigInt 평균 안전 처리. */
+export async function getRegionStats(
+  sigunguCode: string,
+  propertyType: PropertyType = PropertyType.APARTMENT,
+): Promise<RegionStats> {
   const rows = await prisma.$queryRaw<Array<{
     complex_count: number;
     tx_count: number;
@@ -323,7 +326,7 @@ export async function getRegionStats(sigunguCode: string): Promise<RegionStats> 
       MAX("saleAvgPrice12m")::float AS sale_max
     FROM "Property"
     WHERE "sigunguCode" = ${sigunguCode}
-      AND "propertyType" = 'APARTMENT'
+      AND "propertyType"::text = ${propertyType}
       AND "txCount12m" > 0
   `;
   const r = rows[0];
