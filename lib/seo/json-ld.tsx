@@ -84,7 +84,7 @@ export function residenceSchema(input: PlaceInput & { id?: string; mainEntityOfP
   };
 }
 
-export type PlaceType = 'School' | 'Hospital' | 'Pharmacy' | 'ChildCare';
+export type PlaceType = 'School' | 'Hospital' | 'Pharmacy' | 'ChildCare' | 'Park';
 
 export function placeSchema(input: PlaceInput & { type: PlaceType; id?: string; mainEntityOfPageId?: string }): Json {
   return {
