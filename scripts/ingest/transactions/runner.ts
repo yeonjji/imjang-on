@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 import { fetchPage } from '@/scripts/ingest/http';
 import { findOrCreateProperty } from '@/scripts/ingest/property-matcher';
 import { updatePropertyAggregates } from '@/scripts/ingest/aggregator';
-import { revalidatePaths, propertyPath, regionPath } from '@/scripts/ingest/revalidator';
+import { revalidatePaths, propertyPath } from '@/scripts/ingest/revalidator';
 import { notify } from '@/scripts/ingest/notify';
 
 import { adapterAptTrade } from './adapter-apt-trade';
@@ -85,7 +85,6 @@ async function main() {
   let failed = 0;
   let skipped = 0;
   const affectedPropertyIds = new Set<bigint>();
-  const affectedRegionCodes = new Set<string>();
 
   const tasks: Array<() => Promise<void>> = [];
   for (const api of apis) {
@@ -100,7 +99,7 @@ async function main() {
         }
         tasks.push(async () => {
           try {
-            const upserted = await runOne(adapter, sgg, regionCode, yyyymm, affectedPropertyIds, affectedRegionCodes);
+            const upserted = await runOne(adapter, sgg, regionCode, yyyymm, affectedPropertyIds);
             totalUpserted += upserted;
           } catch (err) {
             failed++;
@@ -131,7 +130,6 @@ async function main() {
     for (const p of props) {
       paths.push(propertyPath(p.propertyType, p.id));
     }
-    for (const sgg of affectedRegionCodes) paths.push(regionPath(sgg));
     await revalidatePaths(paths);
   }
 
@@ -148,7 +146,6 @@ async function runOne(
   regionCode: string,
   yyyymm: string,
   affectedProps: Set<bigint>,
-  affectedRegions: Set<string>,
 ): Promise<number> {
   const targetKey = `${sigungu}-${yyyymm}`;
   const run = await prisma.ingestionRun.create({
@@ -227,7 +224,6 @@ async function runOne(
 
     for (const { property, row } of resolved) {
       affectedProps.add(property.id);
-      affectedRegions.add(row.sigunguCode);
     }
 
     await prisma.ingestionRun.update({

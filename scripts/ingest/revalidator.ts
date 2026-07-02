@@ -27,7 +27,3 @@ export function propertyPath(propertyType: 'APARTMENT' | 'OFFICETEL' | 'ROW_HOUS
     propertyType === 'APARTMENT' ? '/apt' : propertyType === 'OFFICETEL' ? '/officetel' : '/villa';
   return `${prefix}/${id}`;
 }
-
-export function regionPath(sigunguCode: string): string {
-  return `/region/${sigunguCode}`;
-}
