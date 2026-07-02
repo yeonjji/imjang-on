@@ -3,7 +3,7 @@ import { SITE_URL } from '@/lib/site';
 import { isBoardPublic } from '@/lib/board/visibility';
 
 export default function robots(): MetadataRoute.Robots {
-  const allow = ['/', '/apt/', '/officetel/', '/villa/', '/region/', ...(isBoardPublic() ? ['/board/'] : [])];
+  const allow = ['/', '/apt/', '/officetel/', '/villa/', ...(isBoardPublic() ? ['/board/'] : [])];
   return {
     rules: [
       {

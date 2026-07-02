@@ -9,7 +9,6 @@ export const STATIC_ENTRIES: MetadataRoute.Sitemap = [
   { url: `${SITE_URL}/apt`, changeFrequency: 'daily', priority: 0.9 },
   { url: `${SITE_URL}/officetel`, changeFrequency: 'daily', priority: 0.9 },
   { url: `${SITE_URL}/villa`, changeFrequency: 'daily', priority: 0.9 },
-  { url: `${SITE_URL}/region`, changeFrequency: 'weekly', priority: 0.8 },
   { url: `${SITE_URL}/life`, changeFrequency: 'weekly', priority: 0.8 },
   ...LIFE_GROUPS.map((g) => ({
     url: `${SITE_URL}/life/${g.slug}`,
