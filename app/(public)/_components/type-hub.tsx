@@ -8,17 +8,17 @@ const HUB_ITEMS = [
 
 export function TypeHub() {
   return (
-    <div className="flex h-full flex-col rounded-[26px] border border-[var(--color-line)] bg-white p-6 shadow-[var(--shadow)]">
+    <div className="flex flex-col rounded-[26px] border border-[var(--color-line)] bg-white p-6 shadow-[var(--shadow)]">
       <h2 className="mb-4 text-2xl font-black tracking-tight text-[var(--color-blue-dark)]">
         실거래가 보러가기
       </h2>
 
-      <div className="flex flex-1 flex-col gap-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {HUB_ITEMS.map((item) => (
           <Link
             key={item.type}
             href={`/list?type=${item.type}`}
-            className="group flex min-h-[84px] flex-1 items-center gap-4 rounded-[18px] border border-[var(--color-line)] p-4 transition hover:border-[var(--color-blue)] hover:bg-[var(--color-soft)]"
+            className="group flex min-h-[84px] items-center gap-4 rounded-[18px] border border-[var(--color-line)] p-4 transition hover:border-[var(--color-blue)] hover:bg-[var(--color-soft)]"
           >
             <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-full text-2xl ${item.tint}`} aria-hidden>
               {item.icon}

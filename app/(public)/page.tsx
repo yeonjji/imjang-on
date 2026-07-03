@@ -1,4 +1,3 @@
-import { MainSearchFilter } from './_components/main-search-filter';
 import { TypeHub } from './_components/type-hub';
 import { HeroSection } from './_components/hero-section';
 import { StatsBar } from './_components/stats-bar';
@@ -6,7 +5,6 @@ import { AmenityHub } from './_components/amenity-hub';
 import { MarketBriefing } from './_components/market-briefing';
 import { WeeklySubscriptionBoard } from './_components/weekly-subscription-board';
 import { HomeNews } from './_components/home-news';
-import { getSidoList } from '@/lib/region';
 import { getHomeStats } from '@/lib/stats';
 import { getWeeklySubscriptions } from '@/lib/subscription';
 import { readHomeSnapshot } from '@/lib/dashboard-snapshot';
@@ -37,8 +35,7 @@ async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
 }
 
 export default async function HomePage() {
-  const [sidoList, stats, snapshot, weeklyBoard, latestPosts] = await Promise.all([
-    getSidoList(),
+  const [stats, snapshot, weeklyBoard, latestPosts] = await Promise.all([
     safe(getHomeStats(), { transactions: 0, properties: 0, schools: 0, lifeFacilities: 0 }),
     // 브리핑·인기지역은 5M행 집계라 요청 경로에서 너무 느리다. 일일 ingest가 미리 계산해 둔 스냅샷을 즉시 읽는다.
     safe(readHomeSnapshot(), { briefing: null, popularRegions: [] }),
@@ -58,13 +55,8 @@ export default async function HomePage() {
       <HeroSection popularRegions={popularRegions} />
       <StatsBar stats={stats} />
 
-      <div className="mt-10 flex flex-col gap-6 md:flex-row md:items-stretch">
-        <div id="search-filter" className="min-w-0 flex-1 scroll-mt-24">
-          <MainSearchFilter sidoList={sidoList} />
-        </div>
-        <aside className="w-full md:w-[380px] md:shrink-0">
-          <TypeHub />
-        </aside>
+      <div className="mt-10">
+        <TypeHub />
       </div>
 
       <MarketBriefing briefing={briefing} />
