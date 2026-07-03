@@ -14,7 +14,7 @@ export function HubIntro({ summary, category }: { summary: HubSummaryData | null
         </p>
       )}
       {guide && (
-        <p className="break-keep border-t border-[var(--color-line)] pt-3 text-sm leading-relaxed text-[var(--color-muted)]">
+        <p className="break-keep text-sm leading-relaxed text-[var(--color-muted)]">
           {guide}
         </p>
       )}
