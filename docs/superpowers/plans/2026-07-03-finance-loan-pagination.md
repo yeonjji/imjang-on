@@ -498,8 +498,10 @@ git commit -m "feat(finance): 페이지 상태 URL(?page) 동기화 + 스크롤�
 
 ```ts
 // finance 페이지네이션 e2e용 — PER_PAGE(20) 초과하도록 25건. seq는 e2e 전용 대역.
+// e2e DB의 대출상품을 알려진 25건으로 "전량 교체" — 잔여 loanProduct 행이 /finance 카운트를
+// 흔들지 않도록(다른 시드/인제스트 테스트가 남긴 행 대비). 로컬 docker(.env.test) 전용이라 안전.
 async function seedLoans() {
-  await prisma.loanProduct.deleteMany({ where: { seq: { gte: 900001, lte: 900025 } } });
+  await prisma.loanProduct.deleteMany();
   await prisma.loanProduct.createMany({
     data: Array.from({ length: 25 }, (_, i) => ({
       seq: 900001 + i,
