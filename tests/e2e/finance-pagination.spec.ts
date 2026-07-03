@@ -18,9 +18,12 @@ test('finance 목록 페이지네이션: 페이지 이동·URL·필터 리셋', 
   const pager = page.getByRole('navigation', { name: '페이지네이션' });
   await expect(pager).toBeVisible();
 
-  // dev 하이드레이션 지연에 대비해 클릭+URL 검증을 재시도.
+  // dev 하이드레이션 지연에 대비해 클릭+URL 검증을 재시도하되,
+  // 이미 page=2면 재클릭하지 않는다(마지막 페이지에서 disabled 버튼 재클릭/스핀 방지).
   await expect(async () => {
-    await pager.getByRole('button', { name: '다음 페이지' }).click();
+    if (!/[?&]page=2/.test(page.url())) {
+      await pager.getByRole('button', { name: '다음 페이지' }).click();
+    }
     await expect(page).toHaveURL(/[?&]page=2/, { timeout: 3000 });
   }).toPass({ timeout: 20_000 });
 
