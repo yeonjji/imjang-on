@@ -55,13 +55,13 @@ export default async function HomePage() {
       <HeroSection popularRegions={popularRegions} />
       <StatsBar stats={stats} />
 
-      <div className="mt-10">
-        <TypeHub />
-      </div>
-
       <MarketBriefing briefing={briefing} />
 
       <WeeklySubscriptionBoard board={weeklyBoard} />
+
+      <div className="mt-10">
+        <TypeHub />
+      </div>
 
       <AmenityHub />
 
