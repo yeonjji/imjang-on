@@ -18,4 +18,11 @@ describe('robots.txt', () => {
       expect(disallow, `rule for ${String(rule.userAgent)}`).toContain('/api/');
     }
   });
+
+  it('RSC 프리페치 URL(_rsc)을 모든 룰에서 차단한다', () => {
+    for (const rule of rules) {
+      const disallow = Array.isArray(rule.disallow) ? rule.disallow : [rule.disallow];
+      expect(disallow, `rule for ${String(rule.userAgent)}`).toContain('/*_rsc=');
+    }
+  });
 });
