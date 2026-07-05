@@ -204,6 +204,8 @@ export function provenanceNodes(input: {
       '@type': 'Dataset',
       '@id': dsId,
       name: src.dataset,
+      // Google Dataset 구조화 데이터 필수 필드. 누락 시 GSC '데이터세트' 리포트에서 무효 처리된다.
+      description: `${src.provider} 제공 공공데이터 '${src.dataset}'. ${input.name}의 상세 정보를 포함하며, 임장ON에서 실거래가·생활 인프라 정보와 함께 열람할 수 있습니다.`,
       url: src.url,
       creator: { '@id': orgId },
       license: KOGL_LICENSE,
