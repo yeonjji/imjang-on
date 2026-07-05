@@ -34,6 +34,9 @@ import { BoardBriefingSection } from '../../_components/board-briefing-section';
 import { RelatedGuides } from '../../_components/related-guides';
 
 export const revalidate = 86_400;
+// 동적 세그먼트는 generateStaticParams가 없으면 revalidate가 무시되고 매 요청 동적 렌더된다.
+// 빈 배열 → 프리빌드 없이 첫 요청 시 렌더 후 revalidate 동안 ISR 캐시(dynamicParams 기본 true).
+export function generateStaticParams() { return []; }
 
 interface Params {
   params: Promise<{ id: string }>;
