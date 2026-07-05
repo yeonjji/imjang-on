@@ -43,6 +43,23 @@ const nextConfig = {
         destination: '/list?region=:code',
         permanent: true,
       },
+      // bare 카테고리 경로(index page.tsx 없음)는 대표 하위 카테고리로 308 승계.
+      // 링크·sitemap엔 없지만 URL 절단 접근 시 소프트 404 방지.
+      {
+        source: '/medical',
+        destination: '/medical/hospital',
+        permanent: true,
+      },
+      {
+        source: '/amenity',
+        destination: '/amenity/convenience',
+        permanent: true,
+      },
+      {
+        source: '/urban',
+        destination: '/urban/parking',
+        permanent: true,
+      },
       // /life 생활편의 허브 제거 — 각 그룹 대표 리스트로 301 승계.
       {
         source: '/life',
