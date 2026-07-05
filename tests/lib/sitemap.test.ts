@@ -4,16 +4,16 @@ import { SOURCE_ORDER } from '@/lib/sitemap/sources';
 import { LIFE_GROUPS } from '@/app/(public)/_components/life-menu';
 
 describe('sitemap STATIC_ENTRIES', () => {
-  it('/life 자체 URL을 포함한다', () => {
-    expect(STATIC_ENTRIES.some((e) => e.url.endsWith('/life'))).toBe(true);
+  it('/life 자체 URL을 포함하지 않는다 (허브 제거)', () => {
+    expect(STATIC_ENTRIES.some((e) => e.url.endsWith('/life'))).toBe(false);
   });
 
-  it('LIFE_GROUPS의 4개 그룹 허브 URL을 모두 포함한다', () => {
+  it('LIFE_GROUPS의 그룹 허브 URL을 하나도 포함하지 않는다 (허브 제거)', () => {
     for (const g of LIFE_GROUPS) {
       expect(
         STATIC_ENTRIES.some((e) => e.url.endsWith(`/life/${g.slug}`)),
-        `missing entry for /life/${g.slug}`,
-      ).toBe(true);
+        `should not have entry for /life/${g.slug}`,
+      ).toBe(false);
     }
   });
 

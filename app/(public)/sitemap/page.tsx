@@ -61,7 +61,7 @@ export default function SitemapPage() {
           <div className="mt-3 space-y-4">
             {LIFE_GROUPS.map((g) => (
               <div key={g.slug}>
-                <Link href={`/life/${g.slug}`} className="font-semibold underline hover:text-[var(--color-blue-dark)]">
+                <Link href={g.items[0].href} className="font-semibold underline hover:text-[var(--color-blue-dark)]">
                   {g.label}
                 </Link>
                 <ul className="mt-2 space-y-2 pl-4">

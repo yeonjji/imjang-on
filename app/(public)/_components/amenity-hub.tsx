@@ -46,7 +46,7 @@ export function AmenityHub() {
               className="rounded-[20px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow)]"
             >
               <Link
-                href={`/life/${group.slug}`}
+                href={group.items[0].href}
                 aria-label={`${group.label} 전체 보기`}
                 className="group flex items-center gap-3"
               >

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { SubscriptionBoardItem } from '@/app/(public)/_components/subscription-board-item';
 import { RelatedLoanCard } from '@/app/(public)/finance/[seq]/_components/related-loan-card';
+import { LIFE_GROUPS } from '@/app/(public)/_components/life-menu';
 import { formatBillion } from '@/lib/format';
 import type { MarketBriefing } from '@/lib/briefing';
 import type { WeeklyBoardItem } from '@/lib/subscription';
@@ -56,8 +57,8 @@ export function JeonseDiscoverySection({ briefing, weeklySubscriptions, relatedL
       )}
 
       <Divider />
-      <DiscoveryBlock title="생활편의" moreHref="/life" moreLabel="둘러보기 →">
-        <LifeNavCard />
+      <DiscoveryBlock title="생활편의">
+        <LifeGroupCards />
       </DiscoveryBlock>
 
       <div className="mt-5">
@@ -78,17 +79,19 @@ function DiscoveryBlock({
   children,
 }: {
   title: string;
-  moreHref: string;
-  moreLabel: string;
+  moreHref?: string;
+  moreLabel?: string;
   children: React.ReactNode;
 }) {
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <h3 className="text-sm font-bold text-[var(--color-text)]">{title}</h3>
-        <Link href={moreHref} className="shrink-0 py-1 text-xs font-bold text-[var(--color-blue)]">
-          {moreLabel}
-        </Link>
+        {moreHref && (
+          <Link href={moreHref} className="shrink-0 py-1 text-xs font-bold text-[var(--color-blue)]">
+            {moreLabel}
+          </Link>
+        )}
       </div>
       {children}
     </div>
@@ -144,24 +147,24 @@ function TxTile({ label, value, sub, href }: { label: string; value: string; sub
   );
 }
 
-/** 좌표 앵커가 없어 실데이터 대신 /life 허브로 보내는 안내 카드. */
-function LifeNavCard() {
+/** 좌표 앵커가 없어 각 생활편의 그룹의 대표 리스트로 보내는 카드 4종. */
+function LifeGroupCards() {
   return (
-    <Link
-      href="/life"
-      className="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] bg-white px-4 py-3.5 transition hover:border-[var(--color-blue)]"
-    >
-      <span className="min-w-0">
-        <span className="block break-keep text-sm font-bold text-[var(--color-blue-dark)]">
-          🏫 학교 · 🏥 병원 · 🚇 지하철 · 🛒 마트
-        </span>
-        <span className="mt-0.5 block break-keep text-sm text-[var(--color-muted)]">
-          우리 동네 생활편의를 지역으로 골라 둘러보세요
-        </span>
-      </span>
-      <span aria-hidden className="shrink-0 text-[var(--color-blue)]">
-        →
-      </span>
-    </Link>
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {LIFE_GROUPS.map((group) => (
+        <Link
+          key={group.slug}
+          href={group.items[0].href}
+          className="flex items-center justify-between gap-2 rounded-xl border border-[var(--color-line)] bg-white px-4 py-3.5 transition hover:border-[var(--color-blue)]"
+        >
+          <span className="break-keep text-sm font-bold text-[var(--color-blue-dark)]">
+            {group.label}
+          </span>
+          <span aria-hidden className="shrink-0 text-[var(--color-blue)]">
+            →
+          </span>
+        </Link>
+      ))}
+    </div>
   );
 }

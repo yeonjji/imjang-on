@@ -111,7 +111,6 @@ export default async function ChildcareDetailPage({ params }: Params) {
           }),
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
-            { name: '생활편의', url: `${SITE_URL}/life` },
             { name: '어린이집찾기', url: `${SITE_URL}/childcare` },
             { name: item.name, url: `${SITE_URL}/childcare/${sigunguCode}/${id}` },
           ]),
@@ -126,7 +125,6 @@ export default async function ChildcareDetailPage({ params }: Params) {
       />
       <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
         <Link href="/">홈</Link><span>›</span>
-        <Link href="/life">생활편의</Link><span>›</span>
         <Link href="/childcare">어린이집찾기</Link><span>›</span>
         <Link href={basePath}>{regionDisplay.fullName}</Link><span>›</span>
         <span className="font-semibold text-[var(--color-blue-dark)] truncate max-w-[40vw]">{item.name}</span>

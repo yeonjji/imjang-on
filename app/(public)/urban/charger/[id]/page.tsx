@@ -87,8 +87,7 @@ export default async function ChargerDetailPage({ params }: Params) {
     <div className="mx-auto max-w-[1180px] px-6 py-10">
       <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
         <Link href="/">홈</Link><span>›</span>
-        <Link href="/life">생활편의</Link><span>›</span>
-        <Link href="/life/urban">도시인프라</Link><span>›</span>
+        <Link href="/urban/parking">도시인프라</Link><span>›</span>
         <Link href="/urban/charger">전기차충전소</Link><span>›</span>
         {region && (
           <><Link href={`/urban/charger?region=${sigunguCode}`}>{region.fullName}</Link><span>›</span></>

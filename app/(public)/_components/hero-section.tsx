@@ -24,10 +24,10 @@ export function HeroSection({ popularRegions }: { popularRegions: PopularRegion[
             🔍 실거래가 찾기
           </Link>
           <Link
-            href="/life"
+            href="/subscription"
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-line)] bg-white px-6 py-3.5 font-extrabold text-[var(--color-blue-dark)]"
           >
-            📍 생활편의 둘러보기
+            📅 청약 일정 보기
           </Link>
         </div>
       </div>

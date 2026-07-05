@@ -60,7 +60,6 @@ export default async function SchoolSigunguListPage({ params, searchParams }: Pa
     <div className="mx-auto max-w-[1180px] px-6 py-8">
       <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
         <Link href="/">홈</Link><span>›</span>
-        <Link href="/life">생활편의</Link><span>›</span>
         <Link href="/school">학교찾기</Link><span>›</span>
         <span className="font-semibold text-[var(--color-blue-dark)]">{regionDisplay.fullName}</span>
       </nav>

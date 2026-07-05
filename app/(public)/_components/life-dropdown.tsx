@@ -53,7 +53,7 @@ export function LifeDropdown({ onSoon }: Props) {
           {LIFE_GROUPS.map((group) => (
             <div key={group.slug} className="flex flex-col gap-1">
               <Link
-                href={`/life/${group.slug}`}
+                href={group.items[0].href}
                 onClick={() => setOpen(false)}
                 className="mb-1 flex items-center justify-between gap-1 border-b border-[var(--color-line)] px-2 pb-1.5 text-[14px] font-bold text-[var(--color-blue-dark)] hover:bg-[var(--color-soft)]"
               >
