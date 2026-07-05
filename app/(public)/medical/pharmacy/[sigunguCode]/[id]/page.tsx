@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import { getPharmacyById, getPharmacyLatLng, getPharmacyList } from '@/lib/pharmacy';
 import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
@@ -45,7 +45,9 @@ export default async function PharmacyDetailPage({ params }: Params) {
   const pharmacyId = BigInt(id);
 
   const pharmacy = await getPharmacyById(pharmacyId);
-  if (!pharmacy || pharmacy.sigunguCode !== sigunguCode) notFound();
+  if (!pharmacy) notFound();
+  // sigunguCode 정규화로 옛 URL이 mismatch되면 404 대신 정식 URL로 308 영구 리다이렉트.
+  if (pharmacy.sigunguCode !== sigunguCode) permanentRedirect(`/medical/pharmacy/${pharmacy.sigunguCode}/${pharmacy.id}`);
 
   const coord = await getPharmacyLatLng(pharmacyId);
 

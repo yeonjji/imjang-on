@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import { getChildcareList } from '@/lib/childcare';
 import { getSigunguByCode } from '@/lib/region';
@@ -65,7 +65,10 @@ export default async function ChildcareDetailPage({ params }: Params) {
     cachedChildcareById(itemId),
     getSigunguByCode(sigunguCode),
   ]);
-  if (!item || item.sigunguCode !== sigunguCode) notFound();
+  if (!item) notFound();
+  // sigunguCode가 일반구→시 정규화 등으로 바뀌면 옛 URL이 mismatch된다.
+  // 404 대신 정식 URL로 308 영구 리다이렉트해 색인·링크 자산을 보존한다.
+  if (item.sigunguCode !== sigunguCode) permanentRedirect(`/childcare/${item.sigunguCode}/${item.id}`);
   // Region 테이블에 sigunguCode가 없는 경우(cpmsapi030 arcode와 Region 매핑 불일치)
   // Childcare row의 sido/sigungu로 fallback해서 페이지를 그대로 노출한다.
   const regionDisplay = region ?? {

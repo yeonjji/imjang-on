@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import { getSchoolList } from '@/lib/school';
 import { getSigunguByCode } from '@/lib/region';
@@ -61,7 +61,9 @@ export default async function SchoolDetailPage({ params }: Params) {
     cachedSchoolById(schoolId),
     getSigunguByCode(sigunguCode),
   ]);
-  if (!school || school.sigunguCode !== sigunguCode) notFound();
+  if (!school) notFound();
+  // sigunguCode 정규화로 옛 URL이 mismatch되면 404 대신 정식 URL로 308 영구 리다이렉트.
+  if (school.sigunguCode !== sigunguCode) permanentRedirect(`/school/${school.sigunguCode}/${school.id}`);
   // Region 테이블에 sigunguCode가 없을 경우 School.region(sido)으로 fallback.
   const regionDisplay = region ?? {
     fullName: school.region ? `${school.region} (${sigunguCode})` : sigunguCode,
