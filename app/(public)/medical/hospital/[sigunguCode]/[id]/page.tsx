@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import { getHospitalList } from '@/lib/hospital';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
@@ -48,7 +48,9 @@ export default async function HospitalDetailPage({ params }: Params) {
   const hospitalId = BigInt(id);
 
   const hospital = await cachedHospitalById(hospitalId);
-  if (!hospital || hospital.sigunguCode !== sigunguCode) notFound();
+  if (!hospital) notFound();
+  // sigunguCode 정규화로 옛 URL이 mismatch되면 404 대신 정식 URL로 308 영구 리다이렉트.
+  if (hospital.sigunguCode !== sigunguCode) permanentRedirect(`/medical/hospital/${hospital.sigunguCode}/${hospital.id}`);
 
   const coord = await cachedHospitalLatLng(hospitalId);
 
