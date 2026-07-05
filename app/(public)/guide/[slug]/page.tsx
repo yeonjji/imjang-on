@@ -11,6 +11,9 @@ import { ArticleSummary } from '@/app/(public)/_components/article-summary';
 import type { Metadata } from 'next';
 
 export const revalidate = 86_400;
+// 동적 세그먼트는 generateStaticParams가 없으면 revalidate가 무시되고 매 요청 동적 렌더된다.
+// 빈 배열 → 프리빌드 없이 첫 요청 시 렌더 후 ISR 캐시. 편집 시 actions.ts가 revalidatePath로 무효화.
+export function generateStaticParams() { return []; }
 
 interface Params { params: Promise<{ slug: string }>; }
 
