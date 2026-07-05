@@ -65,7 +65,7 @@ export const GUIDE_SEEDS: GuideSeed[] = [
     title: '역세권, 무엇을 따져봐야 할까',
     angle: '도보 거리·환승·노선 등 역세권을 판단할 때 고려하는 일반 기준을 설명한다.',
     source: { name: '국가철도공단', url: 'https://www.kr.or.kr', date: '2026-01-01', excerpt: '전국 철도역 위치·노선 정보.' },
-    related: { label: '생활 인프라 보기', href: '/life' },
+    related: { label: '생활 인프라 보기', href: '/school' },
   },
   {
     key: 'realestate-area-pyeong-explained',
@@ -121,7 +121,7 @@ export const GUIDE_SEEDS: GuideSeed[] = [
     title: '생활 인프라, 무엇을 따져봐야 할까',
     angle: '마트·공원·주차 등 생활 인프라를 살펴볼 때 고려하는 일반 기준을 설명한다.',
     source: { name: '공공데이터포털', url: 'https://www.data.go.kr', date: '2026-01-01', excerpt: '생활편의시설 위치·현황 공공데이터 제공.' },
-    related: { label: '생활 인프라 보기', href: '/life' },
+    related: { label: '생활 인프라 보기', href: '/school' },
   },
 ];
 

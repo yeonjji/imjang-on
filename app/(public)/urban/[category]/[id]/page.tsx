@@ -139,8 +139,7 @@ export default async function UrbanDetailPage({ params }: Params) {
             }),
             breadcrumbSchema([
               { name: '홈', url: `${SITE_URL}/` },
-              { name: '생활편의', url: `${SITE_URL}/life` },
-              { name: '도시인프라', url: `${SITE_URL}/life/urban` },
+              { name: '도시인프라', url: `${SITE_URL}/urban/parking` },
               { name: '공원', url: `${SITE_URL}/urban/park` },
               { name: item.name, url: `${SITE_URL}/urban/park/${id}` },
             ]),
@@ -156,8 +155,7 @@ export default async function UrbanDetailPage({ params }: Params) {
       )}
       <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
         <Link href="/">홈</Link><span>›</span>
-        <Link href="/life">생활편의</Link><span>›</span>
-        <Link href="/life/urban">도시인프라</Link><span>›</span>
+        <Link href="/urban/parking">도시인프라</Link><span>›</span>
         <Link href={`/urban/${def.slug}`}>{def.breadcrumbLabel}</Link><span>›</span>
         {region && (<><Link href={`/urban/${def.slug}?region=${sigunguCode}`}>{region.fullName}</Link><span>›</span></>)}
         <span className="truncate font-semibold text-[var(--color-blue-dark)]">{item.name}</span>

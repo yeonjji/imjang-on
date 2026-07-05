@@ -84,7 +84,6 @@ export default async function HospitalDetailPage({ params }: Params) {
           }),
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
-            { name: '생활편의', url: `${SITE_URL}/life` },
             { name: '병원·의원', url: `${SITE_URL}/medical/hospital` },
             { name: hospital.name, url: `${SITE_URL}/medical/hospital/${hospital.sigunguCode}/${id}` },
           ]),
@@ -98,8 +97,7 @@ export default async function HospitalDetailPage({ params }: Params) {
       />
       <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
         <Link href="/">홈</Link><span>›</span>
-        <Link href="/life">생활편의</Link><span>›</span>
-        <Link href="/life/medical">의료시설</Link><span>›</span>
+        <Link href="/medical/hospital">의료시설</Link><span>›</span>
         <Link href="/medical/hospital">병원·의원</Link><span>›</span>
         {hospital.sigunguCode && (
           <>

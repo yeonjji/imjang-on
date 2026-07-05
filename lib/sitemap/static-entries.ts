@@ -1,7 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/site';
 import { AMENITY_SLUGS } from '@/lib/amenity/category';
-import { LIFE_GROUPS } from '@/app/(public)/_components/life-menu';
 import { isBoardPublic } from '@/lib/board/visibility';
 
 export const STATIC_ENTRIES: MetadataRoute.Sitemap = [
@@ -9,12 +8,6 @@ export const STATIC_ENTRIES: MetadataRoute.Sitemap = [
   { url: `${SITE_URL}/apt`, changeFrequency: 'daily', priority: 0.9 },
   { url: `${SITE_URL}/officetel`, changeFrequency: 'daily', priority: 0.9 },
   { url: `${SITE_URL}/villa`, changeFrequency: 'daily', priority: 0.9 },
-  { url: `${SITE_URL}/life`, changeFrequency: 'weekly', priority: 0.8 },
-  ...LIFE_GROUPS.map((g) => ({
-    url: `${SITE_URL}/life/${g.slug}`,
-    changeFrequency: 'weekly' as const,
-    priority: 0.7,
-  })),
   { url: `${SITE_URL}/school`, changeFrequency: 'weekly', priority: 0.8 },
   { url: `${SITE_URL}/school/regions`, changeFrequency: 'weekly', priority: 0.7 },
   ...AMENITY_SLUGS.map((slug) => ({

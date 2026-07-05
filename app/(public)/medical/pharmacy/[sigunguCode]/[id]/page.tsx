@@ -78,7 +78,6 @@ export default async function PharmacyDetailPage({ params }: Params) {
           }),
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
-            { name: '생활편의', url: `${SITE_URL}/life` },
             { name: '약국', url: `${SITE_URL}/medical/pharmacy` },
             { name: pharmacy.name, url: `${SITE_URL}/medical/pharmacy/${pharmacy.sigunguCode}/${id}` },
           ]),
@@ -86,8 +85,7 @@ export default async function PharmacyDetailPage({ params }: Params) {
       />
       <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
         <Link href="/">홈</Link><span>›</span>
-        <Link href="/life">생활편의</Link><span>›</span>
-        <Link href="/life/medical">의료시설</Link><span>›</span>
+        <Link href="/medical/hospital">의료시설</Link><span>›</span>
         <Link href="/medical/pharmacy">약국</Link><span>›</span>
         {pharmacy.sigunguCode && (
           <>

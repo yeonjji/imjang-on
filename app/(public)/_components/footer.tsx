@@ -19,7 +19,10 @@ export function Footer() {
             <li><Link href="/list?type=officetel">오피스텔</Link></li>
             <li><Link href="/list?type=villa">연립·다세대</Link></li>
             <li><Link href="/subscription">청약</Link></li>
-            <li><Link href="/life">생활편의</Link></li>
+            <li><Link href="/school">교육시설</Link></li>
+            <li><Link href="/medical/hospital">의료시설</Link></li>
+            <li><Link href="/amenity/convenience">상권·편의</Link></li>
+            <li><Link href="/urban/parking">도시인프라</Link></li>
           </ul>
         </div>
         <div>

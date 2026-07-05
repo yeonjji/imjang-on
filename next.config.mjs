@@ -43,6 +43,32 @@ const nextConfig = {
         destination: '/list?region=:code',
         permanent: true,
       },
+      // /life 생활편의 허브 제거 — 각 그룹 대표 리스트로 301 승계.
+      {
+        source: '/life',
+        destination: '/school',
+        permanent: true,
+      },
+      {
+        source: '/life/education',
+        destination: '/school',
+        permanent: true,
+      },
+      {
+        source: '/life/medical',
+        destination: '/medical/hospital',
+        permanent: true,
+      },
+      {
+        source: '/life/amenity',
+        destination: '/amenity/convenience',
+        permanent: true,
+      },
+      {
+        source: '/life/urban',
+        destination: '/urban/parking',
+        permanent: true,
+      },
     ];
   },
 };

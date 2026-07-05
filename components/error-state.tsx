@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 export const ERROR_QUICK_LINKS = [
   { label: '실거래가', href: '/list' },
   { label: '청약', href: '/subscription' },
-  { label: '생활정보', href: '/life' },
+  { label: '생활정보', href: '/school' },
 ];
 
 interface ErrorStateProps {
