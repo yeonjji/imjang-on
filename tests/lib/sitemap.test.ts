@@ -17,8 +17,9 @@ describe('sitemap STATIC_ENTRIES', () => {
     }
   });
 
-  it('/urban/parking을 포함한다', () => {
-    expect(STATIC_ENTRIES.some((e) => e.url.endsWith('/urban/parking'))).toBe(true);
+  it('/urban/parking 정식 URL(?sido)만 포함하고 리다이렉트되는 bare 엔트리는 제외한다', () => {
+    expect(STATIC_ENTRIES.some((e) => e.url.includes('/urban/parking?sido='))).toBe(true);
+    expect(STATIC_ENTRIES.some((e) => e.url.endsWith('/urban/parking'))).toBe(false);
   });
 });
 
