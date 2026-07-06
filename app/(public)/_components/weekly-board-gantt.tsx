@@ -64,14 +64,18 @@ export function WeeklyBoardGantt({
                   BAR_TONE[bar.tone],
                 )}
               >
-                {bar.startsBeforeWeek && <span className="shrink-0 opacity-60">◀</span>}
-                <span className="min-w-0 flex-1 truncate">{bar.name}</span>
+                {bar.startsBeforeWeek && (
+                  <span aria-hidden="true" className="shrink-0 opacity-60">◀</span>
+                )}
+                <span className="min-w-0 flex-1 truncate text-sm">{bar.name}</span>
                 {bar.todayDdayLabel && (
                   <span className="shrink-0 rounded bg-white/70 px-1 text-[11px] font-black leading-tight">
                     {bar.todayDdayLabel}
                   </span>
                 )}
-                {bar.endsAfterWeek && <span className="shrink-0 opacity-60">▶</span>}
+                {bar.endsAfterWeek && (
+                  <span aria-hidden="true" className="shrink-0 opacity-60">▶</span>
+                )}
               </Link>
             </div>
           ))}
