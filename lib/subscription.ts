@@ -387,6 +387,126 @@ export function flattenWeeklyBoard(board: WeeklyBoard, limit: number): WeeklyBoa
   return items.slice(0, limit);
 }
 
+// ---- 홈 주간 모델 (연속 표기) ----
+export interface WeekBar {
+  id: string;
+  name: string;
+  regionShort: string | null;
+  startIdx: number;
+  endIdx: number;
+  startsBeforeWeek: boolean;
+  endsAfterWeek: boolean;
+  tone: BoardTone;
+  todayDdayLabel: string | null;
+}
+
+export interface WeekModelDay {
+  weekday: string;
+  md: string;
+  isToday: boolean;
+  items: WeeklyBoardItem[];
+}
+
+export interface WeekModel {
+  summary: { open: number; upcoming: number; closed: number };
+  total: number;
+  days: WeekModelDay[];
+  bars: WeekBar[];
+}
+
+function mmdd(d: Date): string {
+  return `${String(d.getUTCMonth() + 1).padStart(2, '0')}.${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+/** 특정 셀 날짜 기준의 배지/톤. 셀은 활성 구간 [begin..end] 안에 있다고 가정. */
+export function dayBadge(
+  begin: Date | null,
+  end: Date | null,
+  cell: Date,
+  today: Date,
+): { tone: BoardTone; badge: string } {
+  const b = begin ? dateInt(begin) : null;
+  const e = end ? dateInt(end) : null;
+  const c = dateInt(cell);
+  const t = dateInt(today);
+
+  if (b != null && c < b) return { tone: 'blue', badge: '예정' };
+  if (b != null && c === b && (e == null || c < e)) return { tone: 'green', badge: '접수시작' };
+  if (e != null && c === e) {
+    if (c === t) return { tone: 'orange', badge: '오늘 마감' };
+    return c < t ? { tone: 'gray', badge: '마감' } : { tone: 'orange', badge: '마감일' };
+  }
+  if (e != null) {
+    const d = dayDiff(cell, end!);
+    return d === 1 ? { tone: 'orange', badge: 'D-1' } : { tone: 'green', badge: `D-${d}` };
+  }
+  return { tone: 'green', badge: '진행중' };
+}
+
+export function buildWeekModel(rows: WeeklyNoticeRow[], today: Date = new Date()): WeekModel {
+  const { dates } = getWeekRange(today);
+  const ws = dateInt(dates[0]);
+  const we = dateInt(dates[6]);
+  const buckets: WeeklyBoardItem[][] = dates.map(() => []);
+  const bars: WeekBar[] = [];
+  const summary = { open: 0, upcoming: 0, closed: 0 };
+
+  for (const r of rows) {
+    const st = deriveStatus(r.receiptBegin, r.receiptEnd, today);
+    if (st.status === 'OPEN') summary.open++;
+    else if (st.status === 'UPCOMING') summary.upcoming++;
+    else summary.closed++;
+
+    const spanBegin = r.receiptBegin ?? r.receiptEnd;
+    const spanEnd = r.receiptEnd ?? r.receiptBegin;
+    if (!spanBegin || !spanEnd) continue;
+
+    const bi = dateInt(spanBegin);
+    const ei = dateInt(spanEnd);
+    if (ei < ws || bi > we) continue; // 주간과 겹치지 않음(방어)
+
+    const startIdx = dates.findIndex((d) => dateInt(d) === Math.max(bi, ws));
+    const endIdx = dates.findIndex((d) => dateInt(d) === Math.min(ei, we));
+
+    const regionShort = parseSigungu(r.address, r.regionName);
+    const { tone: barTone } = boardTone(st);
+    bars.push({
+      id: String(r.id),
+      name: r.name,
+      regionShort,
+      startIdx,
+      endIdx,
+      startsBeforeWeek: bi < ws,
+      endsAfterWeek: ei > we,
+      tone: barTone,
+      todayDdayLabel: ddayLabel(st),
+    });
+
+    for (let i = startIdx; i <= endIdx; i++) {
+      const cell =
+        st.status === 'CLOSED'
+          ? ({ tone: 'gray', badge: '마감' } as const)
+          : dayBadge(r.receiptBegin, r.receiptEnd, dates[i], today);
+      buckets[i].push({ id: String(r.id), name: r.name, regionShort, tone: cell.tone, badge: cell.badge });
+    }
+  }
+
+  bars.sort(
+    (a, b) => TONE_ORDER[a.tone] - TONE_ORDER[b.tone] || a.endIdx - b.endIdx || a.name.localeCompare(b.name, 'ko'),
+  );
+
+  const days: WeekModelDay[] = dates.map((date, i) => ({
+    weekday: WEEKDAYS[date.getUTCDay()],
+    md: mmdd(date),
+    isToday: dateInt(date) === dateInt(today),
+    items: buckets[i].sort(
+      (a, b) => TONE_ORDER[a.tone] - TONE_ORDER[b.tone] || a.name.localeCompare(b.name, 'ko'),
+    ),
+  }));
+
+  return { summary, total: rows.length, days, bars };
+}
+
 export async function getWeeklySubscriptions(today: Date = new Date()): Promise<WeeklyBoard> {
   const { weekStart, weekEnd } = getWeekRange(today);
   const rows = await prisma.$queryRaw<
