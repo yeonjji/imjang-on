@@ -26,7 +26,7 @@ function DayRow({ day, perDay }: { day: WeekModelDay; perDay: number }) {
       </div>
       <div className="min-w-0 flex-1">
         {day.items.length === 0 ? (
-          <p className="text-xs font-medium text-slate-300">청약 일정 없음</p>
+          <p className="text-sm font-medium text-[var(--color-muted)]">청약 일정 없음</p>
         ) : (
           <div className="flex flex-col gap-1.5">
             {visible.map((item) => (
