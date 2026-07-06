@@ -56,7 +56,7 @@ export function LoanDiscoverySection({ discovery }: { discovery: LoanDiscovery }
 
       <div>
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="text-sm font-bold text-[var(--color-text)]">생활편의</h3>
+          <h3 className="text-sm font-bold text-[var(--color-text)]">생활편의 둘러보기</h3>
         </div>
         <LifeGroupCards />
       </div>

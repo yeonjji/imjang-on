@@ -57,7 +57,7 @@ export function JeonseDiscoverySection({ briefing, weeklySubscriptions, relatedL
       )}
 
       <Divider />
-      <DiscoveryBlock title="생활편의">
+      <DiscoveryBlock title="생활편의 둘러보기">
         <LifeGroupCards />
       </DiscoveryBlock>
 
