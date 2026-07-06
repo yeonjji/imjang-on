@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { SubscriptionBoardItem } from '@/app/(public)/_components/subscription-board-item';
 import { RelatedLoanCard } from '@/app/(public)/finance/[seq]/_components/related-loan-card';
-import { LIFE_GROUPS } from '@/app/(public)/_components/life-menu';
+import { LifeGroupCards } from '@/app/(public)/_components/life-group-cards';
 import { formatBillion } from '@/lib/format';
 import type { MarketBriefing } from '@/lib/briefing';
 import type { WeeklyBoardItem } from '@/lib/subscription';
@@ -144,27 +144,5 @@ function TxTile({ label, value, sub, href }: { label: string; value: string; sub
     </Link>
   ) : (
     body
-  );
-}
-
-/** 좌표 앵커가 없어 각 생활편의 그룹의 대표 리스트로 보내는 카드 4종. */
-function LifeGroupCards() {
-  return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-      {LIFE_GROUPS.map((group) => (
-        <Link
-          key={group.slug}
-          href={group.items[0].href}
-          className="flex items-center justify-between gap-2 rounded-xl border border-[var(--color-line)] bg-white px-4 py-3.5 transition hover:border-[var(--color-blue)]"
-        >
-          <span className="break-keep text-sm font-bold text-[var(--color-blue-dark)]">
-            {group.label}
-          </span>
-          <span aria-hidden className="shrink-0 text-[var(--color-blue)]">
-            →
-          </span>
-        </Link>
-      ))}
-    </div>
   );
 }
