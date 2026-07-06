@@ -5,7 +5,7 @@ import { getPublishedGuideBySlug, getGuidesByCategory } from '@/lib/guide/querie
 import { guideCategoryLabel } from '@/lib/guide/labels';
 import { PostSource } from '@/components/ui/post-source';
 import { RelatedGuidesView } from '@/app/(public)/_components/related-guides';
-import { BoardDetailCta } from '@/app/(public)/board/[id]/_components/board-detail-cta';
+import { GuideCta } from '@/app/(public)/guide/[slug]/_components/guide-cta';
 import { JsonLd, guideArticleSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { SITE_URL } from '@/lib/site';
 import { splitSummary } from '@/lib/board/summary-split';
@@ -75,7 +75,7 @@ export default async function GuideDetailPage({ params }: Params) {
       {summary && <ArticleSummary markdown={summary} />}
       <PostSource sourceName={guide.sourceName} sourceUrl={guide.sourceUrl} sourceDate={guide.sourceDate} />
       <RelatedGuidesView items={related} className="mt-12" />
-      <BoardDetailCta />
+      <GuideCta category={guide.category} />
     </article>
   );
 }
