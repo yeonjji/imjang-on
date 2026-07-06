@@ -2,13 +2,13 @@ import Link from 'next/link';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { SubscriptionBoardItem } from '@/app/(public)/_components/subscription-board-item';
 import { DiscoveryPropertyCard } from './discovery-property-card';
+import { LifeGroupCards } from '@/app/(public)/_components/life-group-cards';
 import type { LoanDiscovery } from '@/lib/loan/discovery';
 
 export function LoanDiscoverySection({ discovery }: { discovery: LoanDiscovery }) {
   const { regionScope, properties, weeklySubscriptions } = discovery;
   const hasProperties = properties.length > 0;
   const hasSubs = weeklySubscriptions.length > 0;
-  if (!hasProperties && !hasSubs) return null;
 
   const moreHref = regionScope.sido ? `/list?sido=${encodeURIComponent(regionScope.sido)}` : '/list';
 
@@ -50,6 +50,15 @@ export function LoanDiscoverySection({ discovery }: { discovery: LoanDiscovery }
         ) : (
           <p className="text-sm font-medium text-[var(--color-muted)]">이번 주 예정된 청약이 없습니다.</p>
         )}
+      </div>
+
+      <div className="my-5 border-t border-[var(--color-line)]" />
+
+      <div>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="text-sm font-bold text-[var(--color-text)]">생활편의 둘러보기</h3>
+        </div>
+        <LifeGroupCards />
       </div>
 
       <div className="mt-5">
