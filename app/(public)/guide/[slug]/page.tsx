@@ -1,9 +1,11 @@
 import { notFound } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { getPublishedGuideBySlug } from '@/lib/guide/queries';
+import { getPublishedGuideBySlug, getGuidesByCategory } from '@/lib/guide/queries';
 import { guideCategoryLabel } from '@/lib/guide/labels';
 import { PostSource } from '@/components/ui/post-source';
+import { RelatedGuidesView } from '@/app/(public)/_components/related-guides';
+import { BoardDetailCta } from '@/app/(public)/board/[id]/_components/board-detail-cta';
 import { JsonLd, guideArticleSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { SITE_URL } from '@/lib/site';
 import { splitSummary } from '@/lib/board/summary-split';
@@ -33,6 +35,11 @@ export default async function GuideDetailPage({ params }: Params) {
   const guide = await getPublishedGuideBySlug(slug);
   if (!guide) notFound();
   const { summary, rest } = splitSummary(guide.body);
+
+  // 같은 카테고리 관련 가이드(자기 자신 제외, 최대 3건).
+  const related = (await getGuidesByCategory(guide.category, 4))
+    .filter((g) => g.slug !== guide.slug)
+    .slice(0, 3);
 
   const url = `${SITE_URL}/guide/${guide.slug}`;
   const published = guide.publishedAt.toISOString().slice(0, 10);
@@ -67,6 +74,8 @@ export default async function GuideDetailPage({ params }: Params) {
       </div>
       {summary && <ArticleSummary markdown={summary} />}
       <PostSource sourceName={guide.sourceName} sourceUrl={guide.sourceUrl} sourceDate={guide.sourceDate} />
+      <RelatedGuidesView items={related} className="mt-12" />
+      <BoardDetailCta />
     </article>
   );
 }
