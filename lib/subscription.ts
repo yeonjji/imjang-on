@@ -538,6 +538,38 @@ export async function getWeeklySubscriptions(today: Date = new Date()): Promise<
   return assembleWeeklyBoard(mapped, today);
 }
 
+export async function getHomeWeekBoard(today: Date = new Date()): Promise<WeekModel> {
+  const { weekStart, weekEnd } = getWeekRange(today);
+  // 구간 겹침: 시작이 주 끝 이전 && 마감이 주 시작 이후 → 주 전체를 관통하는 긴 공고도 포함.
+  const rows = await prisma.$queryRaw<
+    Array<{
+      id: bigint; name: string; region_name: string | null; address: string | null;
+      receipt_begin: Date | null; receipt_end: Date | null;
+    }>
+  >(Prisma.sql`
+    SELECT n.id, n.name,
+           n."regionName" AS region_name,
+           n.address AS address,
+           n."receiptBegin" AS receipt_begin,
+           n."receiptEnd" AS receipt_end
+    FROM "SubscriptionNotice" n
+    WHERE COALESCE(n."receiptBegin", n."receiptEnd") <= ${weekEnd}
+      AND COALESCE(n."receiptEnd", n."receiptBegin") >= ${weekStart}
+    ORDER BY n."receiptEnd" ASC NULLS LAST, n.id ASC
+  `);
+
+  const mapped: WeeklyNoticeRow[] = rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    regionName: r.region_name,
+    address: r.address,
+    receiptBegin: r.receipt_begin,
+    receiptEnd: r.receipt_end,
+  }));
+
+  return buildWeekModel(mapped, today);
+}
+
 export async function getSubscriptionById(id: bigint): Promise<SubscriptionDetail | null> {
   return prisma.subscriptionNotice.findUnique({
     where: { id },
