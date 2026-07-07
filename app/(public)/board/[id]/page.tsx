@@ -5,6 +5,7 @@ import { getPublishedPostById, getPublishedPostBySlug } from '@/lib/board/post';
 import { boardPath } from '@/lib/board/slug';
 import { canViewBoard, isBoardPublic } from '@/lib/board/visibility';
 import { categoryLabel } from '@/lib/board/labels';
+import { canonicalizeSourceName } from '@/lib/board/source-name';
 import { PostSource } from '@/components/ui/post-source';
 import { BoardDetailCta } from './_components/board-detail-cta';
 import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
@@ -79,7 +80,7 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
       <div className="mb-6 rounded-[18px] border border-[var(--color-line)] bg-[var(--color-soft)] px-5 py-4">
         <p className="text-sm font-black tracking-tight text-[var(--color-blue)]">임장ON 브리핑</p>
         <p className="mt-1 text-xs font-bold text-[var(--color-muted)]">
-          {categoryLabel(post.category)} · {post.sourceName}
+          {categoryLabel(post.category)} · {canonicalizeSourceName(post.sourceName)}
         </p>
       </div>
       <span className="inline-block rounded-full bg-[var(--color-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">
@@ -89,7 +90,7 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
         {post.title}
       </h1>
       <div className="mt-2 flex items-center justify-between text-sm text-[var(--color-muted)]">
-        <span>기준일 {post.sourceDate.toISOString().slice(0, 10)}</span>
+        <span>임장ON 요약일 {post.generatedAt.toISOString().slice(0, 10)}</span>
         <span>작성자 : 임장ON 편집부</span>
       </div>
       <div className="board-prose mt-8 text-[15px] leading-relaxed text-[var(--color-text)]">
@@ -101,6 +102,8 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
         sourceName={post.sourceName}
         sourceUrl={post.sourceUrl}
         sourceDate={post.sourceDate}
+        summarizedAt={post.generatedAt}
+        dateLabel="원문 발행일"
       />
 
       <BoardDetailCta />

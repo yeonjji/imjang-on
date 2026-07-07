@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import type { PostCategory } from '@prisma/client';
 import { BOARD_CATEGORIES } from '@/lib/board/labels';
+import { canonicalizeSourceName } from '@/lib/board/source-name';
 
 export const PAGE_SIZE = 12;
 
@@ -57,7 +58,7 @@ export function normalizeSlug(slug: string): string {
 
 const POST_DETAIL_SELECT = {
   id: true, slug: true, title: true, summary: true, body: true, type: true,
-  category: true, sourceName: true, sourceUrl: true, sourceDate: true, publishedAt: true,
+  category: true, sourceName: true, sourceUrl: true, sourceDate: true, generatedAt: true, publishedAt: true,
 } as const;
 
 /** 레거시 slug 조회용(옛 `/board/<slug>` URL → 새 canonical 리다이렉트에 사용). */
@@ -94,16 +95,26 @@ export async function getBoardCategoryCounts(): Promise<Record<PostCategory, num
   return counts;
 }
 
-/** 레일용: PUBLISHED 글의 출처기관을 글 수 내림차순 distinct로 반환한다. */
+/** 레일용: PUBLISHED 글의 출처기관을 글 수 내림차순 distinct로 반환한다(정식 기관명으로 축약·중복 병합). */
 export async function getBoardSourceOrgs(limit = 8): Promise<string[]> {
   const grouped = await prisma.post.groupBy({
     by: ['sourceName'],
     where: { status: 'PUBLISHED' },
     _count: { _all: true },
     orderBy: { _count: { sourceName: 'desc' } },
-    take: limit,
   });
-  return grouped.map((g) => g.sourceName);
+  // 정규화하면 서로 다른 원본이 같은 기관명으로 합쳐질 수 있어(예: '정책브리핑'·'대한민국 정책브리핑(국토교통부)'),
+  // 축약 후 첫 등장 순서(=글 수 내림차순)를 보존하며 중복을 제거하고 상한을 적용한다.
+  const seen = new Set<string>();
+  const orgs: string[] = [];
+  for (const g of grouped) {
+    const name = canonicalizeSourceName(g.sourceName);
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    orgs.push(name);
+    if (orgs.length >= limit) break;
+  }
+  return orgs;
 }
 
 export interface HomePostItem {

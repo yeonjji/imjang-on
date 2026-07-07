@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { HomePostItem } from '@/lib/board/post';
 import { boardPath } from '@/lib/board/slug';
+import { canonicalizeSourceName } from '@/lib/board/source-name';
 import { categoryLabel } from '@/lib/board/labels';
 
 /** publishedAt → "MM.DD" (등록일 보조 표기). */
@@ -44,7 +45,7 @@ export function HomeNews({ posts }: { posts: HomePostItem[] }) {
             {featured.summary}
           </p>
           <span className="mt-auto flex items-center gap-1.5 pt-3 text-xs text-[var(--color-muted)]">
-            <span className="truncate">{featured.sourceName}</span>
+            <span className="truncate">{canonicalizeSourceName(featured.sourceName)}</span>
             <span>·</span>
             <span className="whitespace-nowrap">{shortDate(featured.publishedAt)}</span>
           </span>
