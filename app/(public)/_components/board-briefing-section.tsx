@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { isBoardPublic } from '@/lib/board/visibility';
 import { getHomeLatestPosts } from '@/lib/board/post';
 import { boardPath } from '@/lib/board/slug';
+import { canonicalizeSourceName } from '@/lib/board/source-name';
 import { categoryLabel } from '@/lib/board/labels';
 
 /** publishedAt → "MM.DD" (등록일 보조 표기). */
@@ -55,7 +56,7 @@ export async function BoardBriefingSection({
               {p.title}
             </h3>
             <span className="mt-auto flex items-center gap-1.5 pt-3 text-xs text-[var(--color-muted)]">
-              <span className="truncate">{p.sourceName}</span>
+              <span className="truncate">{canonicalizeSourceName(p.sourceName)}</span>
               <span>·</span>
               <span className="whitespace-nowrap">{shortDate(p.publishedAt)}</span>
             </span>

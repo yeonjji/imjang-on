@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import type { GenerateResult } from '@/lib/board/generate';
 import { runGuardrails } from '@/lib/board/guardrails';
 import { buildBoardSlug } from '@/lib/board/slug';
+import { sanitizeSourceName } from '@/lib/board/source-name';
 
 export interface CreateDraftInput {
   gen: GenerateResult;
@@ -22,7 +23,9 @@ export async function createDraft(input: CreateDraftInput): Promise<CreateDraftR
   const existing = await prisma.post.findUnique({ where: { dedupeKey: input.dedupeKey }, select: { id: true } });
   if (existing) return { status: 'duplicate' };
 
-  const guard = runGuardrails({ body: input.gen.body, sourceName: input.sourceName, sourceUrl: input.sourceUrl });
+  // 크롤 네비 찌꺼기('…부처별 뉴스 이동' 등)를 저장 전에 걷어낸다. 축약(정규화)은 표시 지점에서.
+  const sourceName = sanitizeSourceName(input.sourceName);
+  const guard = runGuardrails({ body: input.gen.body, sourceName, sourceUrl: input.sourceUrl });
   if (!guard.ok) return { status: 'rejected', violations: guard.violations };
 
   let slug = buildBoardSlug(input.gen.title, input.dateISO);
@@ -39,7 +42,7 @@ export async function createDraft(input: CreateDraftInput): Promise<CreateDraftR
       type: input.gen.type,
       category: input.gen.category,
       status: 'DRAFT',
-      sourceName: input.sourceName,
+      sourceName,
       sourceUrl: input.sourceUrl,
       sourceDate: input.sourceDate,
       sourceExcerpt: input.sourceExcerpt,

@@ -7,6 +7,7 @@ import {
 } from '@/lib/board/post';
 import { canViewBoard } from '@/lib/board/visibility';
 import { boardPath } from '@/lib/board/slug';
+import { canonicalizeSourceName } from '@/lib/board/source-name';
 import { BOARD_CATEGORIES, categoryLabel } from '@/lib/board/labels';
 import type { PostCategory } from '@prisma/client';
 import type { Metadata } from 'next';
@@ -129,7 +130,7 @@ export default async function BoardListPage({ searchParams }: Props) {
                         </Link>
                       </td>
                       <td className="hidden px-2 py-3 align-middle text-xs text-[var(--color-muted)] sm:table-cell">
-                        <span className="block truncate">{p.sourceName}</span>
+                        <span className="block truncate">{canonicalizeSourceName(p.sourceName)}</span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-right align-middle text-xs text-[var(--color-muted)]">
                         {p.publishedAt.toISOString().slice(0, 10)}
