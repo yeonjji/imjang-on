@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateDraft, type OpenAiLike } from '@/lib/board/generate';
+import { generateDraft, SYSTEM_PROMPT, type OpenAiLike } from '@/lib/board/generate';
 
 function fakeClient(payload: object): OpenAiLike {
   return { chat: { completions: { create: async () => ({ choices: [{ message: { content: JSON.stringify(payload) } }] }) } } };
@@ -17,5 +17,15 @@ describe('generateDraft', () => {
   it('잘못된 type이면 에러', async () => {
     const res = generateDraft(fakeClient({ type: 'X', category: 'LOAN', title: 't', summary: 's', body: 'b' }), { sourceText: 'x', sourceName: 'y' }, 'm');
     await expect(res).rejects.toThrow();
+  });
+});
+
+describe('SYSTEM_PROMPT', () => {
+  it('다출처 종합·출처 근거 원칙을 명시한다', () => {
+    expect(SYSTEM_PROMPT).toContain('여러');
+    expect(SYSTEM_PROMPT).toContain('출처');
+  });
+  it('추측·추가 금지 원칙은 유지된다', () => {
+    expect(SYSTEM_PROMPT).toContain('추측');
   });
 });
