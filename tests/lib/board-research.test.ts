@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { researchTopic } from '@/lib/board/research';
+import { _resetKoreaNewsCache } from '@/lib/board/sources/korea-news';
 
 const CREDS = { clientId: 'id', clientSecret: 'secret' };
 const TODAY = new Date('2026-06-23T00:00:00Z');
@@ -20,6 +21,8 @@ function routedFetch(routes: { search: unknown; pages: Record<string, string> })
 const LONG = '국토교통부는 전세 사기 피해자 지원 대책을 발표했다. '.repeat(40); // >800자
 
 describe('researchTopic', () => {
+  beforeEach(() => _resetKoreaNewsCache());
+
   it('공공누리 제1유형 공식 페이지만 근거로 채택', async () => {
     const search = {
       items: [
@@ -136,5 +139,22 @@ describe('researchTopic', () => {
     const r = await researchTopic('전세 사기', TODAY, { ...CREDS, fetchImpl });
     expect(naverCalls).toBeGreaterThanOrEqual(2);
     expect(r.candidates).toHaveLength(1); // 동일 URL 중복 제거
+  });
+
+  it('정책뉴스 코퍼스가 근거로 병합된다(네이버 0건이어도 grounded 생성)', async () => {
+    const KOREA_XML = `<response><header><resultCode>00</resultCode></header><body><items><item>` +
+      `<Title>전세보증 개편</Title><OriginalUrl>https://www.korea.kr/news/pn1</OriginalUrl>` +
+      `<DataContents>${'전세보증금 반환보증 제도 상세 내용. '.repeat(60)}</DataContents>` +
+      `</item></items></body></response>`;
+    const fetchImpl = (async (input: string | URL) => {
+      const u = typeof input === 'string' ? input : input.toString();
+      if (u.includes('apis.data.go.kr')) return { ok: true, text: async () => KOREA_XML } as Response;
+      if (u.includes('openapi.naver.com')) return { ok: true, json: async () => ({ items: [] }) } as Response;
+      return { ok: false, text: async () => '' } as Response;
+    }) as unknown as typeof fetch;
+    const r = await researchTopic('전세보증', TODAY, { ...CREDS, serviceKey: 'k', fetchImpl });
+    expect(r.grounded).not.toBeNull();
+    expect(r.grounded!.sourceUrl).toBe('https://www.korea.kr/news/pn1');
+    expect(r.grounded!.sourceText).toContain('전세보증금');
   });
 });
