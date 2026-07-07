@@ -2,12 +2,18 @@ import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { XMLParser } from 'fast-xml-parser';
 import { htmlToText } from '@/lib/board/html-text';
+import type { KoglType } from '@/lib/board/source-policy';
 
 const ENDPOINT = 'https://apis.data.go.kr/1371000/policyNewsService/policyNewsList';
 const FETCH_TIMEOUT_MS = 10_000;
 const NUM_OF_ROWS = 100; // 페이지당
-const MAX_PAGES = 5;     // firehose 상한(레이턴시·쿼터 통제)
+const MAX_PAGES = 3;     // firehose 상한(레이턴시·쿼터 통제)
 const CACHE_TTL_MS = 30 * 60_000;
+const DAY_MS = 86_400_000;
+/** API가 startDate~endDate 범위를 최대 3일로 제한(THREE_DAYS_OVER_ERROR) → 3일 청크로 쪼개 조회. */
+const CHUNK_DAYS = 3;
+/** 최근 며칠치 코퍼스를 훑을지. 최근 이슈 커버가 목적(에버그린은 네이버 경로가 받음). */
+const LOOKBACK_DAYS = 30;
 
 const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: true, trimValues: true });
 
@@ -16,6 +22,7 @@ export interface KoreaNewsArticle {
   url: string;
   body: string;
   agency: string;
+  koglType: KoglType;
 }
 
 export interface KoreaNewsDeps {
@@ -32,37 +39,60 @@ export function _resetKoreaNewsCache(): void {
 
 interface RawKoreaNewsItem {
   Title?: unknown;
-  title?: unknown;
   OriginalUrl?: unknown;
-  originalUrl?: unknown;
   DataContents?: unknown;
-  dataContents?: unknown;
+  KoglType?: unknown;
 }
 
 interface ParsedKoreaNewsResponse {
   response?: {
     body?: {
-      items?: '' | { item?: RawKoreaNewsItem | RawKoreaNewsItem[] };
+      // 실제 응답은 <body><NewsItem>...(단일 또는 배열). 표준 <items><item>이 아님.
+      NewsItem?: RawKoreaNewsItem | RawKoreaNewsItem[];
     };
   };
 }
 
 function getItems(parsed: Record<string, unknown>): RawKoreaNewsItem[] {
-  const items = (parsed as ParsedKoreaNewsResponse)?.response?.body?.items;
-  if (!items) return [];
-  const item = items.item;
-  if (!item) return [];
-  return Array.isArray(item) ? item : [item];
+  const news = (parsed as ParsedKoreaNewsResponse)?.response?.body?.NewsItem;
+  if (!news) return [];
+  return Array.isArray(news) ? news : [news];
 }
 
-/** 실측 필드명(Task 0에서 확정). 다르면 이 접근자만 교정. */
+/** API의 KoglType 값('1'~'4' 숫자문자열)을 KoglType으로. 그 외/빈값은 unknown. */
+function normalizeKogl(v: unknown): KoglType {
+  const s = String(v ?? '').trim();
+  return s === '1' || s === '2' || s === '3' || s === '4' ? (s as KoglType) : 'unknown';
+}
+
+/**
+ * 본문에서 언론 제공 사진 블록·캡션을 제거한다.
+ * 정책기사 DataContents에는 뉴스통신사 사진과 "(ⓒ뉴스1, 무단 전재-재배포 금지)" 같은
+ * 제3자 저작권 캡션이 섞여 있어, 그대로 근거로 쓰면 언론 저작물이 딸려 들어온다.
+ */
+function stripThirdPartyMedia(rawHtml: string): string {
+  return rawHtml
+    .replace(/<figure[\s\S]*?<\/figure>/gi, ' ')
+    .replace(/<figcaption[\s\S]*?<\/figcaption>/gi, ' ')
+    .replace(/<div[^>]*class="[^"]*imageWrap[^"]*"[^>]*>[\s\S]*?<\/div>/gi, ' ');
+}
+
+function stripCopyrightLines(text: string): string {
+  // "무단 전재"가 들어간 줄은 언론 저작권 고지 캡션의 잔재 → 배제.
+  return text
+    .split('\n')
+    .filter((line) => !/무단\s*전재/.test(line))
+    .join('\n');
+}
+
 function toArticle(item: RawKoreaNewsItem): KoreaNewsArticle | null {
-  const title = String(item.Title ?? item.title ?? '').trim();
-  const url = String(item.OriginalUrl ?? item.originalUrl ?? '').trim();
-  const rawBody = String(item.DataContents ?? item.dataContents ?? '');
-  const body = htmlToText(rawBody).trim();
+  const title = String(item.Title ?? '').trim();
+  const url = String(item.OriginalUrl ?? '').trim();
+  const koglType = normalizeKogl(item.KoglType);
+  const cleanedHtml = stripThirdPartyMedia(String(item.DataContents ?? ''));
+  const body = stripCopyrightLines(htmlToText(cleanedHtml)).trim();
   if (!title || !url || !body) return null;
-  return { title, url, body, agency: '정책브리핑' };
+  return { title, url, body, agency: '정책브리핑', koglType };
 }
 
 async function fetchOnePage(url: string, doFetch: typeof fetch): Promise<KoreaNewsArticle[]> {
@@ -83,7 +113,7 @@ async function fetchOnePage(url: string, doFetch: typeof fetch): Promise<KoreaNe
   }
 }
 
-/** 날짜창(YYYYMMDD)으로 정책뉴스 코퍼스 수집. 키 없음/오류 시 [](graceful). 윈도우 단위 캐시. */
+/** 단일 날짜창(YYYYMMDD, ≤3일)으로 정책뉴스 조회. 키 없음/오류 시 [](graceful). 윈도우 단위 캐시. */
 export async function fetchWindow(startDate: string, endDate: string, deps: KoreaNewsDeps = {}): Promise<KoreaNewsArticle[]> {
   const serviceKey = deps.serviceKey ?? env.PUBLIC_DATA_KEY;
   if (!serviceKey) return [];
@@ -106,13 +136,11 @@ export async function fetchWindow(startDate: string, endDate: string, deps: Kore
     out.push(...items);
     if (items.length < NUM_OF_ROWS) break;
   }
-  logger.info({ startDate, endDate, count: out.length }, 'korea-news: window fetched');
   // 빈/실패 윈도우는 캐시하지 않는다(403·일시 오류가 TTL 동안 고착되는 것 방지).
   if (out.length > 0) cache.set(cacheKey, { at: Date.now(), articles: out });
   return out;
 }
 
-const WINDOW_DAYS = 90;
 const MATCH_LIMIT = 3;
 const MIN_SCORE = 3; // 제목 토큰 1개 또는 본문 토큰 3개 이상
 const TITLE_WEIGHT = 3;
@@ -151,9 +179,24 @@ function ymd(d: Date): string {
   return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
-/** 주제 → 최근 90일 정책뉴스에서 상위 매칭 기사(본문 포함). */
+/** 최근 LOOKBACK_DAYS를 3일 청크로 나눈 [start,end] 목록(비중첩). */
+function chunkWindows(today: Date): Array<[string, string]> {
+  const windows: Array<[string, string]> = [];
+  for (let offset = 0; offset < LOOKBACK_DAYS; offset += CHUNK_DAYS) {
+    const end = new Date(today.getTime() - offset * DAY_MS);
+    const start = new Date(end.getTime() - (CHUNK_DAYS - 1) * DAY_MS);
+    windows.push([ymd(start), ymd(end)]);
+  }
+  return windows;
+}
+
+/** 주제 → 최근 30일 정책뉴스(3일 청크 합집합)에서 상위 매칭 기사(본문 포함). */
 export async function collectKoreaNews(topic: string, today: Date, deps: KoreaNewsDeps = {}): Promise<KoreaNewsArticle[]> {
-  const start = new Date(today.getTime() - WINDOW_DAYS * 86_400_000);
-  const articles = await fetchWindow(ymd(start), ymd(today), deps);
+  if (tokenize(topic).length === 0) return []; // 빈 주제면 API 호출 스킵
+  const windows = chunkWindows(today);
+  const batches = await Promise.all(windows.map(([start, end]) => fetchWindow(start, end, deps)));
+  const seen = new Set<string>();
+  const articles = batches.flat().filter((a) => !seen.has(a.url) && seen.add(a.url));
+  logger.info({ topic, windows: windows.length, corpus: articles.length }, 'korea-news: corpus collected');
   return matchArticles(articles, topic, MATCH_LIMIT);
 }

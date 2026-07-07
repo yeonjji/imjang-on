@@ -143,10 +143,11 @@ describe('researchTopic', () => {
   });
 
   it('정책뉴스 코퍼스가 근거로 병합된다(네이버 0건이어도 grounded 생성)', async () => {
-    const KOREA_XML = `<response><header><resultCode>00</resultCode></header><body><items><item>` +
+    const KOREA_XML = `<response><header><resultCode>0</resultCode></header><body><NewsItem>` +
       `<Title>전세보증 개편</Title><OriginalUrl>https://www.korea.kr/news/pn1</OriginalUrl>` +
       `<DataContents>${'전세보증금 반환보증 제도 상세 내용. '.repeat(60)}</DataContents>` +
-      `</item></items></body></response>`;
+      `<KoglType>1</KoglType>` +
+      `</NewsItem></body></response>`;
     const fetchImpl = (async (input: string | URL) => {
       const u = typeof input === 'string' ? input : input.toString();
       if (u.includes('apis.data.go.kr')) return { ok: true, text: async () => KOREA_XML } as Response;
@@ -157,5 +158,6 @@ describe('researchTopic', () => {
     expect(r.grounded).not.toBeNull();
     expect(r.grounded!.sourceUrl).toBe('https://www.korea.kr/news/pn1');
     expect(r.grounded!.sourceText).toContain('전세보증금');
+    expect(r.grounded!.sourceText).toContain('공공누리 제1유형'); // API KoglType이 캡션에 반영
   });
 });
