@@ -110,3 +110,49 @@ export async function fetchWindow(startDate: string, endDate: string, deps: Kore
   cache.set(cacheKey, { at: Date.now(), articles: out });
   return out;
 }
+
+const WINDOW_DAYS = 90;
+const MATCH_LIMIT = 3;
+const MIN_SCORE = 3; // 제목 토큰 1개 또는 본문 토큰 3개 이상
+const TITLE_WEIGHT = 3;
+const BODY_WEIGHT = 1;
+
+function tokenize(s: string): string[] {
+  return s
+    .toLowerCase()
+    .split(/[^0-9a-z가-힣]+/i)
+    .filter((t) => t.length >= 2);
+}
+
+export function scoreArticle(article: KoreaNewsArticle, tokens: string[]): number {
+  const title = article.title.toLowerCase();
+  const body = article.body.toLowerCase();
+  let score = 0;
+  for (const t of tokens) {
+    if (title.includes(t)) score += TITLE_WEIGHT;
+    if (body.includes(t)) score += BODY_WEIGHT;
+  }
+  return score;
+}
+
+export function matchArticles(articles: KoreaNewsArticle[], topic: string, limit: number): KoreaNewsArticle[] {
+  const tokens = tokenize(topic);
+  if (tokens.length === 0) return [];
+  return articles
+    .map((a) => ({ a, s: scoreArticle(a, tokens) }))
+    .filter((x) => x.s >= MIN_SCORE)
+    .sort((x, y) => y.s - x.s)
+    .slice(0, limit)
+    .map((x) => x.a);
+}
+
+function ymd(d: Date): string {
+  return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+/** 주제 → 최근 90일 정책뉴스에서 상위 매칭 기사(본문 포함). */
+export async function collectKoreaNews(topic: string, today: Date, deps: KoreaNewsDeps = {}): Promise<KoreaNewsArticle[]> {
+  const start = new Date(today.getTime() - WINDOW_DAYS * 86_400_000);
+  const articles = await fetchWindow(ymd(start), ymd(today), deps);
+  return matchArticles(articles, topic, MATCH_LIMIT);
+}
