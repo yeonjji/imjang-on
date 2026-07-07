@@ -61,7 +61,9 @@ describe('matchArticles', () => {
   });
 
   it('limit 준수', () => {
-    expect(matchArticles(arts, '전세 청약', 1)).toHaveLength(1);
+    // '전세 청약 관련'은 arts[0](score 5)과 arts[1](score 3) 모두 MIN_SCORE 통과 → slice 동작 검증
+    expect(matchArticles(arts, '전세 청약 관련', 1)).toHaveLength(1);
+    expect(matchArticles(arts, '전세 청약 관련', 2)).toHaveLength(2);
   });
 
   it('빈 주제 토큰이면 빈 배열', () => {

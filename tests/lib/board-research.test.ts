@@ -21,6 +21,7 @@ function routedFetch(routes: { search: unknown; pages: Record<string, string> })
 const LONG = '국토교통부는 전세 사기 피해자 지원 대책을 발표했다. '.repeat(40); // >800자
 
 describe('researchTopic', () => {
+  // 의도: serviceKey를 생략 → korea-news는 graceful []을 반환, 네이버 경로만 테스트. 향후 .env.test가 PUBLIC_DATA_KEY를 얻으면 이 동작을 변경하지 않도록 주의.
   beforeEach(() => _resetKoreaNewsCache());
 
   it('공공누리 제1유형 공식 페이지만 근거로 채택', async () => {

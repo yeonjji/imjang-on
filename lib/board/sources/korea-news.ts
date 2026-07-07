@@ -107,7 +107,8 @@ export async function fetchWindow(startDate: string, endDate: string, deps: Kore
     if (items.length < NUM_OF_ROWS) break;
   }
   logger.info({ startDate, endDate, count: out.length }, 'korea-news: window fetched');
-  cache.set(cacheKey, { at: Date.now(), articles: out });
+  // 빈/실패 윈도우는 캐시하지 않는다(403·일시 오류가 TTL 동안 고착되는 것 방지).
+  if (out.length > 0) cache.set(cacheKey, { at: Date.now(), articles: out });
   return out;
 }
 
