@@ -387,6 +387,96 @@ export function flattenWeeklyBoard(board: WeeklyBoard, limit: number): WeeklyBoa
   return items.slice(0, limit);
 }
 
+// ---- 홈 주간 모델 (연속 표기) ----
+export interface WeekModelDay {
+  weekday: string;
+  md: string;
+  isToday: boolean;
+  items: WeeklyBoardItem[];
+}
+
+export interface WeekModel {
+  summary: { open: number; upcoming: number; closed: number };
+  total: number;
+  days: WeekModelDay[];
+}
+
+function mmdd(d: Date): string {
+  return `${String(d.getUTCMonth() + 1).padStart(2, '0')}.${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+/** 특정 셀 날짜 기준의 배지/톤. 셀은 활성 구간 [begin..end] 안에 있다고 가정. */
+export function dayBadge(
+  begin: Date | null,
+  end: Date | null,
+  cell: Date,
+  today: Date,
+): { tone: BoardTone; badge: string } {
+  const b = begin ? dateInt(begin) : null;
+  const e = end ? dateInt(end) : null;
+  const c = dateInt(cell);
+  const t = dateInt(today);
+
+  if (b != null && c < b) return { tone: 'blue', badge: '예정' };
+  if (b != null && c === b && (e == null || c < e)) return { tone: 'green', badge: '접수시작' };
+  if (e != null && c === e) {
+    if (c === t) return { tone: 'orange', badge: '오늘 마감' };
+    return c < t ? { tone: 'gray', badge: '마감' } : { tone: 'orange', badge: '마감일' };
+  }
+  if (e != null) {
+    const d = dayDiff(cell, end!);
+    return d === 1 ? { tone: 'orange', badge: 'D-1' } : { tone: 'green', badge: `D-${d}` };
+  }
+  return { tone: 'green', badge: '진행중' };
+}
+
+export function buildWeekModel(rows: WeeklyNoticeRow[], today: Date = new Date()): WeekModel {
+  const { dates } = getWeekRange(today);
+  const ws = dateInt(dates[0]);
+  const we = dateInt(dates[6]);
+  const buckets: WeeklyBoardItem[][] = dates.map(() => []);
+  const summary = { open: 0, upcoming: 0, closed: 0 };
+
+  for (const r of rows) {
+    const st = deriveStatus(r.receiptBegin, r.receiptEnd, today);
+    if (st.status === 'OPEN') summary.open++;
+    else if (st.status === 'UPCOMING') summary.upcoming++;
+    else summary.closed++;
+
+    const spanBegin = r.receiptBegin ?? r.receiptEnd;
+    const spanEnd = r.receiptEnd ?? r.receiptBegin;
+    if (!spanBegin || !spanEnd) continue;
+
+    const bi = dateInt(spanBegin);
+    const ei = dateInt(spanEnd);
+    if (ei < ws || bi > we) continue; // 주간과 겹치지 않음(방어)
+
+    const startIdx = dates.findIndex((d) => dateInt(d) === Math.max(bi, ws));
+    const endIdx = dates.findIndex((d) => dateInt(d) === Math.min(ei, we));
+
+    const regionShort = parseSigungu(r.address, r.regionName);
+
+    for (let i = startIdx; i <= endIdx; i++) {
+      const cell =
+        st.status === 'CLOSED'
+          ? ({ tone: 'gray', badge: '마감' } as const)
+          : dayBadge(r.receiptBegin, r.receiptEnd, dates[i], today);
+      buckets[i].push({ id: String(r.id), name: r.name, regionShort, tone: cell.tone, badge: cell.badge });
+    }
+  }
+
+  const days: WeekModelDay[] = dates.map((date, i) => ({
+    weekday: WEEKDAYS[date.getUTCDay()],
+    md: mmdd(date),
+    isToday: dateInt(date) === dateInt(today),
+    items: buckets[i].sort(
+      (a, b) => TONE_ORDER[a.tone] - TONE_ORDER[b.tone] || a.name.localeCompare(b.name, 'ko'),
+    ),
+  }));
+
+  return { summary, total: rows.length, days };
+}
+
 export async function getWeeklySubscriptions(today: Date = new Date()): Promise<WeeklyBoard> {
   const { weekStart, weekEnd } = getWeekRange(today);
   const rows = await prisma.$queryRaw<
@@ -416,6 +506,38 @@ export async function getWeeklySubscriptions(today: Date = new Date()): Promise<
   }));
 
   return assembleWeeklyBoard(mapped, today);
+}
+
+export async function getHomeWeekBoard(today: Date = new Date()): Promise<WeekModel> {
+  const { weekStart, weekEnd } = getWeekRange(today);
+  // 구간 겹침: 시작이 주 끝 이전 && 마감이 주 시작 이후 → 주 전체를 관통하는 긴 공고도 포함.
+  const rows = await prisma.$queryRaw<
+    Array<{
+      id: bigint; name: string; region_name: string | null; address: string | null;
+      receipt_begin: Date | null; receipt_end: Date | null;
+    }>
+  >(Prisma.sql`
+    SELECT n.id, n.name,
+           n."regionName" AS region_name,
+           n.address AS address,
+           n."receiptBegin" AS receipt_begin,
+           n."receiptEnd" AS receipt_end
+    FROM "SubscriptionNotice" n
+    WHERE COALESCE(n."receiptBegin", n."receiptEnd") <= ${weekEnd}
+      AND COALESCE(n."receiptEnd", n."receiptBegin") >= ${weekStart}
+    ORDER BY n."receiptEnd" ASC NULLS LAST, n.id ASC
+  `);
+
+  const mapped: WeeklyNoticeRow[] = rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    regionName: r.region_name,
+    address: r.address,
+    receiptBegin: r.receipt_begin,
+    receiptEnd: r.receipt_end,
+  }));
+
+  return buildWeekModel(mapped, today);
 }
 
 export async function getSubscriptionById(id: bigint): Promise<SubscriptionDetail | null> {
