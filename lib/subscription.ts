@@ -388,18 +388,6 @@ export function flattenWeeklyBoard(board: WeeklyBoard, limit: number): WeeklyBoa
 }
 
 // ---- 홈 주간 모델 (연속 표기) ----
-export interface WeekBar {
-  id: string;
-  name: string;
-  regionShort: string | null;
-  startIdx: number;
-  endIdx: number;
-  startsBeforeWeek: boolean;
-  endsAfterWeek: boolean;
-  tone: BoardTone;
-  todayDdayLabel: string | null;
-}
-
 export interface WeekModelDay {
   weekday: string;
   md: string;
@@ -411,7 +399,6 @@ export interface WeekModel {
   summary: { open: number; upcoming: number; closed: number };
   total: number;
   days: WeekModelDay[];
-  bars: WeekBar[];
 }
 
 function mmdd(d: Date): string {
@@ -448,7 +435,6 @@ export function buildWeekModel(rows: WeeklyNoticeRow[], today: Date = new Date()
   const ws = dateInt(dates[0]);
   const we = dateInt(dates[6]);
   const buckets: WeeklyBoardItem[][] = dates.map(() => []);
-  const bars: WeekBar[] = [];
   const summary = { open: 0, upcoming: 0, closed: 0 };
 
   for (const r of rows) {
@@ -469,18 +455,6 @@ export function buildWeekModel(rows: WeeklyNoticeRow[], today: Date = new Date()
     const endIdx = dates.findIndex((d) => dateInt(d) === Math.min(ei, we));
 
     const regionShort = parseSigungu(r.address, r.regionName);
-    const { tone: barTone } = boardTone(st);
-    bars.push({
-      id: String(r.id),
-      name: r.name,
-      regionShort,
-      startIdx,
-      endIdx,
-      startsBeforeWeek: bi < ws,
-      endsAfterWeek: ei > we,
-      tone: barTone,
-      todayDdayLabel: ddayLabel(st),
-    });
 
     for (let i = startIdx; i <= endIdx; i++) {
       const cell =
@@ -491,10 +465,6 @@ export function buildWeekModel(rows: WeeklyNoticeRow[], today: Date = new Date()
     }
   }
 
-  bars.sort(
-    (a, b) => TONE_ORDER[a.tone] - TONE_ORDER[b.tone] || a.endIdx - b.endIdx || a.name.localeCompare(b.name, 'ko'),
-  );
-
   const days: WeekModelDay[] = dates.map((date, i) => ({
     weekday: WEEKDAYS[date.getUTCDay()],
     md: mmdd(date),
@@ -504,7 +474,7 @@ export function buildWeekModel(rows: WeeklyNoticeRow[], today: Date = new Date()
     ),
   }));
 
-  return { summary, total: rows.length, days, bars };
+  return { summary, total: rows.length, days };
 }
 
 export async function getWeeklySubscriptions(today: Date = new Date()): Promise<WeeklyBoard> {

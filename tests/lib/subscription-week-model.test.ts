@@ -52,30 +52,24 @@ describe('buildWeekModel', () => {
     expect(m.days[4].items).toHaveLength(0); // 07-07엔 없음
   });
 
-  it('막대(bar)는 시작~마감 컬럼과 오늘 기준 마감칩을 담는다 (당산역: 마감 07-08)', () => {
+  it('주 시작 전 시작한 진행중 공고는 주 시작~마감일 매일 셀에 그날 배지로 (당산역: 07-01~07-08)', () => {
     const m = buildWeekModel(
       [row({ id: 2n, name: '당산역', receiptBegin: D('2026-07-01'), receiptEnd: D('2026-07-08') })],
       today,
     );
-    const bar = m.bars.find((b) => b.name === '당산역')!;
-    expect(bar.startIdx).toBe(0);            // 07-03 (주 시작으로 클램프)
-    expect(bar.endIdx).toBe(5);              // 07-08
-    expect(bar.startsBeforeWeek).toBe(true); // 07-01 시작
-    expect(bar.endsAfterWeek).toBe(false);
-    expect(bar.tone).toBe('green');          // 오늘 기준 진행중
-    expect(bar.todayDdayLabel).toBe('D-2');  // 오늘(07-06)→07-08
-    // 오늘 셀(07-06=index3) 배지는 D-2
-    expect(m.days[3].items.find((x) => x.name === '당산역')?.badge).toBe('D-2');
+    const badgeOn = (i: number) => m.days[i].items.find((x) => x.name === '당산역')?.badge;
+    // days[0]=07-03 ... days[3]=07-06(오늘) ... days[5]=07-08(마감), days[6]=07-09
+    expect(badgeOn(0)).toBe('D-5');          // 07-03
+    expect(badgeOn(3)).toBe('D-2');          // 07-06(오늘)
+    expect(badgeOn(5)).toBe('마감일');        // 07-08 (미래 마감)
+    expect(m.days[6].items).toHaveLength(0); // 07-09엔 없음
   });
 
-  it('주 전체를 관통하는 공고는 7일 모두에 나타나고 양끝 화살표 플래그가 켜진다', () => {
+  it('주 전체를 관통하는 공고는 7일 모두에 나타난다', () => {
     const m = buildWeekModel(
       [row({ id: 3n, name: '롱런', receiptBegin: D('2026-06-20'), receiptEnd: D('2026-07-20') })],
       today,
     );
-    const bar = m.bars.find((b) => b.name === '롱런')!;
-    expect([bar.startIdx, bar.endIdx]).toEqual([0, 6]);
-    expect(bar.startsBeforeWeek && bar.endsAfterWeek).toBe(true);
     expect(m.days.every((d) => d.items.some((x) => x.name === '롱런'))).toBe(true);
   });
 
@@ -97,6 +91,5 @@ describe('buildWeekModel', () => {
     expect(m.days[0].isToday).toBe(false);
     expect(m.summary).toEqual({ open: 0, upcoming: 0, closed: 0 });
     expect(m.total).toBe(0);
-    expect(m.bars).toEqual([]);
   });
 });

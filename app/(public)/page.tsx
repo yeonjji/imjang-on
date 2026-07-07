@@ -43,7 +43,6 @@ export default async function HomePage() {
       summary: { open: 0, upcoming: 0, closed: 0 },
       total: 0,
       days: [],
-      bars: [],
     }),
     safe(isBoardPublic() ? getHomeLatestPosts(5) : Promise.resolve([]), []),
   ]);

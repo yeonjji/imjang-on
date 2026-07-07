@@ -35,6 +35,7 @@ function DayRow({ day, perDay }: { day: WeekModelDay; perDay: number }) {
             {overflow > 0 && (
               <button
                 type="button"
+                aria-expanded={expanded}
                 onClick={() => setExpanded((v) => !v)}
                 className="text-left text-xs font-bold text-[var(--color-blue)]"
               >
@@ -48,9 +49,9 @@ function DayRow({ day, perDay }: { day: WeekModelDay; perDay: number }) {
   );
 }
 
-export function WeeklyBoardMobile({ days, perDay = 3 }: { days: WeekModelDay[]; perDay?: number }) {
+export function WeeklyBoardDays({ days, perDay = 3 }: { days: WeekModelDay[]; perDay?: number }) {
   return (
-    <div className="flex flex-col gap-2 md:hidden">
+    <div className="flex flex-col gap-2">
       {days.map((day, i) => (
         <DayRow key={i} day={day} perDay={perDay} />
       ))}
