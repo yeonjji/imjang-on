@@ -59,6 +59,16 @@ PR #207에서 청약 보드가 두 단계로 진화했다.
 - 게이트: `pnpm test`, `pnpm typecheck`, `pnpm lint` green.
 - 시각 검증(dev, 운영 데이터): 웹·모바일 모두 날짜별 카드, 공고가 신청기간 전체 날짜에 표기, 오늘 행 강조, 날짜 칸별 더보기 in-place.
 
+## 갱신 (2026-07-07): 웹은 가로 주간 컬럼
+
+시각 확인 후, 웹은 세로 1열 대신 **가로 주간 컬럼(7일 컬럼)**으로 결정. 모바일은 세로 날짜 카드 유지.
+
+- **신규** `weekly-board-columns.tsx`(`'use client'`): `grid-cols-7`로 7일 컬럼, 각 컬럼에 날짜 헤더 + 그날 카드 세로 스택(`SubscriptionBoardItem`), 오늘 컬럼 강조(파란 테두리 + `--color-soft` 배경 + TODAY 배지), 컬럼별 상위 `perDay=4` + `+N건 ↓` 제자리 펼침(`aria-expanded`).
+- **조립부** `weekly-subscription-board.tsx`: `hidden md:block`으로 `<WeeklyBoardColumns>`(웹), `md:hidden`으로 `<WeeklyBoardDays>`(모바일)를 함께 렌더.
+- `weekly-board-days.tsx`는 모바일 전용으로 유지(변경 없음).
+- 데이터 모델(`board.days`) 공유 — 두 뷰가 동일 데이터 사용.
+- **테스트** `weekly-board-columns-ssr.test.ts` 추가: 7컬럼·TODAY, 컬럼당 상위 N + 더보기 개수, 빈 날짜 안내.
+
 ## 영향 파일 요약
 
 - 리셋으로 복원: `weekly-board-mobile.tsx`, `WeekModelDay.items`·`dayBadge`(lib)

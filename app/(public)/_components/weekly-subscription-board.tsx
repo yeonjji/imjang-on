@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { WeekModel } from '@/lib/subscription';
+import { WeeklyBoardColumns } from './weekly-board-columns';
 import { WeeklyBoardDays } from './weekly-board-days';
 import { SourceCaption } from '@/components/ui/source-caption';
 
@@ -52,7 +53,14 @@ export function WeeklySubscriptionBoard({ board }: { board: WeekModel }) {
           </Link>
         </div>
       ) : (
-        <WeeklyBoardDays days={board.days} />
+        <>
+          <div className="hidden md:block">
+            <WeeklyBoardColumns days={board.days} />
+          </div>
+          <div className="md:hidden">
+            <WeeklyBoardDays days={board.days} />
+          </div>
+        </>
       )}
 
       <SourceCaption ids={['applyhome', 'lh-presub']} />
