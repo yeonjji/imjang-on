@@ -1,34 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <response>
   <header>
-    <resultCode>00</resultCode>
-    <resultMsg>NORMAL SERVICE.</resultMsg>
+    <resultCode>0</resultCode>
+    <resultMsg>NORMAL_SERVICE</resultMsg>
   </header>
   <body>
-    <items>
-      <item>
-        <NewsItemId>148900001</NewsItemId>
-        <Title>전세보증금 반환보증 제도 개편</Title>
-        <SubTitle1>가입 요건 완화</SubTitle1>
-        <ApproveDate>2026-06-05 09:00:00</ApproveDate>
-        <MinisterCode>국토교통부</MinisterCode>
-        <ContentsType>정책뉴스</ContentsType>
-        <DataContents>&lt;p&gt;국토교통부는 전세보증금 반환보증 제도의 가입 요건을 완화한다고 밝혔다. 개편안에 따르면 반환보증의 가입 대상과 보증 한도, 보증료율 산정 기준이 조정된다. 임차인은 전세 계약 기간 동안 보증금을 안전하게 보호받을 수 있으며, 신청 절차와 필요 서류, 처리 기간도 함께 안내됐다. 이번 조치는 전세 사기 피해를 예방하고 임차인의 주거 안정을 강화하기 위한 것이다. 관계 부처는 제도 시행에 맞춰 상담 창구를 운영하고, 대상자에게 개별 안내를 제공할 계획이라고 설명했다. 세부 적용 일정과 지역별 보증 한도는 별도 공지를 통해 확인할 수 있다. 정부는 향후 제도 운영 현황을 점검해 필요한 경우 추가 보완 방안을 마련하기로 했다. 보증 가입은 임대차 계약을 체결한 임차인이 온라인 또는 방문 접수를 통해 신청할 수 있으며, 보증 대상 주택의 유형과 전세보증금 규모에 따라 심사 기준이 달라진다. 보증료는 보증금액과 보증 기간을 기준으로 산정되고, 사회적 배려 대상에게는 보증료 일부가 감면된다. 계약 갱신이나 보증금 증액이 있는 경우에는 변경 사항을 반영해 보증 내용을 갱신해야 한다. 임차인이 계약 종료 후에도 보증금을 돌려받지 못하면 보증기관이 대신 반환하고 임대인에게 구상권을 행사한다. 국토교통부는 제도 개편에 맞춰 안내 책자와 상담 인력을 확충하고, 지방자치단체 및 관계 기관과 협력해 홍보를 강화할 방침이라고 덧붙였다. 아울러 임차인이 계약 전 확인해야 할 등기부등본 열람, 임대인 세금 체납 여부, 선순위 채권 규모 등 유의 사항도 함께 제공한다.&lt;/p&gt;</DataContents>
-        <ThumbnailUrl>https://www.korea.kr/img/thumb1.jpg</ThumbnailUrl>
-        <OriginalUrl>https://www.korea.kr/news/policyNewsView.do?newsId=148900001</OriginalUrl>
-      </item>
-      <item>
-        <NewsItemId>148900002</NewsItemId>
-        <Title>청년 주택드림 청약통장 안내</Title>
-        <ApproveDate>2026-06-06 10:00:00</ApproveDate>
-        <MinisterCode>국토교통부</MinisterCode>
-        <ContentsType>정책뉴스</ContentsType>
-        <DataContents>청년 주택드림 청약통장의 가입 대상과 금리, 우대 조건을 안내한다. 대상은 일정 소득 이하의 무주택 청년이며, 납입 한도와 우대 금리, 청약 당첨 후 연계되는 대출 조건이 함께 적용된다. 가입 방법과 필요 서류, 기존 청약통장에서의 전환 절차도 상세히 제시됐다. 통장 가입자는 주택 청약 시 우선 혜택을 받을 수 있고, 향후 연계 대출을 통해 자금 부담을 낮출 수 있다. 정부는 청년층의 자산 형성과 내 집 마련을 지원하기 위해 이번 상품을 운영한다고 밝혔다. 세부 금리와 우대 조건은 취급 은행과 공고를 통해 확인할 수 있다.</DataContents>
-        <OriginalUrl>https://www.korea.kr/news/policyNewsView.do?newsId=148900002</OriginalUrl>
-      </item>
-    </items>
-    <numOfRows>3</numOfRows>
-    <pageNo>1</pageNo>
-    <totalCount>2</totalCount>
+    <NewsItem>
+      <NewsItemId>148900001</NewsItemId>
+      <ContentsStatus>U</ContentsStatus>
+      <ApproveDate>07/05/2026 09:00:00</ApproveDate>
+      <GroupingCode>policy</GroupingCode>
+      <Title><![CDATA[전세보증금 반환보증 제도 개편]]></Title>
+      <SubTitle1><![CDATA[가입 요건 완화]]></SubTitle1>
+      <ContentsType>H</ContentsType>
+      <DataContents><![CDATA[<p>국토교통부는 전세보증금 반환보증 제도의 가입 요건을 완화한다고 밝혔다.</p><div class="imageWrap"><figure class="center"><figcaption class="captions"><b>서울의 한 부동산 중개업소. 2026.7.5. (ⓒ뉴스1, 무단 전재-재배포 금지)</b></figcaption></figure></div><p>개편안에 따르면 반환보증의 가입 대상과 보증 한도, 보증료율 산정 기준이 조정된다. 임차인은 전세 계약 기간 동안 보증금을 안전하게 보호받을 수 있으며, 신청 절차와 필요 서류, 처리 기간도 함께 안내됐다. 이번 조치는 전세 사기 피해를 예방하고 임차인의 주거 안정을 강화하기 위한 것이다. 관계 부처는 제도 시행에 맞춰 상담 창구를 운영하고, 대상자에게 개별 안내를 제공할 계획이라고 설명했다. 세부 적용 일정과 지역별 보증 한도는 별도 공지를 통해 확인할 수 있다. 정부는 향후 제도 운영 현황을 점검해 필요한 경우 추가 보완 방안을 마련하기로 했다. 보증 가입은 임대차 계약을 체결한 임차인이 온라인 또는 방문 접수를 통해 신청할 수 있으며, 보증 대상 주택의 유형과 전세보증금 규모에 따라 심사 기준이 달라진다. 보증료는 보증금액과 보증 기간을 기준으로 산정되고, 사회적 배려 대상에게는 보증료 일부가 감면된다. 계약 갱신이나 보증금 증액이 있는 경우에는 변경 사항을 반영해 보증 내용을 갱신해야 한다. 임차인이 계약 종료 후에도 보증금을 돌려받지 못하면 보증기관이 대신 반환하고 임대인에게 구상권을 행사한다.</p>]]></DataContents>
+      <MinisterCode>1613000</MinisterCode>
+      <OriginalUrl>https://www.korea.kr/news/policyNewsView.do?newsId=148900001&amp;call_from=openData</OriginalUrl>
+      <KoglType>1</KoglType>
+    </NewsItem>
+    <NewsItem>
+      <NewsItemId>148900002</NewsItemId>
+      <ApproveDate>07/06/2026 10:00:00</ApproveDate>
+      <Title><![CDATA[청년 주택드림 청약통장 안내]]></Title>
+      <ContentsType>H</ContentsType>
+      <DataContents><![CDATA[<p>청년 주택드림 청약통장의 가입 대상과 금리, 우대 조건을 안내한다. 대상은 일정 소득 이하의 무주택 청년이며, 납입 한도와 우대 금리, 청약 당첨 후 연계되는 대출 조건이 함께 적용된다. 가입 방법과 필요 서류, 기존 청약통장에서의 전환 절차도 상세히 제시됐다.</p>]]></DataContents>
+      <OriginalUrl>https://www.korea.kr/news/policyNewsView.do?newsId=148900002&amp;call_from=openData</OriginalUrl>
+      <KoglType>1</KoglType>
+    </NewsItem>
+    <NewsItem>
+      <NewsItemId>148900003</NewsItemId>
+      <ApproveDate>07/06/2026 11:00:00</ApproveDate>
+      <Title><![CDATA[제한 라이선스 정책 사진기사]]></Title>
+      <ContentsType>H</ContentsType>
+      <DataContents><![CDATA[<p>제4유형(출처표시+상업금지+변경금지)으로 표시된 정책 사진 기사 본문. 이 항목은 상업 이용이 제한되므로 근거에서 배제되어야 한다.</p>]]></DataContents>
+      <OriginalUrl>https://www.korea.kr/news/policyNewsView.do?newsId=148900003&amp;call_from=openData</OriginalUrl>
+      <KoglType>4</KoglType>
+    </NewsItem>
   </body>
 </response>

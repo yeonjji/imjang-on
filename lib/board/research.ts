@@ -125,7 +125,7 @@ function rankUsable(a: SourceMeta, b: SourceMeta): number {
 
 /** 주제 → 공공누리 이용가능 공식 근거 수집 + 대표출처 collapse. */
 export async function researchTopic(topic: string, today: Date, deps: ResearchDeps = {}): Promise<ResearchResult> {
-  // (1) korea.kr 정책뉴스 코퍼스: 본문 포함 → fetch/추출 불필요, 전부 공공저작물(unknown→usable).
+  // (1) korea.kr 정책뉴스 코퍼스: 본문 포함 → fetch/추출 불필요. API가 준 KoglType으로 라이선스 판정.
   const koreaArticles = await collectKoreaNews(topic, today, { fetchImpl: deps.fetchImpl, serviceKey: deps.serviceKey });
 
   // (2) 네이버 멀티쿼리 → 허용 도메인만 + 동일 URL 중복 제거 → 상한.
@@ -139,11 +139,12 @@ export async function researchTopic(topic: string, today: Date, deps: ResearchDe
   const metas: SourceMeta[] = [];
   const bodies = new Map<string, string>();
 
-  // 정책뉴스 먼저 등록(대표 우선순위·중복 기준).
+  // 정책뉴스 먼저 등록(대표 우선순위·중복 기준). 제한유형(2·3·4)은 네이버와 동일 게이트로 배제.
   for (const a of koreaArticles) {
     if (bodies.has(a.url)) continue;
     const chars = a.body.replace(/\s/g, '').length;
-    metas.push({ url: a.url, domain: hostOf(a.url), koglType: 'unknown', usable: chars >= MIN_SOURCE_CHARS, title: a.title, chars });
+    const usable = isUsableLicense(a.koglType) && chars >= MIN_SOURCE_CHARS;
+    metas.push({ url: a.url, domain: hostOf(a.url), koglType: a.koglType, usable, title: a.title, chars });
     bodies.set(a.url, a.body);
   }
 
