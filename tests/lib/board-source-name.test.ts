@@ -44,14 +44,18 @@ describe('canonicalizeSourceName', () => {
       '국가법령정보센터',
     );
   });
+  it('개별 등재한 공공 사이트 host를 정식 명칭으로', () => {
+    expect(canonicalizeSourceName('www.nabis.go.kr')).toBe('균형발전종합정보시스템');
+    expect(canonicalizeSourceName('www.sejong.go.kr')).toBe('세종특별자치시');
+  });
   it('임장ON 자체 집계는 청약홈보다 우선해 자체 라벨로', () => {
     expect(canonicalizeSourceName('임장ON 청약 집계(원자료: 청약홈·LH)')).toBe('임장ON 청약 집계');
   });
   it('크롤 찌꺼기는 제거 후 매핑 없으면 정제값 유지', () => {
     expect(canonicalizeSourceName('기후에너지환경부부처별 뉴스 이동')).toBe('기후에너지환경부');
   });
-  it('raw host는 스킴·www를 벗겨 읽기 쉽게', () => {
-    expect(canonicalizeSourceName('www.nabis.go.kr')).toBe('nabis.go.kr');
-    expect(canonicalizeSourceName('https://www.sejong.go.kr')).toBe('sejong.go.kr');
+  it('매핑 없는 raw host는 스킴·www를 벗겨 읽기 쉽게', () => {
+    expect(canonicalizeSourceName('www.data.go.kr')).toBe('data.go.kr');
+    expect(canonicalizeSourceName('https://www.example.go.kr')).toBe('example.go.kr');
   });
 });
