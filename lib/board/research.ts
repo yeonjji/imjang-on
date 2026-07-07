@@ -2,6 +2,7 @@ import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { htmlToText } from '@/lib/board/html-text';
 import { isAllowedDomain, detectKoglType, isUsableLicense, domainLabel, licenseLabel, type KoglType } from '@/lib/board/source-policy';
+import { collectKoreaNews } from '@/lib/board/sources/korea-news';
 
 const WEBKR_URL = 'https://openapi.naver.com/v1/search/webkr.json';
 const SEARCH_TIMEOUT_MS = 8_000;
@@ -16,6 +17,7 @@ export interface ResearchDeps {
   fetchImpl?: typeof fetch;
   clientId?: string;
   clientSecret?: string;
+  serviceKey?: string;
 }
 
 export interface SourceMeta {
@@ -83,6 +85,13 @@ async function searchTopic(topic: string, deps: ResearchDeps): Promise<RawCandid
   }
 }
 
+/** 공식 출처 편향 변형 쿼리로 recall 향상. 결과는 합집합(중복은 researchTopic에서 제거). */
+const QUERY_SUFFIXES = ['', ' 보도자료', ' 제도', ' 지원'];
+async function searchVariants(topic: string, deps: ResearchDeps): Promise<RawCandidate[]> {
+  const results = await Promise.all(QUERY_SUFFIXES.map((suffix) => searchTopic(`${topic}${suffix}`.trim(), deps)));
+  return results.flat();
+}
+
 /** 공식 페이지 fetch + 본문 추출 + 공공누리 판정. 실패 시 null(graceful). */
 async function fetchAndExtract(url: string, deps: ResearchDeps): Promise<{ text: string; koglType: KoglType } | null> {
   const doFetch = deps.fetchImpl ?? fetch;
@@ -116,18 +125,31 @@ function rankUsable(a: SourceMeta, b: SourceMeta): number {
 
 /** 주제 → 공공누리 이용가능 공식 근거 수집 + 대표출처 collapse. */
 export async function researchTopic(topic: string, today: Date, deps: ResearchDeps = {}): Promise<ResearchResult> {
-  const raw = await searchTopic(topic, deps);
-  // 허용 도메인만 + 동일 URL 중복 제거(웹검색이 같은 canonical URL을 여러 번 반환) — 첫 항목 유지.
+  // (1) korea.kr 정책뉴스 코퍼스: 본문 포함 → fetch/추출 불필요, 전부 공공저작물(unknown→usable).
+  const koreaArticles = await collectKoreaNews(topic, today, { fetchImpl: deps.fetchImpl, serviceKey: deps.serviceKey });
+
+  // (2) 네이버 멀티쿼리 → 허용 도메인만 + 동일 URL 중복 제거 → 상한.
+  const raw = await searchVariants(topic, deps);
   const allowed = [...new Map(raw.filter((c) => isAllowedDomain(c.url)).map((c) => [c.url, c])).values()].slice(
     0,
     MAX_CANDIDATES,
   );
-
-  // 후보 페이지를 동시 추출(순차 N×timeout으로 maxDuration 초과 방지).
   const exts = await Promise.all(allowed.map((c) => fetchAndExtract(c.url, deps)));
+
   const metas: SourceMeta[] = [];
   const bodies = new Map<string, string>();
+
+  // 정책뉴스 먼저 등록(대표 우선순위·중복 기준).
+  for (const a of koreaArticles) {
+    if (bodies.has(a.url)) continue;
+    const chars = a.body.replace(/\s/g, '').length;
+    metas.push({ url: a.url, domain: hostOf(a.url), koglType: 'unknown', usable: chars >= MIN_SOURCE_CHARS, title: a.title, chars });
+    bodies.set(a.url, a.body);
+  }
+
+  // 네이버 후보 등록(정책뉴스와 동일 URL이면 스킵).
   allowed.forEach((c, i) => {
+    if (bodies.has(c.url)) return;
     const ext = exts[i];
     const koglType: KoglType = ext?.koglType ?? 'unknown';
     const chars = ext ? ext.text.replace(/\s/g, '').length : 0;

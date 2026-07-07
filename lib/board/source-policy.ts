@@ -4,7 +4,26 @@ export type KoglType = '1' | '2' | '3' | '4' | 'unknown';
  * 본문 추출을 허용하는 공공 도메인. **'자유이용 보증'이 아니라 '뉴스 배제용 1차 필터'.**
  * .or.kr은 민간 협회·재단도 쓰므로 와일드카드 금지 — 검증된 공공기관 호스트만 개별 등재.
  */
-const OR_KR_ALLOWLIST = new Set<string>(['bok.or.kr', 'www.bok.or.kr']);
+const OR_KR_ALLOWLIST = new Set<string>([
+  'bok.or.kr', 'www.bok.or.kr',        // 한국은행
+  'reb.or.kr', 'www.reb.or.kr',        // 한국부동산원
+  'khug.or.kr', 'www.khug.or.kr',      // 주택도시보증공사(HUG)
+]);
+
+/**
+ * .re.kr 도메인 중 검증된 공공 연구기관만 개별 등재.
+ */
+const RE_KR_ALLOWLIST = new Set<string>([
+  'krihs.re.kr', 'www.krihs.re.kr',    // 국토연구원
+  'kdi.re.kr', 'www.kdi.re.kr',        // 한국개발연구원(KDI)
+]);
+
+/**
+ * .kr 도메인 중 검증된 공공기관.
+ */
+const KR_ALLOWLIST = new Set<string>([
+  'kosis.kr', 'www.kosis.kr',          // 통계청 국가통계포털
+]);
 
 export function isAllowedDomain(url: string): boolean {
   let host: string;
@@ -16,6 +35,8 @@ export function isAllowedDomain(url: string): boolean {
   if (host === 'korea.kr' || host === 'www.korea.kr') return true;
   if (host === 'go.kr' || host.endsWith('.go.kr')) return true;
   if (OR_KR_ALLOWLIST.has(host)) return true;
+  if (RE_KR_ALLOWLIST.has(host)) return true;
+  if (KR_ALLOWLIST.has(host)) return true;
   return false;
 }
 
@@ -67,6 +88,16 @@ const DOMAIN_LABEL: Record<string, string> = {
   'www.korea.kr': '정책브리핑',
   'bok.or.kr': '한국은행',
   'www.bok.or.kr': '한국은행',
+  'kosis.kr': '국가통계포털',
+  'www.kosis.kr': '국가통계포털',
+  'reb.or.kr': '한국부동산원',
+  'www.reb.or.kr': '한국부동산원',
+  'khug.or.kr': '주택도시보증공사',
+  'www.khug.or.kr': '주택도시보증공사',
+  'krihs.re.kr': '국토연구원',
+  'www.krihs.re.kr': '국토연구원',
+  'kdi.re.kr': '한국개발연구원',
+  'www.kdi.re.kr': '한국개발연구원',
 };
 
 export function domainLabel(host: string): string {
