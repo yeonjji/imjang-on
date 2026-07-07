@@ -12,7 +12,7 @@ export function Footer() {
         </div>
         <div>
           <p className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">서비스</p>
-          <ul className="space-y-2 text-sm">
+          <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <li><Link href="/">홈</Link></li>
             <li><Link href="/list">실거래가</Link></li>
             <li><Link href="/list?type=apt">아파트</Link></li>
