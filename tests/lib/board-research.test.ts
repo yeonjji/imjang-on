@@ -122,4 +122,19 @@ describe('researchTopic', () => {
     const r = await researchTopic('x', TODAY, { ...CREDS, fetchImpl });
     expect(r.grounded).toBeNull();
   });
+
+  it('멀티쿼리: 네이버 검색을 여러 변형으로 호출(호출 횟수 ≥ 2)', async () => {
+    let naverCalls = 0;
+    const fetchImpl = (async (input: string | URL) => {
+      const u = typeof input === 'string' ? input : input.toString();
+      if (u.includes('openapi.naver.com')) {
+        naverCalls++;
+        return { ok: true, json: async () => ({ items: [{ title: 't', link: 'https://www.korea.kr/news/a', description: 's' }] }) } as Response;
+      }
+      return { ok: true, text: async () => `<p>${LONG}</p>공공누리 제1유형` } as Response;
+    }) as unknown as typeof fetch;
+    const r = await researchTopic('전세 사기', TODAY, { ...CREDS, fetchImpl });
+    expect(naverCalls).toBeGreaterThanOrEqual(2);
+    expect(r.candidates).toHaveLength(1); // 동일 URL 중복 제거
+  });
 });

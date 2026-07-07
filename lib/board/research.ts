@@ -83,6 +83,13 @@ async function searchTopic(topic: string, deps: ResearchDeps): Promise<RawCandid
   }
 }
 
+/** 공식 출처 편향 변형 쿼리로 recall 향상. 결과는 합집합(중복은 researchTopic에서 제거). */
+const QUERY_SUFFIXES = ['', ' 보도자료', ' 제도', ' 지원'];
+async function searchVariants(topic: string, deps: ResearchDeps): Promise<RawCandidate[]> {
+  const results = await Promise.all(QUERY_SUFFIXES.map((suffix) => searchTopic(`${topic}${suffix}`.trim(), deps)));
+  return results.flat();
+}
+
 /** 공식 페이지 fetch + 본문 추출 + 공공누리 판정. 실패 시 null(graceful). */
 async function fetchAndExtract(url: string, deps: ResearchDeps): Promise<{ text: string; koglType: KoglType } | null> {
   const doFetch = deps.fetchImpl ?? fetch;
@@ -116,7 +123,7 @@ function rankUsable(a: SourceMeta, b: SourceMeta): number {
 
 /** 주제 → 공공누리 이용가능 공식 근거 수집 + 대표출처 collapse. */
 export async function researchTopic(topic: string, today: Date, deps: ResearchDeps = {}): Promise<ResearchResult> {
-  const raw = await searchTopic(topic, deps);
+  const raw = await searchVariants(topic, deps);
   // 허용 도메인만 + 동일 URL 중복 제거(웹검색이 같은 canonical URL을 여러 번 반환) — 첫 항목 유지.
   const allowed = [...new Map(raw.filter((c) => isAllowedDomain(c.url)).map((c) => [c.url, c])).values()].slice(
     0,
