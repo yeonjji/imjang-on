@@ -1,6 +1,7 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { FilterSelect } from '@/app/(public)/_components/filter-select';
 
 interface Region { sido: string; sigungu: string; sigunguCode: string; }
 interface TypeCode { typeCode: string; typeName: string; }
@@ -46,7 +47,6 @@ export function HospitalFilterPanel({
     }
   }
 
-  const selectCls = 'w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-blue-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--color-blue)]';
   const curRegion = p.get('region') ?? '';
   const curType = p.get('type') ?? '';
 
@@ -55,23 +55,21 @@ export function HospitalFilterPanel({
       <section>
         <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">지역</h3>
         <div className="mt-2 flex flex-col gap-2">
-          <select
-            className={selectCls}
+          <FilterSelect
             value={selectedSido}
             onChange={e => { setSelectedSido(e.target.value); update({ region: null }); }}
           >
             <option value="">시도 전체</option>
             {sidos.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          </FilterSelect>
           {sigungus.length > 0 && (
-            <select
-              className={selectCls}
+            <FilterSelect
               value={curRegion}
               onChange={e => update({ region: e.target.value || null })}
             >
               <option value="">시군구 전체</option>
               {sigungus.map(r => <option key={r.sigunguCode} value={r.sigunguCode}>{r.sigungu}</option>)}
-            </select>
+            </FilterSelect>
           )}
         </div>
       </section>
@@ -79,14 +77,13 @@ export function HospitalFilterPanel({
       <section>
         <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">종류</h3>
         <div className="mt-2">
-          <select
-            className={selectCls}
+          <FilterSelect
             value={curType}
             onChange={e => update({ type: e.target.value || null })}
           >
             <option value="">전체</option>
             {typeCodes.map(t => <option key={t.typeCode} value={t.typeCode}>{t.typeName}</option>)}
-          </select>
+          </FilterSelect>
         </div>
       </section>
     </div>

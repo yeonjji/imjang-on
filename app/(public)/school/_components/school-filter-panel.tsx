@@ -2,6 +2,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Chip } from '@/components/ui/chip';
+import { FilterSelect } from '@/app/(public)/_components/filter-select';
 
 interface SidoItem { code: string; sido: string; fullName: string; }
 interface SigunguItem { code: string; sigungu: string; fullName: string; sigunguCode: string; }
@@ -45,8 +46,6 @@ export function SchoolFilterPanel({ basePath, sidoList, params: ext, onParamsCha
     else router.push(`${basePath}?${next.toString()}`);
   }
 
-  const selectCls = 'w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-blue-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--color-blue)]';
-
   return (
     <div className="flex flex-col gap-6">
       <section>
@@ -64,15 +63,15 @@ export function SchoolFilterPanel({ basePath, sidoList, params: ext, onParamsCha
         <section>
           <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">지역</h3>
           <div className="mt-2 flex flex-col gap-2">
-            <select value={sido ?? ''} onChange={(e) => update({ sido: e.target.value || null, region: null })} className={selectCls}>
+            <FilterSelect value={sido ?? ''} onChange={(e) => update({ sido: e.target.value || null, region: null })}>
               <option value="">시도 전체</option>
               {sidoList.map((s) => <option key={s.code} value={s.sido}>{s.fullName}</option>)}
-            </select>
+            </FilterSelect>
             {sigunguList.length > 0 && (
-              <select value={region ?? ''} onChange={(e) => update({ region: e.target.value || null })} className={selectCls}>
+              <FilterSelect value={region ?? ''} onChange={(e) => update({ region: e.target.value || null })}>
                 <option value="">시군구 전체</option>
                 {sigunguList.map((sg) => <option key={sg.code} value={sg.sigunguCode}>{sg.sigungu}</option>)}
-              </select>
+              </FilterSelect>
             )}
           </div>
         </section>
