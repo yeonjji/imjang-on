@@ -21,7 +21,7 @@ import { LocationViewer } from '@/components/ui/location-viewer';
 import { Card } from '@/components/ui/card';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { getNearbySubscriptions } from '@/lib/subscription';
-import { shortSidoFromRegionCode } from '@/lib/region';
+import { shortSidoFromRegionCode, detailTitleLocality } from '@/lib/region';
 import { NearbySubscriptions } from './_components/nearby-subscriptions';
 import { propertyMetaDescription } from '@/lib/seo/blurb';
 import { JsonLd, residenceSchema, breadcrumbSchema, aptProvenanceNodes } from '@/lib/seo/json-ld';
@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { narrative } = await loadAptInsight(BigInt(id));
   const indexable = !!narrative && narrative.fired.length >= 3;
   return {
-    title: `${property.name} 실거래가 · ${property.region.sigungu}`,
+    title: `${property.name} 실거래가 · ${detailTitleLocality(property.region, property.address)}`,
     description: narrative?.text.slice(0, 150) ?? propertyMetaDescription({
       name: property.name,
       typeLabel: '아파트',
