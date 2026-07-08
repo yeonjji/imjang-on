@@ -31,6 +31,7 @@ import {
   loadAptInsight,
 } from '@/lib/insights/apt-loader';
 import { staticMapUrl } from '@/lib/seo/static-map';
+import { detailTitleLocality } from '@/lib/region';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 import { BoardBriefingSection } from '../../_components/board-briefing-section';
@@ -53,7 +54,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { narrative } = await loadAptInsight(BigInt(id));
   const indexable = !!narrative && narrative.fired.length >= 3;
   return {
-    title: `${p.name} 실거래가 · ${p.region.sigungu}`,
+    title: `${p.name} 실거래가 · ${detailTitleLocality(p.region, p.address)}`,
     description: narrative?.text.slice(0, 150) ?? propertyMetaDescription({
       name: p.name,
       typeLabel: '연립·다세대',

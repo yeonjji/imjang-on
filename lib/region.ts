@@ -227,3 +227,18 @@ export async function getPopularSigungus(limit = 6): Promise<PopularRegion[]> {
   }
   return result;
 }
+
+/**
+ * 상세페이지 title의 지역 라벨.
+ * 정상 물건은 시군구를 그대로 쓴다. 세종특별자치시처럼 시군구 계층이 없어
+ * region.sigungu가 null인 경우(약 217건)만 주소 첫 토큰(읍/면/동)을 붙여
+ * "시도 읍면동" 형태로 지역 키워드를 채운다(폴백은 시/도명).
+ */
+export function detailTitleLocality(
+  region: { sigungu: string | null; sido: string },
+  address: string,
+): string {
+  if (region.sigungu) return region.sigungu;
+  const emd = address.trim().split(/\s+/)[0];
+  return emd && /[동읍면리가]$/.test(emd) ? `${region.sido} ${emd}` : region.sido;
+}
