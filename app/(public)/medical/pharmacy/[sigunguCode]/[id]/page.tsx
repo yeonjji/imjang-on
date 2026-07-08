@@ -38,6 +38,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: `${pharmacy.name} — 약국 정보·주변 아파트`,
     description: `${pharmacy.name} 위치·연락처와 도보권 아파트 실거래가. ${regionPart}주변 생활 인프라를 한눈에 확인하세요.`,
+    // 약국 상세는 고유 콘텐츠(이름·주소·시간)가 얇고 나머지는 전 위치 공통 파생이라
+    // near-duplicate 색인 부풀림 요인. 로컬 열람용으로 렌더는 유지하되 색인에서만 배제.
+    // follow 유지로 근접 아파트 실거래 링크에쿼티는 전달. (docs/adsense/approval-strategy-2026-07-08.md P0-A)
+    robots: { index: false, follow: true },
     alternates: { canonical: `/medical/pharmacy/${pharmacy.sigunguCode}/${id}` },
   };
 }
