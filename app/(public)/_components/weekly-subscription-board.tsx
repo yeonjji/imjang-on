@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import type { WeekModel } from '@/lib/subscription';
-import { WeeklyBoardColumns } from './weekly-board-columns';
-import { WeeklyBoardDays } from './weekly-board-days';
+import { WeeklyBoard } from './weekly-board';
 import { SourceCaption } from '@/components/ui/source-caption';
 
 function SummaryHeader({ summary }: { summary: WeekModel['summary'] }) {
@@ -53,14 +52,7 @@ export function WeeklySubscriptionBoard({ board }: { board: WeekModel }) {
           </Link>
         </div>
       ) : (
-        <>
-          <div className="hidden md:block">
-            <WeeklyBoardColumns days={board.days} />
-          </div>
-          <div className="md:hidden">
-            <WeeklyBoardDays days={board.days} />
-          </div>
-        </>
+        <WeeklyBoard days={board.days} />
       )}
 
       <SourceCaption ids={['applyhome', 'lh-presub']} />
