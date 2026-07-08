@@ -22,7 +22,7 @@ export function SiblingTabs({ currentHref }: Props) {
         data-testid="sibling-tabs"
         className="mb-4 rounded-[18px] border border-[var(--color-line)] bg-white px-4 shadow-[var(--shadow-soft)]"
       >
-        <nav aria-label="형제 카테고리" className="flex gap-6 overflow-x-auto">
+        <nav aria-label="형제 카테고리" className="flex gap-6 overflow-x-auto overflow-y-hidden">
           {tabs.items.map((item) => {
             const active = item.href === currentHref;
             const base = '-mb-px py-3 text-sm whitespace-nowrap';
