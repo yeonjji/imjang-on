@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getLoanSummaries, collectFacets } from '@/lib/loan/list';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { LoanExplorer } from './_components/loan-explorer';
+import { FinanceTabs } from '../_components/finance-tabs';
 import { Faq } from '../_components/faq';
 
 export const metadata: Metadata = {
@@ -35,6 +36,8 @@ export default async function FinancePage() {
           안내 기준이며, 실제 신청 가능 여부·잔여 한도는 취급기관에 확인하세요.
         </p>
       </div>
+
+      <FinanceTabs currentHref="/finance" />
 
       <LoanExplorer rows={rows} facets={facets} />
 

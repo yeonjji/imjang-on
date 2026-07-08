@@ -5,6 +5,7 @@ import { formatAsOf } from '@/lib/jeonse/labels';
 import { getSidoList, getAllSigungus } from '@/lib/region';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { JeonseFinder } from './_components/jeonse-finder';
+import { FinanceTabs } from '../_components/finance-tabs';
 import { Faq } from '../_components/faq';
 
 export const metadata: Metadata = {
@@ -45,6 +46,8 @@ export default async function JeonseGuaranteePage() {
           <strong className="font-semibold">실제와 다를 수 있습니다</strong>. 신청 전 한국주택금융공사(HF)에서 확인하세요.
         </p>
       </div>
+
+      <FinanceTabs currentHref="/jeonse-guarantee" />
 
       <JeonseFinder products={products} regions={regions} sidoList={sidoList} sigungus={sigungus} />
 
