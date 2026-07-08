@@ -1,0 +1,14 @@
+-- Enable Row-Level Security (RLS) on the `Guide` table.
+--
+-- Why: `Guide` was created in 20260629000000_add_guide_table without RLS, so
+-- it was the one `public` table left exposed after 20260617000000_enable_rls_public_tables.
+-- Supabase advisor `rls_disabled_in_public` (Critical) flagged it: anyone with the
+-- project's anon key could read/edit/delete every row via the Data API (PostgREST).
+--
+-- Safe for this app: the app never uses the Supabase Data API or anon key -- it
+-- connects only through Prisma using the `postgres` role, which carries BYPASSRLS.
+-- Enabling RLS with no policy denies all anon/authenticated access (the goal)
+-- while Prisma keeps full access. No policies are required.
+--
+-- Idempotent: re-enabling RLS on a table is a no-op.
+ALTER TABLE "Guide" ENABLE ROW LEVEL SECURITY;
