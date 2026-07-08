@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LIFE_GROUPS } from '../_components/life-menu';
+import { isBoardPublic } from '@/lib/board/visibility';
 
 export const metadata: Metadata = {
   title: '사이트맵',
@@ -22,6 +23,20 @@ const PRIMARY: { heading: string; links: { href: string; label: string }[] }[] =
   {
     heading: '청약',
     links: [{ href: '/subscription', label: '청약·분양 일정' }],
+  },
+  {
+    heading: '금융정보',
+    links: [
+      { href: '/finance', label: '서민금융 대출상품' },
+      { href: '/jeonse-guarantee', label: '맞춤 전세보증 찾기' },
+    ],
+  },
+  {
+    heading: '콘텐츠',
+    links: [
+      { href: '/guide', label: '가이드' },
+      ...(isBoardPublic() ? [{ href: '/board', label: '임장ON 브리핑' }] : []),
+    ],
   },
   {
     heading: '안내',
