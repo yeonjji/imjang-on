@@ -7,9 +7,17 @@ export const OG_CONTENT_TYPE = 'image/png';
 // 동적 OG 라우트는 Vercel 서버리스 함수로 실행되며, 이 폰트 파일이 함수 번들에
 // 포함되어야 한다. process.cwd() 경로는 번들러가 자동 추적하지 못하므로
 // next.config.mjs의 outputFileTracingIncludes로 명시적으로 포함시킨다.
-export async function loadOgFonts() {
+async function readFontsFromDisk() {
   const data = await readFile(join(process.cwd(), 'lib/seo/fonts/Pretendard-Bold.otf'));
   return [{ name: 'Pretendard', data, weight: 700 as const, style: 'normal' as const }];
+}
+
+// 웜(warm) 인스턴스에서 1.58MB 폰트를 OG 인보케이션마다 다시 읽지 않도록 모듈 스코프에 1회 메모이즈.
+let fontsPromise: ReturnType<typeof readFontsFromDisk> | null = null;
+
+export function loadOgFonts() {
+  fontsPromise ??= readFontsFromDisk();
+  return fontsPromise;
 }
 
 /** OG 이미지 공통 레이아웃. satori 제약상 flex/명시 스타일만 사용. */

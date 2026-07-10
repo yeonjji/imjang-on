@@ -1,0 +1,40 @@
+name: warm-hub-cache
+
+# Vercel 프로덕션 배포 완료 후 홈·허브(/apt·/officetel·/villa) ISR 캐시를 실데이터로 교체한다.
+# 빌드 환경은 Supabase에 못 붙어 빈 페이지가 구워지므로, revalidate(무효화) → warm(재생성 요청) 순서로 즉시 치유.
+# (deployment_status 이벤트는 기본 브랜치(main)에 이 파일이 머지된 후부터 발생한다.)
+on:
+  deployment_status:
+
+jobs:
+  warm:
+    # Vercel GitHub 통합이 '프로덕션' 배포 '성공' 시 보내는 이벤트만 처리한다.
+    if: >-
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment_status.environment == 'Production'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Revalidate hubs (invalidate build-time empty pages)
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          REVALIDATE_TOKEN: ${{ secrets.REVALIDATE_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -fsS -X POST "$SITE_URL/api/revalidate" \
+            -H 'Content-Type: application/json' \
+            -d "{\"token\":\"$REVALIDATE_TOKEN\",\"paths\":[\"/\",\"/apt\",\"/officetel\",\"/villa\"]}"
+          echo
+
+      - name: Warm hubs (force regeneration with real runtime data + edge cache)
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+        run: |
+          set -uo pipefail
+          # 1차: 무효화된 경로의 재생성 트리거. 2차: 재생성 완료분을 확인 + 엣지 캐시 워밍.
+          for round in 1 2; do
+            for p in / /apt /officetel /villa; do
+              code="$(curl -sS -o /dev/null -w '%{http_code}' "$SITE_URL$p")"
+              echo "warm(round $round) $p -> $code"
+            done
+            [ "$round" = 1 ] && sleep 5
+          done

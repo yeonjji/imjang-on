@@ -35,7 +35,8 @@ export async function GET(req: Request) {
   upstream.searchParams.set('center', `${lng},${lat}`);
   upstream.searchParams.set('level', String(level));
   upstream.searchParams.set('format', 'png');
-  upstream.searchParams.set('scale', '2');
+  // scale=1: cold-miss PNG 바이트를 scale=2 대비 ~¼로 줄인다. 썸네일 용도라 레티나 손실 미미.
+  upstream.searchParams.set('scale', '1');
   upstream.searchParams.set('markers', `type:d|size:mid|pos:${lng} ${lat}`);
 
   const res = await fetch(upstream, {
