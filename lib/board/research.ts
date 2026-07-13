@@ -35,6 +35,8 @@ export interface GroundedResult {
   sourceText: string;
   sourceExcerpt: string;
   used: SourceMeta[];
+  /** 대표 근거의 발행일을 신뢰할 수 있는지. korea.kr(30일 제한 코퍼스)=true, 네이버 웹문서(발행일 미제공)=false. */
+  repDateKnown: boolean;
 }
 export interface ResearchResult {
   candidates: SourceMeta[];
@@ -117,9 +119,14 @@ async function fetchAndExtract(url: string, deps: ResearchDeps): Promise<{ text:
   }
 }
 
+/** korea.kr 정책뉴스 도메인 여부. 대표 우선순위 + 발행일 신뢰(30일 제한 코퍼스) 판정에 공용. */
+function isKoreaKrDomain(domain: string): boolean {
+  return domain === 'korea.kr' || domain === 'www.korea.kr';
+}
+
 /** 대표 출처 우선순위: korea.kr > 기타, 그다음 본문 길이 내림차순. */
 function rankUsable(a: SourceMeta, b: SourceMeta): number {
-  const score = (m: SourceMeta) => (m.domain === 'korea.kr' || m.domain === 'www.korea.kr' ? 0 : 1);
+  const score = (m: SourceMeta) => (isKoreaKrDomain(m.domain) ? 0 : 1);
   return score(a) - score(b) || b.chars - a.chars;
 }
 
@@ -182,6 +189,7 @@ export async function researchTopic(topic: string, today: Date, deps: ResearchDe
       sourceText,
       sourceExcerpt,
       used: usable,
+      repDateKnown: isKoreaKrDomain(rep.domain),
     },
   };
 }

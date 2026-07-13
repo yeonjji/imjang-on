@@ -42,6 +42,11 @@ export function NewPostForm() {
           <Link href={`/admin/posts/${state.id}`} className="underline">검수하러 가기 ↗</Link>
         </p>
       )}
+      {state?.status === 'created' && !state.sourceDateKnown && (
+        <p className="mt-2 text-sm font-medium text-amber-600">
+          ⚠ 대표 근거가 네이버 웹문서라 발행일 미확인 — 검수 시 최신성 확인 요망
+        </p>
+      )}
       {state?.status === 'duplicate' && (
         <p className="mt-3 text-sm font-medium text-[var(--color-muted)]">오늘 같은 주제의 초안이 이미 있습니다.</p>
       )}
