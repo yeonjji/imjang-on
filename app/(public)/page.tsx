@@ -17,9 +17,10 @@ export const metadata: Metadata = {
   description: '아파트·오피스텔·빌라 실거래가부터 청약·학군·생활편의까지. 공공데이터로 보는 전국 부동산 시세를 한 곳에서 확인하세요.',
 };
 
-// Vercel 빌드 환경은 Supabase에 접근하지 못해 정적 프리렌더가 빈 데이터로 구워진다.
-// 런타임 DB는 정상이므로 요청 시점에 동적 렌더하여 항상 실제 데이터를 보여준다.
-export const dynamic = 'force-dynamic';
+// 홈 데이터는 일일 ETL 스냅샷/추정치라 ISR로 캐시한다(15분). 매 요청 원본 렌더 대신
+// 캐시를 서빙해 Fast Origin Transfer·Fluid를 절감한다. 빌드타임 빈 프리렌더는
+// 배포 후 warm-hub-cache 워크플로가 revalidate + 워밍으로 즉시 실데이터로 교체한다.
+export const revalidate = 900;
 
 /**
  * 런타임 DB 블립(커넥션 한계 등)으로 일부 쿼리가 실패해도

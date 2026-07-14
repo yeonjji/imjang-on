@@ -13,9 +13,10 @@ export const metadata: Metadata = {
   alternates: { canonical: '/apt' },
 };
 
-// 빌드 타임 Supabase 커넥션 풀 경합(P2024)으로 정적 프리렌더가 불안정하다.
-// 런타임 DB는 정상이므로 force-dynamic으로 요청 시점에 렌더한다. (홈과 동일 전략)
-export const dynamic = 'force-dynamic';
+// 허브 통계는 일일 ETL로 갱신되므로 ISR로 캐시한다(15분). 매 요청 원본 렌더 대신
+// 캐시를 서빙해 Fast Origin Transfer·Fluid를 절감한다. 빌드타임 빈 프리렌더(P2024)는
+// 배포 후 warm-hub-cache 워크플로가 revalidate + 워밍으로 즉시 실데이터로 교체한다.
+export const revalidate = 900;
 
 export default async function AptHubPage() {
   // 런타임 DB 블립 시에도 페이지가 죽지 않도록 빈 목록으로 폴백
