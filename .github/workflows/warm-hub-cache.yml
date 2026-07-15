@@ -36,5 +36,5 @@ jobs:
               code="$(curl -sS -o /dev/null -w '%{http_code}' "$SITE_URL$p")"
               echo "warm(round $round) $p -> $code"
             done
-            [ "$round" = 1 ] && sleep 5
+            if [ "$round" = 1 ]; then sleep 5; fi
           done
