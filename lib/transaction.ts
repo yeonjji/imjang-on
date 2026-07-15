@@ -182,6 +182,89 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
   });
 }
 
+export interface SameFloorPair {
+  pyeong: number;
+  floor: number;
+  recentPrice: number;
+  recentDate: string; // YYYY-MM-DD
+  prevPrice: number;
+  prevDate: string;
+  changePct: number;
+  days: number;
+}
+
+/**
+ * 동일 평형·동일 층의 가장 최근 매매 두 건을 비교한다(회귀·기준선 불필요).
+ * 평형·층이 같아 물건(향·라인) 차이로 설명되지 않는 순수 가격 변화 관측치.
+ * 비교 가능한(직전 거래가 존재하는) 쌍이 없으면 null.
+ */
+export async function getSameFloorComparison(propertyId: bigint): Promise<SameFloorPair | null> {
+  const rows = await prisma.$queryRaw<
+    Array<{
+      pyeong: number;
+      floor: number;
+      recent_price: number;
+      recent_date: Date;
+      prev_price: number;
+      prev_date: Date;
+      days: number;
+    }>
+  >`
+    WITH sale AS (
+      SELECT
+        id,
+        ROUND("exclusiveArea"::numeric / 3.3057851239669422)::int AS pyeong,
+        "floor",
+        "dealAmount"::float AS price,
+        "contractDate"
+      FROM "Transaction"
+      WHERE "propertyId" = ${propertyId}
+        AND "dealType" = 'SALE'
+        AND "dealAmount" IS NOT NULL
+        AND "floor" IS NOT NULL
+    ),
+    recent AS (
+      SELECT DISTINCT ON (pyeong, "floor") pyeong, "floor", price, "contractDate"
+      FROM sale
+      ORDER BY pyeong, "floor", "contractDate" DESC, id DESC
+    ),
+    prev AS (
+      SELECT DISTINCT ON (s.pyeong, s."floor")
+        s.pyeong, s."floor", s.price AS prev_price, s."contractDate" AS prev_date
+      FROM sale s
+      JOIN recent r ON r.pyeong = s.pyeong AND r."floor" = s."floor"
+      WHERE s."contractDate" < r."contractDate"
+      ORDER BY s.pyeong, s."floor", s."contractDate" DESC, s.id DESC
+    )
+    SELECT
+      r.pyeong,
+      r."floor" AS floor,
+      r.price AS recent_price,
+      r."contractDate" AS recent_date,
+      p.prev_price,
+      p.prev_date,
+      (r."contractDate" - p.prev_date)::int AS days
+    FROM recent r
+    JOIN prev p ON p.pyeong = r.pyeong AND p."floor" = r."floor"
+    ORDER BY r."contractDate" DESC
+    LIMIT 1
+  `;
+  const r = rows[0];
+  if (!r) return null;
+  const changePct = pctChange(r.recent_price, r.prev_price);
+  if (changePct == null) return null;
+  return {
+    pyeong: r.pyeong,
+    floor: r.floor,
+    recentPrice: r.recent_price,
+    recentDate: r.recent_date.toISOString().slice(0, 10),
+    prevPrice: r.prev_price,
+    prevDate: r.prev_date.toISOString().slice(0, 10),
+    changePct,
+    days: r.days,
+  };
+}
+
 export async function getUnifiedTransactions(
   propertyId: bigint,
   params: { page?: number; perPage?: number; dealType?: DealType },
