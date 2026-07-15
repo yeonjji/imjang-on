@@ -5,6 +5,7 @@ import { AmenityHub } from './_components/amenity-hub';
 import { MarketBriefing } from './_components/market-briefing';
 import { WeeklySubscriptionBoard } from './_components/weekly-subscription-board';
 import { HomeNews } from './_components/home-news';
+import { HomeEditorial } from './_components/home-editorial';
 import { getHomeStats } from '@/lib/stats';
 import { getHomeWeekBoard } from '@/lib/subscription';
 import { readHomeSnapshot } from '@/lib/dashboard-snapshot';
@@ -65,6 +66,8 @@ export default async function HomePage() {
       <AmenityHub />
 
       <HomeNews posts={latestPosts} />
+
+      <HomeEditorial />
     </section>
   );
 }
