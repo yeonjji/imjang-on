@@ -30,6 +30,13 @@ describe('robots.txt', () => {
     }
   });
 
+  it('/list는 disallow하지 않는다 (페이지 자체 noindex meta가 색인 제외를 담당 — disallow하면 그 noindex를 못 읽어 URL-only 색인 위험 + SearchAction /list?q= 타깃 차단)', () => {
+    for (const rule of allowedRules) {
+      const disallow = Array.isArray(rule.disallow) ? rule.disallow : [rule.disallow];
+      expect(disallow, `rule for ${String(rule.userAgent)}`).not.toContain('/list');
+    }
+  });
+
   it('SEO 스크래퍼/AI 크롤러 그룹은 전면 차단한다', () => {
     expect(blockedRules.length).toBeGreaterThan(0);
     for (const rule of blockedRules) {
