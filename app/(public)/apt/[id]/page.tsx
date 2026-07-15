@@ -46,7 +46,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   if (!/^\d+$/.test(id)) return {};
   const property = await cachedPropertyById(BigInt(id)).catch(() => null);
-  if (!property) return {};
+  // ID 공간이 유형 간 공유되므로 유형 필터 필수 — 없으면 /apt/{id}가 타 유형(빌라 등) 메타를 방출한다.
+  if (!property || property.propertyType !== PropertyType.APARTMENT) return {};
   const { narrative } = await loadAptInsight(BigInt(id));
   const indexable = !!narrative && narrative.fired.length >= 3;
   return {

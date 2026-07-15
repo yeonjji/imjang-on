@@ -50,7 +50,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   if (!/^\d+$/.test(id)) return {};
   const p = await cachedPropertyById(BigInt(id)).catch(() => null);
-  if (!p) return {};
+  // ID 공간 공유 → 유형 필터 필수. 없으면 /officetel/{id}가 타 유형 메타를 방출한다.
+  if (!p || p.propertyType !== PropertyType.OFFICETEL) return {};
   const { narrative } = await loadAptInsight(BigInt(id));
   const indexable = !!narrative && narrative.fired.length >= 3;
   return {

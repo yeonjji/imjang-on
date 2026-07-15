@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import { getPropertyById, getPropertyLatLng, getRegionStats } from '@/lib/property';
-import { getUnifiedTransactions } from '@/lib/transaction';
+import { getUnifiedTransactions, getMonthlyChartData } from '@/lib/transaction';
+import { deriveHeaderStats } from '@/lib/price-chart';
 import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { getNearbyInfra } from '@/lib/amenity/nearby';
 import { buildAptNarrative, type AptNarrative } from '@/lib/insights/apt';
@@ -25,12 +26,15 @@ export const loadAptInsight = cache(
     if (!property) return { narrative: null };
 
     const coord = await cachedPropertyLatLng(propId);
-    const [salesResult, region, subway, infra] = await Promise.all([
+    const [salesResult, region, subway, infra, chart] = await Promise.all([
       getUnifiedTransactions(propId, { page: 1, perPage: 30, dealType: 'SALE' }),
       getRegionStats(property.sigunguCode ?? '', property.propertyType),
       coord ? cachedNearbySubway(coord.lat, coord.lng) : Promise.resolve({ stations: [], fallback: false }),
       coord ? cachedNearbyInfra(coord.lat, coord.lng) : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
+      getMonthlyChartData(propId),
     ]);
+    // 산문 변동률을 가격 흐름 그래프(deriveHeaderStats)와 동일 기준으로 맞춘다.
+    const saleStats = deriveHeaderStats(chart.SALE);
 
     const saleDeals = salesResult.rows
       .filter((r) => r.dealAmount != null)
@@ -42,12 +46,13 @@ export const loadAptInsight = cache(
       builtYear: property.builtYear,
       households: property.households,
       saleDeals,
+      saleTrend: saleStats ? { changePct: saleStats.changePct, changeMonths: saleStats.changeMonths } : null,
       regionAvgSaleManwon: region.saleAvgPrice12m,
       regionSampleCount: region.complexCount,
       nearestStation: subway.stations[0]
         ? { name: subway.stations[0].name, lines: subway.stations[0].lines, distanceMeters: subway.stations[0].distanceMeters }
         : null,
-      infra: infra.map((c) => ({ label: c.label, count: c.items.length })).filter((c) => c.count > 0).slice(0, 5),
+      infra: infra.map((c) => ({ label: c.label, count: c.items.length, capped: c.capped })).filter((c) => c.count > 0).slice(0, 5),
     });
 
     const dateModified = toUtcDate(property.saleLastAt ?? property.jeonseLastAt ?? property.wolseLastAt);
