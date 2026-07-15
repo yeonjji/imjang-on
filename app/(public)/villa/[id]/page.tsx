@@ -6,6 +6,7 @@ import {
   getTransactionCounts,
   getSameFloorComparison,
   getFloorPremium,
+  getTransactionFlags,
 } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
 import type { getNearbyInfra } from '@/lib/amenity/nearby';
@@ -22,6 +23,7 @@ import { PriceCharts } from '../../apt/[id]/_components/price-charts';
 import { AreaComparison } from '../../apt/[id]/_components/area-comparison';
 import { SameFloorObservation } from '../../apt/[id]/_components/same-floor-observation';
 import { FloorPremiumView } from '../../apt/[id]/_components/floor-premium';
+import { TransactionFlagsView } from '../../apt/[id]/_components/transaction-flags';
 import { NearbyPriceComparison } from '../../apt/[id]/_components/nearby-price-comparison';
 import { DetailSidebar } from '../../apt/[id]/_components/detail-sidebar';
 import { propertyMetaDescription } from '@/lib/seo/blurb';
@@ -89,7 +91,7 @@ export default async function VillaDetailPage({ params }: Params) {
 
   const coord = await cachedPropertyLatLng(propId);
 
-  const [unified, counts, chart, areaSummary, nearby, sameFloor, floorPremium, infra, subway] = await Promise.all([
+  const [unified, counts, chart, areaSummary, nearby, sameFloor, floorPremium, flags, infra, subway] = await Promise.all([
     getUnifiedTransactions(propId, { page: 1, perPage: 15 }),
     getTransactionCounts(propId),
     getMonthlyChartData(propId),
@@ -97,6 +99,7 @@ export default async function VillaDetailPage({ params }: Params) {
     getNearbyProperties({ propertyId: propId, propertyType: property.propertyType }),
     getSameFloorComparison(propId),
     getFloorPremium(propId),
+    getTransactionFlags(propId),
     coord
       ? cachedNearbyInfra(coord.lat, coord.lng)
       : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
@@ -161,6 +164,7 @@ export default async function VillaDetailPage({ params }: Params) {
           <AreaComparison id="area" areas={areaSummary} />
           <SameFloorObservation id="same-floor" pair={sameFloor} />
           <FloorPremiumView id="floor-premium" data={floorPremium} />
+          <TransactionFlagsView id="data-notes" data={flags} />
           <NearbyPriceComparison id="nearby" items={nearby} slug="villa" />
           <NearbySubway data={subway} />
           <NearbyInfra categories={infra} />

@@ -6,6 +6,7 @@ import {
   getTransactionCounts,
   getSameFloorComparison,
   getFloorPremium,
+  getTransactionFlags,
 } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
 import { PropertyType } from '@prisma/client';
@@ -16,6 +17,7 @@ import { PriceCharts } from './_components/price-charts';
 import { AreaComparison } from './_components/area-comparison';
 import { SameFloorObservation } from './_components/same-floor-observation';
 import { FloorPremiumView } from './_components/floor-premium';
+import { TransactionFlagsView } from './_components/transaction-flags';
 import { NearbyPriceComparison } from './_components/nearby-price-comparison';
 import { DetailSidebar } from './_components/detail-sidebar';
 import type { getNearbyInfra } from '@/lib/amenity/nearby';
@@ -81,7 +83,7 @@ export default async function AptDetailPage({ params }: Params) {
   const coord = await cachedPropertyLatLng(propId);
   const shortSido = shortSidoFromRegionCode(property.region.code);
 
-  const [unified, counts, chart, areaSummary, nearby, sameFloor, floorPremium, infra, nearbySubs, subway] = await Promise.all([
+  const [unified, counts, chart, areaSummary, nearby, sameFloor, floorPremium, flags, infra, nearbySubs, subway] = await Promise.all([
     getUnifiedTransactions(propId, { page: 1, perPage: 15 }),
     getTransactionCounts(propId),
     getMonthlyChartData(propId),
@@ -89,6 +91,7 @@ export default async function AptDetailPage({ params }: Params) {
     getNearbyProperties({ propertyId: propId, propertyType: PropertyType.APARTMENT }),
     getSameFloorComparison(propId),
     getFloorPremium(propId),
+    getTransactionFlags(propId),
     coord
       ? cachedNearbyInfra(coord.lat, coord.lng)
       : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
@@ -156,6 +159,7 @@ export default async function AptDetailPage({ params }: Params) {
           <AreaComparison id="area" areas={areaSummary} />
           <SameFloorObservation id="same-floor" pair={sameFloor} />
           <FloorPremiumView id="floor-premium" data={floorPremium} />
+          <TransactionFlagsView id="data-notes" data={flags} />
           <NearbyPriceComparison id="nearby" items={nearby} slug="apt" />
           {shortSido && nearbySubs && nearbySubs.items.length > 0 && (
             <NearbySubscriptions
