@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { articleSchema } from '@/lib/seo/json-ld';
+import { EDITORIAL } from '@/lib/editorial';
 
 describe('articleSchema', () => {
   it('NewsArticle 스키마를 생성한다', () => {
@@ -9,6 +10,8 @@ describe('articleSchema', () => {
     expect(s.url).toBe('https://imjangon.co.kr/board/test');
     expect(s.datePublished).toBe('2026-06-12');
     expect((s.publisher as Record<string, unknown>)['@type']).toBe('Organization');
+    expect((s.author as Record<string, unknown>)['@type']).toBe('Person');
+    expect((s.author as { name: string }).name).toBe(EDITORIAL.name);
     expect(s.image).toBe('https://imjangon.co.kr/board/test/thumbnail');
   });
 });
