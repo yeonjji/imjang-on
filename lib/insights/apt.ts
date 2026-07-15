@@ -8,26 +8,33 @@ export interface AptInsightInput {
   builtYear: number | null;
   households: number | null;
   saleDeals: { contractDate: string; amountManwon: number }[];
+  /** 가격 흐름 그래프와 동일 기준(월 평균, 최근 ~12개월)의 매매 변동률. 산문·그래프 변동률 불일치 방지. */
+  saleTrend: { changePct: number | null; changeMonths: number } | null;
   regionAvgSaleManwon: number | null;
   regionSampleCount: number;
   nearestStation: { name: string; lines: string[]; distanceMeters: number } | null;
-  infra: { label: string; count: number }[];
+  infra: { label: string; count: number; capped: boolean }[];
 }
 
 export type AptNarrative = Narrative;
 
-// T: 최근 매매 추세 — 표 재서술이 아니라 건수·방향 판단
+// T: 최근 매매 추세 — 변동률은 가격 흐름 그래프와 동일 기준(월 평균, saleTrend)으로 통일한다.
+// 잘린 건수(perPage=30 캡)를 단정하지 않도록 절대 건수는 서술하지 않는다(건수는 표·요약 카드가 라벨과 함께 표기).
 function tTrend(d: AptInsightInput): Insight | null {
   const sales = [...d.saleDeals].sort((a, b) => a.contractDate.localeCompare(b.contractDate));
   if (sales.length < 2) return null;
-  const first = sales[0].amountManwon;
   const last = sales[sales.length - 1].amountManwon;
-  const diff = first === 0 ? 0 : Math.round(((last - first) / first) * 100);
-  const dir = diff >= 3 ? `직전 대비 약 ${diff}% 상승`
-    : diff <= -3 ? `직전 대비 약 ${Math.abs(diff)}% 하락`
-    : '큰 변동 없이 보합';
-  return { key: 'trend',
-    text: `최근 매매 ${sales.length}건이 신고됐고 실거래가는 ${dir} 흐름입니다(최근 ${formatBillion(last)}).` };
+  const t = d.saleTrend;
+  if (t && t.changePct != null) {
+    const pct = Math.round(t.changePct);
+    const body = pct >= 3 ? `직전 대비 약 ${pct}% 상승했습니다`
+      : pct <= -3 ? `직전 대비 약 ${Math.abs(pct)}% 하락했습니다`
+      : '큰 변동 없이 보합세입니다';
+    return { key: 'trend',
+      text: `실거래가는 최근 ${t.changeMonths}개월 사이 ${body}(최근 실거래 ${formatBillion(last)}).` };
+  }
+  // 그래프 기준 변동률이 없으면(최근 24개월 월 데이터 부족) 방향 단정 없이 최근가만.
+  return { key: 'trend', text: `최근 실거래가는 ${formatBillion(last)}입니다.` };
 }
 
 // P: 시군구 평균 대비 가격 위치 (벤치마크 = getRegionStats)
@@ -49,7 +56,9 @@ function pPeer(d: AptInsightInput): Insight | null {
 // A: 접근성 — 최근접 역 도보분 + 반경 인프라 밀도
 function aAccess(d: AptInsightInput): Insight | null {
   const station = d.nearestStation;
-  const infraParts = d.infra.filter((c) => c.count > 0).map((c) => `${c.label} ${c.count}곳`);
+  const infraParts = d.infra
+    .filter((c) => c.count > 0)
+    .map((c) => `${c.label} ${c.count}${c.capped ? '곳 이상' : '곳'}`);
   const hasInfra = infraParts.length >= 2;
   if (!station && !hasInfra) return null;
   const dense = infraParts.length >= 3 ? '생활 편의가 양호한 편입니다' : '기본 생활 인프라를 갖췄습니다';

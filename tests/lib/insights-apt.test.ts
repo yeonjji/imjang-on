@@ -11,10 +11,12 @@ const base: AptInsightInput = {
     { contractDate: '2026-03-10', amountManwon: 80000 },
     { contractDate: '2026-06-20', amountManwon: 90000 },
   ],
+  // saleDeals 원자료 first/last(=+13%)와 일부러 다른 값 → 산문이 saleTrend(그래프 기준)을 쓰는지 검증.
+  saleTrend: { changePct: 8, changeMonths: 12 },
   regionAvgSaleManwon: 80000,
   regionSampleCount: 12,
   nearestStation: { name: '상현역', lines: ['신분당선'], distanceMeters: 400 },
-  infra: [{ label: '카페', count: 8 }, { label: '병원', count: 2 }],
+  infra: [{ label: '카페', count: 8, capped: false }, { label: '병원', count: 2, capped: false }],
 };
 
 describe('buildAptNarrative', () => {
@@ -27,10 +29,23 @@ describe('buildAptNarrative', () => {
     expect(n.sentences[0].startsWith('광교센트럴아파트는')).toBe(true); // 첫 문장에만 단지명
   });
 
-  it('tTrend: 상승 방향과 건수를 판단으로 표현', () => {
+  it('tTrend: 변동률은 그래프와 동일 기준(saleTrend)을 쓰고, 잘린 건수는 단정하지 않는다', () => {
     const n = buildAptNarrative(base)!;
-    expect(n.text).toContain('최근 매매 2건');
-    expect(n.text).toContain('13% 상승'); // (90000-80000)/80000=12.5→13
+    expect(n.text).toContain('최근 12개월 사이');
+    expect(n.text).toContain('8% 상승'); // saleTrend.changePct=8 (원자료 first/last +13%이 아님)
+    expect(n.text).not.toContain('13% 상승'); // 원자료 기준을 쓰지 않음을 확인
+    expect(n.text).not.toContain('최근 매매 2건'); // perPage=30 캡 위험 → 절대 건수 미서술
+  });
+
+  it('tTrend: saleTrend가 하락이면 하락으로, 없으면 방향 단정 없이 최근가만', () => {
+    const down = buildAptNarrative({ ...base, saleTrend: { changePct: -10, changeMonths: 9 } })!;
+    expect(down.text).toContain('최근 9개월 사이');
+    expect(down.text).toContain('10% 하락');
+
+    const none = buildAptNarrative({ ...base, saleTrend: null })!;
+    expect(none.text).toContain(`최근 실거래가는 ${formatBillion(90000)}입니다`);
+    expect(none.text).not.toContain('상승');
+    expect(none.text).not.toContain('하락');
   });
 
   it('pPeer 구간 분기: +5~+15%면 "웃도는 수준"', () => {
@@ -62,12 +77,22 @@ describe('buildAptNarrative', () => {
   });
 
   it('aAccess: 인프라 3종↑이면 "양호한 편"', () => {
-    const n = buildAptNarrative({ ...base, infra: [{ label: '카페', count: 8 }, { label: '병원', count: 2 }, { label: '마트', count: 3 }] })!;
+    const n = buildAptNarrative({ ...base, infra: [{ label: '카페', count: 8, capped: false }, { label: '병원', count: 2, capped: false }, { label: '마트', count: 3, capped: false }] })!;
     expect(n.text).toContain('양호한 편입니다');
   });
 
+  it('aAccess: 캡(INFRA_FETCH_LIMIT)에 걸린 인프라는 "N곳 이상"으로 표기해 위젯의 "N+"와 일치시킨다', () => {
+    const n = buildAptNarrative({
+      ...base,
+      infra: [{ label: '병원', count: 12, capped: true }, { label: '카페', count: 8, capped: false }],
+    })!;
+    expect(n.text).toContain('병원 12곳 이상');
+    expect(n.text).toContain('카페 8곳');
+    expect(n.text).not.toContain('병원 12곳,'); // 단정형 "12곳"이 아님
+  });
+
   it('aAccess: 역만 있고 인프라<2면 완결된 문장을 만든다', () => {
-    const n = buildAptNarrative({ ...base, infra: [{ label: '카페', count: 8 }] })!;
+    const n = buildAptNarrative({ ...base, infra: [{ label: '카페', count: 8, capped: false }] })!;
     expect(n.text).toContain('도보 약 5분 거리입니다');
   });
 
@@ -81,7 +106,7 @@ describe('buildAptNarrative', () => {
       saleDeals: [{ contractDate: '2026-06-20', amountManwon: 90000 }], // 1건 → tTrend null, pPeer는 발화 가능
       regionSampleCount: 3,   // <5 → pPeer null
       nearestStation: null,
-      infra: [{ label: '카페', count: 8 }], // 1종 → aAccess null
+      infra: [{ label: '카페', count: 8, capped: false }], // 1종 → aAccess null
     }); // scale만 발화 → null
     expect(n).toBeNull();
   });
