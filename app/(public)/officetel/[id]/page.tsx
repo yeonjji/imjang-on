@@ -4,6 +4,7 @@ import {
   getAreaSummary,
   getUnifiedTransactions,
   getTransactionCounts,
+  getSameFloorComparison,
 } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
 import type { getNearbyInfra } from '@/lib/amenity/nearby';
@@ -18,6 +19,7 @@ import { DealSummarySection } from '../../apt/[id]/_components/deal-summary-sect
 import { UnifiedTransactionTable } from '../../apt/[id]/_components/unified-transaction-table';
 import { PriceCharts } from '../../apt/[id]/_components/price-charts';
 import { AreaComparison } from '../../apt/[id]/_components/area-comparison';
+import { SameFloorObservation } from '../../apt/[id]/_components/same-floor-observation';
 import { NearbyPriceComparison } from '../../apt/[id]/_components/nearby-price-comparison';
 import { DetailSidebar } from '../../apt/[id]/_components/detail-sidebar';
 import { propertyMetaDescription } from '@/lib/seo/blurb';
@@ -80,12 +82,13 @@ export default async function OffiDetailPage({ params }: Params) {
 
   const coord = await cachedPropertyLatLng(propId);
 
-  const [unified, counts, chart, areaSummary, nearby, infra, subway] = await Promise.all([
+  const [unified, counts, chart, areaSummary, nearby, sameFloor, infra, subway] = await Promise.all([
     getUnifiedTransactions(propId, { page: 1, perPage: 15 }),
     getTransactionCounts(propId),
     getMonthlyChartData(propId),
     getAreaSummary(propId),
     getNearbyProperties({ propertyId: propId, propertyType: PropertyType.OFFICETEL }),
+    getSameFloorComparison(propId),
     coord
       ? cachedNearbyInfra(coord.lat, coord.lng)
       : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
@@ -148,6 +151,7 @@ export default async function OffiDetailPage({ params }: Params) {
             <PriceCharts data={chart} />
           </section>
           <AreaComparison id="area" areas={areaSummary} />
+          <SameFloorObservation id="same-floor" pair={sameFloor} />
           <NearbyPriceComparison id="nearby" items={nearby} slug="officetel" />
           <NearbySubway data={subway} />
           <NearbyInfra categories={infra} />
