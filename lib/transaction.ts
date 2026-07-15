@@ -302,6 +302,53 @@ export async function getSameFloorComparison(propertyId: bigint): Promise<SameFl
   };
 }
 
+export interface FloorPremium {
+  pyeong: number;
+  n: number;
+  pctPerFloor: number; // 한 층당 ㎡당 실거래가 변화율(%)
+  r2: number; // 0..1 설명력
+}
+
+/**
+ * 단지·평형별 층 회귀: 한 층 상승당 ㎡당 실거래가 변화율(%/층)과 설명력(R²).
+ * Postgres regr_slope/regr_r2로 OLS를 DB에서 계산. 경쟁사 미보유·국토부 미제공.
+ * 표본 n≥10 && R²≥0.2일 때만 반환(층이 가격을 설명하지 못하면 프리미엄을 단정하지 않음).
+ */
+export async function getFloorPremium(propertyId: bigint): Promise<FloorPremium | null> {
+  const rows = await prisma.$queryRaw<
+    Array<{ pyeong: number; n: number; slope: number | null; r2: number | null; mean_ppa: number | null }>
+  >`
+    WITH sale AS (
+      SELECT
+        ROUND("exclusiveArea"::numeric / 3.3057851239669422)::int AS pyeong,
+        "floor"::float AS floor,
+        "dealAmount"::float / NULLIF("exclusiveArea"::float, 0) AS ppa
+      FROM "Transaction"
+      WHERE "propertyId" = ${propertyId}
+        AND "dealType" = 'SALE'
+        AND "dealAmount" IS NOT NULL
+        AND "floor" IS NOT NULL
+        AND "exclusiveArea" > 0
+    )
+    SELECT
+      pyeong,
+      COUNT(*)::int AS n,
+      regr_slope(ppa, floor) AS slope,
+      regr_r2(ppa, floor) AS r2,
+      AVG(ppa) AS mean_ppa
+    FROM sale
+    WHERE ppa IS NOT NULL
+    GROUP BY pyeong
+    HAVING COUNT(*) >= 10 AND regr_slope(ppa, floor) IS NOT NULL
+    ORDER BY COUNT(*) DESC
+    LIMIT 1
+  `;
+  const r = rows[0];
+  if (!r || r.slope == null || r.r2 == null || r.mean_ppa == null || r.mean_ppa <= 0) return null;
+  if (r.r2 < 0.2) return null; // 층 설명력이 낮으면 노이즈 → 미표시
+  return { pyeong: r.pyeong, n: r.n, pctPerFloor: (r.slope / r.mean_ppa) * 100, r2: r.r2 };
+}
+
 export async function getUnifiedTransactions(
   propertyId: bigint,
   params: { page?: number; perPage?: number; dealType?: DealType },
