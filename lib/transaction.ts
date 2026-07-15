@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import type { DealType, Prisma } from '@prisma/client';
 import type { MonthPoint } from '@/lib/price-chart';
+import { pctChange } from '@/lib/price-chart';
 
 export async function getTransactionCounts(propertyId: bigint) {
   const rows = await prisma.transaction.groupBy({
@@ -96,11 +97,23 @@ export interface AreaSummaryItem {
   lastPrice: number | null;
   avg12m: number | null;
   count12m: number;
+  /** 직전 12개월(12~24개월 전) 매매 평균. 평형 보정 변동률의 기준값. */
+  avgPrior12m: number | null;
+  countPrior12m: number;
+  /** 평형 보정 변동률(%): 최근 12개월 평균 vs 직전 12개월 평균. 각 기간 표본<2건이면 null(노이즈 방지). */
+  changePct12m: number | null;
 }
 
 export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryItem[]> {
   const rows = await prisma.$queryRaw<
-    Array<{ area: number; last_price: number | null; avg_12m: number | null; cnt_12m: number }>
+    Array<{
+      area: number;
+      last_price: number | null;
+      avg_12m: number | null;
+      cnt_12m: number;
+      avg_prior: number | null;
+      cnt_prior: number;
+    }>
   >`
     WITH base AS (
       SELECT
@@ -127,23 +140,46 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
       FROM base
       WHERE "contractDate" >= NOW() - INTERVAL '12 months'
       GROUP BY area_pyeong
+    ),
+    prior AS (
+      SELECT
+        area_pyeong,
+        AVG("dealAmount")::float AS avg_prior,
+        COUNT(*)::int AS cnt_prior
+      FROM base
+      WHERE "contractDate" >= NOW() - INTERVAL '24 months'
+        AND "contractDate" < NOW() - INTERVAL '12 months'
+      GROUP BY area_pyeong
     )
     SELECT
       l.area_pyeong AS area,
       l.last_price,
       s.avg_12m,
-      COALESCE(s.cnt_12m, 0) AS cnt_12m
+      COALESCE(s.cnt_12m, 0) AS cnt_12m,
+      p.avg_prior,
+      COALESCE(p.cnt_prior, 0) AS cnt_prior
     FROM latest l
     LEFT JOIN stats s ON s.area_pyeong = l.area_pyeong
+    LEFT JOIN prior p ON p.area_pyeong = l.area_pyeong
     ORDER BY COALESCE(s.cnt_12m, 0) DESC
     LIMIT 4
   `;
-  return rows.map((r) => ({
-    area: r.area,
-    lastPrice: r.last_price,
-    avg12m: r.avg_12m,
-    count12m: r.cnt_12m,
-  }));
+  return rows.map((r) => {
+    // 평형 보정 변동률: 국토부 미제공. 두 기간 각각 표본 2건 이상일 때만 계산(단건 노이즈 배제).
+    const changePct12m =
+      r.avg_12m != null && r.avg_prior != null && r.cnt_12m >= 2 && r.cnt_prior >= 2
+        ? pctChange(r.avg_12m, r.avg_prior)
+        : null;
+    return {
+      area: r.area,
+      lastPrice: r.last_price,
+      avg12m: r.avg_12m,
+      count12m: r.cnt_12m,
+      avgPrior12m: r.avg_prior,
+      countPrior12m: r.cnt_prior,
+      changePct12m,
+    };
+  });
 }
 
 export async function getUnifiedTransactions(
