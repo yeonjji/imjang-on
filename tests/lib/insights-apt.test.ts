@@ -142,3 +142,55 @@ describe('buildAptNarrative', () => {
     expect(n.text).not.toContain(`최근 실거래 ${formatBillion(90000)}`);
   });
 });
+
+describe('파생지표 서술(floor/flags) — 색인 게이트 통과 후에만 조건부 발화', () => {
+  it('floorPremium 양수 기울기: "층이 높을수록 … 오르는 경향"', () => {
+    const n = buildAptNarrative({ ...base, floorPremium: { pyeong: 34, n: 22, pctPerFloor: 0.8, r2: 0.41 } })!;
+    expect(n.fired).toContain('floor');
+    expect(n.text).toContain('34평형은 층이 높을수록');
+    expect(n.text).toContain('약 0.8% 오르는 경향');
+    expect(n.text).toContain('R² 0.41');
+  });
+
+  it('floorPremium 음수 기울기: "층이 낮을수록 … 높게 나타나는 경향"(구조 분기)', () => {
+    const n = buildAptNarrative({ ...base, floorPremium: { pyeong: 24, n: 15, pctPerFloor: -1.2, r2: 0.33 } })!;
+    expect(n.text).toContain('24평형은 층이 낮을수록');
+    expect(n.text).toContain('약 1% 높게 나타나는 경향'); // |-1.2|→반올림 1
+    expect(n.text).not.toContain('오르는 경향');
+  });
+
+  it('floorPremium 효과 미미(|pct|<0.1)면 발화하지 않는다', () => {
+    const n = buildAptNarrative({ ...base, floorPremium: { pyeong: 24, n: 15, pctPerFloor: 0.05, r2: 0.5 } })!;
+    expect(n.fired).not.toContain('floor');
+  });
+
+  it('flags: 해제·이상치 둘 다면 두 항목을 잇는다', () => {
+    const n = buildAptNarrative({
+      ...base,
+      flags: { cancelledCount12m: 2, anomalyCount12m: 3, topAnomaly: { pyeong: 34, date: '2026-05-01', price: 120000, deviationPct: 18 } },
+    })!;
+    expect(n.fired).toContain('flags');
+    expect(n.text).toContain('해제 신고 2건과');
+    expect(n.text).toContain('벗어난 거래 3건이 집계됩니다');
+  });
+
+  it('flags: 한 항목만이면 그 항목만 서술', () => {
+    const n = buildAptNarrative({ ...base, flags: { cancelledCount12m: 0, anomalyCount12m: 1, topAnomaly: null } })!;
+    expect(n.text).toContain('벗어난 거래 1건이 집계됩니다');
+    expect(n.text).not.toContain('해제 신고');
+  });
+
+  it('파생지표는 색인 게이트를 바꾸지 않는다: core<3면 floorPremium이 있어도 null', () => {
+    const n = buildAptNarrative({
+      ...base,
+      saleDeals: [], regionAvgSaleManwon: null, nearestStation: null,
+      infra: [{ label: '카페', count: 8, capped: false }],
+      floorPremium: { pyeong: 34, n: 22, pctPerFloor: 0.8, r2: 0.41 },
+    });
+    expect(n).toBeNull(); // core는 scale만 → 게이트 미달 → 파생 있어도 색인 서술 없음
+  });
+
+  it('파생지표 부재(기존 입력)면 fired는 core 4키 그대로 — 하위호환', () => {
+    expect(buildAptNarrative(base)!.fired).toEqual(['scale', 'trend', 'peer', 'access']);
+  });
+});
