@@ -37,6 +37,13 @@ export function AreaComparison({
                   </span>
                 </p>
               )}
+              {item.jeonseRatioPct != null && (
+                <p className="mt-0.5 text-xs text-[var(--color-muted)]">
+                  전세가율 <b className="text-[var(--color-blue-dark)]">{item.jeonseRatioPct.toFixed(0)}%</b>
+                  {item.gap12m != null && <> · 갭 {formatBillion(item.gap12m)}</>}
+                  <span className="ml-1">(전세 {item.jeonseCount12m}건)</span>
+                </p>
+              )}
             </div>
           </div>
         ))}

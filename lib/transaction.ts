@@ -102,6 +102,13 @@ export interface AreaSummaryItem {
   countPrior12m: number;
   /** 평형 보정 변동률(%): 최근 12개월 평균 vs 직전 12개월 평균. 각 기간 표본<2건이면 null(노이즈 방지). */
   changePct12m: number | null;
+  /** 동일 평형 12개월 전세 평균(만원)·건수. 전세가율의 분자. */
+  jeonseAvg12m: number | null;
+  jeonseCount12m: number;
+  /** 평형 일치 전세가율(%) = 전세평균/매매평균. 매매·전세 각 표본<2건이면 null(평형 혼합 금지). */
+  jeonseRatioPct: number | null;
+  /** 매매−전세 갭(만원, 동일 평형). */
+  gap12m: number | null;
 }
 
 export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryItem[]> {
@@ -113,6 +120,8 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
       cnt_12m: number;
       avg_prior: number | null;
       cnt_prior: number;
+      jeonse_avg: number | null;
+      jeonse_cnt: number;
     }>
   >`
     WITH base AS (
@@ -150,6 +159,18 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
       WHERE "contractDate" >= NOW() - INTERVAL '24 months'
         AND "contractDate" < NOW() - INTERVAL '12 months'
       GROUP BY area_pyeong
+    ),
+    jeonse AS (
+      SELECT
+        ROUND("exclusiveArea"::numeric / 3.3057851239669422)::int AS area_pyeong,
+        AVG("deposit")::float AS jeonse_avg,
+        COUNT(*)::int AS jeonse_cnt
+      FROM "Transaction"
+      WHERE "propertyId" = ${propertyId}
+        AND "dealType" = 'JEONSE'
+        AND "deposit" IS NOT NULL
+        AND "contractDate" >= NOW() - INTERVAL '12 months'
+      GROUP BY area_pyeong
     )
     SELECT
       l.area_pyeong AS area,
@@ -157,10 +178,13 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
       s.avg_12m,
       COALESCE(s.cnt_12m, 0) AS cnt_12m,
       p.avg_prior,
-      COALESCE(p.cnt_prior, 0) AS cnt_prior
+      COALESCE(p.cnt_prior, 0) AS cnt_prior,
+      j.jeonse_avg,
+      COALESCE(j.jeonse_cnt, 0) AS jeonse_cnt
     FROM latest l
     LEFT JOIN stats s ON s.area_pyeong = l.area_pyeong
     LEFT JOIN prior p ON p.area_pyeong = l.area_pyeong
+    LEFT JOIN jeonse j ON j.area_pyeong = l.area_pyeong
     ORDER BY COALESCE(s.cnt_12m, 0) DESC
     LIMIT 4
   `;
@@ -170,6 +194,15 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
       r.avg_12m != null && r.avg_prior != null && r.cnt_12m >= 2 && r.cnt_prior >= 2
         ? pctChange(r.avg_12m, r.avg_prior)
         : null;
+    // 평형 일치 전세가율·갭: 국토부 미제공. 동일 평형 매매·전세 각 표본 2건 이상일 때만(평형 혼합 금지).
+    const jeonseRatioPct =
+      r.avg_12m != null && r.jeonse_avg != null && r.cnt_12m >= 2 && r.jeonse_cnt >= 2 && r.avg_12m > 0
+        ? (r.jeonse_avg / r.avg_12m) * 100
+        : null;
+    const gap12m =
+      r.avg_12m != null && r.jeonse_avg != null && r.cnt_12m >= 2 && r.jeonse_cnt >= 2
+        ? r.avg_12m - r.jeonse_avg
+        : null;
     return {
       area: r.area,
       lastPrice: r.last_price,
@@ -178,6 +211,10 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
       avgPrior12m: r.avg_prior,
       countPrior12m: r.cnt_prior,
       changePct12m,
+      jeonseAvg12m: r.jeonse_avg,
+      jeonseCount12m: r.jeonse_cnt,
+      jeonseRatioPct,
+      gap12m,
     };
   });
 }
