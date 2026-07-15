@@ -14,7 +14,7 @@ export default function AboutPage() {
 
       <p className="mt-5 text-[var(--color-text)]">
         임장ON은 국토교통부 실거래가, 한국부동산원 청약홈, 건강보험심사평가원, 교육부, 보건복지부,
-        행정안전부, 국가철도공단 등 공공데이터를 가공·통합해 제공하는 비상업 부동산 정보 플랫폼입니다.
+        행정안전부, 국가철도공단 등 공공데이터를 자체 수집·정제·결합해 제공하는 부동산 데이터 서비스입니다.
       </p>
 
       <h2 className="mt-10 text-xl font-bold text-[var(--color-text)]">제공하는 정보</h2>
@@ -27,7 +27,8 @@ export default function AboutPage() {
 
       <h2 className="mt-10 text-xl font-bold text-[var(--color-text)]">운영 안내</h2>
       <p className="mt-3 text-[var(--color-text)]">
-        임장ON은 개인이 운영하는 비상업 정보 서비스이며, 회원가입·결제·중개 기능을 제공하지 않습니다.
+        임장ON은 개인이 운영합니다. 서비스는 무료이며 운영·서버 비용은 광고 수익으로 충당합니다.
+        회원가입·결제 기능은 제공하지 않으며, 특정 매물을 중개하거나 광고하지 않습니다.
         문의는{' '}
         <a href="mailto:contact@imjangon.co.kr" className="underline hover:text-[var(--color-blue-dark)]">
           contact@imjangon.co.kr

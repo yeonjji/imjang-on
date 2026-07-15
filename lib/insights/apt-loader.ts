@@ -38,7 +38,7 @@ export const loadAptInsight = cache(
 
     const narrative = buildAptNarrative({
       name: property.name,
-      sigunguName: property.region.sigungu ?? '',
+      sigunguName: property.region.sigungu ?? property.region.sido,
       builtYear: property.builtYear,
       households: property.households,
       saleDeals,
