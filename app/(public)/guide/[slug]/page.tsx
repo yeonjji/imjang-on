@@ -73,7 +73,7 @@ export default async function GuideDetailPage({ params }: Params) {
         <ReactMarkdown remarkPlugins={[[remarkGfm, { singleTilde: false }]]}>{rest}</ReactMarkdown>
       </div>
       {summary && <ArticleSummary markdown={summary} />}
-      <PostSource sourceName={guide.sourceName} sourceUrl={guide.sourceUrl} sourceDate={guide.sourceDate} />
+      <PostSource sourceName={guide.sourceName} sourceUrl={guide.sourceUrl} sourceDate={guide.sourceDate} hideDate />
       <RelatedGuidesView items={related} className="mt-12" />
       <GuideCta category={guide.category} />
     </article>

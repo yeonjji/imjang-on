@@ -169,7 +169,12 @@ const childcare = dbSource({
 
 const pharmacy = dbSource({
   key: 'pharmacy',
-  count: () => prisma.pharmacy.count({ where: { sigunguCode: { not: null } } }),
+  // 약국 상세는 noindex(색인 배제)이므로 sitemap에서도 제외한다 — count 0이면 buildManifest가
+  // 샤드를 만들지 않아 인덱스에서 완전히 빠진다(약국 noindex ↔ sitemap 등재 모순 해소).
+  // SOURCE_ORDER 슬롯은 그대로 두어 뒤 소스 키 순서를 보존한다. 색인 재개 시 아래 count를
+  // 원래 쿼리 `() => prisma.pharmacy.count({ where: { sigunguCode: { not: null } } })`로 되돌리면 된다.
+  // (docs/adsense/approval-strategy-2026-07-08.md P0-A)
+  count: async () => 0,
   findMany: (skip, take) =>
     prisma.pharmacy.findMany({
       where: { sigunguCode: { not: null } },
