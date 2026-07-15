@@ -27,6 +27,16 @@ export function AreaComparison({
               <p className="mt-0.5 text-xs text-[var(--color-muted)]">
                 12개월 평균 {formatBillion(item.avg12m)} · {item.count12m}건
               </p>
+              {item.changePct12m != null && (
+                <p className="mt-0.5 text-xs font-semibold text-[var(--color-blue-dark)]">
+                  <span aria-hidden="true">{item.changePct12m >= 0 ? '▲' : '▼'}</span>{' '}
+                  <span className="sr-only">{item.changePct12m >= 0 ? '상승 ' : '하락 '}</span>
+                  {Math.abs(item.changePct12m).toFixed(1)}%
+                  <span className="ml-1 font-normal text-[var(--color-muted)]">
+                    직전 12개월 평균 대비 · 표본 {item.countPrior12m}→{item.count12m}건
+                  </span>
+                </p>
+              )}
             </div>
           </div>
         ))}

@@ -3,6 +3,7 @@ import {
   monthDiff,
   deriveHeaderStats,
   toChartRows,
+  pctChange,
   type MonthPoint,
 } from '@/lib/price-chart';
 
@@ -65,6 +66,19 @@ describe('deriveHeaderStats', () => {
     const s = deriveHeaderStats(pts)!;
     expect(s.current).toBe(12000);
     expect(s.changeMonths).toBe(12);
+  });
+});
+
+describe('pctChange', () => {
+  it('상승·하락·보합을 부호로 표현', () => {
+    expect(pctChange(110, 100)).toBeCloseTo(10, 5);
+    expect(pctChange(90, 100)).toBeCloseTo(-10, 5);
+    expect(pctChange(100, 100)).toBe(0);
+  });
+
+  it('prior가 0 이하이면 null (0 나눗셈·무의미 기준 방지)', () => {
+    expect(pctChange(100, 0)).toBeNull();
+    expect(pctChange(100, -5)).toBeNull();
   });
 });
 

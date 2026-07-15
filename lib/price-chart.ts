@@ -66,6 +66,12 @@ export function deriveHeaderStats(points: MonthPoint[]): HeaderStats | null {
   return { current: last.avg, changePct, changeMonths, high, low, count };
 }
 
+/** 기준값(prior) 대비 변화율(%). prior가 0 이하면 null(0 나눗셈·무의미 기준 방지). */
+export function pctChange(current: number, prior: number): number | null {
+  if (prior <= 0) return null;
+  return ((current - prior) / prior) * 100;
+}
+
 export function toChartRows(points: MonthPoint[]): ChartRow[] {
   return sortedByMonth(points).map((p) => ({
     month: p.month,
