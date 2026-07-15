@@ -349,6 +349,73 @@ export async function getFloorPremium(propertyId: bigint): Promise<FloorPremium 
   return { pyeong: r.pyeong, n: r.n, pctPerFloor: (r.slope / r.mean_ppa) * 100, r2: r.r2 };
 }
 
+export interface TransactionAnomaly {
+  pyeong: number;
+  date: string; // YYYY-MM-DD
+  price: number; // 만원
+  deviationPct: number; // 동일 평형 12개월 중앙값 대비 %
+}
+
+export interface TransactionFlags {
+  cancelledCount12m: number;
+  anomalyCount12m: number;
+  topAnomaly: TransactionAnomaly | null;
+}
+
+/**
+ * 거래 데이터 특이사항(자동): (a) 최근 12개월 해제 신고 건수(통계 제외 대상),
+ * (b) 동일 평형 12개월 중앙값 대비 ±10% 초과 매매(자동 이상치 플래그, 동일 평형 표본 n≥3).
+ * 둘 다 0이면 null(특이사항 없음 → 미표시).
+ */
+export async function getTransactionFlags(propertyId: bigint): Promise<TransactionFlags | null> {
+  const [cancelledRows, anomalyRows] = await Promise.all([
+    prisma.$queryRaw<Array<{ cancelled: number }>>`
+      SELECT COUNT(*)::int AS cancelled
+      FROM "Transaction"
+      WHERE "propertyId" = ${propertyId}
+        AND "dealType" = 'SALE'
+        AND "cancelDate" IS NOT NULL
+        AND "contractDate" >= NOW() - INTERVAL '12 months'
+    `,
+    prisma.$queryRaw<Array<{ pyeong: number; date: Date; price: number; dev_pct: number }>>`
+      WITH sale AS (
+        SELECT
+          ROUND("exclusiveArea"::numeric / 3.3057851239669422)::int AS pyeong,
+          "contractDate",
+          "dealAmount"::float AS price
+        FROM "Transaction"
+        WHERE "propertyId" = ${propertyId}
+          AND "dealType" = 'SALE'
+          AND "dealAmount" IS NOT NULL
+          AND "cancelDate" IS NULL
+          AND "contractDate" >= NOW() - INTERVAL '12 months'
+      ),
+      med AS (
+        SELECT pyeong, percentile_cont(0.5) WITHIN GROUP (ORDER BY price) AS median, COUNT(*)::int AS n
+        FROM sale
+        GROUP BY pyeong
+      )
+      SELECT s.pyeong, s."contractDate" AS date, s.price, (s.price - m.median) / m.median * 100 AS dev_pct
+      FROM sale s
+      JOIN med m ON m.pyeong = s.pyeong
+      WHERE m.n >= 3 AND m.median > 0 AND ABS((s.price - m.median) / m.median) > 0.10
+      ORDER BY ABS((s.price - m.median) / m.median) DESC
+    `,
+  ]);
+
+  const cancelledCount12m = Number(cancelledRows[0]?.cancelled ?? 0);
+  const anomalyCount12m = anomalyRows.length;
+  if (cancelledCount12m === 0 && anomalyCount12m === 0) return null;
+  const top = anomalyRows[0];
+  return {
+    cancelledCount12m,
+    anomalyCount12m,
+    topAnomaly: top
+      ? { pyeong: top.pyeong, date: top.date.toISOString().slice(0, 10), price: top.price, deviationPct: top.dev_pct }
+      : null,
+  };
+}
+
 export async function getUnifiedTransactions(
   propertyId: bigint,
   params: { page?: number; perPage?: number; dealType?: DealType },
