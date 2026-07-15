@@ -40,10 +40,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!notice) return {};
   const region = notice.regionName ? `${notice.regionName} ` : '';
   const supply = notice.totalSupply ? `, ${notice.totalSupply.toLocaleString('ko-KR')}세대 공급` : '';
+  // 공급 정보(주택형별 units 또는 총공급)가 있는 공고만 색인 — 정부 원본 공급표가 실질 콘텐츠.
+  // 제목·지역만 있는 빈 공고는 near-duplicate thin이므로 noindex, 링크에쿼티는 follow로 전달. (AdSense P0-A)
+  const indexable = notice.totalSupply != null || notice.units.length > 0;
   return {
     title: `${notice.name} 청약 · ${categoryLabel(notice.category)}`,
     description: `${region}${notice.name} 청약${supply}. 접수 일정·주택형별 분양가와 주변 단지 시세를 한눈에 확인하세요.`,
     alternates: { canonical: `/subscription/${notice.id}` },
+    robots: indexable ? { index: true, follow: true } : { index: false, follow: true },
   };
 }
 

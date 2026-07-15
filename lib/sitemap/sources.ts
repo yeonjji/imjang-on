@@ -111,11 +111,18 @@ const property = dbSource({
   }),
 });
 
+// 색인 게이트: 공급 정보(주택형별 units 또는 총공급)가 있는 공고만 사이트맵에 등재한다.
+// subscription/[id] page.tsx의 indexable 조건과 일치시켜 noindex ↔ sitemap 등재 모순을 방지. (AdSense P0-A)
+const SUBSCRIPTION_INDEXABLE: Prisma.SubscriptionNoticeWhereInput = {
+  OR: [{ totalSupply: { not: null } }, { units: { some: {} } }],
+};
+
 const subscription = dbSource({
   key: 'subscription',
-  count: () => prisma.subscriptionNotice.count(),
+  count: () => prisma.subscriptionNotice.count({ where: SUBSCRIPTION_INDEXABLE }),
   findMany: (skip, take) =>
     prisma.subscriptionNotice.findMany({
+      where: SUBSCRIPTION_INDEXABLE,
       select: { id: true, updatedAt: true } as Prisma.SubscriptionNoticeSelect,
       orderBy: { id: 'asc' },
       skip,
