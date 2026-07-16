@@ -1,4 +1,5 @@
 import type { Insight, Narrative } from './shared';
+import type { FloorPremium, TransactionFlags } from '@/lib/transaction';
 import { formatBillion } from '@/lib/format';
 import { josa } from '@/lib/seo/josa';
 
@@ -14,6 +15,9 @@ export interface AptInsightInput {
   regionSampleCount: number;
   nearestStation: { name: string; lines: string[]; distanceMeters: number } | null;
   infra: { label: string; count: number; capped: boolean }[];
+  /** 색인 게이트 통과 후 서술을 다양화하는 고유 파생지표(있을 때만 문장 발화). */
+  floorPremium?: FloorPremium | null;
+  flags?: TransactionFlags | null;
 }
 
 export type AptNarrative = Narrative;
@@ -87,11 +91,41 @@ function bScale(d: AptInsightInput): Insight | null {
   return { key: 'scale', text: `${parts.join(' · ')} 단지입니다.` };
 }
 
+// F: 층 프리미엄 — 동일 평형 층별 회귀(경쟁사 미보유 고유 데이터). 기울기 부호에 따라 문장 구조가 갈린다.
+function floorPremiumInsight(d: AptInsightInput): Insight | null {
+  const fp = d.floorPremium;
+  if (!fp) return null;
+  const mag = Math.abs(fp.pctPerFloor);
+  if (mag < 0.1) return null; // 층 효과가 미미하면 굳이 서술하지 않는다.
+  const pct = mag >= 1 ? Math.round(mag) : Math.round(mag * 10) / 10;
+  const r2 = fp.r2.toFixed(2);
+  const text = fp.pctPerFloor > 0
+    ? `${fp.pyeong}평형은 층이 높을수록 ㎡당 실거래가가 한 층당 약 ${pct}% 오르는 경향이 관측됩니다(최근 매매 ${fp.n}건·설명력 R² ${r2}).`
+    : `${fp.pyeong}평형은 층이 낮을수록 ㎡당 실거래가가 한 층당 약 ${pct}% 높게 나타나는 경향이 관측됩니다(최근 매매 ${fp.n}건·설명력 R² ${r2}).`;
+  return { key: 'floor', text };
+}
+
+// D: 거래 데이터 특이사항(자동) — 있는 항목에 따라 문장이 갈리고, 둘 다 없으면 문장 자체가 없다.
+function flagsInsight(d: AptInsightInput): Insight | null {
+  const f = d.flags;
+  if (!f) return null;
+  const items: string[] = [];
+  if (f.cancelledCount12m > 0) items.push(`해제 신고 ${f.cancelledCount12m}건`);
+  if (f.anomalyCount12m > 0) items.push(`동일 평형 중앙값에서 ±10% 넘게 벗어난 거래 ${f.anomalyCount12m}건`);
+  if (!items.length) return null;
+  return { key: 'flags', text: `최근 1년 거래에는 ${items.join('과 ')}이 집계됩니다.` };
+}
+
 export function buildAptNarrative(d: AptInsightInput): AptNarrative | null {
   // 자연스러운 읽기 순서: 규모·연식(소개) → 추세 → 가격 위치 → 입지.
-  const mods = [bScale, tTrend, pPeer, aAccess].map((fn) => fn(d)).filter(Boolean) as Insight[];
-  // 가드: 발화 ≥3 AND (추세 또는 또래 발화). 미달 → null(=서술 생략+noindex).
-  if (mods.length < 3 || !mods.some((m) => m.key === 'trend' || m.key === 'peer')) return null;
+  const core = [bScale, tTrend, pPeer, aAccess].map((fn) => fn(d)).filter(Boolean) as Insight[];
+  // 색인 게이트: 발화 ≥3 AND (추세 또는 또래 발화). 미달 → null(=서술 생략+noindex).
+  // 게이트는 core 4모듈로만 판정한다(아래 파생 문장은 색인 여부를 바꾸지 않는다).
+  if (core.length < 3 || !core.some((m) => m.key === 'trend' || m.key === 'peer')) return null;
+  // 게이트 통과 페이지에만, 데이터가 뒷받침하면 고유 파생지표 해석을 덧붙인다.
+  // 조건부·구간별 분기라 단지마다 문장 구성이 달라져 near-duplicate를 줄인다(메타 설명은 앞 core 문장 유지).
+  const extra = [floorPremiumInsight, flagsInsight].map((fn) => fn(d)).filter(Boolean) as Insight[];
+  const mods = [...core, ...extra];
   // 첫 문장에만 단지명을 붙인다.
   const sentences = mods.map((m, i) => (i === 0 ? `${josa(d.name, '은', '는')} ${m.text}` : m.text));
   return { sentences, text: sentences.join(' '), fired: mods.map((m) => m.key) };

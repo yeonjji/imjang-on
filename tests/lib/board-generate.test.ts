@@ -28,4 +28,12 @@ describe('SYSTEM_PROMPT', () => {
   it('추측·추가 금지 원칙은 유지된다', () => {
     expect(SYSTEM_PROMPT).toContain('추측');
   });
+  it('출처 근거 비교·맥락(부가가치) 지시를 포함한다', () => {
+    expect(SYSTEM_PROMPT).toContain('비교');
+    expect(SYSTEM_PROMPT).toContain('맥락');
+  });
+  it('부가가치 지시가 전망·평가·권유 금지 원칙과 충돌하지 않는다', () => {
+    // 비교·맥락 허용이 의견성 문장 금지(rule 2)를 무력화하지 않아야 한다.
+    expect(SYSTEM_PROMPT).toContain('전망·투자 조언·추천·예측');
+  });
 });

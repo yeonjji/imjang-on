@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { EDITORIAL } from '@/lib/editorial';
 
 export const metadata: Metadata = {
   title: '서비스 소개',
@@ -25,15 +26,25 @@ export default function AboutPage() {
         <li>지하철 역세권 및 지역별 시세</li>
       </ul>
 
-      <h2 className="mt-10 text-xl font-bold text-[var(--color-text)]">운영 안내</h2>
+      <h2 className="mt-10 text-xl font-bold text-[var(--color-text)]">운영 주체</h2>
       <p className="mt-3 text-[var(--color-text)]">
-        임장ON은 개인이 운영합니다. 서비스는 무료이며 운영·서버 비용은 광고 수익으로 충당합니다.
+        임장ON은 <strong className="font-semibold text-[var(--color-blue-dark)]">{EDITORIAL.name}</strong>
+        ({EDITORIAL.role}) 1인이 운영합니다. 서비스는 무료이며 운영·서버 비용은 광고 수익으로 충당합니다.
         회원가입·결제 기능은 제공하지 않으며, 특정 매물을 중개하거나 광고하지 않습니다.
         문의는{' '}
-        <a href="mailto:contact@imjangon.co.kr" className="underline hover:text-[var(--color-blue-dark)]">
-          contact@imjangon.co.kr
+        <a href={`mailto:${EDITORIAL.email}`} className="underline hover:text-[var(--color-blue-dark)]">
+          {EDITORIAL.email}
         </a>
         으로 받습니다.
+      </p>
+
+      <h2 className="mt-10 text-xl font-bold text-[var(--color-text)]">데이터 수집·검증 방법</h2>
+      <p className="mt-3 text-[var(--color-text)]">
+        각 정보는 공공기관의 원본 데이터를 API·공개 파일로 수집해 자체적으로 정제·결합한 뒤,
+        페이지마다 출처와 데이터 기준일을 함께 표기합니다. 실거래가처럼 원본이 갱신되는 데이터는
+        정기적으로 재수집하며, 신고 지연 등으로 최신성·정확성을 100% 보장하기 어려운 항목은 해당
+        페이지에 명시합니다. 사용한 공공데이터 목록과 출처는{' '}
+        <Link href="/data-source" className="underline">데이터 안내</Link>에서 확인할 수 있습니다.
       </p>
 
       <p className="mt-8 text-sm text-[var(--color-muted)]">

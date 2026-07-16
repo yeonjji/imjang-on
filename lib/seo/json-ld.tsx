@@ -1,5 +1,6 @@
 import { SITE_URL } from '@/lib/site';
 import { DATA_SOURCES, type DataSourceId } from '@/lib/data-sources';
+import { EDITORIAL } from '@/lib/editorial';
 
 type Json = Record<string, unknown>;
 
@@ -117,6 +118,7 @@ export function articleSchema(input: {
     url: input.url,
     datePublished: input.datePublished,
     image: input.image,
+    author: { '@type': 'Person', name: EDITORIAL.name, url: EDITORIAL.url },
     publisher: { '@type': 'Organization', name: '임장ON', url: SITE_URL },
   };
 }
@@ -137,7 +139,7 @@ export function guideArticleSchema(input: {
     description: input.description,
     url: input.url,
     datePublished: input.datePublished,
-    author: { '@type': 'Organization', name: '임장ON 편집부' },
+    author: { '@type': 'Person', name: EDITORIAL.name, url: EDITORIAL.url },
     ...(input.dateModified ? { dateModified: input.dateModified } : {}),
     ...(input.image ? { image: input.image } : {}),
     publisher: { '@type': 'Organization', name: '임장ON', url: SITE_URL },

@@ -5,8 +5,6 @@ import {
   getUnifiedTransactions,
   getTransactionCounts,
   getSameFloorComparison,
-  getFloorPremium,
-  getTransactionFlags,
 } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
 import type { getNearbyInfra } from '@/lib/amenity/nearby';
@@ -34,6 +32,8 @@ import {
   cachedPropertyLatLng,
   cachedNearbySubway,
   cachedNearbyInfra,
+  cachedFloorPremium,
+  cachedTransactionFlags,
   loadAptInsight,
 } from '@/lib/insights/apt-loader';
 import { staticMapUrl } from '@/lib/seo/static-map';
@@ -93,8 +93,8 @@ export default async function OffiDetailPage({ params }: Params) {
     getAreaSummary(propId),
     getNearbyProperties({ propertyId: propId, propertyType: PropertyType.OFFICETEL }),
     getSameFloorComparison(propId),
-    getFloorPremium(propId),
-    getTransactionFlags(propId),
+    cachedFloorPremium(propId),
+    cachedTransactionFlags(propId),
     coord
       ? cachedNearbyInfra(coord.lat, coord.lng)
       : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),

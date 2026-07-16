@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { getPropertyById, getPropertyLatLng, getRegionStats } from '@/lib/property';
-import { getUnifiedTransactions, getMonthlyChartData } from '@/lib/transaction';
+import { getUnifiedTransactions, getMonthlyChartData, getFloorPremium, getTransactionFlags } from '@/lib/transaction';
 import { deriveHeaderStats } from '@/lib/price-chart';
 import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { getNearbyInfra } from '@/lib/amenity/nearby';
@@ -13,6 +13,9 @@ export const cachedNearbySubway = cache(getNearbySubwayStations);
 export const cachedNearbyInfra = cache((lat: number, lng: number) =>
   getNearbyInfra(lat, lng, { includeChildcare: true }),
 );
+// 상세 페이지의 카드도 이 캐시 별칭을 쓰게 해서, 산문(loadAptInsight)과 카드가 요청당 1회만 조회하도록 dedupe한다.
+export const cachedFloorPremium = cache(getFloorPremium);
+export const cachedTransactionFlags = cache(getTransactionFlags);
 
 function toUtcDate(d: Date | null | undefined): string | undefined {
   return d ? d.toISOString().slice(0, 10) : undefined;
@@ -26,12 +29,14 @@ export const loadAptInsight = cache(
     if (!property) return { narrative: null };
 
     const coord = await cachedPropertyLatLng(propId);
-    const [salesResult, region, subway, infra, chart] = await Promise.all([
+    const [salesResult, region, subway, infra, chart, floorPremium, flags] = await Promise.all([
       getUnifiedTransactions(propId, { page: 1, perPage: 30, dealType: 'SALE' }),
       getRegionStats(property.sigunguCode ?? '', property.propertyType),
       coord ? cachedNearbySubway(coord.lat, coord.lng) : Promise.resolve({ stations: [], fallback: false }),
       coord ? cachedNearbyInfra(coord.lat, coord.lng) : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
       getMonthlyChartData(propId),
+      cachedFloorPremium(propId),
+      cachedTransactionFlags(propId),
     ]);
     // 산문 변동률을 가격 흐름 그래프(deriveHeaderStats)와 동일 기준으로 맞춘다.
     const saleStats = deriveHeaderStats(chart.SALE);
@@ -53,6 +58,8 @@ export const loadAptInsight = cache(
         ? { name: subway.stations[0].name, lines: subway.stations[0].lines, distanceMeters: subway.stations[0].distanceMeters }
         : null,
       infra: infra.map((c) => ({ label: c.label, count: c.items.length, capped: c.capped })).filter((c) => c.count > 0).slice(0, 5),
+      floorPremium,
+      flags,
     });
 
     const dateModified = toUtcDate(property.saleLastAt ?? property.jeonseLastAt ?? property.wolseLastAt);

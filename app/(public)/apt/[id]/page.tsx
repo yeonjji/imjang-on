@@ -5,8 +5,6 @@ import {
   getUnifiedTransactions,
   getTransactionCounts,
   getSameFloorComparison,
-  getFloorPremium,
-  getTransactionFlags,
 } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
 import { PropertyType } from '@prisma/client';
@@ -32,7 +30,7 @@ import { NearbySubscriptions } from './_components/nearby-subscriptions';
 import { propertyMetaDescription } from '@/lib/seo/blurb';
 import { JsonLd, residenceSchema, breadcrumbSchema, aptProvenanceNodes } from '@/lib/seo/json-ld';
 import { InsightSection } from '@/components/ui/insight-section';
-import { cachedPropertyById, cachedPropertyLatLng, cachedNearbySubway, cachedNearbyInfra, loadAptInsight } from '@/lib/insights/apt-loader';
+import { cachedPropertyById, cachedPropertyLatLng, cachedNearbySubway, cachedNearbyInfra, cachedFloorPremium, cachedTransactionFlags, loadAptInsight } from '@/lib/insights/apt-loader';
 import { staticMapUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
@@ -90,8 +88,8 @@ export default async function AptDetailPage({ params }: Params) {
     getAreaSummary(propId),
     getNearbyProperties({ propertyId: propId, propertyType: PropertyType.APARTMENT }),
     getSameFloorComparison(propId),
-    getFloorPremium(propId),
-    getTransactionFlags(propId),
+    cachedFloorPremium(propId),
+    cachedTransactionFlags(propId),
     coord
       ? cachedNearbyInfra(coord.lat, coord.lng)
       : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),

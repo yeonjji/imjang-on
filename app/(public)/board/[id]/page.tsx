@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -11,6 +12,7 @@ import { BoardDetailCta } from './_components/board-detail-cta';
 import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
 import { JsonLd, articleSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { SITE_URL } from '@/lib/site';
+import { EDITORIAL } from '@/lib/editorial';
 import { splitSummary } from '@/lib/board/summary-split';
 import { ArticleSummary } from '@/app/(public)/_components/article-summary';
 import type { Metadata } from 'next';
@@ -91,7 +93,12 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
       </h1>
       <div className="mt-2 flex items-center justify-between text-sm text-[var(--color-muted)]">
         <span>임장ON 요약일 {post.generatedAt.toISOString().slice(0, 10)}</span>
-        <span>작성자 : 임장ON 편집부</span>
+        <span>
+          작성 ·{' '}
+          <Link href="/about" className="font-semibold text-[var(--color-blue)] hover:underline">
+            {EDITORIAL.name}
+          </Link>
+        </span>
       </div>
       <div className="board-prose mt-8 text-[15px] leading-relaxed text-[var(--color-text)]">
         <ReactMarkdown remarkPlugins={[[remarkGfm, { singleTilde: false }]]}>{rest}</ReactMarkdown>
