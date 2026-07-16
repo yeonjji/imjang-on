@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getJeonseProduct, getProductRegions, getAllGrntDvcds } from '@/lib/jeonse/detail';
+import { getJeonseProduct, getProductRegions } from '@/lib/jeonse/detail';
 import { reqTargetLabel, prodKindLabel, formatWon, bankNames, formatAsOf } from '@/lib/jeonse/labels';
 import { getTransactionTeaser } from '@/lib/board/detail-teasers';
 import { getWeeklySubscriptions, flattenWeeklyBoard } from '@/lib/subscription';
@@ -18,10 +18,10 @@ import { SITE_URL } from '@/lib/site';
 
 export const revalidate = 86_400;
 
-export async function generateStaticParams() {
-  const codes = await getAllGrntDvcds();
-  return codes.map((grntDvcd) => ({ grntDvcd }));
-}
+// 빈 배열 → 프리빌드 없이 첫 요청 시 렌더 후 revalidate 동안 ISR 캐시(dynamicParams 기본 true).
+// 빌드타임에 각 상세를 프리렌더하지 않아 빌드가 Supabase에 접근하지 않는다 — 빌드 중 DB 블립으로
+// 배포가 깨지는 것을 방지(subscription/board 등과 동일 패턴).
+export function generateStaticParams() { return []; }
 
 export async function generateMetadata({
   params,
