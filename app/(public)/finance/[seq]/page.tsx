@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { getLoanProduct, getAllLoanSeqs, LOAN_SECTIONS, isDisplayable, isPlausibleValue, formatLoanValue } from '@/lib/loan/detail';
+import { getLoanProduct, LOAN_SECTIONS, isDisplayable, isPlausibleValue, formatLoanValue } from '@/lib/loan/detail';
 import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/json-ld';
@@ -17,16 +17,10 @@ import { RelatedGuides } from '../../_components/related-guides';
 
 export const revalidate = 86_400;
 
-export async function generateStaticParams() {
-  // 빌드 DB에 LoanProduct가 아직 없거나(마이그레이션 미적용) DB 불가 시
-  // 빌드를 깨뜨리지 않고 on-demand 렌더로 폴백한다.
-  try {
-    const seqs = await getAllLoanSeqs();
-    return seqs.map((seq) => ({ seq: String(seq) }));
-  } catch {
-    return [];
-  }
-}
+// 빈 배열 → 프리빌드 없이 첫 요청 시 렌더 후 revalidate 동안 ISR 캐시(dynamicParams 기본 true).
+// 빌드타임에 각 상세를 프리렌더하지 않아 빌드가 Supabase에 접근하지 않는다 — 빌드 중 DB 블립으로
+// 배포가 깨지는 것을 방지(subscription/board 등과 동일 패턴).
+export function generateStaticParams() { return []; }
 
 export async function generateMetadata({
   params,

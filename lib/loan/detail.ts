@@ -91,8 +91,3 @@ export function formatLoanValue(value: unknown, unit?: string): string {
 export async function getLoanProduct(seq: number) {
   return prisma.loanProduct.findUnique({ where: { seq } });
 }
-
-export async function getAllLoanSeqs(): Promise<number[]> {
-  const rows = await prisma.loanProduct.findMany({ select: { seq: true } });
-  return rows.map((r) => r.seq);
-}
