@@ -92,12 +92,21 @@ const core: SitemapSource = {
   page: async (offset, limit) => (await coreEntries()).slice(offset, offset + limit),
 };
 
+// 색인 위생: 상세는 narrative.fired≥3(SALE 기반 trend/peer 필수)일 때만 index되므로,
+// 매매 이력이 전혀 없는(전세·월세만) 매물은 항상 noindex다. saleLastAt not null(매매 ≥1건)을
+// 함께 요구해 그런 매물을 사이트맵에서 빼, 'Submitted URL marked noindex' 경고·크롤 예산 낭비를
+// 줄인다(제거 대상은 모두 noindex라 false-negative 없음). count·findMany 동일 조건으로 샤드 정합. (AdSense P2-A)
+const PROPERTY_INDEXABLE: Prisma.PropertyWhereInput = {
+  txCount12m: { gt: 0 },
+  saleLastAt: { not: null },
+};
+
 const property = dbSource({
   key: 'property',
-  count: () => prisma.property.count({ where: { txCount12m: { gt: 0 } } }),
+  count: () => prisma.property.count({ where: PROPERTY_INDEXABLE }),
   findMany: (skip, take) =>
     prisma.property.findMany({
-      where: { txCount12m: { gt: 0 } },
+      where: PROPERTY_INDEXABLE,
       select: { id: true, propertyType: true, updatedAt: true },
       orderBy: { id: 'asc' },
       skip,
