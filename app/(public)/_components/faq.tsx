@@ -41,14 +41,23 @@ export function FaqList({
   );
 }
 
-/** 랜딩 페이지용: 카테고리 FAQ 아코디언 + FAQPage JSON-LD. */
-export function Faq({ category, title }: { category: FaqCategory; title?: string }) {
-  const items = FAQ[category];
-  if (!items?.length) return null;
+/** 랜딩(정적 카테고리) 또는 상세(페이지 치환 items) FAQ 아코디언 + FAQPage JSON-LD. */
+export function Faq({
+  category,
+  items,
+  title,
+}: {
+  category?: FaqCategory;
+  items?: FaqItem[];
+  title?: string;
+}) {
+  // 상세: 호출부가 composeDetailFaq로 조립한 items 전달. 허브: category만 → 정적 FAQ[category].
+  const finalItems = items ?? (category ? FAQ[category] : undefined);
+  if (!finalItems?.length) return null;
   return (
     <>
-      <FaqList items={items} title={title} />
-      <JsonLd data={faqSchema(items)} />
+      <FaqList items={finalItems} title={title} />
+      <JsonLd data={faqSchema(finalItems)} />
     </>
   );
 }
