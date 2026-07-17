@@ -23,6 +23,9 @@ import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 import { BoardBriefingSection } from '../../_components/board-briefing-section';
 import { RelatedGuides } from '../../_components/related-guides';
+import { Faq } from '../../_components/faq';
+import { composeDetailFaq } from '@/lib/faq/compose';
+import { buildSubscriptionFaq } from '@/lib/faq/builders/subscription';
 
 export const revalidate = 21_600;
 // 동적 세그먼트는 generateStaticParams가 없으면 revalidate가 무시되고 매 요청 동적 렌더된다.
@@ -68,6 +71,20 @@ export default async function SubscriptionDetailPage({ params }: Params) {
       ? getNearbySubwayStations(coord.lat, coord.lng)
       : Promise.resolve({ stations: [], fallback: false }),
   ]);
+
+  const subscriptionFaq = composeDetailFaq(
+    buildSubscriptionFaq({
+      name: notice.name,
+      regionName: notice.regionName,
+      totalSupply: notice.totalSupply,
+      receiptBegin: notice.receiptBegin,
+      receiptEnd: notice.receiptEnd,
+      category: notice.category,
+      moveInYm: notice.moveInYm,
+      unitCount: notice.units.length,
+    }),
+    'subscription',
+  );
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
@@ -131,6 +148,7 @@ export default async function SubscriptionDetailPage({ params }: Params) {
           )}
           <BoardBriefingSection />
           <RelatedGuides pageKey="subscription" />
+          {subscriptionFaq && <Faq items={subscriptionFaq} />}
           <MainSourceBlock id={subscriptionSource(notice.category)} />
         </main>
         <aside className="min-w-0">
