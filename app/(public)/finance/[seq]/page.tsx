@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { getLoanProduct, LOAN_SECTIONS, isDisplayable, isPlausibleValue, formatLoanValue } from '@/lib/loan/detail';
 import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
+import { formatAsOf } from '@/lib/format';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { SITE_URL } from '@/lib/site';
 import { LoanHero } from './_components/loan-hero';
@@ -105,7 +106,14 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
             );
           })}
 
-          <SourceCaption ids={['kinfa-loan']} />
+          <div>
+            <SourceCaption ids={['kinfa-loan']} />
+            <p className="mt-1.5 text-[12px] leading-relaxed text-[var(--color-muted)]">
+              데이터 기준일 {formatAsOf(product.updatedAt)} · 대출한도·금리·상환조건은 상품 안내 기준이며 변경될 수 있어{' '}
+              <strong className="font-semibold">실제와 다를 수 있습니다</strong>. 실제 한도·금리는 소득·부채 등 개인
+              상황에 따라 달라지니, 정확한 내용은 취급기관·서민금융진흥원에서 확인하세요.
+            </p>
+          </div>
 
           <RelatedLoans items={related} />
           <LoanDiscoverySection discovery={discovery} />
