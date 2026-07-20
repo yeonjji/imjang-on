@@ -164,14 +164,14 @@ export function parseDeptRows(rows: Record<string, unknown>[]): NormalizedHospit
 // HospitalTransit 각 컬럼의 varchar 한도. 정상 값은 최대 50자대인데,
 // 심평원 교통 파일 일부 행이 여러 레코드가 ♣ 구분자로 뭉개진 3만자대 깨진 셀로 들어온다.
 // 한도를 넘는 값은 손상 데이터이므로 해당 행을 버린다(클램프하면 base64 쓰레기만 남음).
-const TRANSIT_LIMITS: Record<string, number> = {
+const TRANSIT_LIMITS = {
   transitName: 50,
   routeNumber: 100,
   stopPoint: 100,
   direction: 100,
   distance: 50,
   note: 200,
-};
+} as const;
 
 export function parseTransitRows(rows: Record<string, unknown>[]): NormalizedHospitalTransit[] {
   const result: NormalizedHospitalTransit[] = [];
@@ -187,9 +187,9 @@ export function parseTransitRows(rows: Record<string, unknown>[]): NormalizedHos
       distance: strOrNull(row['거리']),
       note: strOrNull(row['비고']),
     };
-    const corrupt = Object.entries(TRANSIT_LIMITS).some(([field, limit]) => {
-      const v = (rec as Record<string, unknown>)[field];
-      return typeof v === 'string' && v.length > limit;
+    const corrupt = (Object.keys(TRANSIT_LIMITS) as (keyof typeof TRANSIT_LIMITS)[]).some((field) => {
+      const v = rec[field];
+      return typeof v === 'string' && v.length > TRANSIT_LIMITS[field];
     });
     if (corrupt) continue;
     result.push(rec);
