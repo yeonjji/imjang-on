@@ -15,6 +15,9 @@ import { getLoanDiscovery } from '@/lib/loan/discovery';
 import { LoanDiscoverySection } from './_components/loan-discovery-section';
 import { BoardBriefingSection } from '../../_components/board-briefing-section';
 import { RelatedGuides } from '../../_components/related-guides';
+import { Faq } from '../../_components/faq';
+import { composeDetailFaq } from '@/lib/faq/compose';
+import { buildLoanFaq } from '@/lib/faq/builders/loan';
 
 export const revalidate = 86_400;
 
@@ -50,6 +53,18 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
   const rltsite = isDisplayable(raw.rltsite) ? String(raw.rltsite) : null;
   const related = recommendLoans(product, await getLoanSummaries(), MAX_RELATED);
   const discovery = await getLoanDiscovery(product);
+
+  const loanFaq = composeDetailFaq(
+    buildLoanFaq({
+      finprdnm: product.finprdnm,
+      lnlmt: product.lnlmt,
+      irt: product.irt,
+      ofrinstnm: product.ofrinstnm,
+      targetTags: product.targetTags,
+      updatedAt: product.updatedAt,
+    }),
+    'finance',
+  );
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
@@ -119,6 +134,7 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
           <LoanDiscoverySection discovery={discovery} />
           <BoardBriefingSection />
           <RelatedGuides pageKey="finance" />
+          {loanFaq && <Faq items={loanFaq} />}
         </main>
 
         <aside className="min-w-0">
