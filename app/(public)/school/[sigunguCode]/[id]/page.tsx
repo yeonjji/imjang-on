@@ -16,6 +16,9 @@ import { SourceCaption } from '@/components/ui/source-caption';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
 import { RelatedGuides } from '@/app/(public)/_components/related-guides';
+import { Faq } from '@/app/(public)/_components/faq';
+import { composeDetailFaq } from '@/lib/faq/compose';
+import { buildSchoolFaq } from '@/lib/faq/builders/school';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
 import { InsightSection } from '@/components/ui/insight-section';
 import { staticMapUrl } from '@/lib/seo/static-map';
@@ -92,6 +95,19 @@ export default async function SchoolDetailPage({ params }: Params) {
 
   const others = otherList.rows.filter((s) => s.id !== school.id).slice(0, 4);
 
+  const schoolFaq = composeDetailFaq(
+    buildSchoolFaq({
+      name: school.name,
+      schoolKind: school.schoolKind,
+      foundType: school.foundType,
+      coeduType: school.coeduType,
+      regionFullName: regionDisplay.fullName,
+      eduOffice: school.eduOffice,
+      address: school.address,
+    }),
+    'school',
+  );
+
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10">
       <JsonLd
@@ -147,6 +163,7 @@ export default async function SchoolDetailPage({ params }: Params) {
           {coord && <NearbyInfra categories={infra} />}
           <BoardBriefingSection />
           <RelatedGuides pageKey="school" />
+          {schoolFaq && <Faq items={schoolFaq} />}
           <MainSourceBlock id="neis" />
         </main>
         <aside><SchoolDetailSidebar basePath={basePath} others={others} /></aside>

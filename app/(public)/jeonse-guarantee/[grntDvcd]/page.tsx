@@ -10,6 +10,9 @@ import { relatedLoansForJeonse } from '@/lib/jeonse/related-loans';
 import { JeonseDiscoverySection } from './_components/jeonse-discovery-section';
 import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
 import { RelatedGuides } from '@/app/(public)/_components/related-guides';
+import { Faq } from '@/app/(public)/_components/faq';
+import { composeDetailFaq } from '@/lib/faq/compose';
+import { buildJeonseFaq } from '@/lib/faq/builders/jeonse';
 import { shortSidoFromRegionCode } from '@/lib/region';
 import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
@@ -42,6 +45,20 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
   const { grntDvcd } = await params;
   const product = await getJeonseProduct(grntDvcd);
   if (!product) notFound();
+
+  const jeonseFaq = composeDetailFaq(
+    buildJeonseFaq({
+      rcmdProdNm: product.rcmdProdNm,
+      maxLoanLmtAmt: product.maxLoanLmtAmt,
+      rentGrntMaxLoanLmtRate: product.rentGrntMaxLoanLmtRate,
+      exptGrfeRateCont: product.exptGrfeRateCont,
+      grntReqTrgtDvcd: product.grntReqTrgtDvcd,
+      rcmdGrntProdDvcd: product.rcmdGrntProdDvcd,
+      trtBankCont: product.trtBankCont,
+      updatedAt: product.updatedAt,
+    }),
+    'jeonse-guarantee',
+  );
   const regions = await getProductRegions(grntDvcd);
 
   const [briefing, weeklyBoard, allLoans] = await Promise.all([
@@ -160,6 +177,7 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
             </Card>
           )}
 
+          {jeonseFaq && <Faq items={jeonseFaq} />}
           <SourceCaption ids={['hf-jeonse-guarantee']} />
         </main>
 

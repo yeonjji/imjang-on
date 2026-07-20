@@ -21,6 +21,9 @@ import { SourceCaption } from '@/components/ui/source-caption';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
 import { RelatedGuides } from '@/app/(public)/_components/related-guides';
+import { Faq } from '@/app/(public)/_components/faq';
+import { composeDetailFaq } from '@/lib/faq/compose';
+import { buildChildcareFaq } from '@/lib/faq/builders/childcare';
 import { InsightSection } from '@/components/ui/insight-section';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
 import { staticMapUrl } from '@/lib/seo/static-map';
@@ -100,6 +103,19 @@ export default async function ChildcareDetailPage({ params }: Params) {
 
   const { narrative, dateModified } = await loadChildcareInsight(itemId);
 
+  const childcareFaq = composeDetailFaq(
+    buildChildcareFaq({
+      name: item.name,
+      crType: item.crType,
+      capacity: item.capacity,
+      currentCount: item.currentCount,
+      waitCntTot: item.waitCntTot,
+      staffCount: item.staffCount,
+      regionFullName: regionDisplay.fullName,
+    }),
+    'childcare',
+  );
+
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10">
       <JsonLd
@@ -160,6 +176,7 @@ export default async function ChildcareDetailPage({ params }: Params) {
           {coord && <NearbyInfra categories={infra} />}
           <BoardBriefingSection />
           <RelatedGuides pageKey="childcare" />
+          {childcareFaq && <Faq items={childcareFaq} />}
           <MainSourceBlock id="childcare" />
         </main>
         <aside><ChildcareDetailSidebar basePath={basePath} others={others} /></aside>

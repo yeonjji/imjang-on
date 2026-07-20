@@ -42,6 +42,9 @@ import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 import { BoardBriefingSection } from '../../_components/board-briefing-section';
 import { RelatedGuides } from '../../_components/related-guides';
+import { Faq } from '../../_components/faq';
+import { composeDetailFaq } from '@/lib/faq/compose';
+import { buildAptFaq } from '@/lib/faq/builders/apt';
 
 export const revalidate = 86_400;
 // 동적 세그먼트는 generateStaticParams가 없으면 revalidate가 무시되고 매 요청 동적 렌더된다.
@@ -110,6 +113,11 @@ export default async function VillaDetailPage({ params }: Params) {
 
   const { narrative, dateModified } = await loadAptInsight(propId);
 
+  const villaFaq = composeDetailFaq(
+    buildAptFaq({ property, areaSummary, unifiedTotalCount: unified.totalCount }),
+    'villa',
+  );
+
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
       <JsonLd
@@ -170,6 +178,7 @@ export default async function VillaDetailPage({ params }: Params) {
           <NearbyInfra categories={infra} />
           <BoardBriefingSection />
           <RelatedGuides pageKey="villa" />
+          {villaFaq && <Faq items={villaFaq} />}
           <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>
