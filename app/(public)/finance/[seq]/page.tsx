@@ -4,7 +4,7 @@ import { getLoanProduct, LOAN_SECTIONS, isDisplayable, isPlausibleValue, formatL
 import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { formatAsOf } from '@/lib/format';
-import { JsonLd, breadcrumbSchema } from '@/lib/seo/json-ld';
+import { JsonLd, breadcrumbSchema, financialProductSchema } from '@/lib/seo/json-ld';
 import { SITE_URL } from '@/lib/site';
 import { LoanHero } from './_components/loan-hero';
 import { LoanSidebar } from './_components/loan-sidebar';
@@ -70,6 +70,13 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
     <div className="mx-auto max-w-[1180px] px-6 py-12">
       <JsonLd
         data={[
+          financialProductSchema({
+            type: 'LoanOrCredit',
+            name: product.finprdnm,
+            url: `${SITE_URL}/finance/${seq}`,
+            providerName: product.ofrinstnm ?? '서민금융진흥원',
+            amount: product.lnlmt != null ? { currency: 'KRW', value: product.lnlmt * 10000 } : null,
+          }),
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
             { name: '주거금융', url: `${SITE_URL}/finance` },

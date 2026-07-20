@@ -21,8 +21,17 @@ import { SourceCaption } from '@/components/ui/source-caption';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
 import { RelatedGuides } from '@/app/(public)/_components/related-guides';
+import { JsonLd, placeSchema, breadcrumbSchema, type PlaceType } from '@/lib/seo/json-ld';
+import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
+
+const AMENITY_PLACE_TYPE: Record<string, PlaceType> = {
+  convenience: 'ConvenienceStore',
+  mart: 'GroceryStore',
+  cafe: 'CafeOrCoffeeShop',
+  market: 'Store',
+};
 
 export const revalidate = 86_400;
 // 동적 세그먼트는 generateStaticParams가 없으면 revalidate가 무시되고 매 요청 동적 렌더된다.
@@ -84,6 +93,23 @@ export default async function AmenityDetailPage({ params }: Params) {
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10">
+      <JsonLd
+        data={[
+          placeSchema({
+            type: AMENITY_PLACE_TYPE[def.slug] ?? 'Store',
+            name: item.name,
+            address: item.address,
+            lat: coord?.lat,
+            lng: coord?.lng,
+            url: `${SITE_URL}/amenity/${def.slug}/${id}`,
+          }),
+          breadcrumbSchema([
+            { name: '홈', url: `${SITE_URL}/` },
+            { name: def.breadcrumbLabel, url: `${SITE_URL}/amenity/${def.slug}` },
+            { name: item.name, url: `${SITE_URL}/amenity/${def.slug}/${id}` },
+          ]),
+        ]}
+      />
       <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
         <Link href="/">홈</Link><span>›</span>
         <Link href="/amenity/convenience">상권·편의</Link><span>›</span>

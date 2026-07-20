@@ -14,6 +14,7 @@ const PAGE_TO_GUIDE: Record<string, GuideCategory> = {
   finance: GuideCategory.FINANCE,
   'jeonse-guarantee': GuideCategory.FINANCE,
   amenity: GuideCategory.LIFE,
+  urban: GuideCategory.LIFE,
   subway: GuideCategory.LIFE,
   life: GuideCategory.LIFE,
 };
