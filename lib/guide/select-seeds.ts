@@ -11,6 +11,6 @@ export function selectGuideSeeds(
 ): GuideSeed[] {
   if (!onlyValue) return seeds;
   const keys = onlyValue.split(',').map((k) => k.trim()).filter(Boolean);
-  if (keys.length === 0) return seeds;
+  if (keys.length === 0) return []; // 트루시 값이 유효 key 0개 → 빈 배열(스크립트가 loud fail). 재과금 방어.
   return seeds.filter((s) => keys.includes(s.key));
 }

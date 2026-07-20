@@ -29,4 +29,9 @@ describe('selectGuideSeeds', () => {
   it('매칭 없는 key면 빈 배열', () => {
     expect(selectGuideSeeds('zzz', seeds)).toEqual([]);
   });
+  it('트루시지만 유효 key가 0개면(콤마·공백만) 빈 배열(재과금 방어)', () => {
+    expect(selectGuideSeeds(',', seeds)).toEqual([]);
+    expect(selectGuideSeeds(' ', seeds)).toEqual([]);
+    expect(selectGuideSeeds(', ,', seeds)).toEqual([]);
+  });
 });
