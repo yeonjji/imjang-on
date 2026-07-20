@@ -161,12 +161,24 @@ export function parseDeptRows(rows: Record<string, unknown>[]): NormalizedHospit
   return result;
 }
 
+// HospitalTransit 각 컬럼의 varchar 한도. 정상 값은 최대 50자대인데,
+// 심평원 교통 파일 일부 행이 여러 레코드가 ♣ 구분자로 뭉개진 3만자대 깨진 셀로 들어온다.
+// 한도를 넘는 값은 손상 데이터이므로 해당 행을 버린다(클램프하면 base64 쓰레기만 남음).
+const TRANSIT_LIMITS: Record<string, number> = {
+  transitName: 50,
+  routeNumber: 100,
+  stopPoint: 100,
+  direction: 100,
+  distance: 50,
+  note: 200,
+};
+
 export function parseTransitRows(rows: Record<string, unknown>[]): NormalizedHospitalTransit[] {
   const result: NormalizedHospitalTransit[] = [];
   for (const row of rows) {
     const hospitalSourceId = str(row['암호화요양기호']);
     if (!hospitalSourceId) continue;
-    result.push({
+    const rec: NormalizedHospitalTransit = {
       hospitalSourceId,
       transitName: strOrNull(row['교통편명']),
       routeNumber: strOrNull(row['노선번호']),
@@ -174,7 +186,13 @@ export function parseTransitRows(rows: Record<string, unknown>[]): NormalizedHos
       direction: strOrNull(row['방향']),
       distance: strOrNull(row['거리']),
       note: strOrNull(row['비고']),
+    };
+    const corrupt = Object.entries(TRANSIT_LIMITS).some(([field, limit]) => {
+      const v = (rec as Record<string, unknown>)[field];
+      return typeof v === 'string' && v.length > limit;
     });
+    if (corrupt) continue;
+    result.push(rec);
   }
   return result;
 }
