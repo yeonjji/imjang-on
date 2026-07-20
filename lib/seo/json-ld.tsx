@@ -85,7 +85,16 @@ export function residenceSchema(input: PlaceInput & { id?: string; mainEntityOfP
   };
 }
 
-export type PlaceType = 'School' | 'Hospital' | 'Pharmacy' | 'ChildCare' | 'Park';
+export type PlaceType =
+  | 'School'
+  | 'Hospital'
+  | 'Pharmacy'
+  | 'ChildCare'
+  | 'Park'
+  | 'Store'
+  | 'GroceryStore'
+  | 'ConvenienceStore'
+  | 'CafeOrCoffeeShop';
 
 export function placeSchema(input: PlaceInput & { type: PlaceType; id?: string; mainEntityOfPageId?: string }): Json {
   return {
@@ -155,6 +164,28 @@ export function faqSchema(items: { q: string; a: string }[]): Json {
       name: it.q,
       acceptedAnswer: { '@type': 'Answer', text: it.a },
     })),
+  };
+}
+
+/** 금융상품(대출·전세보증) 구조화 데이터. 항상 색인되는 finance/jeonse 상세의 thin 신호를 보강. */
+export function financialProductSchema(input: {
+  type: 'LoanOrCredit' | 'FinancialProduct';
+  name: string;
+  url: string;
+  providerName: string;
+  amount?: { currency: string; value: number } | null;
+  feesAndCommissions?: string | null;
+}): Json {
+  return {
+    ...ctx,
+    '@type': input.type,
+    name: input.name,
+    url: input.url,
+    provider: { '@type': 'Organization', name: input.providerName },
+    ...(input.amount
+      ? { amount: { '@type': 'MonetaryAmount', currency: input.amount.currency, value: input.amount.value } }
+      : {}),
+    ...(input.feesAndCommissions ? { feesAndCommissionsSpecification: input.feesAndCommissions } : {}),
   };
 }
 

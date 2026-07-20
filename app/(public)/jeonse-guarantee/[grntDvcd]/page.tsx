@@ -16,7 +16,7 @@ import { buildJeonseFaq } from '@/lib/faq/builders/jeonse';
 import { shortSidoFromRegionCode } from '@/lib/region';
 import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
-import { JsonLd, breadcrumbSchema } from '@/lib/seo/json-ld';
+import { JsonLd, breadcrumbSchema, financialProductSchema } from '@/lib/seo/json-ld';
 import { SITE_URL } from '@/lib/site';
 
 export const revalidate = 86_400;
@@ -83,6 +83,14 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
     <div className="mx-auto max-w-[1180px] px-6 py-12">
       <JsonLd
         data={[
+          financialProductSchema({
+            type: 'FinancialProduct',
+            name: product.rcmdProdNm,
+            url: `${SITE_URL}/jeonse-guarantee/${grntDvcd}`,
+            providerName: '한국주택금융공사',
+            amount: product.maxLoanLmtAmt != null ? { currency: 'KRW', value: product.maxLoanLmtAmt } : null,
+            feesAndCommissions: product.exptGrfeRateCont,
+          }),
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
             { name: '맞춤 전세보증 찾기', url: `${SITE_URL}/jeonse-guarantee` },
