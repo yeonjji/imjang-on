@@ -3,18 +3,18 @@
  * 실행: pnpm exec dotenv -e .env.local -- tsx scripts/generate-guides.ts [--only=<seedKey>]
  * 이미 존재하는(dedupeKey) 시드는 건너뛴다(createGuideDraft가 duplicate 반환).
  */
-import { GUIDE_SEEDS } from '@/lib/guide/seeds';
 import { generateGuideDraft } from '@/lib/guide/generate';
 import { createGuideDraft } from '@/lib/guide/create-draft';
 import { createOpenAiClient } from '@/lib/board/generate';
 import { env } from '@/lib/env';
+import { selectGuideSeeds } from '@/lib/guide/select-seeds';
 
 async function main() {
   const onlyArg = process.argv.find((a) => a.startsWith('--only='));
-  const only = onlyArg ? onlyArg.slice('--only='.length) : null;
-  const seeds = only ? GUIDE_SEEDS.filter((s) => s.key === only) : GUIDE_SEEDS;
+  const onlyValue = onlyArg ? onlyArg.slice('--only='.length) : undefined;
+  const seeds = selectGuideSeeds(onlyValue);
   if (seeds.length === 0) {
-    console.error(only ? `시드 없음: ${only}` : '시드가 비어 있습니다.');
+    console.error(onlyValue ? `시드 없음: ${onlyValue}` : '시드가 비어 있습니다.');
     process.exit(1);
   }
   const client = createOpenAiClient(env.OPENAI_API_KEY);

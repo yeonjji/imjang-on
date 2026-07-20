@@ -51,7 +51,7 @@ export function RelatedGuidesView({
 export async function RelatedGuides({
   pageKey,
   className,
-  limit = 3,
+  limit = 4,
 }: {
   pageKey: string;
   className?: string;
