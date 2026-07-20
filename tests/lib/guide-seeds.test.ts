@@ -21,10 +21,10 @@ describe('guide seeds', () => {
       expect(s.related.href.startsWith('/')).toBe(true);
     }
   });
-  it('카테고리당 정확히 3편이다(총 21편)', () => {
+  it('카테고리당 정확히 4편이다(총 28편)', () => {
     const byCat = new Map<string, number>();
     for (const s of GUIDE_SEEDS) byCat.set(s.category, (byCat.get(s.category) ?? 0) + 1);
-    for (const n of byCat.values()) expect(n).toBe(3);
-    expect(GUIDE_SEEDS.length).toBe(21);
+    for (const n of byCat.values()) expect(n).toBe(4);
+    expect(GUIDE_SEEDS.length).toBe(28);
   });
 });
