@@ -17,6 +17,9 @@ import { SourceCaption } from '@/components/ui/source-caption';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
 import { RelatedGuides } from '@/app/(public)/_components/related-guides';
+import { Faq } from '@/app/(public)/_components/faq';
+import { composeDetailFaq } from '@/lib/faq/compose';
+import { buildHospitalFaq } from '@/lib/faq/builders/hospital';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
 import { staticMapUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
@@ -71,6 +74,26 @@ export default async function HospitalDetailPage({ params }: Params) {
 
   const others = otherList.rows.filter(h => h.id !== hospital.id).slice(0, 4);
   const { narrative } = await loadHospitalInsight(hospitalId);
+
+  const hospitalFaq = composeDetailFaq(
+    buildHospitalFaq({
+      name: hospital.name,
+      typeName: hospital.typeName,
+      sigungu: hospital.sigungu,
+      sido: hospital.sido,
+      depts: hospital.depts,
+      totalDoctors: hospital.totalDoctors,
+      detail: hospital.detail
+        ? {
+            openMon: hospital.detail.openMon,
+            closeMon: hospital.detail.closeMon,
+            erDayOpen: hospital.detail.erDayOpen,
+            erNightOpen: hospital.detail.erNightOpen,
+          }
+        : null,
+    }),
+    'hospital',
+  );
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10">
@@ -142,6 +165,7 @@ export default async function HospitalDetailPage({ params }: Params) {
           {coord && <NearbyInfra categories={infra} />}
           <BoardBriefingSection />
           <RelatedGuides pageKey="medical/hospital" />
+          {hospitalFaq && <Faq items={hospitalFaq} />}
           <MainSourceBlock id="hira" />
         </div>
         <aside>
