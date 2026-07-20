@@ -117,3 +117,12 @@ export async function getLoanSummaries(): Promise<LoanSummary[]> {
     return { ...rest, operPeriod };
   });
 }
+
+/** 데이터 스냅샷 기준일(가장 최근 적재 시각). 미적재 시 null. */
+export async function getLoanDataAsOf(): Promise<Date | null> {
+  const row = await prisma.loanProduct.findFirst({
+    select: { updatedAt: true },
+    orderBy: { updatedAt: 'desc' },
+  });
+  return row?.updatedAt ?? null;
+}

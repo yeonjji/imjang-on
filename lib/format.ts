@@ -61,3 +61,12 @@ export function formatReceiptPeriodShort(
   };
   return `${md(begin)}~${md(end)}`;
 }
+
+/** 데이터 스냅샷 기준일(UTC instant) → "YYYY.MM.DD"(KST). 서버 TZ와 무관하게 한국 날짜로 표기. */
+export function formatAsOf(d: Date): string {
+  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  const y = kst.getUTCFullYear();
+  const m = String(kst.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(kst.getUTCDate()).padStart(2, '0');
+  return `${y}.${m}.${day}`;
+}
