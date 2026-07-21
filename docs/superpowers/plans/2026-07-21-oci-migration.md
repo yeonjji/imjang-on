@@ -20,6 +20,7 @@
 - **`SITE_URL`은 모든 컨텍스트에서 공개 도메인 `https://imjangon.co.kr`.** localhost로 바꾸지 말 것(posts 저장 link 오염).
 - **`NEXT_PUBLIC_*`는 빌드타임 번들** → Docker build-arg로 전달.
 - **컨테이너 내부 DB 호스트는 `db`(compose 서비스명)**, 호스트에서는 `127.0.0.1:5432`.
+- **`next build`는 빌드타임에 DB 접근**(홈 스냅샷·`/apt`·`/officetel` 등 ISR prerender·`sitemap.xml`). 따라서 **web 이미지 빌드는 스키마가 적용된 db가 떠 있어야 함**. 빌더는 빌드타임 DB URL을 **BuildKit secret**으로 받고 `build.network: host`로 호스트-게시 `127.0.0.1:5432`에 접속(`BUILD_DATABASE_URL`). 런타임 `DATABASE_URL`(=`db:5432`)과 별개. **etl 이미지는 `deps`에서 파생 → 빌드 시 DB 불필요.** 배포 순서: etl 빌드 → db 기동 → migrate → **web 빌드** → up.
 - 커밋 메시지 규칙: 프로젝트 관례(`feat(scope):`/`chore(scope):` 한국어 요약) 따름.
 
 ---
@@ -207,7 +208,12 @@ ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
     NEXT_PUBLIC_GA_ID=$NEXT_PUBLIC_GA_ID \
     NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
 RUN pnpm prisma generate
-RUN pnpm build
+# next build가 홈·/apt·/officetel·sitemap을 prerender하며 DB를 읽음 → 빌드타임 DB URL을 secret으로 주입.
+# 스키마 적용된 db가 떠 있어야 하며 compose build.network:host로 호스트-게시 127.0.0.1:5432에 접속.
+RUN --mount=type=secret,id=build_db_url \
+    DATABASE_URL="$(cat /run/secrets/build_db_url)" \
+    DIRECT_URL="$(cat /run/secrets/build_db_url)" \
+    pnpm build
 
 # ---- web: 최소 standalone 런타임 ----
 FROM base AS web
@@ -220,44 +226,36 @@ USER nextjs
 EXPOSE 3000
 CMD ["node", "server.js"]
 
-# ---- etl: 온박스 ingest/마이그레이션 실행용(full deps + tsx + scripts) ----
-FROM builder AS etl
+# ---- etl: 온박스 ingest/마이그레이션 실행용(deps+tsx+scripts, next build 없음 → DB 불필요) ----
+FROM base AS etl
 ENV NODE_ENV=production
-# 사용: docker compose run --rm etl pnpm <script>
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN pnpm prisma generate
+# 사용: docker compose run --rm etl pnpm <script>  (예: prisma migrate deploy, ingest:run)
 CMD ["pnpm", "--version"]
 ```
 
-- [ ] **Step 2: web 이미지 빌드(로컬, NEXT_PUBLIC은 더미로)**
-
-Run:
-```bash
-docker build --target web \
-  --build-arg NEXT_PUBLIC_SITE_URL=https://imjangon.co.kr \
-  -t imjang-web:test .
-```
-Expected: 빌드 성공, 마지막 스테이지 `web` 이미지 생성.
-
-- [ ] **Step 3: Prisma 엔진이 standalone에 포함됐는지 검증**
-
-Run:
-```bash
-docker run --rm --entrypoint sh imjang-web:test -c "ls node_modules/.prisma/client/ | grep -E 'libquery_engine|schema.prisma'"
-```
-Expected: `libquery_engine-*.so.node` 와 `schema.prisma` 출력. 없으면 Dockerfile `web` 스테이지에 다음 COPY 추가:
-```dockerfile
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-```
-
-- [ ] **Step 4: etl 이미지 빌드 확인**
+- [ ] **Step 2: etl 이미지 빌드(로컬, DB 불필요)**
 
 Run: `docker build --target etl -t imjang-etl:test . && docker run --rm imjang-etl:test`
-Expected: pnpm 버전 출력(9.x).
+Expected: pnpm 버전(9.x). etl은 `next build`를 하지 않으므로 DB 없이 빌드됨.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 3: deps 스테이지 빌드 확인(로컬)**
+
+web 전체 빌드는 스키마 적용된 db가 필요(홈·/apt·sitemap prerender) + Mac은 `build.network:host` 제약 → **web 이미지 빌드·standalone·Prisma엔진 검증은 Phase 2 Task 2.1(박스)에서** 수행. 여기선 의존·컴파일 기반만 확인:
+Run: `docker build --target deps -t imjang-deps:test .`
+Expected: deps 스테이지 성공(pnpm install).
+
+(온박스 web 빌드 후 Prisma 엔진 포함 검증:
+`docker run --rm --entrypoint sh <web-image> -c "ls node_modules/.prisma/client | grep -E 'libquery_engine|schema.prisma'"`.
+누락 시 web 스테이지에 `COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma` 추가.)
+
+- [ ] **Step 4: Commit**
 
 ```bash
 git add Dockerfile
-git commit -m "feat(deploy): 멀티스테이지 Dockerfile(web standalone + etl)"
+git commit -m "feat(deploy): 멀티스테이지 Dockerfile(web standalone + etl, 빌드타임 DB secret)"
 ```
 
 ### Task 0.5: .dockerignore
@@ -344,6 +342,9 @@ services:
         NEXT_PUBLIC_KAKAO_JS_KEY: ${NEXT_PUBLIC_KAKAO_JS_KEY}
         NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
         NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN}
+      network: host          # 빌드 시 호스트-게시 127.0.0.1:5432(db)에 접속(빌드타임 prerender DB)
+      secrets:
+        - build_db_url       # 빌드타임 DATABASE_URL/DIRECT_URL
     restart: unless-stopped
     env_file: [.env.production]
     ports:
@@ -382,6 +383,10 @@ services:
       TUNNEL_TOKEN: ${TUNNEL_TOKEN}
     depends_on:
       - web
+
+secrets:
+  build_db_url:
+    environment: BUILD_DATABASE_URL   # compose가 env(BUILD_DATABASE_URL) 값을 secret 내용으로 사용
 ```
 
 - [ ] **Step 2: compose 문법 검증**
@@ -412,6 +417,8 @@ git commit -m "feat(deploy): 프로덕션 docker-compose(db·web·etl·cloudflar
 POSTGRES_PASSWORD=change-me-strong
 DATABASE_URL=postgresql://imjang:change-me-strong@db:5432/imjang_on
 DIRECT_URL=postgresql://imjang:change-me-strong@db:5432/imjang_on
+# 빌드타임 전용(web 이미지 빌드 시 prerender가 DB 접근). build.network:host로 호스트-게시 포트 사용.
+BUILD_DATABASE_URL=postgresql://imjang:change-me-strong@127.0.0.1:5432/imjang_on
 
 # ===== 공개 도메인 (모든 컨텍스트 동일) =====
 SITE_URL=https://imjangon.co.kr
@@ -481,31 +488,26 @@ cp deploy/.env.production.example deploy/.env.production
 # 로컬 스모크용 최소값만: POSTGRES_PASSWORD, DATABASE_URL/DIRECT_URL(위 예시값 유지), SITE_URL 유지
 ```
 
-- [ ] **Step 2: db+web 기동(cloudflared 제외)**
+- [ ] **Step 2: db 기동 + 스키마 적용(로컬, Mac)**
 
 Run:
 ```bash
-docker compose -f deploy/docker-compose.yml --env-file deploy/.env.production up -d --build db web
-```
-Expected: db healthy, web 기동.
-
-- [ ] **Step 3: 스키마 적용(etl 이미지로 migrate deploy)**
-
-Run:
-```bash
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env.production up -d db
 docker compose -f deploy/docker-compose.yml --env-file deploy/.env.production run --rm etl pnpm prisma migrate deploy
 ```
-Expected: 33개 마이그레이션 적용 완료, postgis·pg_trgm 확장 생성.
+Expected: db healthy, 33개 마이그레이션 적용, postgis·pg_trgm 생성. (etl 이미지는 `next build`가 없어 DB 없이 빌드됨.)
 
-- [ ] **Step 4: 주요 라우트 스모크**
+- [ ] **Step 3: 스키마·확장 검증**
 
 Run:
 ```bash
-curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3000/
-curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3000/opengraph-image
-curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3000/robots.txt
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env.production exec db psql -U imjang -d imjang_on -c "SELECT extname FROM pg_extension WHERE extname IN ('postgis','pg_trgm');" -c "\dt" | head
 ```
-Expected: 각각 `200`. (DB 비어있어 목록은 빈 상태지만 렌더 200이어야 함.)
+Expected: postgis·pg_trgm + 빈 테이블 목록.
+
+- [ ] **Step 4: (참고) web 빌드·라우트 스모크는 온박스에서**
+
+web 이미지 빌드는 빌드타임 DB 접근(홈·/apt·sitemap prerender) + `build.network:host`가 필요해 **박스(Linux)에서** 수행 → Phase 2 Task 2.1에서 quick tunnel로 `/`·`/opengraph-image`·`/robots.txt` 200 확인. Mac 로컬 web 빌드는 호스트 네트워킹 제약으로 생략.
 
 - [ ] **Step 5: 정리**
 
@@ -652,13 +654,17 @@ Expected: postgis·pg_trgm 존재, 테이블(빈 상태) 목록 출력. (컨테�
 
 NS 전환 전에 박스 앱을 외부에서 검증(임시 URL).
 
-- [ ] **Step 1: web 기동(로컬 스키마 위)**
+- [ ] **Step 1: web 빌드·기동(스키마 적용된 db 위에서)**
+
+Task 1.5에서 db+스키마가 이미 떠 있어야 함(web 빌드가 prerender로 DB 접근). `BUILD_DATABASE_URL`을 export해 build_db_url secret 주입.
 
 Run:
 ```bash
-oci 'cd /opt/imjang && docker compose -f deploy/docker-compose.yml --env-file deploy/.env.production up -d --build web'
+oci 'cd /opt/imjang && set -a; . <(grep -E "^BUILD_DATABASE_URL=" deploy/.env.production); set +a; \
+  DC="docker compose -f deploy/docker-compose.yml --env-file deploy/.env.production"; \
+  $DC up -d db --wait && $DC up -d --build web'
 ```
-Expected: web healthy.
+Expected: web 빌드 성공(스키마 있는 빈 db 기준 prerender 통과) + healthy. 실패 시 Task 1.5(migrate) 완료 여부·`BUILD_DATABASE_URL`(127.0.0.1:5432) 확인.
 
 - [ ] **Step 2: quick tunnel로 임시 공개 URL**
 
@@ -1043,12 +1049,13 @@ cd /opt/imjang
 git fetch origin main
 git reset --hard origin/main
 DC="docker compose -f deploy/docker-compose.yml --env-file deploy/.env.production"
-# 이미지 빌드(web+etl)
-$DC build web etl
-# DB 최신화 후 마이그레이션(etl 이미지에 prisma CLI+schema)
-$DC up -d db
+# build_db_url secret은 BUILD_DATABASE_URL 환경변수에서 주입 → 명시적 export(‑‑env-file만으론 secrets.environment 미해결 가능)
+set -a; . <(grep -E '^BUILD_DATABASE_URL=' deploy/.env.production); set +a
+# 순서: etl 빌드(DB 불필요) → db 기동 → 마이그레이션(스키마) → web 빌드(prerender가 127.0.0.1:5432 접근) → 롤아웃
+$DC build etl
+$DC up -d db --wait
 $DC run --rm etl pnpm prisma migrate deploy
-# 롤아웃
+$DC build web
 $DC up -d web cloudflared
 # systemd 유닛 동기화
 sudo cp deploy/systemd/imjang-etl@.service /etc/systemd/system/
