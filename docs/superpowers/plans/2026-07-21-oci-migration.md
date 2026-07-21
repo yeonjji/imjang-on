@@ -49,7 +49,7 @@
 - `scripts/db/load-oci.sh` — OCI 로드
 - `scripts/backup/pg-backup.sh` — nightly 백업
 
-**박스 상태(비레포):** swap, Docker, ufw, cloudflared, `/opt/imjang`(클론), `/var/lib/imjang/pgdata`, `deploy/.env.production`(실값).
+**박스 상태(비레포):** swap, Docker, postgresql-client, cloudflared, `/opt/imjang`(클론), `/var/lib/imjang/pgdata`, `deploy/.env.production`(실값). (방화벽은 OCI 기본 iptables가 이미 SSH-only — ufw 불필요.)
 
 ---
 
@@ -576,13 +576,15 @@ Expected: `psql (PostgreSQL) 16.x`(PG17 서버 SELECT엔 무방).
 
 ### Task 1.3: 방화벽(인바운드 SSH만)
 
-- [ ] **Step 1: ufw 설정**
+- [x] **Step 1: ufw 불필요 확인(실측 2026-07-21) — OCI 기본 iptables가 이미 SSH-only**
 
-Run:
-```bash
-oci 'sudo ufw allow OpenSSH && sudo ufw --force enable && sudo ufw status'
+박스에 **ufw 미설치**이고, OCI Ubuntu 기본 netfilter 규칙이 이미 목표 posture를 강제:
 ```
-Expected: 22/tcp ALLOW. 그 외 미개방.
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -p tcp --dport 22 -j ACCEPT
+-A INPUT -j REJECT --reject-with icmp-host-prohibited   # 나머지 전부 거부
+```
+→ **ufw 설치·활성 금지.** OCI에서 ufw enable은 netfilter-persistent 규칙을 덮어써 SSH 끊김/충돌 위험(대표적 footgun). DB는 그 위에 `127.0.0.1:5432` 루프백 바인딩이라 이중 차단. rpcbind(111)는 리슨하나 REJECT로 외부 차단(선택 하드닝: NFS 미사용 시 `systemctl disable --now rpcbind`).
 
 - [ ] **Step 2: OCI Security List 확인(수동)**
 
