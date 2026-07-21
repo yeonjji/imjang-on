@@ -95,7 +95,7 @@ OCI 박스 (Ampere A1, Ubuntu 24.04)
 
 ### 4.2 Docker Compose 스택
 - `web`: 멀티스테이지 `Dockerfile`(deps→build→runner), `output: 'standalone'` 산출물 실행. `restart: unless-stopped`. 환경변수는 `.env.production`.
-- `db`: `postgis/postgis:17-3.5`, named volume `pgdata`, `restart: unless-stopped`, localhost 바인딩(`127.0.0.1:5432`). 초기 컨테이너 postgres 슈퍼유저로 `--data-only` 로드 시 `--disable-triggers` 사용 가능.
+- `db`: `postgis/postgis:17-3.5`(arm64 멀티아치). **데이터는 bind mount**(`/var/lib/imjang/pgdata`)로 영속·백업·모니터 명시화, `shm_size` 상향(병렬쿼리), `stop_grace_period`로 graceful shutdown, `restart: unless-stopped`, localhost 바인딩(`127.0.0.1:5432`). `--data-only` 로드 시 `--disable-triggers`.
 - `cloudflared`: 별도 systemd 서비스 또는 compose 서비스로 상시 기동. 터널 토큰 보관.
 
 ### 4.3 앱 코드 변경 (최소·외과적)
@@ -103,10 +103,13 @@ OCI 박스 (Ampere A1, Ubuntu 24.04)
 2. `app/layout.tsx`: `@vercel/analytics`·`@vercel/speed-insights` import 및 `<Analytics/>`·`<SpeedInsights/>` 제거. package.json에서 해당 devDep도 제거.
 3. `.env.production` 신규:
    - `DATABASE_URL` / `DIRECT_URL` → `postgresql://...@localhost:5432/imjang_on`(Supabase 풀러 URL 폐기, 두 값 동일하게).
-   - `SITE_URL` → `https://imjangon.co.kr`(Cloudflare 공개 도메인). **Vercel 배포보호 URL 아님** → revalidate 401 이슈류 소멸.
-   - 나머지 키(PUBLIC_DATA_KEY, NAVER, GA, Sentry 등) 그대로 이전. 네이버 지도 키는 **도메인 바인딩**이나 도메인 불변이라 영향 없음.
-4. `Dockerfile`, `docker-compose.yml`, `.dockerignore` 신규 추가. **`NEXT_PUBLIC_*`(NAVER_MAP_CLIENT_ID·GA_ID)는 빌드타임 번들** → Docker build-arg로 전달, 런타임 시크릿(DATABASE_URL·NAVER_MAP_CLIENT_SECRET·PUBLIC_DATA_KEY)은 env 주입. **Prisma 쿼리엔진 바이너리를 standalone 산출물에 포함**(누락 시 런타임 500 — Next+Prisma+standalone 알려진 마찰점).
-5. 그 외 앱 로직·Prisma 스키마·Sentry·GA·AdSense는 **불변**.
+   - `SITE_URL` → `https://imjangon.co.kr`(공개 도메인, **모든 컨텍스트 동일** — sitemap·OG·revalidate 대상). **localhost로 바꾸지 말 것**(`posts` 생성이 SITE_URL로 저장 link를 만듦 → 오염). **Vercel 배포보호 URL 아님** → revalidate 401 소멸.
+   - **⚠️ 운영 env는 `.env.local`이 아니라 Vercel 대시보드에 있음** → `SITE_URL`·`REVALIDATE_TOKEN`·`SENTRY_*` 등 전체를 export해 박스 `.env`로 이관(`.env.local`은 로컬 서브셋).
+   - 나머지 키(PUBLIC_DATA_KEY, NAVER, GA 등) 이전. 네이버 지도 키는 **도메인 바인딩**이나 도메인 불변이라 영향 없음.
+4. `Dockerfile`, `docker-compose.yml`, `.dockerignore` 신규 추가. **`NEXT_PUBLIC_*`(NAVER_MAP_CLIENT_ID·GA_ID)는 빌드타임 번들** → Docker build-arg로 전달, 런타임 시크릿(DATABASE_URL·NAVER_MAP_CLIENT_SECRET·PUBLIC_DATA_KEY)은 env 주입. **Prisma 쿼리엔진 바이너리를 standalone 산출물에 포함**(누락 시 런타임 500 — Next+Prisma+standalone 알려진 마찰점) + schema.prisma `generator`에 arm64 `binaryTargets`(또는 컨테이너 내 빌드로 native 해결).
+5. 그 외 앱 로직·Prisma 스키마·GA·AdSense는 **불변**(비즈니스/API/쿼리 변경 0).
+6. **검증됨**: edge 런타임 0(전부 `nodejs`), OG는 프레임워크 네이티브 `next/og`(self-host 동작), `VERCEL_ENV` 참조 3곳은 graceful fallback. 단 `next.config.mjs`의 Sentry authToken이 `VERCEL_ENV==='production'` 게이트라 온박스 빌드 시 소스맵 미업로드 → 원하면 조건 1줄 교체(오류 캡처 자체는 정상).
+7. **스모크 테스트**(코드변경 아님, standalone 빌드 후 확인): OG 폰트 트레이싱, `next/image`(sharp arm64), `middleware.ts`.
 
 ### 4.4 DB 이전 (권장: 스키마=Prisma, 데이터만 복사)
 - **타깃 `postgis/postgis:17-3.5`**(소스 PG17.6·PostGIS3.3.7과 major 일치). **pg_dump 클라이언트 ≥17 필수** — 박스의 postgis:17 컨테이너로 dump/restore.
@@ -120,10 +123,10 @@ OCI 박스 (Ampere A1, Ubuntu 24.04)
 
 ### 4.5 ETL (온박스 systemd 타이머)
 - 모든 스케줄 ETL을 GitHub Actions → **박스 systemd 타이머**로 이전, localhost DB 직접 접속. **DB 외부 노출·CF TCP 터널·Access 토큰 전부 불필요**(설계 단순화).
-- **런타임**: 프로덕션 `web`은 standalone이라 `scripts/`·tsx 미포함 → Dockerfile에 **`etl` 타깃**(빌더 스테이지: dev deps+source+tsx) 추가, compose에 `etl` 서비스(상시기동 아님). 타이머가 `docker compose run --rm etl pnpm ingest:xxx` 호출 → compose 네트워크로 `db` 접속.
+- **런타임**: 프로덕션 `web`은 standalone이라 `scripts/`·tsx 미포함 → Dockerfile에 **`etl` 타깃**(빌더 스테이지: dev deps+source+tsx) 추가, compose에 `etl` 서비스(상시기동 아님). 타이머가 `docker compose run --rm etl pnpm ingest:xxx` 호출 → compose 네트워크로 `db` 접속. (npm 스크립트가 `dotenv -e .env.local`을 쓰므로 etl 컨테이너에 prod값 `.env.local` 제공 또는 호출 방식 조정.)
 - **스케줄**: 기존 9개 cron식을 systemd `OnCalendar`로 이관. 박스 TZ=UTC 고정해 GH Actions와 동일 시각 유지(cron 주석의 KST 매핑 보존).
 - **시크릿**: `PUBLIC_DATA_KEY`·`NAVER_*`·`OPENAI_API_KEY`·`KAKAO`(있으면) 등을 박스 `.env`에 배치(`EnvironmentFile`).
-- **revalidate**: `SITE_URL=http://localhost:3000`(내부) → CF 우회로 빠름. **기존 revalidate 401/SITE_URL 이슈류 완전 소멸.**
+- **revalidate**: `revalidator.ts`가 `${SITE_URL}/api/revalidate` 호출 → **SITE_URL은 공개 도메인 유지**(localhost로 바꾸면 posts link 오염). 호출은 CF 경유(빈도 낮아 무해). `REVALIDATE_TOKEN` 세팅 + 공개 도메인이라 기존 401 소멸. (localhost 최적화 필요 시 revalidator에 전용 base 변수 1줄 추가)
 - **로그/관측**: `journalctl -u <unit>` + 실패 알림(기존 채널 재사용). GitHub Actions 스케줄 워크플로는 비활성/삭제. `warm-hub-cache`도 온박스(로컬 curl) 또는 폐기(ISR 커버). `pg-dump-backup`은 §4.7.
 
 ### 4.6 배포 (CD)
