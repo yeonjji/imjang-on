@@ -271,6 +271,7 @@ node_modules
 .git
 .github
 .env*
+deploy/.env*
 tests
 test-results
 playwright-report
@@ -285,6 +286,8 @@ RESEARCH
 .idea
 .vercel
 ```
+
+(`deploy/.env*` 제외 필수 — etl `COPY . .`가 `deploy/.env.production`(시크릿)을 이미지에 굽는 것 방지.)
 
 - [ ] **Step 2: 빌드 컨텍스트 축소 확인(재빌드가 캐시로 빠른지)**
 
