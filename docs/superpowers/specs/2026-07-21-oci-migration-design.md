@@ -71,7 +71,7 @@ OCI 박스 (Ampere A1, Ubuntu 24.04)
   └─ docker compose
        ├─ web  : Next.js 15 standalone (ARM) — :3000 (localhost)
        ├─ etl  : 빌더 이미지(dev deps+tsx+scripts) — on-demand, localhost db
-       └─ db   : postgis/postgis:17-3.5 — :5432 (localhost, named volume)
+       └─ db   : imresamu/postgis:17-3.5 (ARM64) — :5432 (localhost, named volume)
 
 인바운드 개방 포트: SSH(22)뿐. HTTP/HTTPS/Postgres 포트는 외부 미개방.
 ```
@@ -95,7 +95,7 @@ OCI 박스 (Ampere A1, Ubuntu 24.04)
 
 ### 4.2 Docker Compose 스택
 - `web`: 멀티스테이지 `Dockerfile`(deps→build→runner), `output: 'standalone'` 산출물 실행. `restart: unless-stopped`. 환경변수는 `.env.production`.
-- `db`: `postgis/postgis:17-3.5`(arm64 멀티아치). **데이터는 bind mount**(`/var/lib/imjang/pgdata`)로 영속·백업·모니터 명시화, `shm_size` 상향(병렬쿼리), `stop_grace_period`로 graceful shutdown, `restart: unless-stopped`, localhost 바인딩(`127.0.0.1:5432`). `--data-only` 로드 시 `--disable-triggers`.
+- `db`: `imresamu/postgis:17-3.5`(**ARM64 멀티아치** — 공식 `postgis/postgis`는 amd64-only라 Ampere A1 네이티브 미구동, Task D 확인). **데이터는 bind mount**(`/var/lib/imjang/pgdata`)로 영속·백업·모니터 명시화, `shm_size` 상향(병렬쿼리), `stop_grace_period`로 graceful shutdown, `restart: unless-stopped`, localhost 바인딩(`127.0.0.1:5432`). `--data-only` 로드 시 `--disable-triggers`.
 - `cloudflared`: 별도 systemd 서비스 또는 compose 서비스로 상시 기동. 터널 토큰 보관.
 
 ### 4.3 앱 코드 변경 (최소·외과적)
@@ -112,7 +112,7 @@ OCI 박스 (Ampere A1, Ubuntu 24.04)
 7. **스모크 테스트**(코드변경 아님, standalone 빌드 후 확인): OG 폰트 트레이싱, `next/image`(sharp arm64), `middleware.ts`.
 
 ### 4.4 DB 이전 (권장: 스키마=Prisma, 데이터만 복사)
-- **타깃 `postgis/postgis:17-3.5`**(소스 PG17.6·PostGIS3.3.7과 major 일치). **pg_dump 클라이언트 ≥17 필수** — 박스의 postgis:17 컨테이너로 dump/restore.
+- **타깃 `imresamu/postgis:17-3.5`**(ARM64 멀티아치; 소스 PG17.6·PostGIS3.3.7과 major 일치). **pg_dump 클라이언트 ≥17 필수** — 박스의 `imresamu/postgis:17` 컨테이너로 dump/restore.
 1. OCI `db` 기동 → `prisma migrate deploy`(33개) → postgis·pg_trgm 확장 + 스키마 생성.
 2. **유지보수 창**: ETL disable + 앱 쓰기 중단.
 3. Supabase `pg_dump --data-only --schema=public`(세션 풀러 :5432, user `postgres.<ref>`), `spatial_ref_sys` 등 확장소유 테이블 제외. `supabase_vault`·`pg_stat_statements`는 public 밖이라 자동 제외.
