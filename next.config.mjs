@@ -3,6 +3,8 @@ import { withSentryConfig } from '@sentry/nextjs';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // 단일 노드 self-host: standalone 산출물(server.js)로 실행
+  output: 'standalone',
   // typedRoutes: 모든 라우트 파일이 생성된 후 Phase 1D 후반에 재활성화 (현재는 미존재 라우트로 인한 typecheck 오류 회피)
   typedRoutes: false,
   // 동적 OG 이미지 라우트(서버리스 함수)에 Pretendard 폰트를 번들로 포함.
@@ -95,5 +97,5 @@ export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   // 소스맵 업로드는 프로덕션 빌드에서만 수행 — 프리뷰 빌드의 Build CPU/시간을 절감.
-  authToken: process.env.VERCEL_ENV === 'production' ? process.env.SENTRY_AUTH_TOKEN : undefined,
+  authToken: process.env.SENTRY_AUTH_TOKEN || undefined,
 });
