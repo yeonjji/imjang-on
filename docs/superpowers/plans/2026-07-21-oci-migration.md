@@ -14,7 +14,7 @@
 
 - **소스 DB**: Supabase PostgreSQL **17.6** / PostGIS 3.3.7 / 5.2GB. 타깃 컨테이너는 **`imresamu/postgis:17-3.5`**(PG17·PostGIS3.5, **ARM64 멀티아치** — 공식 `postgis/postgis`는 amd64-only라 Ampere A1에서 네이티브 미구동). pg_dump 클라이언트 **≥17**. 네이티브 aarch64에서 33개 마이그레이션·postgis(3.5.3)·pg_trgm 적용 검증 완료(Task D).
 - **박스**: OCI `VM.Standard.A1.Flex`, **aarch64/ARM64**, 2 OCPU / 11GB / 45GB, Ubuntu 24.04, `ap-tokyo-1`. SSH: `ssh -i "/Users/jiyeonjeong/oci-key/ssh-key-2026-06-23.key" ubuntu@161.33.160.159`.
-- **DB 이전 방식**: 스키마=`prisma migrate deploy`, 데이터=`pg_dump --data-only`. **전체 pg_dump 금지**(supabase_vault 등 Supabase 전용 객체로 실패).
+- **DB 이전 방식**: 스키마=`prisma migrate deploy`, 데이터=`pg_dump --data-only`(**`spatial_ref_sys`·`_prisma_migrations` 제외** — 후자 미제외 시 박스 마이그레이션 이력 오염, 드라이런 확인). **전체 pg_dump 금지**(supabase_vault 등 Supabase 전용 객체로 실패). 비번은 PGPASSWORD. **드라이런 실측(2026-07-21): 덤프 ~4분(545M) + 복원 ~20분(인덱스 유지 COPY) = 데이터 창 ~25분.** 정합성 28테이블 정확일치·시퀀스 setval 정상.
 - **필요 확장은 postgis + pg_trgm뿐**(마이그레이션이 생성). fuzzystrmatch/tiger/topology/uuid-ossp/pgcrypto는 미사용.
 - **인바운드 개방 포트 = SSH(22)뿐.** HTTP/HTTPS/5432 외부 미개방(cloudflared 아웃바운드).
 - **`SITE_URL`은 모든 컨텍스트에서 공개 도메인 `https://imjangon.co.kr`.** localhost로 바꾸지 말 것(posts 저장 link 오염).
@@ -793,16 +793,22 @@ git commit -m "feat(db): 테이블 행수 검증 스크립트(마이그레이션
 
 ```bash
 #!/usr/bin/env bash
-# Supabase(PG17)에서 public 데이터만 덤프. 소스 접속은 세션 풀러(:5432).
+# Supabase(PG17)에서 public 데이터만 덤프. 소스=세션 풀러(:5432). 비번은 PGPASSWORD로만(args 노출 방지).
+# 드라이런 실측: 박스에서 ~4분/545M(-Fc). **박스에서 실행 권장**(인트라-도쿄).
 # 사용: SUPABASE_DIRECT_URL=... dump-supabase.sh /path/out.dump
 set -euo pipefail
 : "${SUPABASE_DIRECT_URL:?source conn required}"
 OUT="${1:?output path required}"
-# postgis:17 컨테이너의 pg_dump(≥17) 사용. custom format(-Fc).
-docker run --rm -e PGSSLMODE=require -v "$(dirname "$OUT")":/out imresamu/postgis:17-3.5 \
-  pg_dump "$SUPABASE_DIRECT_URL" \
+U=$(echo "$SUPABASE_DIRECT_URL" | sed -E 's#postgresql://([^:]+):.*#\1#')
+P=$(echo "$SUPABASE_DIRECT_URL" | sed -E 's#postgresql://[^:]+:([^@]+)@.*#\1#')
+H=$(echo "$SUPABASE_DIRECT_URL" | sed -E 's#.*@([^:/]+).*#\1#')
+# imresamu/postgis:17 컨테이너의 pg_dump(≥17). custom format(-Fc).
+# _prisma_migrations 제외 필수(미제외 시 박스 migrate deploy 이력에 Supabase 레코드가 겹쳐 오염 — 드라이런 확인).
+docker run --rm -e PGSSLMODE=require -e PGPASSWORD="$P" -v "$(dirname "$OUT")":/out imresamu/postgis:17-3.5 \
+  pg_dump -h "$H" -p 5432 -U "$U" -d postgres \
     --data-only --schema=public --no-owner --no-privileges \
     --exclude-table-data='public.spatial_ref_sys' \
+    --exclude-table-data='public._prisma_migrations' \
     -Fc -f "/out/$(basename "$OUT")"
 ls -lh "$OUT"
 ```
