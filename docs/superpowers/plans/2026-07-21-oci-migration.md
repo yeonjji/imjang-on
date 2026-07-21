@@ -6,13 +6,13 @@
 
 **Architecture:** Cloudflare(CDN·WAF·TLS) → Cloudflare Tunnel(HTTP 단일) → OCI 박스의 `docker compose`(web=Next standalone, db=postgis:17, cloudflared). ETL은 온박스 systemd 타이머가 `docker compose run etl`로 실행(localhost DB). DB 외부 노출 0. 배포는 GitHub Actions→SSH→온박스 빌드.
 
-**Tech Stack:** Docker/compose, `postgis/postgis:17-3.5`, Next.js 15 standalone(ARM64), Prisma 5, pnpm 9, Cloudflare Tunnel, systemd, GitHub Actions.
+**Tech Stack:** Docker/compose, `imresamu/postgis:17-3.5`(ARM64 멀티아치), Next.js 15 standalone(ARM64), Prisma 5, pnpm 9, Cloudflare Tunnel, systemd, GitHub Actions.
 
 **Design spec:** `docs/superpowers/specs/2026-07-21-oci-migration-design.md` (읽고 시작할 것 — 부록 A 환경변수 매핑 포함).
 
 ## Global Constraints
 
-- **소스 DB**: Supabase PostgreSQL **17.6** / PostGIS 3.3.7 / 5.2GB. 타깃 컨테이너는 **`postgis/postgis:17-3.5`**(major 일치). pg_dump 클라이언트 **≥17**.
+- **소스 DB**: Supabase PostgreSQL **17.6** / PostGIS 3.3.7 / 5.2GB. 타깃 컨테이너는 **`imresamu/postgis:17-3.5`**(PG17·PostGIS3.5, **ARM64 멀티아치** — 공식 `postgis/postgis`는 amd64-only라 Ampere A1에서 네이티브 미구동). pg_dump 클라이언트 **≥17**. 네이티브 aarch64에서 33개 마이그레이션·postgis(3.5.3)·pg_trgm 적용 검증 완료(Task D).
 - **박스**: OCI `VM.Standard.A1.Flex`, **aarch64/ARM64**, 2 OCPU / 11GB / 45GB, Ubuntu 24.04, `ap-tokyo-1`. SSH: `ssh -i "/Users/jiyeonjeong/oci-key/ssh-key-2026-06-23.key" ubuntu@161.33.160.159`.
 - **DB 이전 방식**: 스키마=`prisma migrate deploy`, 데이터=`pg_dump --data-only`. **전체 pg_dump 금지**(supabase_vault 등 Supabase 전용 객체로 실패).
 - **필요 확장은 postgis + pg_trgm뿐**(마이그레이션이 생성). fuzzystrmatch/tiger/topology/uuid-ossp/pgcrypto는 미사용.
@@ -316,7 +316,7 @@ git commit -m "chore(deploy): .dockerignore 추가"
 name: imjang
 services:
   db:
-    image: postgis/postgis:17-3.5
+    image: imresamu/postgis:17-3.5  # 공식 postgis/postgis는 amd64-only → ARM64용 멀티아치 리빌드
     restart: unless-stopped
     shm_size: 512mb
     stop_grace_period: 1m
@@ -797,7 +797,7 @@ set -euo pipefail
 : "${SUPABASE_DIRECT_URL:?source conn required}"
 OUT="${1:?output path required}"
 # postgis:17 컨테이너의 pg_dump(≥17) 사용. custom format(-Fc).
-docker run --rm -e PGSSLMODE=require -v "$(dirname "$OUT")":/out postgis/postgis:17-3.5 \
+docker run --rm -e PGSSLMODE=require -v "$(dirname "$OUT")":/out imresamu/postgis:17-3.5 \
   pg_dump "$SUPABASE_DIRECT_URL" \
     --data-only --schema=public --no-owner --no-privileges \
     --exclude-table-data='public.spatial_ref_sys' \

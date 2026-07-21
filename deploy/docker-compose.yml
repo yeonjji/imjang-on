@@ -1,7 +1,7 @@
 name: imjang
 services:
   db:
-    image: postgis/postgis:17-3.5
+    image: imresamu/postgis:17-3.5  # 공식 postgis/postgis는 amd64-only → ARM64(Ampere A1)용 멀티아치 리빌드
     restart: unless-stopped
     shm_size: 512mb
     stop_grace_period: 1m
