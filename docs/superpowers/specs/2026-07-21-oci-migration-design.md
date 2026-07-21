@@ -241,4 +241,4 @@ OCI 박스 (Ampere A1, Ubuntu 24.04)
 - **‡** = GH Secrets에만 존재하고 값 조회 불가(write-only) + Vercel에 없음 → 원본 보관본 없으면 공공데이터포털 재발급.
 - **함정 1**: 웹은 `NEXT_PUBLIC_SITE_URL`, ETL revalidator는 **plain `SITE_URL`**(폴백이 죽은 도메인 `imjang-on.com`) → 박스에 **둘 다** `https://imjangon.co.kr`.
 - **함정 2**: `NEXT_PUBLIC_*`는 빌드타임 번들 → 런타임 주입만으론 부족, build-arg 필수.
-- **값 확보**: Vercel 16개는 `vercel env pull`로 일괄 복호화(gitignore). 겹치는 GH 키도 대부분 회수. 진짜 GH-only는 `NEIS_API_KEY`·`CHILDCARE_API_KEY`뿐.
+- **값 확보**: 대시보드는 변수당 환경별(Prod/Preview/Dev)로 행이 중복돼 ~23행처럼 보이나 **유니크 이름은 16개**(+ Vercel 시스템 `VERCEL_*`는 자동·이전 대상 아님). 박스는 **Production 값만** 필요 → `vercel env pull --environment=production`(기본이 Development이니 반드시 지정)으로 일괄 복호화(gitignore). 겹치는 GH 키도 대부분 회수. 진짜 GH-only는 `NEIS_API_KEY`·`CHILDCARE_API_KEY`뿐.
