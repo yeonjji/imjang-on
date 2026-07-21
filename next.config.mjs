@@ -96,6 +96,6 @@ export default withSentryConfig(nextConfig, {
   silent: true,
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
-  // 소스맵 업로드는 프로덕션 빌드에서만 수행 — 프리뷰 빌드의 Build CPU/시간을 절감.
-  authToken: process.env.SENTRY_AUTH_TOKEN || undefined,
+  // 소스맵 업로드: Vercel 프로덕션 + self-host(VERCEL_ENV 미설정)에서만. Vercel 프리뷰는 제외(빌드시간·비용).
+  authToken: process.env.VERCEL_ENV === 'preview' ? undefined : process.env.SENTRY_AUTH_TOKEN,
 });

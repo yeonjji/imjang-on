@@ -30,9 +30,9 @@ RUN pnpm prisma generate
 # next build가 홈·/apt·/officetel·sitemap을 prerender하며 DB를 읽음 → 빌드타임 DB URL을 secret으로 주입.
 # 스키마 적용된 db가 떠 있어야 하며 compose build.network:host로 호스트-게시 127.0.0.1:5432에 접속.
 RUN --mount=type=secret,id=build_db_url \
-    DATABASE_URL="$(cat /run/secrets/build_db_url)" \
-    DIRECT_URL="$(cat /run/secrets/build_db_url)" \
-    pnpm build
+    BDB="$(cat /run/secrets/build_db_url 2>/dev/null || true)"; \
+    if [ -z "$BDB" ]; then echo "ERROR: build_db_url secret empty — set BUILD_DATABASE_URL and ensure db is up (see plan Global Constraints)"; exit 1; fi; \
+    DATABASE_URL="$BDB" DIRECT_URL="$BDB" pnpm build
 
 # ---- web: 최소 standalone 런타임 ----
 FROM base AS web
