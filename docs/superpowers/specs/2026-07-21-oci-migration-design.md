@@ -25,7 +25,7 @@
 | 2 | 전환 다운타임 | **유지보수 창(수십분~수시간) 허용** → big-bang | 단순·확실, 트래픽 규모상 수용 가능 |
 | 3 | 엣지(CDN·WAF·TLS) | **Cloudflare 무료 플랜** | Vercel 엣지 대체, 스크래퍼 차단 |
 | 4 | 앱↔CF 연결 | **Cloudflare Tunnel(cloudflared)** | 인바운드 포트 0, origin IP 은닉 |
-| 5 | ETL 크론 9종 | **GitHub Actions 유지** → DB를 Tunnel TCP + CF Access로 접속 | 기존 워크플로 재사용 |
+| 5 | ETL 크론 | **온박스 systemd 타이머로 이전** (localhost DB) | 터널 대량전송 취약·13개 배선 부담 회피, 더 단순·빠름 |
 | 6 | 배포 | **Actions→SSH→온박스 `docker compose up -d --build`** | 레포 PUBLIC이라 self-hosted 러너 부적합 |
 
 ### 코드베이스 사전 확인 (마이그레이션 난이도 근거)
@@ -67,16 +67,17 @@ Cloudflare (DNS · CDN · WAF · 자동 TLS · Bot/DDoS 방어)
   ▼
 OCI 박스 (Ampere A1, Ubuntu 24.04)
   ├─ cloudflared        : 터널 클라이언트 (인바운드 포트 없음)
+  ├─ systemd timers     : ETL 크론 → docker compose run --rm etl ...
   └─ docker compose
        ├─ web  : Next.js 15 standalone (ARM) — :3000 (localhost)
+       ├─ etl  : 빌더 이미지(dev deps+tsx+scripts) — on-demand, localhost db
        └─ db   : postgis/postgis:17-3.5 — :5432 (localhost, named volume)
 
 인바운드 개방 포트: SSH(22)뿐. HTTP/HTTPS/Postgres 포트는 외부 미개방.
 ```
 
-**두 개의 터널 경로:**
-1. **HTTP 경로** — `imjangon.co.kr` → CF → Tunnel → `web:3000`. 일반 사용자 트래픽.
-2. **TCP 경로(DB)** — `db-tunnel.imjangon.co.kr` (TCP 타입) → Tunnel → `db:5432`. **Cloudflare Access 서비스토큰으로 보호**. GitHub Actions ETL만 `cloudflared access tcp`로 접속.
+**터널 경로 (HTTP 단일):**
+- `imjangon.co.kr` → CF → Tunnel → `web:3000`. 사용자 트래픽만. **DB는 외부 노출 0** — ETL·백업 모두 온박스 localhost, 관리 접속은 SSH 터널. (CF TCP 터널·Access 토큰 불필요 — ETL 온박스화로 소거)
 
 - **ISR**: Next standalone은 온디스크 캐시로 ISR을 단일 노드에서 그대로 지원(멀티노드 아님 → 공유 캐시 불필요).
 - **이미지 최적화**: `next/image`가 sharp(ARM)로 온박스 처리.
@@ -117,11 +118,13 @@ OCI 박스 (Ampere A1, Ubuntu 24.04)
 - **성능**: Transaction 7.36M행 인덱스 유지 COPY는 느림 → 필요 시 대형 테이블 인덱스 drop→load→recreate. 5.2GB 전체는 유지보수 창 내 수용.
 - **금지**: 전체 `pg_dump`/`pg_restore`는 `supabase_vault` 등 Supabase 전용 객체를 끌고 와 실패 → 데이터만 복사로 확정.
 
-### 4.5 ETL 접속 (GitHub Actions 유지 — 단 아래 재고)
-- DB에 **직접 쓰는** 워크플로만 터널 필요. `warm-hub-cache`는 공개 URL만 호출 → 터널 불필요. 백업은 온박스(§4.7)로 이동 → GH `pg-dump-backup.yml` 폐기.
-- 경로: CF Tunnel **TCP hostname**(`db-tunnel.imjangon.co.kr`) + **Access 서비스토큰**. 워크플로 앞단 `cloudflared access tcp --hostname ... --url localhost:5432` → 스크립트는 `localhost:5432`. GH Secrets: `CF_ACCESS_CLIENT_ID/SECRET`. 공통 composite action으로 1곳에 둔다.
-- **⚠️ 재고(§6)**: 시간당 대량 upsert(`backfill-transactions-loop`)를 CF TCP 터널로 넘기면 지연·취약. 대안 (a) 대량 크론만 온박스 systemd, (b) DB 접속을 Tailscale(무료 WireGuard). 둘 다 순수 GH Actions보다 견고 — 실행계획서에서 확정.
-- **revalidate/warm**: `SITE_URL`=공개 CF 도메인 → 정상.
+### 4.5 ETL (온박스 systemd 타이머)
+- 모든 스케줄 ETL을 GitHub Actions → **박스 systemd 타이머**로 이전, localhost DB 직접 접속. **DB 외부 노출·CF TCP 터널·Access 토큰 전부 불필요**(설계 단순화).
+- **런타임**: 프로덕션 `web`은 standalone이라 `scripts/`·tsx 미포함 → Dockerfile에 **`etl` 타깃**(빌더 스테이지: dev deps+source+tsx) 추가, compose에 `etl` 서비스(상시기동 아님). 타이머가 `docker compose run --rm etl pnpm ingest:xxx` 호출 → compose 네트워크로 `db` 접속.
+- **스케줄**: 기존 9개 cron식을 systemd `OnCalendar`로 이관. 박스 TZ=UTC 고정해 GH Actions와 동일 시각 유지(cron 주석의 KST 매핑 보존).
+- **시크릿**: `PUBLIC_DATA_KEY`·`NAVER_*`·`OPENAI_API_KEY`·`KAKAO`(있으면) 등을 박스 `.env`에 배치(`EnvironmentFile`).
+- **revalidate**: `SITE_URL=http://localhost:3000`(내부) → CF 우회로 빠름. **기존 revalidate 401/SITE_URL 이슈류 완전 소멸.**
+- **로그/관측**: `journalctl -u <unit>` + 실패 알림(기존 채널 재사용). GitHub Actions 스케줄 워크플로는 비활성/삭제. `warm-hub-cache`도 온박스(로컬 curl) 또는 폐기(ISR 커버). `pg-dump-backup`은 §4.7.
 
 ### 4.6 배포 (CD)
 - `push → main` 시 GitHub Actions:
@@ -130,6 +133,7 @@ OCI 박스 (Ampere A1, Ubuntu 24.04)
   3. `git pull` → `docker compose build web` → **`docker compose run --rm web pnpm prisma migrate deploy`** → `docker compose up -d`.
 - **효과**: 마이그레이션이 배포에 포함되어 기존 "Vercel은 마이그레이션 미적용 → 수동 deploy 필요" 갭이 제거됨.
 - 빌드는 온박스(2 OCPU) — `next build` 수 분. 스왑으로 OOM 방지.
+- 배포 시 **`etl` 이미지도 함께 빌드**. systemd 타이머 유닛은 repo `deploy/systemd/`에 두고 배포 스크립트가 동기화(`daemon-reload`).
 
 ### 4.7 백업 (직접 소유)
 - 온박스 nightly cron: `pg_dump | gzip` → **OCI Object Storage(always-free 10GB)** 업로드 + 보존정책(예: 일 7 / 주 4).
@@ -146,14 +150,14 @@ OCI 박스 (Ampere A1, Ubuntu 24.04)
 ## 5. 컷오버 런북 (순서)
 
 1. **준비(무중단):** OCI 프로비저닝 → Docker/스왑/ufw → 앱 코드 변경(standalone, Vercel 제거, Dockerfile/compose) 브랜치 작성·테스트.
-2. **DNS/터널:** Cloudflare에 도메인 추가 → **Vercel DNS 존 전체를 CF에 복제**(MX 없음·apex TXT 없음 확인됨) → NS 위임 → Tunnel(HTTP+TCP) 구성 → Access 서비스토큰. **전환 후 GSC·네이버SA·AdSense 재검증.**
+2. **DNS/터널:** Cloudflare에 도메인 추가 → **Vercel DNS 존 전체를 CF에 복제**(MX 없음·apex TXT 없음 확인됨) → NS 위임 → Tunnel(HTTP 단일, web:3000) 구성. **전환 후 GSC·네이버SA·AdSense 재검증.**
 3. **스키마:** OCI `db` 기동 → `prisma migrate deploy`.
 4. **드라이런:** Supabase → OCI 데이터 로드 리허설 1회(용량/시간 측정, 검증 스크립트 확정).
 5. **유지보수 창 진입:** ETL 워크플로 disable, 공지.
 6. **최종 데이터 복사:** `pg_dump --data-only` → OCI 로드 → 검증(행 수·체크섬).
 7. **앱 기동:** `docker compose up -d`(web) → Tunnel로 스테이징 검증.
 8. **DNS 전환:** Cloudflare에서 `imjangon.co.kr`을 Tunnel로 → 전파 확인.
-9. **ETL 재개:** 워크플로에 CF Access 터널 셋업 반영 후 재활성화.
+9. **ETL 전환:** GH Actions 스케줄 비활성 → 박스 systemd 타이머 활성화(첫 실행 수동 검증).
 10. **관측:** Sentry/업타임/비용 24~72h 모니터링.
 11. **정리:** 안정 확인 후 Vercel 프로젝트 중지, Supabase 프로젝트 유지(롤백 대비) → 수일 후 폐기.
 
@@ -164,7 +168,7 @@ OCI 박스 (Ampere A1, Ubuntu 24.04)
 | 리스크 | 영향 | 완화 |
 |---|---|---|
 | **단일 인스턴스 SPOF** | 박스 다운 시 전체 다운(HA 없음) | 완전 자립 선택의 근본 트레이드오프. `restart:unless-stopped`, 스냅샷 백업, 빠른 재기동 런북. 필요 시 향후 이중화. |
-| **ETL over Tunnel 지연·취약** | 시간당 `backfill-transactions-loop` 등 대량 upsert를 CF TCP 터널로 넘기면 지연·세션끊김 | **재고 권장**: 대량 크론 온박스 systemd 또는 Tailscale. 실행계획서 확정(§4.5). |
+| **온박스 ETL 운영부담** | 로그가 journalctl로 이동, 시크릿·타이머를 박스가 보유, 박스 다운 시 ETL도 정지 | 배포로 유닛 동기화 + 실패 알림 배선. DB localhost라 성능·안정성은 오히려 향상. SPOF는 단일인스턴스 항목과 동일. |
 | ~~OCI 리전 지연~~ ✅해소 | — | `ap-tokyo-1`(Vercel·Supabase와 동일). 지연 불변, DB 코로케이션으로 개선. |
 | **디스크 45GB 포화** | DB/ISR/이미지 증가 | 사용량 모니터, 200GB까지 무료 확장. |
 | **빌드 OOM(온박스)** | 배포 실패 | 스왑 4~8GB, `docker compose build` 단독 실행. |
@@ -187,7 +191,7 @@ OCI 박스 (Ampere A1, Ubuntu 24.04)
 
 - [ ] `imjangon.co.kr`가 OCI origin에서 Cloudflare 경유로 정상 서빙(주요 라우트 200, ISR 동작).
 - [ ] Supabase 접속 0건(앱·ETL 모두 OCI DB 사용).
-- [ ] DB-접속 ETL 워크플로가 OCI DB에 접속·성공(경로: 터널/온박스/Tailscale — 실행계획서 확정).
+- [ ] 모든 ETL이 박스 systemd 타이머로 localhost DB에 접속·성공, GH Actions 스케줄 비활성.
 - [ ] 배포 파이프라인이 `migrate deploy` 포함해 push→main으로 동작.
 - [ ] nightly 백업이 OCI Object Storage에 적재.
 - [ ] 인바운드 개방 포트 SSH뿐. origin IP 비노출.
@@ -204,7 +208,7 @@ OCI 박스 (Ampere A1, Ubuntu 24.04)
 - [ ] **DNS 재검증**: NS 이전 전 Vercel DNS 존 전량 export→CF 재생성. 전환 후 GSC·네이버SA·AdSense 사이트 인증 재확인(apex TXT 없음 → HTML/메타 방식 확인).
 - [ ] **pg_dump 드라이런**: 세션 풀러(:5432)로 소량 `--data-only` 테스트. 실패 시 진짜 직결(`db.<ref>.supabase.co`, IPv4 애드온 가능성) 또는 `supabase db dump` CLI 폴백.
 - [ ] **.co.kr 레지스트라 NS 위임** 가능 여부 확인.
-- [ ] **ETL 접속 경로 최종 결정**(터널 vs 온박스 vs Tailscale) — §4.5.
+- [x] ETL 접속 경로 → **온박스 systemd**(결정).
 - [ ] OG 이미지 라우트 standalone 폰트 트레이싱 스테이징 검증.
 
 ---
