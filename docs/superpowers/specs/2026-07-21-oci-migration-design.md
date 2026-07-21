@@ -220,5 +220,25 @@ OCI 박스 (Ampere A1, Ubuntu 24.04)
 
 - HA/멀티노드, 로드밸런싱, 읽기복제.
 - WAL 아카이빙 기반 PITR(현재는 nightly 덤프로 충분).
-- ETL 전량 온박스 이전(설계 D 대안) — ETL 지연이 문제될 때 재검토.
+- (완료) ETL 온박스 이전은 §4.5로 확정. 향후: 대량 ingest COPY 최적화, 실패 알림 고도화.
 - 관측 스택 고도화(Grafana 등).
+
+---
+
+## 부록 A. 환경변수 이전 매핑 (실측 2026-07-21)
+
+운영 env는 **두 곳**에 분산: Vercel Production(16, 웹) + GitHub Actions Secrets(11, ETL). 박스에서 하나의 `.env`(+ build-arg)로 통합한다.
+
+| 박스 목적지 | 변수 |
+|---|---|
+| **웹 빌드타임**(build-arg) | `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_NAVER_MAP_CLIENT_ID`, `NEXT_PUBLIC_KAKAO_JS_KEY`, `NEXT_PUBLIC_GA_ID`, `NEXT_PUBLIC_SENTRY_DSN`†, `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`†, `NEXT_PUBLIC_NAVER_SITE_VERIFICATION`† |
+| **웹 런타임** | `DATABASE_URL`·`DIRECT_URL`(→localhost), `NAVER_MAP_CLIENT_SECRET`, `REVALIDATE_TOKEN`, `ADMIN_USER`, `ADMIN_PASSWORD`, `BOARD_PREVIEW_TOKEN`, `SENTRY_DSN`† |
+| **ETL 런타임** | `PUBLIC_DATA_KEY`, `NEIS_API_KEY`‡, `CHILDCARE_API_KEY`‡, `KAKAO_REST_KEY`, `OPENAI_API_KEY`, `NAVER_SEARCH_CLIENT_ID`·`NAVER_SEARCH_CLIENT_SECRET`, `SITE_URL`, `REVALIDATE_TOKEN`, `DISCORD_WEBHOOK_URL`† |
+| **빌드(선택: Sentry 소스맵)** | `SENTRY_AUTH_TOKEN`†, `SENTRY_ORG`†, `SENTRY_PROJECT`† |
+| **버림** | `VERCEL_ENV`(자동·graceful), `NODE_ENV`(런타임) |
+
+- **†** = Vercel·GH 어느 목록에도 없음 → 현재 Sentry↔Vercel 통합 자동주입 또는 미설정. 박스엔 **직접 세팅** 필요(없으면 조용히 미작동).
+- **‡** = GH Secrets에만 존재하고 값 조회 불가(write-only) + Vercel에 없음 → 원본 보관본 없으면 공공데이터포털 재발급.
+- **함정 1**: 웹은 `NEXT_PUBLIC_SITE_URL`, ETL revalidator는 **plain `SITE_URL`**(폴백이 죽은 도메인 `imjang-on.com`) → 박스에 **둘 다** `https://imjangon.co.kr`.
+- **함정 2**: `NEXT_PUBLIC_*`는 빌드타임 번들 → 런타임 주입만으론 부족, build-arg 필수.
+- **값 확보**: Vercel 16개는 `vercel env pull`로 일괄 복호화(gitignore). 겹치는 GH 키도 대부분 회수. 진짜 GH-only는 `NEIS_API_KEY`·`CHILDCARE_API_KEY`뿐.
