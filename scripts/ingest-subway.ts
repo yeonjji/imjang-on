@@ -1,3 +1,6 @@
+import { unlink, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
@@ -5,13 +8,35 @@ import { normalizeName } from '@/lib/slug';
 import { readXlsxRows } from '@/scripts/ingest/amenities/xlsx-parse';
 import { clusterStations, type RawStationRow } from '@/scripts/ingest/subway/cluster';
 
-const DEFAULT_FILE = 'data/subway.xlsx';
+// 국가철도공단 레일포털 "도시철도역사 정보" 표준데이터 파일 다운로드(GET, 세션 불필요, 연 1회 갱신)
+const DOWNLOAD_URL =
+  'https://data.kric.go.kr/rips/dataset/download.file?type=filedata&id=32&operation=1';
 const CHUNK = 500;
 
-function parseArgs(): { file: string } {
+function parseArgs(): { file: string | null } {
   const args = process.argv.slice(2);
-  const file = args.find((a) => a.startsWith('--file='))?.split('=')[1] ?? DEFAULT_FILE;
+  // --file= 명시 시 로컬 파일, 없으면 레일포털에서 다운로드
+  const file = args.find((a) => a.startsWith('--file='))?.split('=')[1] ?? null;
   return { file };
+}
+
+/** --file 없으면 레일포털에서 최신 xlsx 다운로드 → 임시파일 경로 반환(temp=true). */
+async function resolveFile(fileArg: string | null): Promise<{ path: string; temp: boolean }> {
+  if (fileArg) return { path: fileArg, temp: false };
+  logger.info({ url: DOWNLOAD_URL }, 'subway: 레일포털에서 원본 다운로드 중...');
+  const res = await fetch(DOWNLOAD_URL, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (imjang-on subway ingest)' },
+  });
+  if (!res.ok) throw new Error(`subway download HTTP ${res.status}`);
+  const buf = Buffer.from(await res.arrayBuffer());
+  // xlsx = ZIP이라 PK(0x50 0x4b) 시그니처. 에러 HTML 페이지가 오면 방어.
+  if (buf.length < 4 || buf[0] !== 0x50 || buf[1] !== 0x4b) {
+    throw new Error(`subway download가 xlsx가 아님(PK 시그니처 없음, ${buf.length} bytes)`);
+  }
+  const tmp = path.join(os.tmpdir(), `subway-${process.pid}-${Date.now()}.xlsx`);
+  await writeFile(tmp, buf);
+  logger.info({ tmp, bytes: buf.length }, 'subway: 다운로드 완료');
+  return { path: tmp, temp: true };
 }
 
 function num(v: unknown): number | null {
@@ -49,13 +74,16 @@ function locationSql(lat: number, lng: number) {
 }
 
 async function main() {
-  const { file } = parseArgs();
+  const { file: fileArg } = parseArgs();
   const run = await prisma.ingestionRun.create({
     data: { source: 'subway', targetKey: 'stations', status: 'RUNNING' },
   });
+  let temp: string | null = null;
   try {
-    logger.info({ file }, 'subway: xlsx 파싱 중...');
-    const raw = toRawRows(readXlsxRows(file));
+    const src = await resolveFile(fileArg);
+    temp = src.temp ? src.path : null;
+    logger.info({ file: src.path }, 'subway: xlsx 파싱 중...');
+    const raw = toRawRows(readXlsxRows(src.path));
     const clusters = clusterStations(raw);
     logger.info({ rawRows: raw.length, clusters: clusters.length }, 'subway: 클러스터링 완료');
 
@@ -101,6 +129,7 @@ async function main() {
     throw err;
   } finally {
     await prisma.$disconnect();
+    if (temp) await unlink(temp).catch(() => {});
   }
 }
 
