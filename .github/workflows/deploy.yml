@@ -1,0 +1,29 @@
+name: deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# 동시 배포 방지(겹치면 큐잉, 진행 중인 건 취소하지 않음)
+concurrency:
+  group: deploy-oci
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: SSH push-to-deploy to OCI box
+        env:
+          SSH_KEY: ${{ secrets.OCI_SSH_KEY }}
+          HOST: ${{ secrets.OCI_HOST }}
+          SSH_USER: ${{ secrets.OCI_USER }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          echo "▶ deploy → $SSH_USER@$HOST (forced-command runs /opt/imjang/deploy/remote-deploy.sh)"
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=30 "$SSH_USER@$HOST" deploy
