@@ -63,3 +63,5 @@ AGENTS.md
 # local plugin skill caches (accidentally added, not repo content)
 .claude/skills/
 .github/skills/
+
+deploy/.env.production

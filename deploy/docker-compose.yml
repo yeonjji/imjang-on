@@ -1,0 +1,75 @@
+name: imjang
+services:
+  db:
+    image: imresamu/postgis:17-3.5  # 공식 postgis/postgis는 amd64-only → ARM64(Ampere A1)용 멀티아치 리빌드
+    restart: unless-stopped
+    shm_size: 512mb
+    stop_grace_period: 1m
+    environment:
+      POSTGRES_DB: imjang_on
+      POSTGRES_USER: imjang
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env.production}
+    volumes:
+      - /var/lib/imjang/pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U imjang -d imjang_on"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  web:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: web
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+        NEXT_PUBLIC_NAVER_MAP_CLIENT_ID: ${NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}
+        NEXT_PUBLIC_KAKAO_JS_KEY: ${NEXT_PUBLIC_KAKAO_JS_KEY}
+        NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN}
+      network: host          # 빌드 시 호스트-게시 127.0.0.1:5432(db)에 접속(빌드타임 prerender DB)
+      secrets:
+        - build_db_url       # 빌드타임 DATABASE_URL/DIRECT_URL
+    restart: unless-stopped
+    env_file: [.env.production]
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  etl:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: etl
+    profiles: ["tools"]
+    env_file: [.env.production]
+    volumes:
+      # 스크립트가 `dotenv -e .env.local`을 쓰므로 prod env를 .env.local로 마운트
+      - ./.env.production:/app/.env.local:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    depends_on:
+      - web
+
+secrets:
+  build_db_url:
+    environment: BUILD_DATABASE_URL   # compose가 env(BUILD_DATABASE_URL) 값을 secret 내용으로 사용

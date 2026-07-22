@@ -1,7 +1,5 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from '@vercel/speed-insights/next';
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { SITE_URL } from '@/lib/site';
 import { JsonLd, organizationSchema, webSiteSchema } from '@/lib/seo/json-ld';
@@ -46,8 +44,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <JsonLd data={[organizationSchema(), webSiteSchema()]} />
         {children}
-        <Analytics />
-        <SpeedInsights />
         {process.env.NEXT_PUBLIC_GA_ID && <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />}
       </body>
     </html>
