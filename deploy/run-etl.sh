@@ -25,5 +25,6 @@ case "${1:?job key required}" in
   jeonse-guarantee) $DC pnpm tsx scripts/ingest/jeonse-guarantee/runner.ts ;;
   board-posts)      $DC pnpm tsx scripts/ingest/posts/runner.ts ;;
   seed-regions)     $DC pnpm tsx scripts/ingest/regions/seed-from-api.ts ;;
+  subway)           $DC pnpm ingest:subway ;;  # 레일포털에서 자동 다운로드→적재
   *) echo "unknown job: $1" >&2; exit 2 ;;
 esac
