@@ -1,6 +1,10 @@
 name: deploy
 on:
-  push:
+  # main에서 ci 워크플로가 "완료"되면 트리거되고, 아래 if로 "성공"일 때만 배포.
+  # (push: main 직접 트리거는 ci와 병렬로 돌아 게이트가 안 되므로 사용하지 않음)
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
     branches: [main]
   workflow_dispatch: {}
 
@@ -11,6 +15,8 @@ concurrency:
 
 jobs:
   deploy:
+    # 수동 dispatch거나, ci가 성공으로 끝났을 때만. ci 실패/취소면 스킵.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
