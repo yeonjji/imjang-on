@@ -15,6 +15,7 @@ const SIDO_LIST: { code: string; sido: string; fullName: string }[] = [
   { code: '3100000000', sido: '울산', fullName: '울산광역시' },
   { code: '2800000000', sido: '인천', fullName: '인천광역시' },
   { code: '4600000000', sido: '전남', fullName: '전라남도' },
+  { code: '1200000000', sido: '전남광주', fullName: '전남광주통합특별시' }, // 2026-07-01 광주+전남 통합
   { code: '5200000000', sido: '전북', fullName: '전북특별자치도' },
   { code: '5000000000', sido: '제주', fullName: '제주특별자치도' },
   { code: '4400000000', sido: '충남', fullName: '충청남도' },
@@ -153,12 +154,13 @@ const SIDO_PREFIX: Record<string, string> = {
   '경기': '41', '강원': '51', '충북': '43', '충남': '44',
   '전북': '52', '전남': '46', '경북': '47', '경남': '48',
   '제주': '50',
+  '전남광주': '12', // 2026-07-01 광주(29)+전남(46) 통합. 구 29·46은 폐지데이터 표시용으로 유지.
 };
 
 export function sidoPrefix(sido: string): string | undefined {
   if (!sido) return undefined;
   return SIDO_PREFIX[sido]
-    ?? SIDO_PREFIX[sido.replace(/(특별시|광역시|특별자치시|특별자치도|도)$/, '')];
+    ?? SIDO_PREFIX[sido.replace(/(통합특별시|특별시|광역시|특별자치시|특별자치도|도)$/, '')];
 }
 
 const PREFIX_TO_SIDO: Record<string, string> = Object.fromEntries(

@@ -9,6 +9,7 @@
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { env } from '@/lib/env';
+import { abolishedDate } from './abolition';
 
 const BASE = 'https://apis.data.go.kr/1741000/StanReginCd/getStanReginCdList';
 const PAGE_SIZE = 1000;
@@ -149,6 +150,25 @@ async function main() {
         END
       )
   `;
+
+  // 3차 패스: 이번 API 풀에 없는(sourceVersion 미갱신) 활성 코드 = 폐지된 행정구역 마킹.
+  // 규칙은 abolition.ts shouldAbolish와 동일. 삭제하지 않는다(Property FK·과거 실거래 보존).
+  // 안전장치: 완주(totalSeen >= totalCount) 시에만 실행 — 부분 수집 시 대량 오폐지 방지.
+  const completed = totalCount > 0 && totalSeen >= totalCount;
+  if (completed) {
+    const at = abolishedDate(SOURCE_VERSION, process.env.REGION_ABOLISHED_AT);
+    const willAbolish = await prisma.region.count({
+      where: { sourceVersion: { not: SOURCE_VERSION }, isAbolished: false },
+    });
+    logger.info({ willAbolish, abolishedAt: at }, 'abolition pass: 원본에 없는 구 코드 폐지 마킹');
+    const res = await prisma.region.updateMany({
+      where: { sourceVersion: { not: SOURCE_VERSION }, isAbolished: false },
+      data: { isAbolished: true, abolishedAt: at },
+    });
+    logger.info({ abolished: res.count }, 'abolition pass done (deletes 없음)');
+  } else {
+    logger.warn({ totalSeen, totalCount }, 'seed incomplete — abolition pass SKIPPED');
+  }
 
   await prisma.$disconnect();
   logger.info({ totalSeen }, 'region seed done');
