@@ -40,7 +40,6 @@ export const loadChildcareInsight = cache(
       crType: item.crType,
       capacity: item.capacity,
       currentCount: item.currentCount,
-      staffCount: item.staffCount,
       emRoleTeacher: item.emRoleTeacher,
       sigunguFillMedian: fillMedian,
       waitByAge: WAIT_AGES.map(([k, label]) => ({ label, count: (item as Record<string, unknown>)[k] as number ?? 0 }))

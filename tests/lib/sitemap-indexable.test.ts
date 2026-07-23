@@ -8,7 +8,7 @@ describe('sitemap 프록시 ⊆ 색인 게이트', () => {
   it('childcare 프록시 최소 입력(capacity≥1·currentCount≥1·roomSize·cctv≥1) → 색인', () => {
     const n = buildChildcareNarrative({
       name: 'X', crType: null, capacity: 1, currentCount: 1,
-      staffCount: null, emRoleTeacher: null, sigunguFillMedian: null,
+      emRoleTeacher: null, sigunguFillMedian: null,
       waitByAge: [], roomSize: 10, cctvCount: 1, vehicleOp: null,
       nearestStation: null, infra: [], nearbyAptSaleManwon: [],
     });

@@ -6,7 +6,6 @@ const base: ChildcareInsightInput = {
   crType: '민간',
   capacity: 69,
   currentCount: 57,
-  staffCount: 17,
   emRoleTeacher: 17,
   sigunguFillMedian: null,
   waitByAge: [{ label: '만 0세', count: 35 }, { label: '만 1세', count: 2 }, { label: '만 2세', count: 2 }],
@@ -50,7 +49,7 @@ describe('buildChildcareNarrative', () => {
   });
   it('가드: 핵심(충원율·대기) 미발화 & 3모듈 미만이면 null', () => {
     const n = buildChildcareNarrative({
-      ...base, capacity: null, currentCount: null, waitByAge: [], staffCount: null,
+      ...base, capacity: null, currentCount: null, waitByAge: [],
       roomSize: null, cctvCount: null, vehicleOp: null,
       nearestStation: null, infra: [{ label: '카페', count: 8 }], nearbyAptSaleManwon: [],
     });
@@ -94,7 +93,7 @@ describe('buildChildcareNarrative', () => {
 const mk = (o: Partial<ChildcareInsightInput> = {}) =>
   buildChildcareNarrative({
     name: '햇살어린이집', crType: '국공립', capacity: 100, currentCount: 90,
-    staffCount: 20, emRoleTeacher: 15, sigunguFillMedian: 0.7,
+    emRoleTeacher: 15, sigunguFillMedian: 0.7,
     waitByAge: [{ label: '만 1세', count: 5 }], roomSize: 200, cctvCount: 10, vehicleOp: '운영',
     nearestStation: null, infra: [], nearbyAptSaleManwon: [], ...o,
   });

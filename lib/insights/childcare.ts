@@ -6,7 +6,6 @@ export interface ChildcareInsightInput {
   crType: string | null;
   capacity: number | null;
   currentCount: number | null;
-  staffCount: number | null;
   emRoleTeacher: number | null;      // 보육교사 수(교사비율 분모)
   sigunguFillMedian: number | null;  // 같은 시군구 충원율 중앙값(0..1), 벤치마크용
   waitByAge: { label: string; count: number }[];
