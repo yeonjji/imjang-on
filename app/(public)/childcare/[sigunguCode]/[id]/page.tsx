@@ -27,6 +27,7 @@ import { buildChildcareFaq } from '@/lib/faq/builders/childcare';
 import { InsightSection } from '@/components/ui/insight-section';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
 import { staticMapUrl } from '@/lib/seo/static-map';
+import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 
@@ -49,7 +50,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const item = itemId == null ? null : await cachedChildcareById(itemId).catch(() => null);
   if (!item) return {};
   const { narrative } = itemId == null ? { narrative: null } : await loadChildcareInsight(itemId);
-  const indexable = !!narrative && narrative.fired.length >= 3;
+  const indexable = isNarrativeIndexable(narrative);
   const parts: string[] = [];
   if (item.capacity != null) parts.push(`정원 ${item.capacity.toLocaleString('ko-KR')}명`);
   if (item.currentCount != null) parts.push(`현원 ${item.currentCount.toLocaleString('ko-KR')}명`);
@@ -59,7 +60,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: `${item.name} — ${item.crType ?? '어린이집'} 정원 ${item.capacity ?? '-'}`,
     description: narrative?.text.slice(0, 150) ?? `${item.name}${type}${stat}. 도보권 아파트 실거래가와 보육정보를 한눈에.`,
-    robots: indexable ? { index: true, follow: true } : { index: false, follow: true },
+    robots: robotsFor(indexable),
     alternates: { canonical: `/childcare/${sigunguCode}/${id}` },
   };
 }

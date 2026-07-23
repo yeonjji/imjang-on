@@ -11,6 +11,7 @@ import { getSigunguByCode } from '@/lib/region';
 import { chargerDef } from '@/lib/urban/adapters/charger';
 import type { ChargerRaw } from '@/lib/urban/adapters/charger';
 import type { UrbanItem } from '@/lib/urban/category';
+import { robotsFor } from '@/lib/seo/indexable';
 import { ChargerHero } from './_components/charger-hero';
 import { ChargerStatusTable } from './_components/charger-status-table';
 import { UrbanInfo } from '@/app/(public)/urban/[category]/_components/urban-info';
@@ -49,6 +50,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: `${item.name} — 전기차충전소 정보·주변 아파트`,
     description: `${item.name} 전기차충전소 실시간 충전기 현황과 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
+    robots: robotsFor(false),
     alternates: { canonical: `/urban/charger/${id}` },
   };
 }

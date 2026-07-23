@@ -32,6 +32,7 @@ import { JsonLd, residenceSchema, breadcrumbSchema, aptProvenanceNodes } from '@
 import { InsightSection } from '@/components/ui/insight-section';
 import { cachedPropertyById, cachedPropertyLatLng, cachedNearbySubway, cachedNearbyInfra, cachedFloorPremium, cachedTransactionFlags, loadAptInsight } from '@/lib/insights/apt-loader';
 import { staticMapUrl } from '@/lib/seo/static-map';
+import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 import { BoardBriefingSection } from '../../_components/board-briefing-section';
@@ -56,7 +57,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // ID 공간이 유형 간 공유되므로 유형 필터 필수 — 없으면 /apt/{id}가 타 유형(빌라 등) 메타를 방출한다.
   if (!property || property.propertyType !== PropertyType.APARTMENT) return {};
   const { narrative } = await loadAptInsight(BigInt(id));
-  const indexable = !!narrative && narrative.fired.length >= 3;
+  const indexable = isNarrativeIndexable(narrative);
   return {
     title: `${property.name} 실거래가 · ${detailTitleLocality(property.region, property.address)}`,
     description: narrative?.text.slice(0, 150) ?? propertyMetaDescription({
@@ -69,7 +70,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       jeonseAvgDeposit12m: property.jeonseAvgDeposit12m ? Number(property.jeonseAvgDeposit12m) : null,
       txCount12m: property.txCount12m,
     }),
-    robots: indexable ? { index: true, follow: true } : { index: false, follow: true },
+    robots: robotsFor(indexable),
     alternates: { canonical: `/apt/${property.id}` },
   };
 }

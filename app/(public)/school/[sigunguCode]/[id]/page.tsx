@@ -22,6 +22,7 @@ import { buildSchoolFaq } from '@/lib/faq/builders/school';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
 import { InsightSection } from '@/components/ui/insight-section';
 import { staticMapUrl } from '@/lib/seo/static-map';
+import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
@@ -48,14 +49,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const school = await cachedSchoolById(BigInt(id)).catch(() => null);
   if (!school) return {};
   const { narrative } = await loadSchoolInsight(BigInt(id));
-  const indexable = !!narrative && narrative.fired.length >= 3;
+  const indexable = isNarrativeIndexable(narrative);
   const tags = [school.foundType, school.coeduType].filter(Boolean).join('·');
   const tagPart = tags ? `(${tags})` : '';
   const regionPart = school.region ? `${school.region} ` : '';
   return {
     title: `${school.name} — ${school.schoolKind ?? '학교'} 정보·주변 아파트`,
     description: narrative?.text.slice(0, 150) ?? `${school.name}${tagPart} ${school.schoolKind ?? '학교'} 정보와 도보권 아파트 실거래가. ${regionPart}통학 정보를 공공데이터로 확인하세요.`,
-    robots: indexable ? { index: true, follow: true } : { index: false, follow: true },
+    robots: robotsFor(indexable),
     alternates: { canonical: `/school/${sigunguCode}/${id}` },
   };
 }
