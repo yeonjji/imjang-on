@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sidoPrefix, sidoFromPrefix, shortSidoFromRegionCode, sidoFullName, getPopularSigungus } from '@/lib/region';
+import { sidoPrefix, sidoFromPrefix, shortSidoFromRegionCode, sidoFullName, getPopularSigungus, getSidoList } from '@/lib/region';
 
 describe('sidoFullName', () => {
   it('단축명 → fullName 변환', () => {
@@ -95,5 +95,38 @@ describe('getPopularSigungus', () => {
     const result = await getPopularSigungus(6);
     const codes = result.map((r) => r.sigunguCode);
     expect(new Set(codes).size).toBe(codes.length);
+  });
+});
+
+// 2026-07-01 전남광주통합특별시(광주29+전남46 통합, 신 시도코드 12) 대응
+describe('전남광주통합특별시 (2026-07-01 통합)', () => {
+  it('sidoFromPrefix(12) = 전남광주 (신 시도 — 기존 버그: undefined였음)', () => {
+    expect(sidoFromPrefix('12')).toBe('전남광주');
+  });
+
+  it('구 광주(29)·전남(46) prefix는 폐지데이터 표시용으로 유지', () => {
+    expect(sidoFromPrefix('29')).toBe('광주');
+    expect(sidoFromPrefix('46')).toBe('전남');
+  });
+
+  it('sidoPrefix: 단축·풀네임 모두 12', () => {
+    expect(sidoPrefix('전남광주')).toBe('12');
+    expect(sidoPrefix('전남광주통합특별시')).toBe('12');
+  });
+
+  it('sidoFullName(전남광주) = 전남광주통합특별시', () => {
+    expect(sidoFullName('전남광주')).toBe('전남광주통합특별시');
+  });
+
+  it('shortSidoFromRegionCode(12..) = 전남광주', () => {
+    expect(shortSidoFromRegionCode('1211010100')).toBe('전남광주');
+  });
+
+  it('getSidoList에 전남광주통합특별시 포함', async () => {
+    const list = await getSidoList();
+    const jn = list.find((s) => s.sido === '전남광주');
+    expect(jn).toBeDefined();
+    expect(jn?.fullName).toBe('전남광주통합특별시');
+    expect(jn?.code).toBe('1200000000');
   });
 });
