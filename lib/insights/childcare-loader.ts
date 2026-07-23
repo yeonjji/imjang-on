@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { getChildcareById, getChildcareLatLng } from '@/lib/childcare';
+import { getChildcareById, getChildcareLatLng, getSigunguChildcareFillMedian } from '@/lib/childcare';
 import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
 import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { buildChildcareNarrative } from '@/lib/insights/childcare';
@@ -11,6 +11,7 @@ export const cachedChildcareLatLng = cache(getChildcareLatLng);
 export const cachedNearbyApartments = cache(getNearbyApartments);
 export const cachedNearbyInfraCC = cache((lat: number, lng: number) => getNearbyInfra(lat, lng));
 export const cachedNearbySubwayCC = cache(getNearbySubwayStations);
+export const cachedSigunguFillMedian = cache(getSigunguChildcareFillMedian);
 
 // cpmsapi030 대기 연령 코드 → 라벨 (childcare-wait-list.tsx와 동일)
 const WAIT_AGES: [string, string][] = [
@@ -27,10 +28,11 @@ export const loadChildcareInsight = cache(
     const item = await cachedChildcareById(id);
     if (!item) return { narrative: null };
     const coord = await cachedChildcareLatLng(id);
-    const [apts, infra, subway] = await Promise.all([
+    const [apts, infra, subway, fillMedian] = await Promise.all([
       coord ? cachedNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyApartments>>),
       coord ? cachedNearbyInfraCC(coord.lat, coord.lng) : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
       coord ? cachedNearbySubwayCC(coord.lat, coord.lng) : Promise.resolve({ stations: [], fallback: false }),
+      cachedSigunguFillMedian(item.sigunguCode),
     ]);
 
     const narrative = buildChildcareNarrative({
@@ -38,7 +40,8 @@ export const loadChildcareInsight = cache(
       crType: item.crType,
       capacity: item.capacity,
       currentCount: item.currentCount,
-      staffCount: item.staffCount,
+      emRoleTeacher: item.emRoleTeacher,
+      sigunguFillMedian: fillMedian,
       waitByAge: WAIT_AGES.map(([k, label]) => ({ label, count: (item as Record<string, unknown>)[k] as number ?? 0 }))
         .filter((x) => x.count > 0),
       roomSize: item.roomSize,

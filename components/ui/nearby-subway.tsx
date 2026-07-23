@@ -2,12 +2,10 @@ import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { lineBadge } from '@/lib/subway/line-colors';
 import type { NearbySubwayResult, NearbySubwayStation } from '@/lib/subway/nearby';
+import { walkMinutes } from '@/lib/walk-minutes';
 
 function formatDistance(m: number): string {
   return m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`;
-}
-function walkMinutes(m: number): number {
-  return Math.max(1, Math.round(m / 67));
 }
 
 export function NearbySubway({ data }: { data: NearbySubwayResult }) {

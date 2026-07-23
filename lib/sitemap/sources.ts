@@ -101,9 +101,13 @@ const PROPERTY_INDEXABLE: Prisma.PropertyWhereInput = {
   saleLastAt: { not: null },
 };
 
+// property 상세 색인 게이트(fired≥3)는 nearby(입지)·지역통계(peer) 의존이라 Property 컬럼만으로
+// hard-0 부분집합을 만들 수 없다. 이번 마감은 noindex 0건 우선 → property 상세를 sitemap에서 제외한다
+// (허브는 core에 유지). SOURCE_ORDER 슬롯·findMany는 보존해, 향후 사전계산 indexable 플래그로
+// 복원 시 count를 prisma.property.count({ where: PROPERTY_INDEXABLE })로 되돌리면 된다.
 const property = dbSource({
   key: 'property',
-  count: () => prisma.property.count({ where: PROPERTY_INDEXABLE }),
+  count: async () => 0,
   findMany: (skip, take) =>
     prisma.property.findMany({
       where: PROPERTY_INDEXABLE,
@@ -146,9 +150,12 @@ const subscription = dbSource({
 });
 
 // School/Hospital/Pharmacy: sigunguCode nullable → count·findMany 모두 not-null 필터로 일치시킨다.
+// school 상세 색인 게이트는 district(인근 학교 밀도, 공간)·입지 의존이라 컬럼만으로 부분집합 불가.
+// noindex 0건 우선 → school 상세 제외(허브 /school/{sigunguCode}는 core에 유지). 복원 시 count를
+// prisma.school.count({ where: { sigunguCode: { not: null } } })로 되돌린다.
 const school = dbSource({
   key: 'school',
-  count: () => prisma.school.count({ where: { sigunguCode: { not: null } } }),
+  count: async () => 0,
   findMany: (skip, take) =>
     prisma.school.findMany({
       where: { sigunguCode: { not: null } },
@@ -165,11 +172,22 @@ const school = dbSource({
   }),
 });
 
+// 색인 게이트의 확정 부분집합: intro(capacity)+occupancy(capacity·currentCount)+facility(roomSize·cctv)
+// = 3발화, occupancy∈requireKeys. ratio(emRoleTeacher)와 무관해 childcare 프로즈 변경 영향 없음.
+// count·findMany 동일 WHERE로 샤드 정합. (tests/lib/sitemap-indexable.test.ts가 부분집합 증명)
+const CHILDCARE_SITEMAP_INDEXABLE: Prisma.ChildcareWhereInput = {
+  capacity: { gte: 1 },
+  currentCount: { gte: 1 },
+  roomSize: { not: null },
+  cctvCount: { gte: 1 },
+};
+
 const childcare = dbSource({
   key: 'childcare',
-  count: () => prisma.childcare.count(),
+  count: () => prisma.childcare.count({ where: CHILDCARE_SITEMAP_INDEXABLE }),
   findMany: (skip, take) =>
     prisma.childcare.findMany({
+      where: CHILDCARE_SITEMAP_INDEXABLE,
       select: { id: true, sigunguCode: true, updatedAt: true },
       orderBy: { id: 'asc' },
       skip,
@@ -207,12 +225,20 @@ const pharmacy = dbSource({
   }),
 });
 
+// 색인 게이트의 확정 부분집합: intro(typeName non-null → 항상)+doctors(totalDoctors≥1)
+// +depts(전문의 배치 진료과 존재 ⇒ deptWithSpecialistCount>0) = 3발화, requireKeys(depts·doctors) 충족.
+const HOSPITAL_SITEMAP_INDEXABLE: Prisma.HospitalWhereInput = {
+  sigunguCode: { not: null },
+  totalDoctors: { gte: 1 },
+  depts: { some: { specialistCount: { gt: 0 } } },
+};
+
 const hospital = dbSource({
   key: 'hospital',
-  count: () => prisma.hospital.count({ where: { sigunguCode: { not: null } } }),
+  count: () => prisma.hospital.count({ where: HOSPITAL_SITEMAP_INDEXABLE }),
   findMany: (skip, take) =>
     prisma.hospital.findMany({
-      where: { sigunguCode: { not: null } },
+      where: HOSPITAL_SITEMAP_INDEXABLE,
       select: { id: true, sigunguCode: true, updatedAt: true },
       orderBy: { id: 'asc' },
       skip,

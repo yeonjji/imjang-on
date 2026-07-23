@@ -44,7 +44,7 @@ export function buildAptFaq({ property, areaSummary, unifiedTotalCount }: AptFaq
   if (ratio != null) {
     items.push({
       q: `${name}의 전세가율은 어떻게 되나요?`,
-      a: `동일 평형의 매매·전세 실거래로 계산한 전세가율은 약 ${ratio}%입니다. 매매가 대비 전세보증금 비율로, 표본 수에 따라 참고용으로 활용하세요.`,
+      a: `동일 평형의 매매·전세 실거래로 계산한 전세가율은 약 ${Math.round(ratio)}%입니다. 매매가 대비 전세보증금 비율로, 표본 수에 따라 참고용으로 활용하세요.`,
       source: `${MOLIT} (동일 평형 매매·전세 파생)`,
     });
   }

@@ -2,6 +2,7 @@ import type { Insight, Narrative } from './shared';
 import type { FloorPremium, TransactionFlags } from '@/lib/transaction';
 import { formatBillion } from '@/lib/format';
 import { josa } from '@/lib/seo/josa';
+import { walkMinutes } from '@/lib/walk-minutes';
 
 export interface AptInsightInput {
   name: string;
@@ -66,7 +67,7 @@ function aAccess(d: AptInsightInput): Insight | null {
   const hasInfra = infraParts.length >= 2;
   if (!station && !hasInfra) return null;
   const dense = infraParts.length >= 3 ? '생활 편의가 양호한 편입니다' : '기본 생활 인프라를 갖췄습니다';
-  const walkMin = station ? Math.max(1, Math.round(station.distanceMeters / 80)) : 0;
+  const walkMin = station ? walkMinutes(station.distanceMeters) : 0;
   const line = station && station.lines[0] ? `${station.lines[0]} ` : '';
   const stationSeg = station
     ? `인근 지하철역은 ${line}${josa(station.name, '으로', '로')} 도보 약 ${walkMin}분 거리`
