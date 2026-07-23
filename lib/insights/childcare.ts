@@ -7,6 +7,8 @@ export interface ChildcareInsightInput {
   capacity: number | null;
   currentCount: number | null;
   staffCount: number | null;
+  emRoleTeacher: number | null;      // 보육교사 수(교사비율 분모)
+  sigunguFillMedian: number | null;  // 같은 시군구 충원율 중앙값(0..1), 벤치마크용
   waitByAge: { label: string; count: number }[];
   roomSize: number | null;
   cctvCount: number | null;
@@ -29,6 +31,15 @@ function occupancy(d: ChildcareInsightInput): Insight | null {
   if (d.capacity == null || d.capacity < 1 || d.currentCount == null) return null;
   const occ = d.currentCount / d.capacity;
   const pct = Math.round(occ * 100);
+  const med = d.sigunguFillMedian;
+  if (med != null && med > 0) {
+    const medPct = Math.round(med * 100);
+    const rel = occ >= med * 1.1 ? '같은 시군구 중앙값보다 높은'
+      : occ <= med * 0.9 ? '같은 시군구 중앙값보다 낮은'
+      : '같은 시군구 중앙값과 비슷한';
+    return { key: 'occupancy', text: `현원 ${d.currentCount}명, 충원율 ${pct}%로 ${rel} 수준입니다(같은 시군구 중앙값 ${medPct}%).` };
+  }
+  // 폴백: 중앙값 표본이 없으면 기존 절대 기준 서술.
   const judge = occ >= 0.9 ? '정원에 거의 찬 편입니다'
     : occ >= 0.7 ? '보통 수준입니다'
     : '정원에 여유가 있는 편입니다';
@@ -50,9 +61,9 @@ function wait(d: ChildcareInsightInput): Insight | null {
 }
 
 function ratio(d: ChildcareInsightInput): Insight | null {
-  if (!d.staffCount || d.staffCount < 1 || !d.currentCount) return null;
-  const r = d.currentCount / d.staffCount;
-  return { key: 'ratio', text: `교직원 ${d.staffCount}명 기준 1인당 원아 약 ${r.toFixed(1)}명입니다.` };
+  if (!d.emRoleTeacher || d.emRoleTeacher < 1 || !d.currentCount) return null;
+  const r = d.currentCount / d.emRoleTeacher;
+  return { key: 'ratio', text: `보육교사 ${d.emRoleTeacher}명 기준 1인당 원아 약 ${r.toFixed(1)}명입니다.` };
 }
 
 function facility(d: ChildcareInsightInput): Insight | null {

@@ -103,6 +103,21 @@ export async function getChildcareLatLng(id: bigint): Promise<{ lat: number; lng
   return rows[0] ?? null;
 }
 
+/** 같은 시군구 어린이집 충원율(현원/정원) 중앙값. 벤치마크 서술용. 표본 없으면 null. */
+export async function getSigunguChildcareFillMedian(sigunguCode: string): Promise<number | null> {
+  const rows = await prisma.$queryRaw<{ median: number | null }[]>`
+    SELECT percentile_cont(0.5) WITHIN GROUP (
+      ORDER BY "currentCount"::float / "capacity"
+    ) AS median
+    FROM "Childcare"
+    WHERE "sigunguCode" = ${sigunguCode}
+      AND "capacity" > 0
+      AND "currentCount" IS NOT NULL
+  `;
+  const m = rows[0]?.median;
+  return m == null ? null : Number(m);
+}
+
 export async function getChildcareCountsBySigungu(filter?: { sido?: string }) {
   const grouped = await prisma.childcare.groupBy({
     by: ['sigunguCode'],

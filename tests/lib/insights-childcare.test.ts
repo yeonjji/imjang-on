@@ -7,6 +7,8 @@ const base: ChildcareInsightInput = {
   capacity: 69,
   currentCount: 57,
   staffCount: 17,
+  emRoleTeacher: 17,
+  sigunguFillMedian: null,
   waitByAge: [{ label: '만 0세', count: 35 }, { label: '만 1세', count: 2 }, { label: '만 2세', count: 2 }],
   roomSize: 187,
   cctvCount: 8,
@@ -37,8 +39,8 @@ describe('buildChildcareNarrative', () => {
     expect(buildChildcareNarrative(base)!.text).toContain('만 0세가 35명(약 90%)');
     expect(buildChildcareNarrative(base)!.text).toContain('경쟁이 특히 치열');
   });
-  it('교직원당 원아: 57/17≈3.4명', () => {
-    expect(buildChildcareNarrative(base)!.text).toContain('원아 약 3.4명');
+  it('보육교사당 원아: 57/17≈3.4명(보육교사 기준 문구)', () => {
+    expect(buildChildcareNarrative(base)!.text).toContain('보육교사 17명 기준 1인당 원아 약 3.4명');
   });
   it('시설: 원아 1인당 보육실 면적·CCTV·통학차량', () => {
     const t = buildChildcareNarrative(base)!.text;
@@ -85,5 +87,41 @@ describe('buildChildcareNarrative', () => {
     })!;
     expect(n.text).toContain('6세 이상이');
     expect(n.text).not.toContain('6세 이상가');
+  });
+});
+
+// mk: 충원율 벤치마크·교사비율 케이스 전용 공용 픽스처(위 base와는 별개 이름 — 상단 base와 충돌 방지).
+const mk = (o: Partial<ChildcareInsightInput> = {}) =>
+  buildChildcareNarrative({
+    name: '햇살어린이집', crType: '국공립', capacity: 100, currentCount: 90,
+    staffCount: 20, emRoleTeacher: 15, sigunguFillMedian: 0.7,
+    waitByAge: [{ label: '만 1세', count: 5 }], roomSize: 200, cctvCount: 10, vehicleOp: '운영',
+    nearestStation: null, infra: [], nearbyAptSaleManwon: [], ...o,
+  });
+
+describe('충원율 시군구 중앙값 벤치마크', () => {
+  it('중앙값보다 높으면 "높은"', () => {
+    expect(mk({ currentCount: 90, sigunguFillMedian: 0.7 })!.text).toContain('같은 시군구 중앙값보다 높은');
+  });
+  it('중앙값과 비슷하면 "비슷한"', () => {
+    expect(mk({ currentCount: 72, sigunguFillMedian: 0.7 })!.text).toContain('같은 시군구 중앙값과 비슷한');
+  });
+  it('중앙값보다 낮으면 "낮은"', () => {
+    expect(mk({ currentCount: 50, sigunguFillMedian: 0.7 })!.text).toContain('같은 시군구 중앙값보다 낮은');
+  });
+  it('중앙값 없으면 절대 기준 폴백', () => {
+    expect(mk({ currentCount: 95, sigunguFillMedian: null })!.text).toContain('정원에 거의 찬');
+  });
+});
+
+describe('교사비율 보육교사 기준', () => {
+  it('보육교사 분모로 서술', () => {
+    // 90 / 15 = 6.0
+    expect(mk({ currentCount: 90, emRoleTeacher: 15 })!.text).toContain('보육교사 15명 기준 1인당 원아 약 6.0명');
+  });
+  it('보육교사 없으면 교사비율 문장 생략', () => {
+    const t = mk({ emRoleTeacher: null })!.text;
+    expect(t).not.toContain('보육교사');
+    expect(t).not.toContain('1인당 원아');
   });
 });
