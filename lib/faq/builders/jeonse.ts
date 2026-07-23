@@ -24,7 +24,7 @@ export function buildJeonseFaq(p: JeonseFaqInput): FaqItem[] {
     const amt = p.maxLoanLmtAmt != null ? `최대 보증한도는 ${formatWon(p.maxLoanLmtAmt)}` : '';
     const rate =
       p.rentGrntMaxLoanLmtRate != null
-        ? `${amt ? ', ' : ''}임차보증금 대비 한도비율은 ${p.rentGrntMaxLoanLmtRate}%`
+        ? `${amt ? ', ' : ''}임차보증금 대비 한도비율은 ${Math.round(p.rentGrntMaxLoanLmtRate)}%`
         : '';
     items.push({
       q: `${name}의 최대 보증한도는 얼마인가요?`,
