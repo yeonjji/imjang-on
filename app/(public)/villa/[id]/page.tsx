@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import {
   getMonthlyChartData,
   getAreaSummary,
@@ -92,6 +92,8 @@ export default async function VillaDetailPage({ params }: Params) {
       property.propertyType !== PropertyType.MULTIPLEX)
   )
     notFound();
+  // 폐지지역 구 매물 → 신 매물 301 (2026-07-01 행정구역 개편)
+  if (property.redirectToId) permanentRedirect(`/villa/${property.redirectToId}`);
 
   const coord = await cachedPropertyLatLng(propId);
 

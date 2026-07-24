@@ -85,7 +85,13 @@ model Property {
 
   transactions Transaction[]
 
+  // 2026-07-01 행정구역 개편: 폐지지역 구 property → 신 property 301 리다이렉트(삭제 없음).
+  redirectToId   BigInt?
+  redirectTo     Property?    @relation("PropertyRedirect", fields: [redirectToId], references: [id], onDelete: SetNull)
+  redirectedFrom Property[]   @relation("PropertyRedirect")
+
   @@index([propertyType, regionCode])
+  @@index([redirectToId])
   @@index([name])
   @@index([propertyType, lastTxAt(sort: Desc)])
   @@index([propertyType, saleLastAt(sort: Desc)])

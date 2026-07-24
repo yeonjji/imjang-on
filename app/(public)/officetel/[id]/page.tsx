@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import {
   getMonthlyChartData,
   getAreaSummary,
@@ -87,6 +87,8 @@ export default async function OffiDetailPage({ params }: Params) {
   const propId = BigInt(id);
   const property = await cachedPropertyById(propId);
   if (!property || property.propertyType !== PropertyType.OFFICETEL) notFound();
+  // 폐지지역 구 매물 → 신 매물 301 (2026-07-01 행정구역 개편)
+  if (property.redirectToId) permanentRedirect(`/officetel/${property.redirectToId}`);
 
   const coord = await cachedPropertyLatLng(propId);
 
