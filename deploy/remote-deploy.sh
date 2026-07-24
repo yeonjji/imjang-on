@@ -18,4 +18,7 @@ $DC run --rm etl pnpm prisma migrate deploy
 $DC build web
 $DC up -d web
 docker image prune -f >/dev/null 2>&1 || true
+# 빌드캐시 누적으로 45G 디스크가 100%까지 참(2026-07-24 사고) → builder cache도 정리한다.
+# 48h 이내 캐시는 남겨 빌드속도(pnpm install 등 레이어 재사용)를 보존한다.
+docker builder prune -f --filter until=48h >/dev/null 2>&1 || true
 echo "[deploy] done — web: $(docker ps --filter name=imjang-web-1 --format '{{.Status}}')"
