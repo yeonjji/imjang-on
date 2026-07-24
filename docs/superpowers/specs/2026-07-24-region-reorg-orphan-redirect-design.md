@@ -87,6 +87,19 @@ Phase 3 — School 301 (2차, 선택) — 위 패턴을 School에 반복(1,210�
 - **삭제가 없어 근본적으로 안전.**
 
 ## 범위 밖 / 후속
-- **DELETE는 하지 않는다**(방식 B 미채택). redundant 행(~505K)은 폐지지역이라 nav·검색·집계에서 이미 제외됨. 디스크 여유 없을 때 별도 정리 검토.
+## ⚠️ 2026-07-24 방식 B1으로 전환 (삭제 + redirect 테이블)
+
+**전환 사유**: 방식 A의 301은 **상세 URL만** 커버 — 리스트/검색/nearby는 구 orphan을 여전히 노출(사용자가 학교 목록에서 중복 발견). property·school 리스트 쿼리 모두 isAbolished/redirect 필터 없음. 리스트마다 필터를 다는 것보다 **구 orphan을 물리 삭제**하는 게 깨끗하다는 판단(B). 단 구 URL 색인 신호는 **`UrlRedirect` 테이블로 301 유지**(B1).
+
+**대상**: 구 실거래 ~494K · 구 Property ~11K · 구 School(광주전남) ~1,210 · 구 Childcare 14.
+
+**무중단 순서 (공백 없음)**:
+1. **코드 배포**: `UrlRedirect` 테이블 + 페이지 로직 — 엔티티 not-found 시 `UrlRedirect` 조회해 301(없으면 404). 기존 `Property.redirectToId` 301 분기는 **유지**(삭제 전 구 행이 존재하는 동안 커버).
+2. **온박스 스냅샷**: 구→신 매핑을 `UrlRedirect`에 적재 — property는 `Property.redirectToId`(이미 채워짐)에서, school은 크로스워크(`pickRedirectTarget` 재사용, name+kind+좌표근접)로.
+3. **백업** 후 **삭제**: 실거래 → Property → School → Childcare(FK 순서). 삭제되는 순간 not-found → `UrlRedirect` 301이 이어받음(공백 0). 리스트에서 구 orphan 사라짐.
+4. **검증**: 학교/매물 리스트 중복 0, 구 URL → 신 URL 308.
+
+**되돌림**: 삭제 전 pg_dump 백업 → 복원 가능. `UrlRedirect`는 스냅샷이라 재생성 가능.
+**주의**: `Property.redirectToId` 컬럼은 삭제 후 미사용이 되나 유지(무해, 스냅샷 소스). 리스트 필터는 불필요(구 행이 사라짐).
 - childcare 스트래글러 14건: 미미, 무시.
 - sitemap: 구 property는 이미 폐지지역이라 sitemap 제외(getAllSigungus isAbolished 필터). 추가 작업 불요.

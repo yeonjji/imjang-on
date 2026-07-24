@@ -111,6 +111,16 @@ enum DealType {
   WOLSE
 }
 
+// 2026-07-01 개편 폐지지역 orphan 삭제(방식 B1) 후에도 구 URL을 신 URL로 301하기 위한 매핑.
+// 구 Property/School 행 삭제 전 여기에 스냅샷한다(삭제하면 redirectToId가 사라지므로).
+model UrlRedirect {
+  kind   String @db.VarChar(12) // 'property' | 'school'
+  fromId BigInt
+  toPath String @db.VarChar(120)
+
+  @@id([kind, fromId])
+}
+
 model Transaction {
   id           BigInt       @id @default(autoincrement())
   propertyId   BigInt

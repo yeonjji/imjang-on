@@ -1,4 +1,5 @@
 import { notFound, permanentRedirect } from 'next/navigation';
+import { getRedirectPath } from '@/lib/redirect';
 import {
   getMonthlyChartData,
   getAreaSummary,
@@ -86,8 +87,14 @@ export default async function OffiDetailPage({ params }: Params) {
   if (!/^\d+$/.test(id)) notFound();
   const propId = BigInt(id);
   const property = await cachedPropertyById(propId);
-  if (!property || property.propertyType !== PropertyType.OFFICETEL) notFound();
-  // 폐지지역 구 매물 → 신 매물 301 (2026-07-01 행정구역 개편)
+  if (!property) {
+    // 폐지지역 삭제된 구 매물(B1) → 신 매물 301
+    const to = await getRedirectPath('property', propId);
+    if (to) permanentRedirect(to);
+    notFound();
+  }
+  if (property.propertyType !== PropertyType.OFFICETEL) notFound();
+  // 삭제 전 구 매물(redirectToId) → 신 매물 301. 삭제 후엔 위 getRedirectPath가 커버.
   if (property.redirectToId) permanentRedirect(`/officetel/${property.redirectToId}`);
 
   const coord = await cachedPropertyLatLng(propId);

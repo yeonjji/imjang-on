@@ -1,4 +1,5 @@
 import { notFound, permanentRedirect } from 'next/navigation';
+import { getRedirectPath } from '@/lib/redirect';
 import Link from 'next/link';
 import { getSchoolList } from '@/lib/school';
 import { getSigunguByCode } from '@/lib/region';
@@ -69,7 +70,12 @@ export default async function SchoolDetailPage({ params }: Params) {
     cachedSchoolById(schoolId),
     getSigunguByCode(sigunguCode),
   ]);
-  if (!school) notFound();
+  if (!school) {
+    // 폐지지역 삭제된 구 학교(B1) → 신 학교 301
+    const to = await getRedirectPath('school', BigInt(id));
+    if (to) permanentRedirect(to);
+    notFound();
+  }
   // sigunguCode 정규화로 옛 URL이 mismatch되면 404 대신 정식 URL로 308 영구 리다이렉트.
   if (school.sigunguCode !== sigunguCode) permanentRedirect(`/school/${school.sigunguCode}/${school.id}`);
   // Region 테이블에 sigunguCode가 없을 경우 School.region(sido)으로 fallback.
