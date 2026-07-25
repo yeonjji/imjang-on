@@ -84,9 +84,9 @@ export function PropertyListCard({ property: p, deal }: Props) {
         <div className="rounded-[18px] bg-[#eff6ff] px-4 py-3 text-sm text-[var(--color-muted)] leading-relaxed flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-2 md:gap-1 md:self-stretch">
           <p className="font-semibold text-[var(--color-blue-dark)] whitespace-nowrap">12개월 거래 {p.txCount12m}건</p>
           <div className="flex flex-row md:flex-col gap-3 md:gap-0">
-            {p.saleCount12m > 0 && <p>매매 {p.saleCount12m}건</p>}
-            {p.jeonseCount12m > 0 && <p>전세 {p.jeonseCount12m}건</p>}
-            {p.wolseCount12m > 0 && <p>월세 {p.wolseCount12m}건</p>}
+            {p.saleCount12m > 0 && <p className="whitespace-nowrap">매매 {p.saleCount12m}건</p>}
+            {p.jeonseCount12m > 0 && <p className="whitespace-nowrap">전세 {p.jeonseCount12m}건</p>}
+            {p.wolseCount12m > 0 && <p className="whitespace-nowrap">월세 {p.wolseCount12m}건</p>}
           </div>
         </div>
       </article>
