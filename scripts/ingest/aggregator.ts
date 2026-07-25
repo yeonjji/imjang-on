@@ -55,17 +55,21 @@ export async function updatePropertyAggregates(propertyIds: bigint[]): Promise<v
     WHERE p.id = agg.pid
   `;
 
+  // 면적대(평형): 단지별 거래의 전용면적을 평으로 반올림해 DISTINCT 집계.
+  // ⚠️ 이전 버전은 inner ARRAY(SELECT ... WHERE propertyId = ANY(batch)) 서브쿼리가
+  //    바깥 단지와 상관(correlate)되지 않아 '배치 전체 전역 분포'를 모든 단지에 복사했다
+  //    (모든 카드에 동일한 1~146평이 뜨는 원인). GROUP BY 내 array_agg로 단지별 집계한다.
+  //    exclusiveArea < 10㎡(주거단위로 불가능한 값)는 이상치라 제외.
   await prisma.$executeRaw`
     UPDATE "Property" p
     SET "areaTypes" = sub.types
     FROM (
       SELECT "propertyId" AS pid,
-             ARRAY(SELECT DISTINCT ROUND("exclusiveArea" / 3.3057851239669422)::int
-                   FROM "Transaction"
-                   WHERE "propertyId" = ANY(${propertyIds}::bigint[])
-                   ORDER BY 1) AS types
+             array_agg(DISTINCT ROUND("exclusiveArea" / 3.3057851239669422)::int
+                       ORDER BY ROUND("exclusiveArea" / 3.3057851239669422)::int) AS types
       FROM "Transaction"
       WHERE "propertyId" = ANY(${propertyIds}::bigint[])
+        AND "exclusiveArea" >= 10
       GROUP BY "propertyId"
     ) sub
     WHERE p.id = sub.pid
