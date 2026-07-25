@@ -20,6 +20,11 @@ export function PharmacyCard({ pharmacy }: Props) {
       {pharmacy.tel && (
         <p className="mt-1 text-xs text-[var(--color-muted)]">{pharmacy.tel}</p>
       )}
+      {pharmacy.openedAt && (
+        <p className="mt-1 text-xs text-[var(--color-muted)]">
+          개설 {new Date(pharmacy.openedAt).getUTCFullYear()}년
+        </p>
+      )}
     </Link>
   );
 }

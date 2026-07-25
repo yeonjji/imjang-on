@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatBillion, formatDate } from '@/lib/format';
+import { formatBillion, formatDate, formatAreaTypes } from '@/lib/format';
 import { typeToSlug } from '@/lib/property';
 import type { DealFilter } from '@/lib/property';
 import type { Property, Region } from '@prisma/client';
@@ -27,6 +27,7 @@ export function PropertyCard({ property: p, deal }: Props) {
             <p className="text-base font-bold text-[var(--color-blue-dark)]">{p.name}</p>
             <p className="mt-0.5 text-xs text-[var(--color-muted)]">
               {p.region.fullName} · {p.builtYear ? `${p.builtYear}년 준공` : '준공년도 미상'}
+              {p.areaTypes.length > 0 ? ` · ${formatAreaTypes(p.areaTypes)}` : ''}
               {p.households ? ` · ${p.households.toLocaleString('ko-KR')}세대` : ''}
             </p>
           </div>

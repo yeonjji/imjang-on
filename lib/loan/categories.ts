@@ -56,6 +56,13 @@ export function targetSlugs(tags: string[]): string[] {
   return slugsOf(tags, TARGET_CATEGORIES, 'etc');
 }
 
+/** 대상 태그를 우리 카테고리 라벨로(중복 제거, '기타' 제외). 카드 요약용. */
+export function targetLabels(tags: string[]): string[] {
+  return targetSlugs(tags)
+    .filter((s) => s !== 'etc')
+    .map((s) => TARGET_CATEGORIES.find((d) => d.slug === s)?.label ?? s);
+}
+
 export function instSlug(instCtg: string | null): string | null {
   return instCtg ? classifyOne(instCtg, INST_CATEGORIES, null) : null;
 }

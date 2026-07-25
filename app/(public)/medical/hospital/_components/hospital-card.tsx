@@ -20,6 +20,13 @@ export function HospitalCard({ hospital }: Props) {
       {hospital.tel && (
         <p className="mt-1 text-xs text-[var(--color-muted)]">{hospital.tel}</p>
       )}
+      {(hospital.totalDoctors || hospital.openedAt) && (
+        <p className="mt-1 text-xs text-[var(--color-muted)]">
+          {hospital.totalDoctors ? `의사 ${hospital.totalDoctors}명` : ''}
+          {hospital.totalDoctors && hospital.openedAt ? ' · ' : ''}
+          {hospital.openedAt ? `${new Date(hospital.openedAt).getUTCFullYear()}년 개원` : ''}
+        </p>
+      )}
     </Link>
   );
 }

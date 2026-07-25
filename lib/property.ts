@@ -248,6 +248,7 @@ export interface PropertyListItem {
   name: string;
   builtYear: number | null;
   households: number | null;
+  areaTypes: number[];
   txCount12m: number;
   saleCount12m: number;
   saleLastPrice: number | null;
@@ -270,6 +271,7 @@ export function serializeProperty(p: Property & { region: Region }): PropertyLis
     name: p.name,
     builtYear: p.builtYear,
     households: p.households,
+    areaTypes: p.areaTypes,
     txCount12m: p.txCount12m,
     saleCount12m: p.saleCount12m,
     saleLastPrice: toNum(p.saleLastPrice),
