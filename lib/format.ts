@@ -32,6 +32,15 @@ export function formatPyeong(sqm: number): string {
   return `${Math.round(sqmToPyeong(sqm))}평`;
 }
 
+/** 거래된 면적대(평형) 배열을 "18~34평" / "24평"으로 압축. 비면 "". */
+export function formatAreaTypes(pyeongs: number[]): string {
+  if (!pyeongs || pyeongs.length === 0) return '';
+  const sorted = [...new Set(pyeongs)].sort((a, b) => a - b);
+  const min = sorted[0];
+  const max = sorted[sorted.length - 1];
+  return min === max ? `${min}평` : `${min}~${max}평`;
+}
+
 /** 입주예정월 "YYYYMM" → "YYYY.MM" (없거나 형식 불일치면 "-") */
 export function formatMoveInYm(ym: string | null | undefined): string {
   if (!ym || ym.length !== 6) return '-';

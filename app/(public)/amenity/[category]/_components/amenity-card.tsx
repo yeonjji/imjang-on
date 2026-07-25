@@ -13,7 +13,7 @@ export function AmenityCard({ item, def }: { item: AmenityItem; def: AmenityCate
             <h3 className="text-base font-bold text-[var(--color-blue-dark)]">{item.name}</h3>
             {summary && <Badge tone="blue">{summary}</Badge>}
           </div>
-          <p className="mt-1.5 truncate text-sm text-[var(--color-muted)]">{item.address}</p>
+          <p className="mt-1.5 line-clamp-2 text-sm text-[var(--color-muted)]">{item.address}</p>
         </div>
         <span className="shrink-0 text-xs text-[var(--color-muted)]">상세 →</span>
       </article>

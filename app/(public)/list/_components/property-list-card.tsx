@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
-import { formatBillion } from '@/lib/format';
+import { formatBillion, formatAreaTypes } from '@/lib/format';
 import { typeToSlug } from '@/lib/property';
 import type { DealFilter, PropertyListItem } from '@/lib/property';
 
@@ -40,6 +40,7 @@ export function PropertyListCard({ property: p, deal }: Props) {
           <p className="text-sm text-[var(--color-muted)] mb-4">
             {p.region.fullName}
             {p.builtYear ? ` · ${p.builtYear}년` : ''}
+            {p.areaTypes.length > 0 ? ` · ${formatAreaTypes(p.areaTypes)}` : ''}
             {p.households ? ` · ${p.households.toLocaleString('ko-KR')}세대` : ''}
           </p>
 
