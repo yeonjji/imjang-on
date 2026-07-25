@@ -1,12 +1,6 @@
+import Link from 'next/link';
 import { formatStatCount } from '@/lib/format';
 import type { HomeStats } from '@/lib/stats';
-import { SourceCaption } from '@/components/ui/source-caption';
-
-// 통계바 4개 지표의 실제 출처: 실거래·단지=국토부, 학교=교육부, 생활편의=환경공단·행안부·소상공인·복지부·심평원.
-const STATS_SOURCE_IDS = [
-  'molit-rtms', 'neis', 'kepco-ev', 'mois-market',
-  'semas-store', 'mois-park', 'childcare', 'mois-parking', 'hira',
-] as const;
 
 const ITEMS = [
   { key: 'transactions', icon: '📊', label: '실거래 데이터' },
@@ -40,7 +34,12 @@ export function StatsBar({ stats }: { stats: HomeStats }) {
         </div>
       ))}
       </div>
-      <SourceCaption ids={[...STATS_SOURCE_IDS]} />
+      <p className="mt-3 text-xs text-[var(--color-muted)]">
+        공공데이터 기반 ·{' '}
+        <Link href="/data-source" className="underline hover:text-[var(--color-text)]">
+          전체 출처 보기 →
+        </Link>
+      </p>
     </>
   );
 }
