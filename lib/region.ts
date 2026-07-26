@@ -140,12 +140,57 @@ export async function getEupmyeondongsBySigungu(sigunguCode: string) {
   });
 }
 
+/**
+ * raw level-2 행 전체(sigunguCode 미접힘). 세종은 구/군이 없어 읍면동이 시드에서 level-2로
+ * 들어와(단어 수 판정) 같은 sigunguCode(36110)를 가진 행이 여럿이다. 주소 prefix 매칭
+ * (region-from-address)은 이 동 단위 행이 필요하므로 raw를 유지한다.
+ * '시군구 목록'(코드당 1개)이 필요한 곳은 대신 getSigunguList를 쓸 것.
+ */
 export async function getAllSigungus() {
   return prisma.region.findMany({
     where: { level: 2, isAbolished: false, sigunguCode: { not: null } },
     select: { sido: true, sigungu: true, sigunguCode: true },
     orderBy: [{ sido: 'asc' }, { sigungu: 'asc' }],
   });
+}
+
+export interface SigunguListRow {
+  sido: string;
+  sigungu: string;
+  sigunguCode: string;
+}
+
+/**
+ * level-2 행을 sigunguCode(시군구 정체성) 단위로 접는다. 대부분 코드당 1행이지만, 구/군이 없는
+ * 세종은 여러 읍면동이 한 sigunguCode(36110)를 공유한다 → 이 경우 개별 동 이름 대신 시(sido)
+ * 이름을 라벨로 써 '시군구 1개'로 노출한다. 순수 함수(DB 접근 없음, 테스트 용이).
+ */
+export function collapseSigungus(
+  rows: Array<{ sido: string; sigungu: string | null; sigunguCode: string | null }>,
+): SigunguListRow[] {
+  const byCode = new Map<string, { sido: string; names: Set<string> }>();
+  for (const r of rows) {
+    if (!r.sigunguCode) continue;
+    const g = byCode.get(r.sigunguCode) ?? { sido: r.sido, names: new Set<string>() };
+    if (r.sigungu) g.names.add(r.sigungu);
+    byCode.set(r.sigunguCode, g);
+  }
+  return [...byCode.entries()]
+    .map(([sigunguCode, g]) => ({
+      sido: g.sido,
+      // 단일 구명이면 그 이름, 세종처럼 여러 동이 한 코드를 공유하면 구 정체성이 없으므로 시 이름.
+      sigungu: g.names.size === 1 ? [...g.names][0] : g.sido,
+      sigunguCode,
+    }))
+    .sort((a, b) => a.sido.localeCompare(b.sido, 'ko') || a.sigungu.localeCompare(b.sigungu, 'ko'));
+}
+
+/**
+ * 시군구 목록(코드당 1개). 지역별 목록 페이지·사이트맵 허브 등 '시군구 단위' 소비처의 SSOT.
+ * 세종처럼 한 sigunguCode에 여러 level-2 행이 있어도 1건으로 접힌다.
+ */
+export async function getSigunguList(): Promise<SigunguListRow[]> {
+  return collapseSigungus(await getAllSigungus());
 }
 
 const SIDO_PREFIX: Record<string, string> = {

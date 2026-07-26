@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getJeonseProducts, getRegionLimits, getJeonseDataAsOf } from '@/lib/jeonse/list';
 import { formatAsOf } from '@/lib/jeonse/labels';
-import { getSidoList, getAllSigungus } from '@/lib/region';
+import { getSidoList, getSigunguList } from '@/lib/region';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { JeonseFinder } from './_components/jeonse-finder';
 import { FinanceTabs } from '../_components/finance-tabs';
@@ -22,7 +22,7 @@ export default async function JeonseGuaranteePage() {
     getJeonseProducts(),
     getRegionLimits(),
     getSidoList(),
-    getAllSigungus(),
+    getSigunguList(),
     getJeonseDataAsOf(),
   ]);
 

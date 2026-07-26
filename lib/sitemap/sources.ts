@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { prisma } from '@/lib/db';
 import type { Prisma } from '@prisma/client';
 import { SITE_URL } from '@/lib/site';
-import { getAllSigungus } from '@/lib/region';
+import { getSigunguList } from '@/lib/region';
 import { AMENITY_CATEGORIES, AMENITY_SLUGS } from '@/lib/amenity/category';
 import { STATIC_ENTRIES } from './static-entries';
 import { isBoardPublic } from '@/lib/board/visibility';
@@ -27,7 +27,7 @@ function propertyPrefix(type: string): string {
 async function coreEntries(): Promise<MetadataRoute.Sitemap> {
   try {
     const [schoolSigungus, amenityCountsBySlug] = await Promise.all([
-      getAllSigungus().catch(() => []),
+      getSigunguList().catch(() => []),
       Promise.all(
         AMENITY_SLUGS.map(async (slug) => ({
           slug,
@@ -40,6 +40,7 @@ async function coreEntries(): Promise<MetadataRoute.Sitemap> {
 
     const entries: MetadataRoute.Sitemap = [...STATIC_ENTRIES];
 
+    // getSigunguList는 sigunguCode(시군구 정체성) 단위로 이미 접힌 목록이라 세종(36110)도 1건이다.
     for (const s of schoolSigungus) {
       entries.push({
         url: `${SITE_URL}/school/${s.sigunguCode}`,

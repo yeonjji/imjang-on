@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getAllSigungus } from '@/lib/region';
+import { getSigunguList } from '@/lib/region';
 import { getSchoolCountsBySigungu } from '@/lib/school';
 import type { Metadata } from 'next';
 
@@ -13,7 +13,7 @@ export const revalidate = 86_400;
 
 export default async function SchoolRegionsPage() {
   const [sigungus, counts] = await Promise.all([
-    getAllSigungus().catch(() => []),
+    getSigunguList().catch(() => []),
     getSchoolCountsBySigungu().catch(() => new Map<string, number>()),
   ]);
 

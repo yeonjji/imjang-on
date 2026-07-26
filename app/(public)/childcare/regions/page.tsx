@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getAllSigungus } from '@/lib/region';
+import { getSigunguList } from '@/lib/region';
 import { getChildcareCountsBySigungu } from '@/lib/childcare';
 import type { Metadata } from 'next';
 
@@ -13,7 +13,7 @@ export const revalidate = 21_600;
 
 export default async function ChildcareRegionsPage() {
   const [sigungus, counts] = await Promise.all([
-    getAllSigungus().catch(() => []),
+    getSigunguList().catch(() => []),
     getChildcareCountsBySigungu().catch(() => new Map<string, number>()),
   ]);
 
