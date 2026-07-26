@@ -44,11 +44,13 @@ export function PropertyListCard({ property: p, deal }: Props) {
             {p.households ? ` · ${p.households.toLocaleString('ko-KR')}세대` : ''}
           </p>
 
-          {/* 가격 박스 — 모바일에선 3칸이 좁아 금액이 토큰 중간에서 깨지므로,
-              패딩·폰트를 줄이고 월세 복합값(보증금/월세)은 <wbr>로 토큰 단위 줄바꿈만 허용한다. */}
-          <div className="grid grid-cols-3 gap-2 md:gap-3">
+          {/* 가격 박스 — 존재하는 거래유형 수(1~3)에 맞춰 유동 배치(flex-wrap).
+              고정 3칸이면 단독 거래유형이 1/3폭으로 눌려 금액이 토큰 중간에서 깨지므로,
+              각 박스는 flex-1로 남은 폭을 채우되 min 8rem으로 복합값(보증금/월세)을 한 줄에 담고
+              max 13rem으로 단독 박스의 과확장을 막는다. 폭이 부족하면 <wbr> 토큰 단위로만 줄바꿈. */}
+          <div className="flex flex-wrap gap-2 md:gap-3">
             {p.saleCount12m > 0 && (
-              <div className={`rounded-[14px] bg-[var(--color-soft)] px-3 py-2.5 md:px-4 md:py-3 transition ${!isHighlighted('sale') ? 'opacity-40' : ''}`}>
+              <div className={`min-w-[8rem] flex-1 max-w-[13rem] rounded-[14px] bg-[var(--color-soft)] px-3 py-2.5 md:px-4 md:py-3 transition ${!isHighlighted('sale') ? 'opacity-40' : ''}`}>
                 <span className="block text-xs text-[var(--color-muted)] mb-1">매매</span>
                 <strong className="block break-keep text-[15px] font-bold leading-tight text-[var(--color-blue-dark)] md:text-base">
                   {formatBillion(p.saleLastPrice ?? p.saleAvgPrice12m)}
@@ -56,7 +58,7 @@ export function PropertyListCard({ property: p, deal }: Props) {
               </div>
             )}
             {p.jeonseCount12m > 0 && (
-              <div className={`rounded-[14px] bg-[var(--color-soft)] px-3 py-2.5 md:px-4 md:py-3 transition ${!isHighlighted('jeonse') ? 'opacity-40' : ''}`}>
+              <div className={`min-w-[8rem] flex-1 max-w-[13rem] rounded-[14px] bg-[var(--color-soft)] px-3 py-2.5 md:px-4 md:py-3 transition ${!isHighlighted('jeonse') ? 'opacity-40' : ''}`}>
                 <span className="block text-xs text-[var(--color-muted)] mb-1">전세</span>
                 <strong className="block break-keep text-[15px] font-bold leading-tight text-[var(--color-blue-dark)] md:text-base">
                   {formatBillion(p.jeonseLastDeposit ?? p.jeonseAvgDeposit12m)}
@@ -64,7 +66,7 @@ export function PropertyListCard({ property: p, deal }: Props) {
               </div>
             )}
             {p.wolseCount12m > 0 && (
-              <div className={`rounded-[14px] bg-[var(--color-soft)] px-3 py-2.5 md:px-4 md:py-3 transition ${!isHighlighted('wolse') ? 'opacity-40' : ''}`}>
+              <div className={`min-w-[8rem] flex-1 max-w-[13rem] rounded-[14px] bg-[var(--color-soft)] px-3 py-2.5 md:px-4 md:py-3 transition ${!isHighlighted('wolse') ? 'opacity-40' : ''}`}>
                 <span className="block text-xs text-[var(--color-muted)] mb-1">월세</span>
                 <strong className="block break-keep text-[15px] font-bold leading-tight text-[var(--color-blue-dark)] md:text-base">
                   <span className="whitespace-nowrap">{formatBillion(p.wolseLastDeposit)}</span>
