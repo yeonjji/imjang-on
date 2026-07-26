@@ -19,6 +19,9 @@ $DC build web
 $DC up -d web
 docker image prune -f >/dev/null 2>&1 || true
 # 빌드캐시 누적으로 45G 디스크가 100%까지 참(2026-07-24 사고) → builder cache도 정리한다.
-# 48h 이내 캐시는 남겨 빌드속도(pnpm install 등 레이어 재사용)를 보존한다.
-docker builder prune -f --filter until=48h >/dev/null 2>&1 || true
+# 나이(until=48h)가 아니라 용량으로 제한한다: 하루 여러 번 배포하면 새 캐시가 필터에
+# 걸리지 않아 계속 쌓였다(2026-07-26 실측 10G 중 8.6G가 회수 가능한 채로 잔존).
+# 상한 방식은 최근 사용 레이어(pnpm install 등)를 남겨 빌드속도도 보존한다.
+docker builder prune -f --max-used-space=3GB >/dev/null 2>&1 \
+  || echo "[deploy] WARN: builder prune 실패 — build cache 미회수"
 echo "[deploy] done — web: $(docker ps --filter name=imjang-web-1 --format '{{.Status}}')"
