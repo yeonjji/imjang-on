@@ -6,8 +6,8 @@ import { fetchStaticMapPng, StaticMapUnavailableError } from '@/lib/seo/static-m
 
 const CARD = { w: 600, h: 400, level: 16 } as const;
 
-function notFound() {
-  return new Response('not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+function notFound(reason: string) {
+  return new Response(reason, { status: 404, headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function GET(
@@ -15,13 +15,13 @@ export async function GET(
   { params }: { params: Promise<{ kind: string; id: string }> },
 ) {
   const { kind, id } = await params;
-  if (!isMapEntityKind(kind)) return notFound();
+  if (!isMapEntityKind(kind)) return notFound('unknown kind');
 
   const entityId = parseMapEntityId(id);
-  if (entityId === null) return notFound();
+  if (entityId === null) return notFound('invalid id');
 
   const coord = await getMapEntityLatLng(kind, entityId).catch(() => null);
-  if (!coord) return notFound();
+  if (!coord) return notFound('no coordinate');
 
   try {
     const png = await fetchStaticMapPng({ ...coord, ...CARD, marker: true });

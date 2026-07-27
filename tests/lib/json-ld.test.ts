@@ -49,14 +49,14 @@ describe('residenceSchema', () => {
       lat: 37.5,
       lng: 127.1,
       url: 'https://x/apt/1',
-      image: 'https://x/api/staticmap?lat=37.5&lng=127.1',
+      image: 'https://x/map/property/1',
     });
     const addr = s.address as Record<string, unknown>;
     expect(s['@type']).toBe('Residence');
     expect(addr['@type']).toBe('PostalAddress');
     expect(addr.addressCountry).toBe('KR');
     expect(s.geo).toEqual({ '@type': 'GeoCoordinates', latitude: 37.5, longitude: 127.1 });
-    expect(s.image).toContain('/api/staticmap');
+    expect(s.image).toContain('/map/property/1');
   });
 
   it('omits geo when coords missing', () => {

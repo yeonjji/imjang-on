@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 
 vi.mock('@/lib/env', () => ({
   env: {
@@ -13,8 +13,7 @@ function okResponse() {
   return new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), { status: 200 });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let fetchSpy: any;
+let fetchSpy: MockInstance<typeof fetch>;
 
 beforeEach(() => {
   fetchSpy = vi.spyOn(globalThis, 'fetch');

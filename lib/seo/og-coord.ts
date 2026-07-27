@@ -5,7 +5,7 @@ import { Prisma } from '@prisma/client';
 import type { PropertyType } from '@prisma/client';
 import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/db';
-import { getPropertyLatLng } from '@/lib/property';
+import { getMapEntityLatLng } from '@/lib/seo/map-entity';
 
 export type OgMapTarget =
   | { kind: 'precise'; lat: number; lng: number; level: 16; marker: true }
@@ -122,7 +122,7 @@ async function sigunguCentroid(propertyType: PropertyType, sigunguCode: string) 
 }
 
 export async function resolveOgMapTarget(propertyId: bigint): Promise<OgMapTarget | null> {
-  const precise = await getPropertyLatLng(propertyId).catch(() => null);
+  const precise = await getMapEntityLatLng('property', propertyId).catch(() => null);
   if (precise) return { kind: 'precise', lat: precise.lat, lng: precise.lng, level: 16, marker: true };
 
   const p = await prisma.property
