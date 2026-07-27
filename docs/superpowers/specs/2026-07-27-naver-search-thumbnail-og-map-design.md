@@ -265,7 +265,7 @@ createOgMapRoute(load)
 
 `alt`도 여기서 나간다. 현재 각 파일이 `export const alt = '아파트 실거래가'`처럼 **정적 상수**로 들고 있는데, 정확 좌표와 지역 폴백의 문구를 구분하려면 동적이어야 한다. 정적 `export const alt`를 제거하고 `generateImageMetadata()`가 반환하는 항목의 `alt` 필드에 실어 보낸다.
 
-> ⚠️ **선행 검증 필요.** `generateImageMetadata()`가 `[]`를 반환할 때 Next 15.5.18이 `og:image` 메타 태그를 실제로 생략하는지 문서로 확정하지 못했다. **구현 계획의 첫 단계를 이 동작 검증으로 잡는다.** 빈 태그나 깨진 URL이 새어나오면 대안으로 전환한다: 해당 라우트의 `opengraph-image.tsx`를 삭제하고 `app/og/[kind]/[id]/route.tsx`(= `/api/` 밖이라 robots 통과)를 만든 뒤, `generateMetadata`에서 `openGraph.images`를 조건부로 지정한다.
+> ✅ **검증 완료 (2026-07-27, Next 15.5.18).** `generateImageMetadata()`가 빈 배열을 반환하면 `og:image` 메타 태그가 방출되지 않는다. 파일 기반 규약을 그대로 유지한다.
 
 ## 7. 에러 처리
 
