@@ -83,9 +83,11 @@
 ```ts
 type OgMapTarget =
   | { kind: 'precise'; lat: number; lng: number; level: 16; marker: true }
-  | { kind: 'region';  lat: number; lng: number; level: 13 | 11; marker: false; scopeLabel: string }
+  | { kind: 'region';  lat: number; lng: number; level: 13 | 11; marker: false }
   | null;
 ```
+
+`alt` 문구는 호출부가 이미 들고 있는 `property.region.fullName`으로 만든다. 좌표 해석 모듈이 라벨까지 반환할 이유가 없다.
 
 이 모듈은 이 함수 하나만 export한다. 호출자(각 `opengraph-image.tsx`)는 좌표가 정확한지 폴백인지만 알면 되고, centroid 계산·게이트·캐싱은 전부 내부 사정이다.
 
@@ -166,7 +168,23 @@ centroid 결과는 `unstable_cache`로 **`propertyId`가 아니라 스코프별�
 
 **`app/map/[kind]/[id]/route.ts` (신규)** — `/map/property/123` 형태. 좌표를 URL에서 받지 않고 **`kind`+`id`로 DB에서 조회**한다.
 
-- `kind`는 화이트리스트: `property` / `subscription` / `school` / `hospital` / `pharmacy` / `childcare` / `urban`. 각 항목이 Prisma 모델과 `location` 컬럼에 매핑되는 작은 레지스트리(`lib/seo/map-entity.ts`)로 관리한다. `id`는 kind마다 타입이 달라(매물·청약은 `BigInt`, 시설은 문자열 코드) **불투명 문자열로 받고 kind별 검증기가 파싱**한다.
+- `kind`는 **테이블 기준 화이트리스트 11종**이다. 각 항목이 Prisma 모델의 `location` 컬럼에 매핑되는 작은 레지스트리(`lib/seo/map-entity.ts`)로 관리한다. `id`는 **불투명 문자열로 받고 검증기가 파싱**한다.
+
+  | `kind` | 테이블 |
+  |---|---|
+  | `property` | `Property` |
+  | `subscription` | `SubscriptionNotice` |
+  | `school` | `School` |
+  | `hospital` | `Hospital` |
+  | `pharmacy` | `Pharmacy` |
+  | `childcare` | `Childcare` |
+  | `park` | `Park` |
+  | `parking` | `Parking` |
+  | `charger` | `EvCharger` |
+  | `store` | `Store` (카페·마트·편의점 공용) |
+  | `market` | `TraditionalMarket` |
+
+  `urban`이라는 kind는 없다 — 도시인프라는 카테고리마다 테이블이 달라 `park`/`parking`/`charger`로 갈린다. 이 목록은 `LocationViewer`를 쓰는 **11개 페이지 전부**를 덮는다.
 - **크기·배율 파라미터를 받지 않는다.** 600×400, `level 16` 고정. 캐시 키가 엔티티 ID 하나로 묶여, 남용해도 NCP 호출 상한이 실제 엔티티 수를 넘지 못한다.
 - 엔티티가 없거나 `location`이 `NULL`이면 404.
 - 좌표 조회는 `unstable_cache`(`revalidate: 86_400`).
