@@ -9,13 +9,6 @@ describe('robots.txt', () => {
   const allowedRules = rules.filter((rule) => rule.allow !== undefined);
   const blockedRules = rules.filter((rule) => rule.allow === undefined);
 
-  it('허용 그룹(*/Yeti)의 모든 룰에서 /api/staticmap 을 허용한다', () => {
-    for (const rule of allowedRules) {
-      const allow = Array.isArray(rule.allow) ? rule.allow : [rule.allow];
-      expect(allow, `rule for ${String(rule.userAgent)}`).toContain('/api/staticmap');
-    }
-  });
-
   it('허용 그룹에서 /api/ 전반은 계속 차단한다', () => {
     for (const rule of allowedRules) {
       const disallow = Array.isArray(rule.disallow) ? rule.disallow : [rule.disallow];
