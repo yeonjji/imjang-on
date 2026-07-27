@@ -133,7 +133,13 @@ export default async function AmenityDetailPage({ params }: Params) {
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
-              <LocationViewer lat={coord.lat} lng={coord.lng} name={item.name} />
+              <LocationViewer
+                lat={coord.lat}
+                lng={coord.lng}
+                mapKind={def.slug === 'market' ? 'market' : 'store'}
+                mapId={item.id}
+                name={item.name}
+              />
             </Card>
           )}
           {!coord && (

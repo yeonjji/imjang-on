@@ -1,3 +1,4 @@
+import React from 'react';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -20,7 +21,11 @@ export function loadOgFonts() {
   return fontsPromise;
 }
 
-/** OG 이미지 공통 레이아웃. satori 제약상 flex/명시 스타일만 사용. */
+/**
+ * 지도 없는 페이지(홈)용 브랜드 카드. satori 제약상 flex/명시 스타일만 사용.
+ * 네이버는 1200x630을 가로로 크롭해 정사각으로 보여주므로, 중앙에서 벗어난
+ * 텍스트는 잘려 나가 배경색만 남는다. 그래서 전부 중앙정렬이다.
+ */
 export function OgFrame({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div
@@ -29,7 +34,8 @@ export function OgFrame({ title, subtitle }: { title: string; subtitle?: string 
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
+        alignItems: 'center',
+        justifyContent: 'center',
         padding: 72,
         backgroundColor: '#1e3a8a',
         color: '#ffffff',
@@ -37,16 +43,67 @@ export function OgFrame({ title, subtitle }: { title: string; subtitle?: string 
       }}
     >
       <div style={{ display: 'flex', fontSize: 40, opacity: 0.85 }}>임장ON</div>
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', fontSize: 64, lineHeight: 1.2 }}>{title}</div>
-        {subtitle ? (
-          <div style={{ display: 'flex', fontSize: 36, marginTop: 16, opacity: 0.9 }}>
-            {subtitle}
-          </div>
-        ) : null}
+      <div style={{ display: 'flex', fontSize: 64, lineHeight: 1.2, marginTop: 24, textAlign: 'center' }}>
+        {title}
       </div>
-      <div style={{ display: 'flex', fontSize: 28, opacity: 0.7 }}>
+      {subtitle ? (
+        <div style={{ display: 'flex', fontSize: 36, marginTop: 16, opacity: 0.9 }}>{subtitle}</div>
+      ) : null}
+      <div style={{ display: 'flex', fontSize: 28, marginTop: 32, opacity: 0.7 }}>
         공공데이터 부동산 실거래가
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 지도 위에 캡션 바를 얹은 OG 카드. 지도는 data URI로 넘어온다(원격 URL fetch 없음).
+ * 캡션이 중앙정렬인 이유는 OgFrame과 같다 — 정사각 크롭 후에도 남아야 한다.
+ */
+export function OgMapFrame({
+  mapDataUri,
+  title,
+  subtitle,
+}: {
+  mapDataUri: string;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        position: 'relative',
+        fontFamily: 'Pretendard',
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={mapDataUri}
+        alt=""
+        width={OG_SIZE.width}
+        height={OG_SIZE.height}
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '28px 40px',
+          backgroundColor: 'rgba(15,23,42,0.78)',
+        }}
+      >
+        <div style={{ display: 'flex', fontSize: 54, color: '#ffffff', textAlign: 'center' }}>{title}</div>
+        <div style={{ display: 'flex', fontSize: 30, marginTop: 10, color: 'rgba(255,255,255,0.85)', textAlign: 'center' }}>
+          {subtitle}
+        </div>
       </div>
     </div>
   );

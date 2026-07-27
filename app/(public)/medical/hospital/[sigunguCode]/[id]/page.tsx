@@ -21,7 +21,7 @@ import { Faq } from '@/app/(public)/_components/faq';
 import { composeDetailFaq } from '@/lib/faq/compose';
 import { buildHospitalFaq } from '@/lib/faq/builders/hospital';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
-import { staticMapUrl } from '@/lib/seo/static-map';
+import { mapImageUrl } from '@/lib/seo/static-map';
 import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
@@ -107,7 +107,7 @@ export default async function HospitalDetailPage({ params }: Params) {
             lat: coord?.lat,
             lng: coord?.lng,
             url: `${SITE_URL}/medical/hospital/${hospital.sigunguCode}/${id}`,
-            image: coord ? staticMapUrl(coord) : undefined,
+            image: coord ? mapImageUrl('hospital', hospital.id) : undefined,
             telephone: hospital.tel,
             id: `${SITE_URL}/medical/hospital/${hospital.sigunguCode}/${id}#hospital`,
             mainEntityOfPageId: `${SITE_URL}/medical/hospital/${hospital.sigunguCode}/${id}#webpage`,
@@ -158,7 +158,13 @@ export default async function HospitalDetailPage({ params }: Params) {
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
-              <LocationViewer lat={coord.lat} lng={coord.lng} name={hospital.name} />
+              <LocationViewer
+                lat={coord.lat}
+                lng={coord.lng}
+                mapKind="hospital"
+                mapId={hospital.id}
+                name={hospital.name}
+              />
             </Card>
           )}
           <NearbyApartments items={apts} />

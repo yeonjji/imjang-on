@@ -135,7 +135,13 @@ export default async function SubscriptionDetailPage({ params }: Params) {
             <>
               <section id="map">
                 <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
-                <LocationViewer lat={coord.lat} lng={coord.lng} name={notice.name} />
+                <LocationViewer
+                  lat={coord.lat}
+                  lng={coord.lng}
+                  mapKind="subscription"
+                  mapId={notice.id}
+                  name={notice.name}
+                />
               </section>
               <NearbyApartments items={nearbyApts} />
               <NearbySubway data={subway} />

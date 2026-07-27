@@ -1,27 +1,12 @@
 import { SITE_URL } from '@/lib/site';
+import type { MapEntityKind } from '@/lib/seo/map-entity';
 
-export interface StaticMapParams {
-  lat: number;
-  lng: number;
-  w?: number;
-  h?: number;
-  level?: number;
+/** 지도 이미지 라우트의 상대 경로 (`<img src>`용). */
+export function mapImagePath(kind: MapEntityKind, id: string | bigint): string {
+  return `/map/${kind}/${id}`;
 }
 
-const DEFAULTS = { w: 600, h: 400, level: 16 } as const;
-
-/** 정적 지도 프록시의 상대 경로 (`<img src>`용). */
-export function staticMapPath({
-  lat,
-  lng,
-  w = DEFAULTS.w,
-  h = DEFAULTS.h,
-  level = DEFAULTS.level,
-}: StaticMapParams): string {
-  return `/api/staticmap?lat=${lat}&lng=${lng}&w=${w}&h=${h}&level=${level}`;
-}
-
-/** 절대 URL (JSON-LD `image`, OG fetch용). */
-export function staticMapUrl(params: StaticMapParams): string {
-  return `${SITE_URL}${staticMapPath(params)}`;
+/** 절대 URL (JSON-LD `image`용). */
+export function mapImageUrl(kind: MapEntityKind, id: string | bigint): string {
+  return `${SITE_URL}${mapImagePath(kind, id)}`;
 }

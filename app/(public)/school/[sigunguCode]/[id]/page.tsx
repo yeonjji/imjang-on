@@ -22,7 +22,7 @@ import { composeDetailFaq } from '@/lib/faq/compose';
 import { buildSchoolFaq } from '@/lib/faq/builders/school';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
 import { InsightSection } from '@/components/ui/insight-section';
-import { staticMapUrl } from '@/lib/seo/static-map';
+import { mapImageUrl } from '@/lib/seo/static-map';
 import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
@@ -126,7 +126,7 @@ export default async function SchoolDetailPage({ params }: Params) {
             lat: coord?.lat,
             lng: coord?.lng,
             url: `${SITE_URL}/school/${sigunguCode}/${id}`,
-            image: coord ? staticMapUrl(coord) : undefined,
+            image: coord ? mapImageUrl('school', school.id) : undefined,
             telephone: school.tel,
             id: `${SITE_URL}/school/${sigunguCode}/${id}#school`,
             mainEntityOfPageId: `${SITE_URL}/school/${sigunguCode}/${id}#webpage`,
@@ -161,7 +161,13 @@ export default async function SchoolDetailPage({ params }: Params) {
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
-              <LocationViewer lat={coord.lat} lng={coord.lng} name={school.name} />
+              <LocationViewer
+                lat={coord.lat}
+                lng={coord.lng}
+                mapKind="school"
+                mapId={school.id}
+                name={school.name}
+              />
             </Card>
           )}
           <NearbyApartments items={apts} />

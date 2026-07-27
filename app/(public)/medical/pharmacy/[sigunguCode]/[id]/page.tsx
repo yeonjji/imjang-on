@@ -17,7 +17,7 @@ import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
 import { RelatedGuides } from '@/app/(public)/_components/related-guides';
 import { JsonLd, placeSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
-import { staticMapUrl } from '@/lib/seo/static-map';
+import { mapImageUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 
@@ -83,7 +83,7 @@ export default async function PharmacyDetailPage({ params }: Params) {
             lat: coord?.lat,
             lng: coord?.lng,
             url: `${SITE_URL}/medical/pharmacy/${pharmacy.sigunguCode}/${id}`,
-            image: coord ? staticMapUrl(coord) : undefined,
+            image: coord ? mapImageUrl('pharmacy', pharmacy.id) : undefined,
             telephone: pharmacy.tel,
           }),
           breadcrumbSchema([
@@ -117,7 +117,13 @@ export default async function PharmacyDetailPage({ params }: Params) {
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
-              <LocationViewer lat={coord.lat} lng={coord.lng} name={pharmacy.name} />
+              <LocationViewer
+                lat={coord.lat}
+                lng={coord.lng}
+                mapKind="pharmacy"
+                mapId={pharmacy.id}
+                name={pharmacy.name}
+              />
             </Card>
           )}
           <NearbyApartments items={apts} />
