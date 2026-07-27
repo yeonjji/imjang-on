@@ -1801,16 +1801,25 @@ EOF
 
 **총 5건 이내. 버스트 금지.**
 
+> ⚠️ **`/apt/{id}/opengraph-image`를 직접 치면 404다.** `generateImageMetadata`가 `id: 'map'`인 항목을 반환하므로 Next가 실제 URL에 `/map` 세그먼트와 해시를 덧붙인다(`/apt/420/opengraph-image-7si1qk/map?c22574531c82b691`). 해시는 빌드마다 달라지므로 **추측하지 말고 HTML에서 뽑아 쓴다.** (2026-07-27 로컬 실측으로 확인.)
+
 ```bash
-# 좌표 있는 매물 → 200 image/png
-curl -sI https://imjangon.co.kr/apt/<ID_WITH_COORD>/opengraph-image | head -3
+# 좌표 있는 매물: HTML에서 og:image URL을 뽑아 그 URL을 친다
+OG=$(curl -s https://imjangon.co.kr/apt/<ID_WITH_COORD> \
+     | grep -oE '<meta property="og:image" content="[^"]+"' | sed 's/.*content="//; s/"$//')
+echo "$OG"
+curl -sI "$OG" | grep -iE '^(HTTP/|content-type)'
+
 # 새 지도 라우트 → 200 image/png
-curl -sI https://imjangon.co.kr/map/property/<ID_WITH_COORD> | head -3
+curl -sI https://imjangon.co.kr/map/property/<ID_WITH_COORD> | grep -iE '^(HTTP/|content-type)'
+
 # 게시판 글 → og:image 태그 없음
 curl -s https://imjangon.co.kr/board/<POST_ID> | grep -c 'og:image'
 ```
 
 기대: 앞의 둘은 `200` + `content-type: image/png`, 마지막은 `0`.
+
+**로컬 실측 기준선 (2026-07-27, property 420):** og:image는 662,017바이트 PNG(매직 `89504e47`), `og:image:alt`는 `"신규단지 위치 지도"`(precise 분기). 프로덕션 값이 이와 크게 다르면 원인을 찾는다.
 
 - [ ] **Step 6: 네이버 서치어드바이저 수집 요청**
 
