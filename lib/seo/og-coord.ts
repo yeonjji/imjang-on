@@ -103,13 +103,16 @@ async function dongCentroid(propertyType: PropertyType, regionCode: string) {
 }
 
 // sigunguCode는 generated column(LEFT(regionCode,5))이라 schema.prisma엔 안 보이지만
-// DB엔 Property_sigunguCode_idx가 이미 있다. 이 쿼리는 regionCode LIKE prefix를 쓰는데,
-// sigunguCode = ? 와 결과는 동일하다(sigunguCode가 정확히 LEFT(regionCode,5)이므로) —
-// 어느 인덱스가 더 유리한지는 후속 태스크에서 실측으로 정한다.
+// DB엔 Property_sigunguCode_idx / Property_type_sgg_lasttx_idx가 이미 있다. 이전엔
+// "regionCode LIKE prefix%"가 그 인덱스를 탄다고 적었지만 틀렸다 — LIKE prefix 매칭은
+// 기본 collation btree 인덱스를 못 타 프로덕션 EXPLAIN ANALYZE에서 Parallel Seq Scan으로
+// 떨어졌다(275,573행 중 송파구 MULTIPLEX 6,704건 스코프, 262ms). "sigunguCode = ?"는
+// 같은 스코프에서 동일한 6,704건을 Property_type_sgg_lasttx_idx의 Bitmap Index Scan으로
+// 16ms에 반환한다(둘은 sigunguCode가 정확히 LEFT(regionCode,5)라 결과가 항상 같다).
 async function sigunguCentroid(propertyType: PropertyType, sigunguCode: string) {
   try {
     return await unstable_cache(
-      () => safeCentroid(propertyType, Prisma.sql`"regionCode" LIKE ${`${sigunguCode}%`}`, SIGUNGU),
+      () => safeCentroid(propertyType, Prisma.sql`"sigunguCode" = ${sigunguCode}`, SIGUNGU),
       ['og-centroid', 'sigungu', propertyType, sigunguCode],
       { revalidate: 86_400 },
     )();
