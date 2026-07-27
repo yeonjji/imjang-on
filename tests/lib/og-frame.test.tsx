@@ -70,33 +70,45 @@ describe('OgMapFrame', () => {
     expect(captions.subtitle?.textAlign).toBe('center');
   });
 
-  it('satori가 OgMapFrame을 렌더링할 수 있다', async () => {
-    const tinyPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-    const fonts = await loadOgFonts();
-    const response = new ImageResponse(
-      OgMapFrame({
-        mapDataUri: tinyPng,
-        title: '테스트',
-        subtitle: '제목',
-      }),
-      { ...OG_SIZE, fonts },
-    );
+  it(
+    'satori가 OgMapFrame을 렌더링할 수 있다',
+    async () => {
+      const tinyPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      const fonts = await loadOgFonts();
+      const response = new ImageResponse(
+        OgMapFrame({
+          mapDataUri: tinyPng,
+          title: '아주 긴 단지명 테스트용 문자열입니다',
+          subtitle: '대구광역시 북구 산격동 · 임장ON',
+        }),
+        { ...OG_SIZE, fonts },
+      );
 
-    expect(response.status).toBe(200);
-    expect(response.headers.get('content-type')).toBe('image/png');
-  });
+      expect(response.status).toBe(200);
+      const buf = Buffer.from(await response.arrayBuffer());
+      expect(buf.subarray(0, 4).toString('hex')).toBe('89504e47'); // PNG magic
+      expect(buf.length).toBeGreaterThan(1000);
+    },
+    60_000,
+  );
 
-  it('satori가 OgFrame을 렌더링할 수 있다', async () => {
-    const fonts = await loadOgFonts();
-    const response = new ImageResponse(
-      OgFrame({
-        title: '테스트',
-        subtitle: '제목',
-      }),
-      { ...OG_SIZE, fonts },
-    );
+  it(
+    'satori가 OgFrame을 렌더링할 수 있다',
+    async () => {
+      const fonts = await loadOgFonts();
+      const response = new ImageResponse(
+        OgFrame({
+          title: '테스트',
+          subtitle: '제목',
+        }),
+        { ...OG_SIZE, fonts },
+      );
 
-    expect(response.status).toBe(200);
-    expect(response.headers.get('content-type')).toBe('image/png');
-  });
+      expect(response.status).toBe(200);
+      const buf = Buffer.from(await response.arrayBuffer());
+      expect(buf.subarray(0, 4).toString('hex')).toBe('89504e47'); // PNG magic
+      expect(buf.length).toBeGreaterThan(1000);
+    },
+    60_000,
+  );
 });
