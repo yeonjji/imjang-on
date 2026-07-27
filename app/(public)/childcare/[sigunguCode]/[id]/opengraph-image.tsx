@@ -1,5 +1,7 @@
-import { ImageResponse } from 'next/og';
-import { OG_SIZE, OG_CONTENT_TYPE, loadOgFonts, OgFrame } from '@/lib/seo/og';
+import { cache } from 'react';
+import { OG_SIZE, OG_CONTENT_TYPE } from '@/lib/seo/og';
+import { createOgMapRoute } from '@/lib/seo/og-map-route';
+import { getMapEntityLatLng } from '@/lib/seo/map-entity';
 import { getChildcareById } from '@/lib/childcare';
 
 export const runtime = 'nodejs';
@@ -10,19 +12,28 @@ export function generateStaticParams() {
 }
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
-export const alt = '어린이집 정보·주변 아파트';
 
-export default async function Image({
-  params,
-}: {
-  params: Promise<{ sigunguCode: string; id: string }>;
-}) {
-  const { id } = await params;
-  const item = /^\d+$/.test(id) ? await getChildcareById(BigInt(id)).catch(() => null) : null;
-  const title = item?.name ?? '어린이집 정보';
-  const subtitle = item ? `${item.crType ?? '어린이집'} · 정원 ${item.capacity ?? '-'}` : '주변 아파트 실거래가';
-  return new ImageResponse(<OgFrame title={title} subtitle={subtitle} />, {
-    ...OG_SIZE,
-    fonts: await loadOgFonts(),
-  });
-}
+const load = cache(async ({ id }: { sigunguCode: string; id: string }) => {
+  if (!/^\d+$/.test(id)) return null;
+  const childcareId = BigInt(id);
+  const item = await getChildcareById(childcareId).catch(() => null);
+  if (!item) return null;
+  // 시설·청약은 원본 공공데이터에 좌표가 실려 오므로 지역 폴백을 두지 않는다.
+  const coord = await getMapEntityLatLng('childcare', childcareId);
+  if (!coord) return null;
+  const title = item.name;
+  const subtitle = `${item.crType ?? '어린이집'} · 정원 ${item.capacity ?? '-'}`;
+  return {
+    title,
+    subtitle,
+    alt: `${title} 위치 지도`,
+    lat: coord.lat,
+    lng: coord.lng,
+    level: 16,
+    marker: true,
+  };
+});
+
+const route = createOgMapRoute(load);
+export const generateImageMetadata = route.generateImageMetadata;
+export default route.Image;
