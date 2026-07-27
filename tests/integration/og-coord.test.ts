@@ -1,10 +1,16 @@
-// og-coord.ts가 쓰는 unstable_cache는 Next의 요청 스코프를 필요로 한다. vitest는 순수
-// node 프로세스라 그게 없어 그대로 두면 throw한다 — 아래 helper가 필요한 전역을 심어준다.
-// og-coord를 import하기 전에(ESM 소스 순서) 먼저 실행돼야 하므로 최상단에 둔다.
-import '../_helpers/next-server-runtime';
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { PropertyType } from '@prisma/client';
 import { prisma } from '@/lib/db';
+
+// og-coord.ts가 쓰는 unstable_cache는 Next의 요청 스코프(workAsyncStorage)를 필요로 하는데
+// vitest는 순수 node 프로세스라 그게 없어 그대로 두면 throw한다. next/cache를 통째로
+// 모킹해 cb를 그대로 통과시키면(캐시 미스 취급) 이 문제를 피하면서, 매 호출이 fresh
+// 계산이 되어 6개 케이스 간 캐시 간섭도 함께 방지된다. 이 repo의 기존 컨벤션
+// (tests/lib/guide-publish-action.test.ts의 vi.mock('next/cache', ...))을 따른다.
+vi.mock('next/cache', () => ({
+  unstable_cache: <T extends (...args: never[]) => unknown>(fn: T) => fn,
+}));
+
 import { resolveOgMapTarget } from '@/lib/seo/og-coord';
 
 // CI의 check 잡은 migrate만 하고 seed를 안 한다. 앰비언트 Property 데이터에 의존하면

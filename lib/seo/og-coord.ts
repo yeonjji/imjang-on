@@ -88,22 +88,34 @@ async function safeCentroid(
 
 // 같은 읍면동의 좌표 없는 매물이 여러 건이어도 스코프당 하루 1회만 조회한다.
 // null 결과도 함께 캐시해 실패 스코프를 반복 조회하지 않는다.
-function dongCentroid(propertyType: PropertyType, regionCode: string) {
-  return unstable_cache(
-    () => safeCentroid(propertyType, Prisma.sql`"regionCode" = ${regionCode}`, DONG),
-    ['og-centroid', 'dong', propertyType, regionCode],
-    { revalidate: 86_400 },
-  )();
+// unstable_cache 래퍼 자체가 던질 수 있어(캐시 컨텍스트 이상 등) safeCentroid의
+// try/catch만으로는 부족하다 — 호출 전체를 감싸 어떤 실패든 og:image만 포기시킨다.
+async function dongCentroid(propertyType: PropertyType, regionCode: string) {
+  try {
+    return await unstable_cache(
+      () => safeCentroid(propertyType, Prisma.sql`"regionCode" = ${regionCode}`, DONG),
+      ['og-centroid', 'dong', propertyType, regionCode],
+      { revalidate: 86_400 },
+    )();
+  } catch {
+    return null;
+  }
 }
 
-// sigunguCode에는 인덱스가 없다. 시군구 5자리는 regionCode의 접두사라
-// LIKE prefix range로 기존 @@index([propertyType, regionCode])에 그대로 얹힌다.
-function sigunguCentroid(propertyType: PropertyType, sigunguCode: string) {
-  return unstable_cache(
-    () => safeCentroid(propertyType, Prisma.sql`"regionCode" LIKE ${`${sigunguCode}%`}`, SIGUNGU),
-    ['og-centroid', 'sigungu', propertyType, sigunguCode],
-    { revalidate: 86_400 },
-  )();
+// sigunguCode는 generated column(LEFT(regionCode,5))이라 schema.prisma엔 안 보이지만
+// DB엔 Property_sigunguCode_idx가 이미 있다. 이 쿼리는 regionCode LIKE prefix를 쓰는데,
+// sigunguCode = ? 와 결과는 동일하다(sigunguCode가 정확히 LEFT(regionCode,5)이므로) —
+// 어느 인덱스가 더 유리한지는 후속 태스크에서 실측으로 정한다.
+async function sigunguCentroid(propertyType: PropertyType, sigunguCode: string) {
+  try {
+    return await unstable_cache(
+      () => safeCentroid(propertyType, Prisma.sql`"regionCode" LIKE ${`${sigunguCode}%`}`, SIGUNGU),
+      ['og-centroid', 'sigungu', propertyType, sigunguCode],
+      { revalidate: 86_400 },
+    )();
+  } catch {
+    return null;
+  }
 }
 
 export async function resolveOgMapTarget(propertyId: bigint): Promise<OgMapTarget | null> {
