@@ -209,7 +209,9 @@ centroid 결과는 `unstable_cache`로 **`propertyId`가 아니라 스코프별�
 - **크기·배율 파라미터를 받지 않는다.** 600×400, `level 16` 고정. 캐시 키가 엔티티 ID 하나로 묶여, 남용해도 NCP 호출 상한이 실제 엔티티 수를 넘지 못한다.
 - 엔티티가 없거나 `location`이 `NULL`이면 404.
 - 좌표 조회는 `unstable_cache`(`revalidate: 86_400`).
-- `export const revalidate = 2_592_000`(30일) + 응답 헤더 `public, max-age=86400, s-maxage=2592000, stale-while-revalidate=86400`.
+- 응답 헤더 `public, max-age=86400, s-maxage=2592000, stale-while-revalidate=86400`로 CDN 캐싱에 맡긴다.
+
+  > **정정 (2026-07-27).** 최초 설계는 `export const revalidate = 2_592_000`도 함께 걸라고 적었으나 구현에는 없다. **없는 게 맞다** — 동적 세그먼트를 가진 route handler는 `generateStaticParams` 없이는 동적이라 `revalidate` 단독으로는 적용되지 않는다. 상류 NCP 응답이 이미 30일 fetch 캐시에 얹히고 좌표 조회도 24시간 캐시라 라우트가 재실행돼도 외부 호출이 없다. 삭제된 `/api/staticmap`도 같은 방식이었다.
 
 `/api/` 밖이라 `robots.txt`의 `Disallow: /api/`에 걸리지 않는다. **`app/robots.ts`의 `/api/staticmap` allow 예외 줄과 주석을 제거한다.**
 
@@ -333,7 +335,25 @@ createOgMapRoute(load)
 
 **`lib/seo/map-entity.test.ts`** — `kind` 화이트리스트 밖 값이 거부되는지.
 
-### 성능 게이트 (구현 중 1회)
+### 성능 게이트 실측 결과 (2026-07-27, 프로덕션 OCI)
+
+`Property` 275,573행. **좌표 결측은 414건(0.15%)** — MULTIPLEX 143/186,898 · APARTMENT 221/45,476 · ROW_HOUSE 39/25,417 · OFFICETEL 11/17,782.
+
+> **이 수치가 1절의 진단을 정정한다.** 최초 진단은 파란 썸네일의 주된 원인으로 "좌표 없는 매물"을 지목했지만, 결측률이 0.15%라 그것만으로는 관측된 빈도를 설명하지 못한다. 실제 지배적 원인은 **og:image에 지도가 아예 들어 있지 않았던 것**(1절 세 번째 갈래)이다. 크롤러가 본문 지도를 집지 못하면 무조건 브랜드 카드로 떨어졌다. 이번 작업의 핵심 레버는 centroid 폴백이 아니라 **og:image 자체를 지도로 만든 것**이며, centroid 폴백은 0.15%를 위한 보조 장치다.
+
+최악 케이스 스코프(송파구 MULTIPLEX, 6,704행)로 `EXPLAIN ANALYZE`:
+
+| predicate | 실행계획 | 시간 |
+|---|---|---|
+| `"regionCode" = '1171000000'` (읍면동) | Bitmap Index Scan on `Property_propertyType_regionCode_idx` | **135 ms** ✅ |
+| `"regionCode" LIKE '11710%'` (최초 시군구 구현) | **Parallel Seq Scan — 인덱스 미사용** | **262 ms** ❌ |
+| `"sigunguCode" = '11710'` (교체 후) | Bitmap Index Scan on `Property_type_sgg_lasttx_idx` | **16 ms** ✅ |
+
+**`LIKE` 접두사가 인덱스를 못 탄 이유:** 기본 collation의 btree 인덱스는 `varchar_pattern_ops` 없이 `LIKE 'prefix%'`에 쓰이지 못한다. 4절의 최초 근거("prefix range로 같은 인덱스에 얹힌다")는 이 점에서도 틀렸다.
+
+**결정:** 시군구 predicate를 `"sigunguCode" = ?`로 교체했다. `sigunguCode`가 `LEFT(regionCode,5)` 생성 컬럼이라 결과가 동일하고(두 쿼리 모두 6,704행), 262 ms → 16 ms다. 읍면동 스코프는 인덱스를 정상적으로 타므로 그대로 둔다.
+
+### 성능 게이트 절차 (참고)
 
 프로덕션 DB(OCI, SSH 터널, 읽기 전용)에서 **매물이 가장 많은 읍면동과 시군구**를 골라 centroid 쿼리에 `EXPLAIN ANALYZE`를 돌린다.
 
@@ -343,7 +363,13 @@ createOgMapRoute(load)
 
 ### 배포 후 수동 확인
 
-- `curl -I https://imjangon.co.kr/villa/{id}/opengraph-image` → `200 image/png` (좌표 있는 것 1건, 없는 것 1건)
+- **og:image URL은 HTML에서 뽑아 쓴다.** `generateImageMetadata`가 있으면 Next가 라우트를 `…/opengraph-image/[__metadata_id__]`로 옮기고 팩토리가 `id: 'map'`을 쓰므로, 실제 URL은 `/villa/{id}/opengraph-image/map?<해시>`다. 해시는 빌드마다 바뀌니 **URL을 조립하지 말 것** — 조립하면 404가 나서 멀쩡한 배포를 실패로 오진하고, 5건뿐인 요청 예산을 낭비한다.
+
+  ```bash
+  OG=$(curl -s https://imjangon.co.kr/villa/<ID> \
+       | grep -oE '<meta property="og:image" content="[^"]+"' | sed 's/.*content="//; s/"$//')
+  curl -sI "$OG" | grep -iE '^(HTTP/|content-type)'
+  ```
 - `curl -I https://imjangon.co.kr/map/property/{id}` → `200 image/png`
 - 게시판 글 HTML에 `og:image` 태그가 없는지
 - **총 5건 이내. 버스트 금지** — 과거 프로덕션 자동 요청 버스트로 차단당한 전례가 있다.
