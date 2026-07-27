@@ -61,6 +61,15 @@ describe('fetchStaticMapPng', () => {
     expect((init.headers as Record<string, string>)['x-ncp-apigw-api-key']).toBe('test-secret');
   });
 
+  it('상류 호출을 30일 캐시하고 타임아웃 signal을 싣는다', async () => {
+    fetchSpy.mockResolvedValue(okResponse());
+    await fetchStaticMapPng({ lat: 37.5, lng: 127.0, w: 600, h: 400, level: 16, marker: true });
+
+    const init = fetchSpy.mock.calls[0][1] as RequestInit & { next?: { revalidate?: number } };
+    expect(init.next?.revalidate).toBe(2_592_000);
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
+
   it('상류가 4xx/5xx면 던진다', async () => {
     fetchSpy.mockResolvedValue(new Response('nope', { status: 500 }));
     await expect(

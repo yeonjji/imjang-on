@@ -20,7 +20,7 @@ export async function GET(
   const entityId = parseMapEntityId(id);
   if (entityId === null) return notFound();
 
-  const coord = await getMapEntityLatLng(kind, entityId);
+  const coord = await getMapEntityLatLng(kind, entityId).catch(() => null);
   if (!coord) return notFound();
 
   try {

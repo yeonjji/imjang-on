@@ -189,7 +189,7 @@ export default async function UrbanDetailPage({ params }: Params) {
               <LocationViewer
                 lat={coord.lat}
                 lng={coord.lng}
-                mapKind={def.slug === 'park' ? 'park' : 'parking'}
+                mapKind={def.slug === 'park' ? 'park' : def.slug === 'charger' ? 'charger' : 'parking'}
                 mapId={item.id}
                 name={item.name}
               />

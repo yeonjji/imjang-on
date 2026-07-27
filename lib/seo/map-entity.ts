@@ -26,12 +26,9 @@ export function isMapEntityKind(value: string): value is MapEntityKind {
 
 /** URL 세그먼트는 kind마다 타입이 달라 불투명 문자열로 받고 여기서 파싱한다. */
 export function parseMapEntityId(raw: string): bigint | null {
-  if (!/^\d{1,19}$/.test(raw)) return null;
-  try {
-    return BigInt(raw);
-  } catch {
-    return null;
-  }
+  // 18자리까지만 허용: int8 최댓값(9223372036854775807, 19자리)을 넘지 않는 안전한 상한.
+  if (!/^\d{1,18}$/.test(raw)) return null;
+  return BigInt(raw);
 }
 
 async function queryLatLng(
