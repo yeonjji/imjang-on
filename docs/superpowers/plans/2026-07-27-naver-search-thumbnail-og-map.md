@@ -1132,8 +1132,10 @@ function dongCentroid(propertyType: PropertyType, regionCode: string) {
   )();
 }
 
-// sigunguCode에는 인덱스가 없다. 시군구 5자리는 regionCode의 접두사라
-// LIKE prefix range로 기존 @@index([propertyType, regionCode])에 그대로 얹힌다.
+// sigunguCode는 generated column(LEFT(regionCode,5))이라 schema.prisma엔 안 보이지만
+// DB엔 Property_sigunguCode_idx가 이미 있다. 이 쿼리는 regionCode LIKE prefix를 쓰는데,
+// sigunguCode = ? 와 결과는 동일하다(sigunguCode가 정확히 LEFT(regionCode,5)이므로) —
+// 어느 인덱스가 더 유리한지는 후속 태스크에서 실측으로 정한다.
 function sigunguCentroid(propertyType: PropertyType, sigunguCode: string) {
   return unstable_cache(
     () => safeCentroid(propertyType, Prisma.sql`"regionCode" LIKE ${`${sigunguCode}%`}`, SIGUNGU),
@@ -1750,7 +1752,11 @@ WITH pts AS (
 SELECT n FROM agg WHERE n > 0;
 ```
 
-**통과 조건:** 두 실행계획 모두 `Property` 접근이 `Index Scan` 또는 `Bitmap Index Scan` on `Property_propertyType_regionCode_idx`다. 실행 시간이 `800ms`에 근접하면 임계값 재검토가 필요하다.
+**통과 조건:** 두 실행계획 모두 `Property` 접근이 `Index Scan` 또는 `Bitmap Index Scan`이다 — **어느 인덱스든 무방하다.** 실행 시간이 `800ms`에 근접하면 임계값 재검토가 필요하다.
+
+> **인덱스 이름을 고정하지 않는 이유 (2026-07-27 정정).** 최초 계획은 `Property_propertyType_regionCode_idx`를 콕 집었는데, 그 근거였던 "`sigunguCode`엔 인덱스가 없다"가 **거짓**으로 드러났다. DB에는 `Property_sigunguCode_idx`와 `Property_type_sgg_lasttx_idx`도 있고, `sigunguCode`는 `LEFT(regionCode,5)` 생성 컬럼이다(`schema.prisma`엔 안 보인다 — Prisma가 생성 컬럼을 선언하지 못해 raw 마이그레이션으로 들어갔다). 플래너가 어느 걸 고르든 정확성은 같으므로, 실측 결과를 그대로 받는다.
+
+**추가 측정 (시군구 스코프에 한해):** 현재 predicate `"regionCode" LIKE '<SGG>%'`와 대안 `"sigunguCode" = '<SGG>'`를 **둘 다** `EXPLAIN ANALYZE`로 돌려 비교한다. 두 predicate는 같은 행을 반환한다. 후자가 유의미하게 빠르면(예: 2배 이상) 그 사실을 기록하고 쿼리 교체를 별도 결정 항목으로 올린다 — 이 태스크에서 임의로 바꾸지 않는다.
 
 **`Seq Scan`이면** 조건 순서와 enum 형변환을 점검한다 (`${propertyType}::"PropertyType"` 캐스트가 인덱스 사용을 막는지). 그래도 안 되면 여기서 멈추고 인덱스 추가 여부를 사람에게 물어본다 — 임의로 마이그레이션을 만들지 않는다.
 

@@ -98,7 +98,13 @@ type OgMapTarget =
 3. 같은 `propertyType` + `regionCode LIKE '<sigunguCode>%'` centroid → `level 11`
 4. `null`
 
-`sigunguCode` 컬럼 대신 `regionCode` 접두사로 시군구를 잡는 이유는 **기존 `@@index([propertyType, regionCode])`를 그대로 타기 위해서**다. `sigunguCode`에는 인덱스가 없고, 시군구 5자리는 법정동코드 `regionCode`의 접두사라 prefix range 스캔으로 같은 복합 인덱스에 얹힌다. 마이그레이션 없이 간다.
+시군구 스코프는 `regionCode LIKE '<sigunguCode>%'`로 잡는다. `sigunguCode = ?`와 **결과가 완전히 동일하다** — `sigunguCode`가 문자 그대로 `LEFT(regionCode, 5)`이기 때문이다.
+
+> **2026-07-27 정정.** 최초 설계는 "`sigunguCode`에는 인덱스가 없으니 `regionCode` 접두사로 기존 `@@index([propertyType, regionCode])`를 재사용한다"는 근거를 들었는데, **이 전제는 사실이 아니었다.** 실제 DB에는 `Property_sigunguCode_idx`와 `Property_type_sgg_lasttx_idx`가 이미 있고, `sigunguCode`는 `LEFT(regionCode,5)` **생성 컬럼**이다. 둘 다 `schema.prisma`에 안 보이는 이유는 Prisma가 생성 컬럼과 그 인덱스를 선언하지 못해 raw 마이그레이션으로 들어갔기 때문이다.
+>
+> 어느 쪽이 유리한지는 추측하지 않는다. 두 predicate가 같은 행을 반환하므로 정확성 문제는 없고, **8절의 `EXPLAIN ANALYZE` 성능 게이트에서 실측으로 정한다.**
+
+어느 경로든 마이그레이션은 필요 없다.
 
 `propertyType`을 조건에 포함시키는 것은 인덱스 선두 컬럼을 채우기 위해서이기도 하고, 아파트 상세의 지역 중심을 아파트 좌표로 잡는 게 의미상으로도 맞기 때문이다.
 
