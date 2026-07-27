@@ -17,7 +17,9 @@ export const contentType = OG_CONTENT_TYPE;
 // officetel
 const ALLOWED: PropertyType[] = [PropertyType.OFFICETEL];
 
-// 팩토리가 generateImageMetadata와 Image에서 각각 부르므로 요청 단위로 dedupe한다.
+// cache()는 같은 요청 안에서 load가 중복 호출되는 것만 막는다. generateImageMetadata와
+// Image는 별개의 웹팩 모듈로 컴파일되어 서로 다른 HTTP 요청(페이지 렌더 vs 크롤러의 이미지
+// fetch)에서 실행되므로 그 둘 사이의 중복은 dedupe되지 않는다.
 const load = cache(async ({ id }: { id: string }) => {
   if (!/^\d+$/.test(id)) return null;
   const propId = BigInt(id);

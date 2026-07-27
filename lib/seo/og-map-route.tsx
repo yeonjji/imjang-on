@@ -24,7 +24,7 @@ export function createOgMapRoute<P>(load: (params: P) => Promise<OgMapData | nul
     const data = await load(await params);
     // 지도를 만들 수 없으면 og:image 태그 자체를 내보내지 않는다.
     if (!data) return [];
-    return [{ id: 'map', ...OG_SIZE, contentType: OG_CONTENT_TYPE, alt: data.alt }];
+    return [{ id: 'map', size: OG_SIZE, contentType: OG_CONTENT_TYPE, alt: data.alt }];
   }
 
   async function Image({ params }: { params: Promise<P> }) {
