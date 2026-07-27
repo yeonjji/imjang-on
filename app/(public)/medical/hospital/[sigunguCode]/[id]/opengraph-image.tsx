@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { OG_SIZE, OG_CONTENT_TYPE } from '@/lib/seo/og';
-import { createOgMapRoute } from '@/lib/seo/og-map-route';
+import { createOgMapRoute, type OgMapData } from '@/lib/seo/og-map-route';
 import { getMapEntityLatLng } from '@/lib/seo/map-entity';
 import { getHospitalById } from '@/lib/hospital';
 
@@ -13,7 +13,7 @@ export function generateStaticParams() {
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
 
-const load = cache(async ({ id }: { sigunguCode: string; id: string }) => {
+const load = cache(async ({ id }: { sigunguCode: string; id: string }): Promise<OgMapData | null> => {
   if (!/^\d+$/.test(id)) return null;
   const hospitalId = BigInt(id);
   const hospital = await getHospitalById(hospitalId).catch(() => null);

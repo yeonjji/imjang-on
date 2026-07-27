@@ -11,7 +11,7 @@ export interface OgMapData {
   alt: string;
   lat: number;
   lng: number;
-  level: number;
+  level: 16 | 13 | 11;
   marker: boolean;
 }
 

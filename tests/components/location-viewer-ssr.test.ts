@@ -15,7 +15,7 @@ describe('LocationViewer SSR poster', () => {
     process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID = 'test-client-id';
   });
 
-  it('clientId가 있으면 /api/staticmap poster <img>를 SSR 마크업에 포함한다', () => {
+  it('clientId가 있으면 /map/{kind}/{id} poster <img>를 SSR 마크업에 포함한다', () => {
     const html = renderToStaticMarkup(
       createElement(LocationViewer, {
         lat: 37.42,
