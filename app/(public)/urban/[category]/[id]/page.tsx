@@ -30,7 +30,7 @@ import { ParkInfo } from '../_components/park-info';
 import type { ParkRaw } from '@/lib/urban/adapters/park';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
 import { InsightSection } from '@/components/ui/insight-section';
-import { staticMapUrl } from '@/lib/seo/static-map';
+import { mapImageUrl } from '@/lib/seo/static-map';
 import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
 import { SITE_URL } from '@/lib/site';
 import {
@@ -139,7 +139,7 @@ export default async function UrbanDetailPage({ params }: Params) {
               lat: coord?.lat,
               lng: coord?.lng,
               url: `${SITE_URL}/urban/park/${id}`,
-              image: coord ? staticMapUrl(coord) : undefined,
+              image: coord ? mapImageUrl('park', item.id) : undefined,
               id: `${SITE_URL}/urban/park/${id}#park`,
               mainEntityOfPageId: `${SITE_URL}/urban/park/${id}#webpage`,
             }),
@@ -186,7 +186,13 @@ export default async function UrbanDetailPage({ params }: Params) {
           {coord ? (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
-              <LocationViewer lat={coord.lat} lng={coord.lng} name={item.name} />
+              <LocationViewer
+                lat={coord.lat}
+                lng={coord.lng}
+                mapKind={def.slug === 'park' ? 'park' : 'parking'}
+                mapId={item.id}
+                name={item.name}
+              />
             </Card>
           ) : (
             <Card>

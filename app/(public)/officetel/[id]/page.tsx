@@ -37,7 +37,7 @@ import {
   cachedTransactionFlags,
   loadAptInsight,
 } from '@/lib/insights/apt-loader';
-import { staticMapUrl } from '@/lib/seo/static-map';
+import { mapImageUrl } from '@/lib/seo/static-map';
 import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
 import { detailTitleLocality } from '@/lib/region';
 import { SITE_URL } from '@/lib/site';
@@ -133,7 +133,7 @@ export default async function OffiDetailPage({ params }: Params) {
             lat: coord?.lat,
             lng: coord?.lng,
             url: `${SITE_URL}/officetel/${property.id}`,
-            image: coord ? staticMapUrl(coord) : undefined,
+            image: coord ? mapImageUrl('property', property.id) : undefined,
             id: `${SITE_URL}/officetel/${property.id}#residence`,
             mainEntityOfPageId: `${SITE_URL}/officetel/${property.id}#webpage`,
           }),
@@ -159,7 +159,13 @@ export default async function OffiDetailPage({ params }: Params) {
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">
                 위치 · 로드뷰
               </h2>
-              <LocationViewer lat={coord.lat} lng={coord.lng} name={property.name} />
+              <LocationViewer
+                lat={coord.lat}
+                lng={coord.lng}
+                mapKind="property"
+                mapId={property.id}
+                name={property.name}
+              />
             </Card>
           )}
           <UnifiedTransactionTable

@@ -32,7 +32,7 @@ import { propertyMetaDescription } from '@/lib/seo/blurb';
 import { JsonLd, residenceSchema, breadcrumbSchema, aptProvenanceNodes } from '@/lib/seo/json-ld';
 import { InsightSection } from '@/components/ui/insight-section';
 import { cachedPropertyById, cachedPropertyLatLng, cachedNearbySubway, cachedNearbyInfra, cachedFloorPremium, cachedTransactionFlags, loadAptInsight } from '@/lib/insights/apt-loader';
-import { staticMapUrl } from '@/lib/seo/static-map';
+import { mapImageUrl } from '@/lib/seo/static-map';
 import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
@@ -131,7 +131,7 @@ export default async function AptDetailPage({ params }: Params) {
             lat: coord?.lat,
             lng: coord?.lng,
             url: `${SITE_URL}/apt/${property.id}`,
-            image: coord ? staticMapUrl(coord) : undefined,
+            image: coord ? mapImageUrl('property', property.id) : undefined,
             id: `${SITE_URL}/apt/${property.id}#residence`,
             mainEntityOfPageId: `${SITE_URL}/apt/${property.id}#webpage`,
           }),
@@ -157,7 +157,13 @@ export default async function AptDetailPage({ params }: Params) {
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">
                 위치 · 로드뷰
               </h2>
-              <LocationViewer lat={coord.lat} lng={coord.lng} name={property.name} />
+              <LocationViewer
+                lat={coord.lat}
+                lng={coord.lng}
+                mapKind="property"
+                mapId={property.id}
+                name={property.name}
+              />
             </Card>
           )}
           <UnifiedTransactionTable

@@ -111,7 +111,13 @@ export default async function ChargerDetailPage({ params }: Params) {
           {coord ? (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
-              <LocationViewer lat={coord.lat} lng={coord.lng} name={item.name} />
+              <LocationViewer
+                lat={coord.lat}
+                lng={coord.lng}
+                mapKind="charger"
+                mapId={item.id}
+                name={item.name}
+              />
             </Card>
           ) : (
             <Card>

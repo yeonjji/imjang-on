@@ -1,22 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { staticMapPath, staticMapUrl } from '@/lib/seo/static-map';
+import { mapImagePath, mapImageUrl } from '@/lib/seo/static-map';
 
-describe('staticMapPath', () => {
-  it('builds a relative proxy path with defaults', () => {
-    const path = staticMapPath({ lat: 37.5, lng: 127.1 });
-    expect(path).toBe('/api/staticmap?lat=37.5&lng=127.1&w=600&h=400&level=16');
+describe('mapImagePath', () => {
+  it('builds a relative entity map route path', () => {
+    const path = mapImagePath('property', '123');
+    expect(path).toBe('/map/property/123');
   });
 
-  it('honors overrides', () => {
-    const path = staticMapPath({ lat: 37.5, lng: 127.1, w: 800, h: 300, level: 14 });
-    expect(path).toBe('/api/staticmap?lat=37.5&lng=127.1&w=800&h=300&level=14');
+  it('accepts bigint ids', () => {
+    const path = mapImagePath('school', 456n);
+    expect(path).toBe('/map/school/456');
   });
 });
 
-describe('staticMapUrl', () => {
+describe('mapImageUrl', () => {
   it('prefixes the site origin for absolute usage (JSON-LD/OG)', () => {
-    const url = staticMapUrl({ lat: 37.5, lng: 127.1 });
+    const url = mapImageUrl('property', '123');
     expect(url.startsWith('http')).toBe(true);
-    expect(url.endsWith('/api/staticmap?lat=37.5&lng=127.1&w=600&h=400&level=16')).toBe(true);
+    expect(url.endsWith('/map/property/123')).toBe(true);
   });
 });

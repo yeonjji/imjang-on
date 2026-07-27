@@ -17,11 +17,16 @@ describe('LocationViewer SSR poster', () => {
 
   it('clientId가 있으면 /api/staticmap poster <img>를 SSR 마크업에 포함한다', () => {
     const html = renderToStaticMarkup(
-      createElement(LocationViewer, { lat: 37.42, lng: 127.13, name: '성남시청' }),
+      createElement(LocationViewer, {
+        lat: 37.42,
+        lng: 127.13,
+        mapKind: 'property',
+        mapId: '1',
+        name: '성남시청',
+      }),
     );
-    // src의 & 는 SSR에서 &amp; 로 이스케이프된다.
     expect(html).toContain('<img');
-    expect(html).toContain('src="/api/staticmap?lat=37.42&amp;lng=127.13');
+    expect(html).toContain('src="/map/property/1"');
     expect(html).toContain('alt="성남시청 위치 지도"');
     expect(html).toContain('absolute inset-0');
   });

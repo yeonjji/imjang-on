@@ -26,7 +26,7 @@ import { composeDetailFaq } from '@/lib/faq/compose';
 import { buildChildcareFaq } from '@/lib/faq/builders/childcare';
 import { InsightSection } from '@/components/ui/insight-section';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
-import { staticMapUrl } from '@/lib/seo/static-map';
+import { mapImageUrl } from '@/lib/seo/static-map';
 import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
@@ -128,7 +128,7 @@ export default async function ChildcareDetailPage({ params }: Params) {
             lat: coord?.lat,
             lng: coord?.lng,
             url: `${SITE_URL}/childcare/${sigunguCode}/${id}`,
-            image: coord ? staticMapUrl(coord) : undefined,
+            image: coord ? mapImageUrl('childcare', item.id) : undefined,
             telephone: item.tel,
             id: `${SITE_URL}/childcare/${sigunguCode}/${id}#childcare`,
             mainEntityOfPageId: `${SITE_URL}/childcare/${sigunguCode}/${id}#webpage`,
@@ -168,7 +168,13 @@ export default async function ChildcareDetailPage({ params }: Params) {
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
-              <LocationViewer lat={coord.lat} lng={coord.lng} name={item.name} />
+              <LocationViewer
+                lat={coord.lat}
+                lng={coord.lng}
+                mapKind="childcare"
+                mapId={item.id}
+                name={item.name}
+              />
             </Card>
           )}
           <NearbyApartments items={apts} />

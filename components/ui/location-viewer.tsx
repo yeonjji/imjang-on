@@ -2,6 +2,7 @@
 import Script from 'next/script';
 import { useEffect, useRef, useState } from 'react';
 import { StaticMapImage } from '@/components/ui/static-map';
+import type { MapEntityKind } from '@/lib/seo/map-entity';
 
 declare global {
   interface Window {
@@ -14,11 +15,14 @@ declare global {
 interface Props {
   lat: number;
   lng: number;
+  /** SSR 정적 지도 poster가 가리킬 엔티티. 인터랙티브 지도의 lat/lng와는 별개다. */
+  mapKind: MapEntityKind;
+  mapId: string | bigint;
   name?: string;
   height?: number;
 }
 
-export function LocationViewer({ lat, lng, name, height = 280 }: Props) {
+export function LocationViewer({ lat, lng, mapKind, mapId, name, height = 280 }: Props) {
   const clientId = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
   const mapRef = useRef<HTMLDivElement>(null);
   const panoRef = useRef<HTMLDivElement>(null);
@@ -123,8 +127,8 @@ export function LocationViewer({ lat, lng, name, height = 280 }: Props) {
           {/* SSR 정적 지도 poster: 검색 썸네일 후보로 마크업에 항상 존재한다.
               네이버 JS 지도가 로드되면 불투명 타일이 이 위를 덮고, 실패 시 그대로 fallback. */}
           <StaticMapImage
-            lat={lat}
-            lng={lng}
+            kind={mapKind}
+            id={mapId}
             name={name ?? '위치'}
             className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           />
