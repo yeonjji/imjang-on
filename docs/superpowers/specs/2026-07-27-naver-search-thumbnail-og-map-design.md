@@ -229,15 +229,30 @@ JSON-LD `image`를 쓰는 8개 페이지의 `coord ? staticMapUrl(coord) : undef
 
 NCP raster는 `w`/`h` 최대 1024라 1200×630을 직접 요청할 수 없다. OG용으로는 **1024×538**(1200×630과 같은 1.905 비율)을 요청해 satori에서 1200×630으로 업스케일한다. 17% 확대라 썸네일 용도에서는 열화가 눈에 띄지 않는다. `scale=2` 도입은 이번 범위 밖으로 둔다.
 
-### 각 `opengraph-image.tsx`
+### 공용 팩토리 `lib/seo/og-map-route.tsx`
+
+지도 OG 라우트가 8개다. 메타데이터 방출·지도 합성·에러 처리·캔버스 크기 정책을 엔트리마다 복사하면 정책 하나 바꿀 때 8곳을 동시에 고쳐야 한다. `createOgMapRoute(load)`에 모으고 `{ generateImageMetadata, Image }`를 반환한다.
+
+```
+createOgMapRoute(load)
+  ├ generateImageMetadata: load() === null → []  (메타 태그 없음)
+  │                        아니면 [{ id, ...OG_SIZE, contentType, alt }]
+  └ Image:                 load() === null → 404
+                           fetchStaticMapPng(1024×538) → data URI
+                           ImageResponse(<OgMapFrame …/>)
+                           NCP 실패 → 502 + no-store
+```
+
+각 `opengraph-image.tsx`에는 **페이지별 `load`만** 남는다. `load`는 엔티티를 조회해 좌표·문구를 정하고, 지도를 만들 수 없으면 `null`을 준다.
 
 ```
 1. 엔티티 조회 (기존과 동일)
-2. resolveOgMapTarget(id)  ← 매물만. 시설·청약은 좌표 직접 조회
-3. target === null  → generateImageMetadata()가 [] 반환 → 메타 태그 없음
-4. fetchStaticMapPng(...) → data URI
-5. ImageResponse(<OgMapFrame ... />)
+2. resolveOgMapTarget(id)  ← 매물만. 시설·청약은 getMapEntityLatLng로 직접 조회
+3. 좌표 없음 → null 반환 (팩토리가 메타 태그 생략 + 404 처리)
+4. 아니면 { title, subtitle, alt, lat, lng, level, marker } 반환
 ```
+
+`load`는 `react`의 `cache()`로 감싼다 — 팩토리가 `generateImageMetadata`와 `Image`에서 각각 호출하므로 요청 단위 dedupe가 필요하다.
 
 `revalidate`는 현행 `86_400`을 유지한다. NCP 응답은 그 아래 30일 데이터 캐시에 얹히므로, OG 재생성이 일어나도 NCP를 다시 때리지 않는다. 캐시가 2겹이다.
 
@@ -305,6 +320,7 @@ NCP raster는 `w`/`h` 최대 1024라 1200×630을 직접 요청할 수 없다. O
 - `lib/seo/og-coord.ts` — `resolveOgMapTarget`
 - `lib/seo/static-map-fetch.ts` — `fetchStaticMapPng`
 - `lib/seo/map-entity.ts` — `kind` 레지스트리
+- `lib/seo/og-map-route.tsx` — `createOgMapRoute` 공용 팩토리
 - `app/map/[kind]/[id]/route.ts`
 - 테스트 3종
 

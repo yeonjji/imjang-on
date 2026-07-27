@@ -45,6 +45,7 @@
 | `lib/seo/map-entity.ts` | `kind` 화이트리스트 ↔ 테이블 매핑, id 파싱, 엔티티 좌표 조회(캐시) |
 | `lib/seo/static-map-fetch.ts` | NCP raster 호출 단 하나. PNG `ArrayBuffer` 반환 |
 | `lib/seo/og-coord.ts` | `resolveOgMapTarget` — 정확 좌표 → 읍면동 centroid → 시군구 centroid → null |
+| `lib/seo/og-map-route.tsx` | `createOgMapRoute` — 지도 OG 라우트의 메타데이터·합성·에러·캔버스 정책 전부. 8개 엔트리가 공유 |
 | `app/map/[kind]/[id]/route.ts` | 본문·JSON-LD용 지도 이미지 (600×400, 마커, 파라미터 없음) |
 | `tests/lib/map-entity.test.ts` | kind/id 검증 순수 로직 |
 | `tests/lib/static-map-fetch.test.ts` | NCP 호출 URL 조립 (fetch 모킹) |
@@ -1355,27 +1356,101 @@ git commit -m "feat(seo): 지도 OG 프레임 추가 + 브랜드 카드 중앙�
 
 ---
 
-## Task 9: 매물 상세 OG 3종 (apt / villa / officetel)
+## Task 9: 공용 OG 라우트 팩토리 + 매물 상세 3종
+
+지도 OG 라우트가 총 8개다. 메타데이터 방출·지도 합성·에러 처리·캔버스 크기 정책을 엔트리마다 복사하면 정책 하나 바꿀 때 8곳을 동시에 고쳐야 한다. 팩토리에 모으고, 각 `opengraph-image.tsx`에는 **페이지별 `load`만** 남긴다.
 
 **Files:**
+- Create: `lib/seo/og-map-route.tsx`
 - Modify: `app/(public)/apt/[id]/opengraph-image.tsx`
 - Modify: `app/(public)/villa/[id]/opengraph-image.tsx`
 - Modify: `app/(public)/officetel/[id]/opengraph-image.tsx`
 
 **Interfaces:**
-- Consumes: `resolveOgMapTarget` (Task 7), `fetchStaticMapPng` (Task 3), `OgMapFrame` (Task 8), `getPropertyById` from `@/lib/property` (`include: { region: true }`)
-- Produces: 없음 (라우트)
+- Consumes: `resolveOgMapTarget` (Task 7), `fetchStaticMapPng` (Task 3), `OgMapFrame` · `OG_SIZE` · `OG_CONTENT_TYPE` · `loadOgFonts` (Task 8), `getPropertyById` from `@/lib/property` (`include: { region: true }`)
+- Produces:
+  - `interface OgMapData { title: string; subtitle: string; alt: string; lat: number; lng: number; level: number; marker: boolean }`
+  - `function createOgMapRoute<P>(load: (params: P) => Promise<OgMapData | null>): { generateImageMetadata: (ctx: { params: Promise<P> }) => Promise<Array<{ id: string; width: number; height: number; contentType: string; alt: string }>>; Image: (ctx: { params: Promise<P> }) => Promise<Response> }`
+  - Task 10이 같은 팩토리를 쓴다.
 
-**전제:** Task 1의 결론이 ✅면 아래대로. ❌면 `app/og/[kind]/[id]/route.tsx` + `generateMetadata`의 `openGraph.images` 조건부 지정으로 같은 로직을 옮긴다.
+**전제:** Task 1의 결론이 ✅면 아래대로. ❌면 팩토리는 그대로 두고 소비 방식만 바꾼다 — `app/og/[kind]/[id]/route.tsx`가 `createOgMapRoute(load).Image`를 재사용하고, 각 페이지의 `generateMetadata`가 `openGraph.images`를 조건부로 지정한다.
 
-- [ ] **Step 1: `apt/[id]/opengraph-image.tsx` 교체**
+- [ ] **Step 1: 팩토리 작성**
+
+`lib/seo/og-map-route.tsx`:
+
+```tsx
+// 지도 OG 라우트 8개가 공유하는 정책 한 벌: 메타데이터 방출, 지도 합성,
+// 에러 처리, 캔버스 크기. 엔트리 파일에는 페이지별 load만 남는다.
+import { ImageResponse } from 'next/og';
+import { OG_SIZE, OG_CONTENT_TYPE, loadOgFonts, OgMapFrame } from '@/lib/seo/og';
+import { fetchStaticMapPng } from '@/lib/seo/static-map-fetch';
+
+/** 지도 OG 한 장에 필요한 전부. load가 null을 주면 og:image를 내보내지 않는다. */
+export interface OgMapData {
+  title: string;
+  subtitle: string;
+  alt: string;
+  lat: number;
+  lng: number;
+  level: number;
+  marker: boolean;
+}
+
+// NCP raster는 w/h 최대 1024라 1200x630을 직접 요청할 수 없다.
+// 같은 1.905 비율인 1024x538을 받아 satori에서 캔버스 크기로 늘린다.
+const OG_MAP_SIZE = { w: 1024, h: 538 } as const;
+
+export function createOgMapRoute<P>(load: (params: P) => Promise<OgMapData | null>) {
+  async function generateImageMetadata({ params }: { params: Promise<P> }) {
+    const data = await load(await params);
+    // 지도를 만들 수 없으면 og:image 태그 자체를 내보내지 않는다.
+    if (!data) return [];
+    return [{ id: 'map', ...OG_SIZE, contentType: OG_CONTENT_TYPE, alt: data.alt }];
+  }
+
+  async function Image({ params }: { params: Promise<P> }) {
+    const data = await load(await params);
+    if (!data) {
+      return new Response(null, { status: 404, headers: { 'Cache-Control': 'no-store' } });
+    }
+
+    let png: ArrayBuffer;
+    try {
+      png = await fetchStaticMapPng({
+        lat: data.lat,
+        lng: data.lng,
+        level: data.level,
+        marker: data.marker,
+        ...OG_MAP_SIZE,
+      });
+    } catch {
+      // 파란 브랜드 카드로 폴백하지 않는다 — 그게 없애려는 대상이다.
+      // no-store라 다음 크롤에 재시도된다.
+      return new Response(null, { status: 502, headers: { 'Cache-Control': 'no-store' } });
+    }
+
+    return new ImageResponse(
+      <OgMapFrame
+        mapDataUri={`data:image/png;base64,${Buffer.from(png).toString('base64')}`}
+        title={data.title}
+        subtitle={data.subtitle}
+      />,
+      { ...OG_SIZE, fonts: await loadOgFonts() },
+    );
+  }
+
+  return { generateImageMetadata, Image };
+}
+```
+
+- [ ] **Step 2: `apt/[id]/opengraph-image.tsx` 교체**
 
 ```tsx
 import { cache } from 'react';
-import { ImageResponse } from 'next/og';
-import { OG_SIZE, OG_CONTENT_TYPE, loadOgFonts, OgMapFrame } from '@/lib/seo/og';
+import { OG_SIZE, OG_CONTENT_TYPE } from '@/lib/seo/og';
+import { createOgMapRoute } from '@/lib/seo/og-map-route';
 import { resolveOgMapTarget } from '@/lib/seo/og-coord';
-import { fetchStaticMapPng } from '@/lib/seo/static-map-fetch';
 import { getPropertyById } from '@/lib/property';
 import { PropertyType } from '@prisma/client';
 
@@ -1388,14 +1463,10 @@ export function generateStaticParams() {
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
 
-// NCP raster는 w/h 최대 1024라 1200x630을 직접 요청할 수 없다.
-// 같은 1.905 비율인 1024x538을 받아 satori에서 캔버스 크기로 늘린다.
-const OG_MAP = { w: 1024, h: 538 } as const;
+const ALLOWED: PropertyType[] = [PropertyType.APARTMENT];
 
-const ALLOWED = [PropertyType.APARTMENT];
-
-// generateImageMetadata와 Image가 각각 호출하므로 요청 단위로 dedupe한다.
-const load = cache(async (id: string) => {
+// 팩토리가 generateImageMetadata와 Image에서 각각 부르므로 요청 단위로 dedupe한다.
+const load = cache(async ({ id }: { id: string }) => {
   if (!/^\d+$/.test(id)) return null;
   const propId = BigInt(id);
   const property = await getPropertyById(propId).catch(() => null);
@@ -1403,88 +1474,75 @@ const load = cache(async (id: string) => {
   if (!property || !ALLOWED.includes(property.propertyType)) return null;
   const target = await resolveOgMapTarget(propId);
   if (!target) return null;
-  return { property, target };
+  return {
+    title: property.name,
+    subtitle: `${property.region.fullName} · 임장ON`,
+    alt:
+      target.kind === 'precise'
+        ? `${property.name} 위치 지도`
+        : `${property.region.fullName} 일대 지도`,
+    lat: target.lat,
+    lng: target.lng,
+    level: target.level,
+    marker: target.marker,
+  };
 });
 
-export async function generateImageMetadata({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const loaded = await load(id);
-  // 지도를 만들 수 없으면 og:image 태그 자체를 내보내지 않는다.
-  if (!loaded) return [];
-  const { property, target } = loaded;
-  return [
-    {
-      id: 'map',
-      ...OG_SIZE,
-      contentType: OG_CONTENT_TYPE,
-      alt:
-        target.kind === 'precise'
-          ? `${property.name} 위치 지도`
-          : `${property.region.fullName} 일대 지도`,
-    },
-  ];
+const route = createOgMapRoute(load);
+export const generateImageMetadata = route.generateImageMetadata;
+export default route.Image;
+```
+
+기존의 `export const alt = '아파트 실거래가'`는 사라진다 — `alt`가 갈래마다 달라져야 해서 `load`가 만든다.
+
+**빌드가 재내보내기(`export const generateImageMetadata = route.generateImageMetadata`)를 인식하지 못하면**, 그때만 얇은 위임 래퍼로 바꾼다. 로직은 여전히 팩토리에만 있다:
+
+```tsx
+export async function generateImageMetadata(ctx: { params: Promise<{ id: string }> }) {
+  return route.generateImageMetadata(ctx);
 }
-
-export default async function Image({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const loaded = await load(id);
-  if (!loaded) {
-    return new Response(null, { status: 404, headers: { 'Cache-Control': 'no-store' } });
-  }
-  const { property, target } = loaded;
-
-  let png: ArrayBuffer;
-  try {
-    png = await fetchStaticMapPng({
-      lat: target.lat,
-      lng: target.lng,
-      level: target.level,
-      marker: target.marker,
-      ...OG_MAP,
-    });
-  } catch {
-    // 파란 브랜드 카드로 폴백하지 않는다 — 그게 없애려는 대상이다.
-    // no-store라 다음 크롤에 재시도된다.
-    return new Response(null, { status: 502, headers: { 'Cache-Control': 'no-store' } });
-  }
-
-  return new ImageResponse(
-    <OgMapFrame
-      mapDataUri={`data:image/png;base64,${Buffer.from(png).toString('base64')}`}
-      title={property.name}
-      subtitle={`${property.region.fullName} · 임장ON`}
-    />,
-    { ...OG_SIZE, fonts: await loadOgFonts() },
-  );
+export default async function Image(ctx: { params: Promise<{ id: string }> }) {
+  return route.Image(ctx);
 }
 ```
 
-기존의 `export const alt = '아파트 실거래가'`는 사라진다 — `alt`가 갈래마다 달라져야 해서 `generateImageMetadata`로 옮겼다.
+- [ ] **Step 3: `villa` / `officetel` 교체**
 
-- [ ] **Step 2: `villa/[id]/opengraph-image.tsx` 교체**
-
-Step 1과 같은 파일을 쓰되 `ALLOWED`만 바꾼다 (빌라 = 연립·다세대).
+Step 2와 같되 `ALLOWED` 한 줄만 다르다. 나머지는 글자 하나까지 동일하다.
 
 ```tsx
-const ALLOWED = [PropertyType.ROW_HOUSE, PropertyType.MULTIPLEX];
+// villa — 빌라 = 연립·다세대
+const ALLOWED: PropertyType[] = [PropertyType.ROW_HOUSE, PropertyType.MULTIPLEX];
 ```
-
-- [ ] **Step 3: `officetel/[id]/opengraph-image.tsx` 교체**
 
 ```tsx
-const ALLOWED = [PropertyType.OFFICETEL];
+// officetel
+const ALLOWED: PropertyType[] = [PropertyType.OFFICETEL];
 ```
 
-- [ ] **Step 4: 타입·린트 검사**
+- [ ] **Step 4: 엔트리에 합성 로직이 남지 않았는지 확인**
+
+```bash
+grep -rn "ImageResponse\|fetchStaticMapPng\|base64" app/\(public\)/apt app/\(public\)/villa app/\(public\)/officetel
+```
+
+기대: **출력 없음.** 하나라도 걸리면 그 엔트리는 팩토리를 우회하고 있다.
+
+- [ ] **Step 5: 타입·린트 검사**
 
 Run: `pnpm typecheck && pnpm lint`
 Expected: 둘 다 통과
 
-- [ ] **Step 5: 커밋**
+- [ ] **Step 6: 빌드가 라우트를 받아들이는지 확인**
+
+Run: `pnpm build`
+Expected: 성공. `generateImageMetadata` 관련 에러가 나면 Step 2의 얇은 래퍼 대안으로 바꾸고 다시 빌드한다.
+
+- [ ] **Step 7: 커밋**
 
 ```bash
-git add 'app/(public)/apt/[id]/opengraph-image.tsx' 'app/(public)/villa/[id]/opengraph-image.tsx' 'app/(public)/officetel/[id]/opengraph-image.tsx'
-git commit -m "feat(seo): 매물 상세 og:image를 지도로 교체 + 불가 시 생략"
+git add lib/seo/og-map-route.tsx 'app/(public)/apt/[id]/opengraph-image.tsx' 'app/(public)/villa/[id]/opengraph-image.tsx' 'app/(public)/officetel/[id]/opengraph-image.tsx'
+git commit -m "feat(seo): 지도 OG 공용 팩토리 + 매물 상세 og:image 교체"
 ```
 
 ---
@@ -1501,16 +1559,17 @@ git commit -m "feat(seo): 매물 상세 og:image를 지도로 교체 + 불가 �
 - Modify: `app/(public)/childcare/[sigunguCode]/[id]/opengraph-image.tsx`
 
 **Interfaces:**
-- Consumes: `getMapEntityLatLng` (Task 2), `fetchStaticMapPng` (Task 3), `OgMapFrame` (Task 8)
+- Consumes: `createOgMapRoute` · `OgMapData` (Task 9), `getMapEntityLatLng` (Task 2)
 - Produces: 없음 (라우트)
+
+각 엔트리는 Task 9의 매물 엔트리와 **같은 모양**이다: 상수 export + `load` + 팩토리 2줄. 합성 로직은 팩토리에만 있다.
 
 - [ ] **Step 1: `subscription/[id]/opengraph-image.tsx` 교체**
 
 ```tsx
 import { cache } from 'react';
-import { ImageResponse } from 'next/og';
-import { OG_SIZE, OG_CONTENT_TYPE, loadOgFonts, OgMapFrame } from '@/lib/seo/og';
-import { fetchStaticMapPng } from '@/lib/seo/static-map-fetch';
+import { OG_SIZE, OG_CONTENT_TYPE } from '@/lib/seo/og';
+import { createOgMapRoute } from '@/lib/seo/og-map-route';
 import { getMapEntityLatLng } from '@/lib/seo/map-entity';
 import { getSubscriptionById } from '@/lib/subscription';
 
@@ -1522,9 +1581,7 @@ export function generateStaticParams() {
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
 
-const OG_MAP = { w: 1024, h: 538, level: 16, marker: true } as const;
-
-const load = cache(async (id: string) => {
+const load = cache(async ({ id }: { id: string }) => {
   if (!/^\d+$/.test(id)) return null;
   const noticeId = BigInt(id);
   const notice = await getSubscriptionById(noticeId).catch(() => null);
@@ -1532,57 +1589,44 @@ const load = cache(async (id: string) => {
   // 시설·청약은 원본 공공데이터에 좌표가 실려 오므로 지역 폴백을 두지 않는다.
   const coord = await getMapEntityLatLng('subscription', noticeId);
   if (!coord) return null;
-  return { notice, coord };
+  return {
+    title: notice.name,
+    subtitle: `${notice.regionName ?? '공공데이터 부동산'} · 임장ON`,
+    alt: `${notice.name} 위치 지도`,
+    lat: coord.lat,
+    lng: coord.lng,
+    level: 16,
+    marker: true,
+  };
 });
 
-export async function generateImageMetadata({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const loaded = await load(id);
-  if (!loaded) return [];
-  return [
-    { id: 'map', ...OG_SIZE, contentType: OG_CONTENT_TYPE, alt: `${loaded.notice.name} 위치 지도` },
-  ];
-}
-
-export default async function Image({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const loaded = await load(id);
-  if (!loaded) {
-    return new Response(null, { status: 404, headers: { 'Cache-Control': 'no-store' } });
-  }
-
-  let png: ArrayBuffer;
-  try {
-    png = await fetchStaticMapPng({ ...loaded.coord, ...OG_MAP });
-  } catch {
-    return new Response(null, { status: 502, headers: { 'Cache-Control': 'no-store' } });
-  }
-
-  return new ImageResponse(
-    <OgMapFrame
-      mapDataUri={`data:image/png;base64,${Buffer.from(png).toString('base64')}`}
-      title={loaded.notice.name}
-      subtitle={`${loaded.notice.regionName ?? '공공데이터 부동산'} · 임장ON`}
-    />,
-    { ...OG_SIZE, fonts: await loadOgFonts() },
-  );
-}
+const route = createOgMapRoute(load);
+export const generateImageMetadata = route.generateImageMetadata;
+export default route.Image;
 ```
 
 `notice.name` / `notice.regionName`은 이 파일이 교체 전에도 쓰던 필드 그대로다 (`getSubscriptionById`는 `lib/subscription.ts:543`).
 
 - [ ] **Step 2: 나머지 4개 교체**
 
-같은 구조를 쓰되 아래 표대로 바꾼다. 각 파일이 **현재 쓰고 있는 엔티티 조회 함수와 title/subtitle 계산식은 그대로 재사용**한다 — 바뀌는 건 좌표 게이트와 프레임뿐이다.
+Step 1과 같은 모양이다. 파일마다 다른 건 **엔티티 조회 함수, `kind`, `title`/`subtitle` 계산식** 셋뿐이며, 그 세 가지는 **교체 전 그 파일이 이미 쓰던 것을 그대로 재사용**한다 (기존 `const title = …` / `const subtitle = …` 줄이 이미 들어 있다). `alt`는 `` `${title} 위치 지도` ``, `level`은 `16`, `marker`는 `true`로 전부 같다.
 
-| 파일 | `kind` | 라우트 params |
-|---|---|---|
-| `school/[sigunguCode]/[id]/opengraph-image.tsx` | `'school'` | `{ sigunguCode: string; id: string }` |
-| `medical/hospital/[sigunguCode]/[id]/opengraph-image.tsx` | `'hospital'` | `{ sigunguCode: string; id: string }` |
-| `medical/pharmacy/[sigunguCode]/[id]/opengraph-image.tsx` | `'pharmacy'` | `{ sigunguCode: string; id: string }` |
-| `childcare/[sigunguCode]/[id]/opengraph-image.tsx` | `'childcare'` | `{ sigunguCode: string; id: string }` |
+| 파일 | `kind` |
+|---|---|
+| `school/[sigunguCode]/[id]/opengraph-image.tsx` | `'school'` |
+| `medical/hospital/[sigunguCode]/[id]/opengraph-image.tsx` | `'hospital'` |
+| `medical/pharmacy/[sigunguCode]/[id]/opengraph-image.tsx` | `'pharmacy'` |
+| `childcare/[sigunguCode]/[id]/opengraph-image.tsx` | `'childcare'` |
 
-`params` 타입이 `Promise<{ sigunguCode: string; id: string }>`로 바뀌므로 구조분해도 `const { id } = await params;` 그대로 쓰면 된다.
+이 4개는 라우트 세그먼트가 `[sigunguCode]/[id]`라 `load`의 인자 타입이 `{ sigunguCode: string; id: string }`이다. `sigunguCode`는 쓰지 않으므로 구조분해에서 `{ id }`만 꺼낸다.
+
+- [ ] **Step 2b: 엔트리에 합성 로직이 남지 않았는지 확인**
+
+```bash
+grep -rn "ImageResponse\|fetchStaticMapPng\|base64\|OgMapFrame" app/\(public\)/subscription app/\(public\)/school app/\(public\)/medical app/\(public\)/childcare
+```
+
+기대: **출력 없음.**
 
 - [ ] **Step 3: 정적 `alt` export가 남지 않았는지 확인**
 
@@ -1800,7 +1844,7 @@ curl -s https://imjangon.co.kr/board/<POST_ID> | grep -c 'og:image'
 
 **2. Placeholder scan**
 
-Task 10 Step 1·2에 "그 파일이 지금 쓰고 있는 조회 함수와 title/subtitle 계산식을 재사용한다"는 지시가 남아 있다. 이건 플레이스홀더가 아니라 **의도적 위임**이다 — 5개 파일의 기존 조회 함수(`getPublishedPostById` 계열)와 표시 문구가 제각각이라 여기 전부 복사하면 오히려 실제 코드와 어긋날 위험이 크다. 바뀌는 부분(좌표 게이트, 프레임, `generateImageMetadata`)은 Step 1에 완전한 코드로 제시했다.
+Task 10 Step 2에 "그 파일이 지금 쓰고 있는 조회 함수와 title/subtitle 계산식을 재사용한다"는 지시가 남아 있다. 이건 플레이스홀더가 아니라 **의도적 위임**이다 — 4개 파일의 기존 조회 함수와 표시 문구가 제각각이라 여기 전부 복사하면 오히려 실제 코드와 어긋날 위험이 크다. 그 외 필드(`alt`·`level`·`marker`)는 전부 고정값으로 명시했고, 구조는 Step 1에 완전한 코드로 제시했다.
 
 **3. 타입 일관성**
 
@@ -1808,6 +1852,8 @@ Task 10 Step 1·2에 "그 파일이 지금 쓰고 있는 조회 함수와 title/
 - `parseMapEntityId` — Task 2 정의, Task 4 사용 ✓ (초안의 `parseEntityId`를 통일함)
 - `fetchStaticMapPng(StaticMapRequest)` — Task 3 정의, Task 4·9·10 사용. 모든 호출부가 `lat/lng/w/h/level/marker` 6필드를 채운다 ✓
 - `mapImagePath` / `mapImageUrl` — Task 5 정의, 같은 태스크 안에서 소비 ✓
-- `OgMapTarget` — Task 7 정의(`scopeLabel` 없음), Task 9가 `kind`/`lat`/`lng`/`level`/`marker`만 사용 ✓
-- `OgMapFrame({ mapDataUri, title, subtitle })` — Task 8 정의, Task 9·10 사용 ✓
+- `OgMapTarget` — Task 7 정의(`scopeLabel` 없음), Task 9의 `load`가 `kind`/`lat`/`lng`/`level`/`marker`만 사용 ✓
+- `OgMapFrame({ mapDataUri, title, subtitle })` — Task 8 정의, Task 9의 팩토리만 사용 (엔트리는 직접 안 씀) ✓
+- `createOgMapRoute<P>(load)` / `OgMapData` — Task 9 정의, Task 10의 5개 엔트리가 소비. `load`는 **resolved params**를 받는다(팩토리가 `await params` 함) ✓
+- `OgMapData.level`/`marker` — Task 9 매물 엔트리는 `target`에서, Task 10 시설 엔트리는 `16`/`true` 고정값에서 채운다 ✓
 - `LocationViewer`의 `mapKind`/`mapId` — Task 5 Step 3 정의, Step 4 표의 11곳이 동일 이름 사용 ✓
