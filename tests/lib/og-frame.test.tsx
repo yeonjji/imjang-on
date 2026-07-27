@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { OgMapFrame } from '@/lib/seo/og';
+import { ImageResponse } from 'next/og';
+import { OgFrame, OgMapFrame, loadOgFonts, OG_SIZE } from '@/lib/seo/og';
 
 /** satori에 넘길 요소 트리를 평탄화해 텍스트와 img src를 뽑는다. */
 function collect(node: unknown, out: { texts: string[]; imgs: string[] }) {
@@ -18,6 +19,35 @@ function collect(node: unknown, out: { texts: string[]; imgs: string[] }) {
   return out;
 }
 
+/** caption 바의 title/subtitle 텍스트 정렬을 검증한다. */
+function findCaptionTexts(node: unknown): { title?: { textAlign?: string }; subtitle?: { textAlign?: string } } {
+  const result: { title?: { textAlign?: string }; subtitle?: { textAlign?: string } } = {};
+  function walk(el: unknown) {
+    if (!el || typeof el !== 'object') return;
+    const node = el as { props?: Record<string, unknown>; type?: unknown };
+    if (node.props?.style && typeof node.props.style === 'object') {
+      const style = node.props.style as Record<string, unknown>;
+      // title: fontSize 54, subtitle: fontSize 30
+      if (style.fontSize === 54) {
+        result.title = { textAlign: style.textAlign as string | undefined };
+      }
+      if (style.fontSize === 30) {
+        result.subtitle = { textAlign: style.textAlign as string | undefined };
+      }
+    }
+    if (node.props?.children) {
+      const children = node.props.children;
+      if (Array.isArray(children)) {
+        for (const c of children) walk(c);
+      } else {
+        walk(children);
+      }
+    }
+  }
+  walk(node);
+  return result;
+}
+
 describe('OgMapFrame', () => {
   it('지도 data URI와 캡션 2줄을 담는다', () => {
     const tree = OgMapFrame({
@@ -32,9 +62,41 @@ describe('OgMapFrame', () => {
     expect(texts).toContain('대구광역시 북구 · 임장ON');
   });
 
-  it('캡션 바는 네이버 정사각 크롭에서 살아남도록 중앙정렬이다', () => {
+  it('캡션 바의 title과 subtitle은 textAlign: center로 중앙정렬된다', () => {
     const tree = OgMapFrame({ mapDataUri: 'data:image/png;base64,AAAA', title: 'A', subtitle: 'B' });
-    const json = JSON.stringify(tree);
-    expect(json).toContain('"alignItems":"center"');
+    const captions = findCaptionTexts(tree);
+
+    expect(captions.title?.textAlign).toBe('center');
+    expect(captions.subtitle?.textAlign).toBe('center');
+  });
+
+  it('satori가 OgMapFrame을 렌더링할 수 있다', async () => {
+    const tinyPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const fonts = await loadOgFonts();
+    const response = new ImageResponse(
+      OgMapFrame({
+        mapDataUri: tinyPng,
+        title: '테스트',
+        subtitle: '제목',
+      }),
+      { ...OG_SIZE, fonts },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('image/png');
+  });
+
+  it('satori가 OgFrame을 렌더링할 수 있다', async () => {
+    const fonts = await loadOgFonts();
+    const response = new ImageResponse(
+      OgFrame({
+        title: '테스트',
+        subtitle: '제목',
+      }),
+      { ...OG_SIZE, fonts },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('image/png');
   });
 });

@@ -100,8 +100,8 @@ export function OgMapFrame({
           backgroundColor: 'rgba(15,23,42,0.78)',
         }}
       >
-        <div style={{ display: 'flex', fontSize: 54, color: '#ffffff' }}>{title}</div>
-        <div style={{ display: 'flex', fontSize: 30, marginTop: 10, color: 'rgba(255,255,255,0.85)' }}>
+        <div style={{ display: 'flex', fontSize: 54, color: '#ffffff', textAlign: 'center' }}>{title}</div>
+        <div style={{ display: 'flex', fontSize: 30, marginTop: 10, color: 'rgba(255,255,255,0.85)', textAlign: 'center' }}>
           {subtitle}
         </div>
       </div>
