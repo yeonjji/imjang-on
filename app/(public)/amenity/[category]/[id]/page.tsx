@@ -23,6 +23,8 @@ import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-
 import { RelatedGuides } from '@/app/(public)/_components/related-guides';
 import { JsonLd, placeSchema, breadcrumbSchema, type PlaceType } from '@/lib/seo/json-ld';
 import { robotsFor } from '@/lib/seo/indexable';
+import { qualifiedTitle } from '@/lib/seo/title';
+import { resolveSigunguLabelFromAddress } from '@/lib/region/from-address';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
@@ -48,8 +50,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!def) return {};
   const item = await getAmenityById(def.slug, BigInt(id)).catch(() => null);
   if (!item) return {};
+  const locality = await resolveSigunguLabelFromAddress(item.address).catch(() => null);
   return {
-    title: `${item.name} — ${def.label} 정보·주변 아파트`,
+    title: qualifiedTitle(item.name, locality, `— ${def.label} 정보·주변 아파트`),
     description: `${item.name} ${def.label} 정보와 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
     robots: robotsFor(false),
     alternates: { canonical: `/amenity/${def.slug}/${id}` },

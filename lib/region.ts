@@ -22,6 +22,16 @@ const SIDO_LIST: { code: string; sido: string; fullName: string }[] = [
   { code: '4300000000', sido: '충북', fullName: '충청북도' },
 ];
 
+/**
+ * 시도 풀네임 → 축약명. Region.sido에는 풀네임이 담기므로 표시용 축약이 필요하다.
+ * sidoFullName()의 역방향이며, sidoPrefix()와 달리 코드가 아니라 이름을 낸다.
+ * SIDO_LIST가 정적 상수(20개 미만)라 선형 탐색 비용이 없다.
+ */
+export function shortSido(fullName: string): string | undefined {
+  if (!fullName) return undefined;
+  return SIDO_LIST.find(s => s.fullName === fullName)?.sido;
+}
+
 /** 행정구역 코드 앞 2자리로 시·도 단축명(SubscriptionNotice.regionName과 동일 표기)을 반환. */
 export function shortSidoFromRegionCode(
   regionCode: string | null | undefined,
