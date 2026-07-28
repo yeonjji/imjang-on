@@ -18,6 +18,53 @@ export function typeToSlug(t: PropertyType): PropertyTypeSlug {
   return 'villa';
 }
 
+/** 지번 토큰 판정. 접두가 아니라 전체 토큰이 매치해야 한다. */
+const JIBUN_PATTERN = /^(?:산)?\d+(?:-\d+)?$/;
+
+export interface PropertyAddress {
+  /** 법정동(읍·면·리 포함). 지번이 없어도 이것은 정확한 정보다 */
+  locality: string | null;
+  /** 지번. 엄격 패턴을 통과했을 때만 채워진다 */
+  jibun: string | null;
+  /** 정확한 지번주소(locality + jibun). 둘 중 하나라도 없으면 null */
+  street: string | null;
+  /** 화면 표시용 최선의 문자열. street → locality → 시군구 순으로 낮아진다 */
+  display: string;
+}
+
+/**
+ * Property.address("법정동 지번")를 파싱해 정확한 지번주소와 법정동 폴백을 분리한다.
+ * buildAddress()가 umd + jibun 순으로 조립하므로 마지막 토큰이 항상 지번 자리다.
+ */
+export function propertyAddress(
+  property: { address: string },
+  region: { fullName: string },
+): PropertyAddress {
+  const tokens = property.address.trim().split(/\s+/).filter(Boolean);
+  const last = tokens[tokens.length - 1];
+  const lastIsJibun = last !== undefined && JIBUN_PATTERN.test(last);
+
+  let locality: string | null = null;
+  let jibun: string | null = null;
+
+  if (tokens.length >= 2) {
+    // 법정동 없는 맨 숫자를 주소로 승격하지 않기 위해 토큰 2개 이상일 때만 지번을 인정한다.
+    locality = tokens.slice(0, -1).join(' ');
+    if (lastIsJibun) jibun = last;
+  } else if (tokens.length === 1 && !lastIsJibun) {
+    locality = tokens[0];
+  }
+
+  const street = locality && jibun ? `${locality} ${jibun}` : null;
+  const tail = street ?? locality;
+  return {
+    locality,
+    jibun,
+    street,
+    display: tail ? `${region.fullName} ${tail}` : region.fullName,
+  };
+}
+
 export async function getPropertyById(id: bigint) {
   return prisma.property.findUnique({
     where: { id },
