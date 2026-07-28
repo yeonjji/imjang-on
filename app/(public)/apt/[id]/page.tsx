@@ -8,6 +8,7 @@ import {
   getSameFloorComparison,
 } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
+import { propertyAddress } from '@/lib/property';
 import { PropertyType } from '@prisma/client';
 import { PropertyDetailHero } from './_components/property-detail-hero';
 import { DealSummarySection } from './_components/deal-summary-section';
@@ -23,6 +24,7 @@ import type { getNearbyInfra } from '@/lib/amenity/nearby';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
+import { AddressLine } from '@/components/ui/address-line';
 import { Card } from '@/components/ui/card';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { getNearbySubscriptions } from '@/lib/subscription';
@@ -31,7 +33,7 @@ import { NearbySubscriptions } from './_components/nearby-subscriptions';
 import { propertyMetaDescription } from '@/lib/seo/blurb';
 import { JsonLd, residenceSchema, breadcrumbSchema, aptProvenanceNodes } from '@/lib/seo/json-ld';
 import { InsightSection } from '@/components/ui/insight-section';
-import { cachedPropertyById, cachedPropertyLatLng, cachedNearbySubway, cachedNearbyInfra, cachedFloorPremium, cachedTransactionFlags, loadAptInsight } from '@/lib/insights/apt-loader';
+import { cachedPropertyById, cachedHasSingleJibun, cachedPropertyLatLng, cachedNearbySubway, cachedNearbyInfra, cachedFloorPremium, cachedTransactionFlags, loadAptInsight } from '@/lib/insights/apt-loader';
 import { mapImageUrl } from '@/lib/seo/static-map';
 import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
 import { SITE_URL } from '@/lib/site';
@@ -59,12 +61,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!property || property.propertyType !== PropertyType.APARTMENT) return {};
   const { narrative } = await loadAptInsight(BigInt(id));
   const indexable = isNarrativeIndexable(narrative);
+  const addr = propertyAddress(property, property.region);
+  const jibunConfirmed = addr.street !== null ? await cachedHasSingleJibun(BigInt(id)) : false;
   return {
     title: `${property.name} 실거래가 · ${detailTitleLocality(property.region, property.address)}`,
     description: narrative?.text.slice(0, 150) ?? propertyMetaDescription({
       name: property.name,
       typeLabel: '아파트',
-      regionFullName: property.region.fullName,
+      regionFullName: jibunConfirmed ? addr.display : property.region.fullName,
       builtYear: property.builtYear,
       households: property.households,
       saleAvgPrice12m: property.saleAvgPrice12m ? Number(property.saleAvgPrice12m) : null,
@@ -121,13 +125,18 @@ export default async function AptDetailPage({ params }: Params) {
     'apt',
   );
 
+  const addr = propertyAddress(property, property.region);
+  const jibunConfirmed = addr.street !== null ? await cachedHasSingleJibun(propId) : false;
+
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
       <JsonLd
         data={[
           residenceSchema({
             name: property.name,
-            address: property.region.fullName,
+            address: jibunConfirmed && addr.street ? addr.street : undefined,
+            addressRegion: property.region.sido,
+            addressLocality: property.region.sigungu ?? undefined,
             lat: coord?.lat,
             lng: coord?.lng,
             url: `${SITE_URL}/apt/${property.id}`,
@@ -157,6 +166,7 @@ export default async function AptDetailPage({ params }: Params) {
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">
                 위치 · 로드뷰
               </h2>
+              {addr.street && <AddressLine display={addr.display} confirmed={jibunConfirmed} />}
               <LocationViewer
                 lat={coord.lat}
                 lng={coord.lng}
