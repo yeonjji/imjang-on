@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!/^\d+$/.test(id)) return {};
   const item = await getUrbanById('charger', BigInt(id)).catch(() => null);
   if (!item) return {};
-  const locality = await resolveSigunguLabelFromAddress(item.address);
+  const locality = await resolveSigunguLabelFromAddress(item.address).catch(() => null);
   return {
     title: qualifiedTitle(item.name, locality, '— 전기차충전소 정보·주변 아파트'),
     description: `${item.name} 전기차충전소 실시간 충전기 현황과 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,

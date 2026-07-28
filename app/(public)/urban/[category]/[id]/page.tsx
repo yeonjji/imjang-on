@@ -56,7 +56,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!def) return {};
   const item = await getUrbanById(def.slug, BigInt(id)).catch(() => null);
   if (!item) return {};
-  const locality = await resolveSigunguLabelFromAddress(item.address);
+  const locality = await resolveSigunguLabelFromAddress(item.address).catch(() => null);
   if (def.slug === 'park') {
     const { narrative } = await loadParkInsight(BigInt(id));
     const indexable = isNarrativeIndexable(narrative, 2);

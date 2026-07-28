@@ -51,7 +51,7 @@ beforeAll(async () => {
   });
 });
 
-const params = (o: Record<string, string>) => ({ params: Promise.resolve(o) });
+const params = <T,>(o: T) => ({ params: Promise.resolve(o) });
 
 describe('시설 상세 generateMetadata title', () => {
   // Hospital.sigunguCode는 Region과 조인이 되지 않으므로(실측 0%),

@@ -54,6 +54,15 @@ beforeAll(async () => {
     },
     update: {},
   });
+  // 북구 동명 충돌 — 부산에도 북구가 있어 전남광주의 '북구'가 collision rule을 탄다
+  await prisma.region.upsert({
+    where: { code: '2617000000' },
+    create: {
+      code: '2617000000', sido: '부산광역시', sigungu: '북구',
+      level: 2, isAbolished: false, fullName: '부산광역시 북구', sourceVersion: 'test',
+    },
+    update: {},
+  });
   // 구·군이 없는 시 — 세종은 읍면동이 sigunguCode 36110을 공유한다
   await prisma.region.upsert({
     where: { code: '3611025000' },
@@ -121,8 +130,10 @@ describe('resolveSigunguLabelFromAddress', () => {
     expect(await resolveSigunguLabelFromAddress('세종특별자치시 한솔동 로1')).toBe('세종');
   });
 
+  // 부산에도 북구가 있어 collision rule이 실제로 발동한다. 전남광주는 '전남광주'가 아니라
+  // '광주'로 표시된다 — 검색자가 인지하는 이름(display override).
   it('구 명칭 주소도 통합 시도 라벨을 낸다', async () => {
-    expect(await resolveSigunguLabelFromAddress('광주광역시 북구 운암동 1')).toBe('북구');
+    expect(await resolveSigunguLabelFromAddress('광주광역시 북구 운암동 1')).toBe('광주 북구');
   });
 
   it('매칭 실패는 null — 호출부가 접미사를 생략한다', async () => {

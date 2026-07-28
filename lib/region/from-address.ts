@@ -8,6 +8,23 @@ interface CatalogRow {
   label: string;
 }
 
+/**
+ * 시도 축약명 표시 오버라이드 — 행정 명칭이 아니라 제목 표시용 타협이다.
+ * 2026-07-01 광주+전남 통합으로 shortSido()가 내는 축약명은 '전남광주'이지만,
+ * 검색자는 '광주'로 검색·인지하므로 제목에는 '광주'를 쓴다.
+ * SIDO_LIST·shortSido()는 행정 SSOT라 그대로 두고, 라벨 조립 시점에만 적용한다.
+ * 목포·순천 등 구 전남 지역은 이름이 겹치는 시군구가 없어 애초에 시도 접두사가
+ * 붙지 않으므로 이 오버라이드의 영향을 받지 않는다.
+ */
+const DISPLAY_SIDO_OVERRIDE: Record<string, string> = {
+  전남광주: '광주',
+};
+
+function displaySido(sido: string): string {
+  const short = shortSido(sido) ?? sido;
+  return DISPLAY_SIDO_OVERRIDE[short] ?? short;
+}
+
 let cache: CatalogRow[] | null = null;
 
 async function loadCatalog() {
@@ -34,9 +51,9 @@ async function loadCatalog() {
       ...r,
       label:
         rowsPerCode.get(r.sigunguCode)! > 1
-          ? (shortSido(r.sido) ?? r.sido)
+          ? displaySido(r.sido)
           : sidosByName.get(r.sigungu)!.size > 1
-            ? `${shortSido(r.sido) ?? r.sido} ${r.sigungu}`
+            ? `${displaySido(r.sido)} ${r.sigungu}`
             : r.sigungu,
     }))
     // 긴 sigungu name 우선 (수원시 영통구 vs 수원시)

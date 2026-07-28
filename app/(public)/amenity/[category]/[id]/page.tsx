@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!def) return {};
   const item = await getAmenityById(def.slug, BigInt(id)).catch(() => null);
   if (!item) return {};
-  const locality = await resolveSigunguLabelFromAddress(item.address);
+  const locality = await resolveSigunguLabelFromAddress(item.address).catch(() => null);
   return {
     title: qualifiedTitle(item.name, locality, `— ${def.label} 정보·주변 아파트`),
     description: `${item.name} ${def.label} 정보와 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
