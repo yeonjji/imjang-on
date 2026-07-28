@@ -1,5 +1,6 @@
 import type { Property, Region } from '@prisma/client';
 import { formatBillion } from '@/lib/format';
+import { propertyAddress } from '@/lib/property';
 
 export function PropertyDetailHero({
   property,
@@ -8,6 +9,7 @@ export function PropertyDetailHero({
   property: Property;
   region: Region;
 }) {
+  const { display } = propertyAddress(property, region);
   const txCount = Number(property.txCount12m ?? 0);
   const trend = txCount > 10 ? '거래 활발' : txCount > 3 ? '소폭 거래' : '거래 소강';
 
@@ -33,7 +35,7 @@ export function PropertyDetailHero({
           </span>
           <h1 className="text-3xl font-black tracking-tight md:text-4xl">{property.name}</h1>
           <p className="mt-2 text-white/80">
-            {region.fullName}
+            {display}
             {property.builtYear ? ` · ${property.builtYear}년 준공` : ''}
             {property.households
               ? ` · ${Number(property.households).toLocaleString('ko-KR')}세대`
