@@ -28,6 +28,8 @@ import { InsightSection } from '@/components/ui/insight-section';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
 import { mapImageUrl } from '@/lib/seo/static-map';
 import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
+import { qualifiedTitle } from '@/lib/seo/title';
+import { resolveSigunguLabelFromAddress } from '@/lib/region/from-address';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 
@@ -57,8 +59,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (item.staffCount != null) parts.push(`교직원 ${item.staffCount.toLocaleString('ko-KR')}명`);
   const stat = parts.length ? ` ${parts.join('·')}` : '';
   const type = item.crType ? `(${item.crType})` : '';
+  const locality = await resolveSigunguLabelFromAddress(item.address);
   return {
-    title: `${item.name} — ${item.crType ?? '어린이집'} 정원 ${item.capacity ?? '-'}`,
+    title: qualifiedTitle(item.name, locality, `— ${item.crType ?? '어린이집'} 정원 ${item.capacity ?? '-'}`),
     description: narrative?.text.slice(0, 150) ?? `${item.name}${type}${stat}. 도보권 아파트 실거래가와 보육정보를 한눈에.`,
     robots: robotsFor(indexable),
     alternates: { canonical: `/childcare/${sigunguCode}/${id}` },
