@@ -170,13 +170,13 @@ export default async function VillaDetailPage({ params }: Params) {
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-8">
           <DealSummarySection id="summary" property={property} />
-          {/* 좌표가 없어도 유보 표기와 출처가 사라지지 않도록 지도 카드 밖에 둔다. */}
-          {addr.street && <AddressLine display={addr.display} confirmed={jibunConfirmed} />}
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">
                 위치 · 로드뷰
               </h2>
+              {/* 지도/로드뷰 바로 위. 좌표 없는 단지(414개, 0.2%)는 이 카드 자체가 없어 주소·출처가 노출되지 않는다 */}
+              {addr.street && <AddressLine display={addr.display} confirmed={jibunConfirmed} />}
               <LocationViewer
                 lat={coord.lat}
                 lng={coord.lng}
