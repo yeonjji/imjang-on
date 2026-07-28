@@ -8,7 +8,7 @@ import {
   getSameFloorComparison,
 } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
-import { propertyAddress } from '@/lib/property';
+import { propertyAddress, metaRegionName } from '@/lib/property';
 import type { getNearbyInfra } from '@/lib/amenity/nearby';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
@@ -75,7 +75,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     description: narrative?.text.slice(0, 150) ?? propertyMetaDescription({
       name: p.name,
       typeLabel: '오피스텔',
-      regionFullName: jibunConfirmed ? addr.display : p.region.fullName,
+      regionFullName: metaRegionName(addr, p.region, jibunConfirmed),
       builtYear: p.builtYear,
       households: p.households,
       saleAvgPrice12m: p.saleAvgPrice12m ? Number(p.saleAvgPrice12m) : null,
@@ -129,7 +129,9 @@ export default async function OffiDetailPage({ params }: Params) {
   );
 
   const addr = propertyAddress(property, property.region);
-  const jibunConfirmed = addr.street !== null ? await cachedHasSingleJibun(propId) : false;
+  // 게이트 실패는 페이지를 죽일 이유가 없다 — 보수적으로 '대표 지번' 표기로 낮춘다.
+  const jibunConfirmed =
+    addr.street !== null ? await cachedHasSingleJibun(propId).catch(() => false) : false;
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
@@ -159,17 +161,18 @@ export default async function OffiDetailPage({ params }: Params) {
           }),
         ]}
       />
-      <PropertyDetailHero property={property} region={property.region} />
+      <PropertyDetailHero property={property} region={property.region} confirmed={jibunConfirmed} />
       {narrative && <InsightSection sentences={narrative.sentences} />}
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-8">
           <DealSummarySection id="summary" property={property} />
+          {/* 좌표가 없어도 유보 표기와 출처가 사라지지 않도록 지도 카드 밖에 둔다. */}
+          {addr.street && <AddressLine display={addr.display} confirmed={jibunConfirmed} />}
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">
                 위치 · 로드뷰
               </h2>
-              {addr.street && <AddressLine display={addr.display} confirmed={jibunConfirmed} />}
               <LocationViewer
                 lat={coord.lat}
                 lng={coord.lng}

@@ -1,11 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { propertyAddress } from '@/lib/property';
+import { propertyAddress, metaRegionName } from '@/lib/property';
 
 const songpa = { fullName: '서울특별시 송파구' };
 const gyeongju = { fullName: '경상북도 경주시' };
 const seocho = { fullName: '서울특별시 서초구' };
 const incheonSeo = { fullName: '인천광역시 서구' };
 const gangnam = { fullName: '서울특별시 강남구' };
+// 세종은 구가 없어 동 단위 Region 행이 시군구 레벨로 오분류돼 있다(기존 시드 결함).
+const sejongYongho = { fullName: '세종특별자치시 용호동' };
 
 describe('propertyAddress', () => {
   it('법정동 + 지번이면 정확한 지번주소를 만든다', () => {
@@ -14,6 +16,7 @@ describe('propertyAddress', () => {
       jibun: '913',
       street: '가락동 913',
       display: '서울특별시 송파구 가락동 913',
+      localityDisplay: '서울특별시 송파구 가락동',
     });
   });
 
@@ -23,6 +26,7 @@ describe('propertyAddress', () => {
       jibun: '1853',
       street: '외동읍 모화리 1853',
       display: '경상북도 경주시 외동읍 모화리 1853',
+      localityDisplay: '경상북도 경주시 외동읍 모화리',
     });
   });
 
@@ -44,6 +48,7 @@ describe('propertyAddress', () => {
       jibun: null,
       street: null,
       display: '인천광역시 서구 가정동',
+      localityDisplay: '인천광역시 서구 가정동',
     });
   });
 
@@ -60,6 +65,7 @@ describe('propertyAddress', () => {
       jibun: null,
       street: null,
       display: '서울특별시 강남구 역삼동',
+      localityDisplay: '서울특별시 강남구 역삼동',
     });
   });
 
@@ -69,6 +75,7 @@ describe('propertyAddress', () => {
       jibun: null,
       street: null,
       display: '서울특별시 송파구',
+      localityDisplay: '서울특별시 송파구',
     });
   });
 
@@ -78,6 +85,34 @@ describe('propertyAddress', () => {
       jibun: null,
       street: null,
       display: '서울특별시 송파구',
+      localityDisplay: '서울특별시 송파구',
     });
+  });
+
+  it('Region이 다른 법정동으로 끝나면 그 꼬리를 떼어 법정동 중복을 막는다', () => {
+    expect(propertyAddress({ address: '산울동 가-' }, sejongYongho)).toEqual({
+      locality: '산울동',
+      jibun: null,
+      street: null,
+      display: '세종특별자치시 산울동',
+      localityDisplay: '세종특별자치시 산울동',
+    });
+  });
+});
+
+describe('metaRegionName', () => {
+  const addr = propertyAddress({ address: '가락동 913' }, songpa);
+
+  it('확정이면 지번주소를 쓴다', () => {
+    expect(metaRegionName(addr, songpa, true)).toBe('서울특별시 송파구 가락동 913');
+  });
+
+  it('미확정이면 시군구로 낮춘다', () => {
+    expect(metaRegionName(addr, songpa, false)).toBe('서울특별시 송파구');
+  });
+
+  it('street이 있어도 미확정이면 시군구로 낮춘다', () => {
+    expect(addr.street).not.toBeNull();
+    expect(metaRegionName(addr, songpa, false)).not.toContain('913');
   });
 });

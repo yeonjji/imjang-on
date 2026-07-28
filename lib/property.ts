@@ -30,11 +30,35 @@ export interface PropertyAddress {
   street: string | null;
   /** 화면 표시용 최선의 문자열. street → locality → 시군구 순으로 낮아진다 */
   display: string;
+  /** display에서 지번을 뺀 것. 지번이 확정되지 않았을 때 쓴다 */
+  localityDisplay: string;
+}
+
+/**
+ * Region.fullName이 법정동으로 끝나면(세종 등 시드 레벨 오분류) 그 꼬리를 떼어낸다.
+ * 안 떼면 "세종특별자치시 용호동" + "산울동 가-" → 서로 모순되는 법정동 두 개가 한 줄에 들어간다.
+ * 시군구는 구/시/군으로 끝나므로 이 검사에 걸리지 않는다.
+ */
+function regionPrefix(fullName: string, locality: string | null): string {
+  const tokens = fullName.trim().split(/\s+/).filter(Boolean);
+  const last = tokens[tokens.length - 1];
+  if (
+    tokens.length >= 2 &&
+    last !== undefined &&
+    /(?:동|읍|면|리)$/.test(last) &&
+    locality !== null &&
+    locality !== last
+  ) {
+    return tokens.slice(0, -1).join(' ');
+  }
+  return fullName;
 }
 
 /**
  * Property.address("법정동 지번")를 파싱해 정확한 지번주소와 법정동 폴백을 분리한다.
  * buildAddress()가 umd + jibun 순으로 조립하므로 마지막 토큰이 항상 지번 자리다.
+ * 이 전제는 roadName이 현재 전 행 null이라는 데이터 상태에 기댄다 — 설계 §7.1의 roadnm
+ * 필드명 수정으로 도로명이 채워지기 시작하면 이 파서도 함께 손봐야 한다.
  */
 export function propertyAddress(
   property: { address: string },
@@ -57,12 +81,26 @@ export function propertyAddress(
 
   const street = locality && jibun ? `${locality} ${jibun}` : null;
   const tail = street ?? locality;
+  const prefix = regionPrefix(region.fullName, locality);
   return {
     locality,
     jibun,
     street,
-    display: tail ? `${region.fullName} ${tail}` : region.fullName,
+    display: tail ? `${prefix} ${tail}` : prefix,
+    localityDisplay: locality ? `${prefix} ${locality}` : prefix,
   };
+}
+
+/**
+ * meta description에 넣을 지역 문자열.
+ * 지번이 확정되지 않았으면 지번주소를 쓰지 않고 시군구로 낮춘다.
+ */
+export function metaRegionName(
+  addr: PropertyAddress,
+  region: { fullName: string },
+  confirmed: boolean,
+): string {
+  return confirmed ? addr.display : region.fullName;
 }
 
 export async function getPropertyById(id: bigint) {

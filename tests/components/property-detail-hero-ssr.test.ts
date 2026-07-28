@@ -61,16 +61,36 @@ function makeProperty(address: string): Property {
 }
 
 describe('PropertyDetailHero 지역 표기', () => {
-  it('지번이 있으면 전체 지번주소를 표기한다', () => {
+  it('지번이 확정이면 전체 지번주소를 표기한다', () => {
     const html = renderToStaticMarkup(
-      createElement(PropertyDetailHero, { property: makeProperty('가락동 913'), region }),
+      createElement(PropertyDetailHero, {
+        property: makeProperty('가락동 913'),
+        region,
+        confirmed: true,
+      }),
     );
     expect(html).toContain('서울특별시 송파구 가락동 913');
   });
 
+  it('지번이 미확정이면 히어로에는 지번을 내보내지 않는다', () => {
+    const html = renderToStaticMarkup(
+      createElement(PropertyDetailHero, {
+        property: makeProperty('가락동 913'),
+        region,
+        confirmed: false,
+      }),
+    );
+    expect(html).toContain('서울특별시 송파구 가락동');
+    expect(html).not.toContain('가락동 913');
+  });
+
   it('지번이 비정형이면 법정동까지만 표기한다', () => {
     const html = renderToStaticMarkup(
-      createElement(PropertyDetailHero, { property: makeProperty('가락동 가-'), region }),
+      createElement(PropertyDetailHero, {
+        property: makeProperty('가락동 가-'),
+        region,
+        confirmed: false,
+      }),
     );
     expect(html).toContain('서울특별시 송파구 가락동');
     expect(html).not.toContain('가-');
