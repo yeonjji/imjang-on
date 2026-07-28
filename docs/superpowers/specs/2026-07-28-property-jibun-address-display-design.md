@@ -331,3 +331,27 @@ function postalAddress(address?: string, region?: string, locality?: string): Js
 다만 게이트는 **주소 표기만 막아줄 뿐 통계 오염 자체는 그대로다.** 평균가·거래량·가격 차트는 여전히 병합된 거래를 섞어 계산한다. 근본 수정이 필요하다.
 
 수정 후보는 매칭 키를 `(유형, 이름, 법정동, 지번)`으로 넓히는 것인데, 여러 지번에 걸친 정상 대단지가 쪼개지는 반대편 문제가 생긴다. 별도 설계가 필요하다.
+
+### 7.3 구현 후 남긴 것
+
+구현·리뷰 과정에서 발견했으나 이번 PR 범위 밖으로 남긴 항목이다. 전부 실측 수치가 붙어 있다.
+
+**세종형 Region의 JSON-LD 모순 — 234단지 (0.085%)**
+
+`Property.regionCode`가 시군구가 아닌 **동 단위 Region을 가리키는 세종 단지가 237개** 있다(`region.fullName = "세종특별자치시 용호동"`, `address = "산울동 913"`). 근본 원인은 기존 시드 오분류이며 이 PR이 만든 것이 아니다.
+
+화면 표시는 §4.A-1의 `regionPrefix()` 가드가 꼬리 법정동을 떼어 `세종특별자치시 산울동`으로 정정한다. 그러나 **JSON-LD는 정정되지 않는다** — `addressLocality`는 `region.sigungu`(`용호동`)를 그대로 쓰므로, 게이트를 통과하는 234단지에서 `addressLocality: "용호동"` + `streetAddress: "산울동 913"`이라는 서로 모순되는 쌍이 방출된다.
+
+`main` 대비 악화는 아니다(`main`은 이 페이지들의 `streetAddress`에 `세종특별자치시 용호동`을 넣고 있었다). 근본 수정은 region 시드 재분류이고, 그것은 `selectSigunguTargets`가 load-bearing이라 별도 설계가 필요하다. 임시 완화가 필요하면 `region.fullName`의 꼬리가 법정동일 때 `addressLocality`를 생략하는 것이 한 줄이다.
+
+**미확정 세종 단지의 히어로·description 불일치**
+
+미확정(`대표 지번`) 상태에서 히어로는 정정된 `localityDisplay`(`세종특별자치시 산울동`)를, meta description은 원본 `region.fullName`(`세종특별자치시 용호동`)을 쓴다. 회귀는 아니지만(수정 전에도 description은 `region.fullName`이었다) `metaRegionName`의 미확정 분기가 `localityDisplay`를 쓰면 일관된다.
+
+**게이트 결과의 ETL 사전계산**
+
+`hasSingleJibun`은 ETL로만 바뀌는 값인데 렌더마다 계산한다. `updatePropertyAggregates`가 이미 ETL 후 영향 Property를 순회하므로 거기서 boolean 컬럼을 채우면 렌더 비용이 0이 되고 §4.A-2의 SQL도 한 곳에만 남는다. 27만 단지 × ISR 24h로 크롤러 주도 부하가 누적되고 OCI 단독 운영이라 공짜가 아니다.
+
+**`generateMetadata`의 게이트 호출 무방어**
+
+본문 호출은 `.catch(() => false)`로 보수적 표기로 낮추지만 `generateMetadata` 호출에는 방어가 없다. 요청 캐시를 공유해 실무상 함께 실패한다.
