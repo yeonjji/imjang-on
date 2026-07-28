@@ -8,10 +8,12 @@ import {
   getSameFloorComparison,
 } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
+import { propertyAddress } from '@/lib/property';
 import type { getNearbyInfra } from '@/lib/amenity/nearby';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
+import { AddressLine } from '@/components/ui/address-line';
 import { Card } from '@/components/ui/card';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { PropertyType } from '@prisma/client';
@@ -30,6 +32,7 @@ import { JsonLd, residenceSchema, breadcrumbSchema, aptProvenanceNodes } from '@
 import { InsightSection } from '@/components/ui/insight-section';
 import {
   cachedPropertyById,
+  cachedHasSingleJibun,
   cachedPropertyLatLng,
   cachedNearbySubway,
   cachedNearbyInfra,
@@ -65,12 +68,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!p || p.propertyType !== PropertyType.OFFICETEL) return {};
   const { narrative } = await loadAptInsight(BigInt(id));
   const indexable = isNarrativeIndexable(narrative);
+  const addr = propertyAddress(p, p.region);
+  const jibunConfirmed = addr.street !== null ? await cachedHasSingleJibun(BigInt(id)) : false;
   return {
     title: `${p.name} 실거래가 · ${detailTitleLocality(p.region, p.address)}`,
     description: narrative?.text.slice(0, 150) ?? propertyMetaDescription({
       name: p.name,
       typeLabel: '오피스텔',
-      regionFullName: p.region.fullName,
+      regionFullName: jibunConfirmed ? addr.display : p.region.fullName,
       builtYear: p.builtYear,
       households: p.households,
       saleAvgPrice12m: p.saleAvgPrice12m ? Number(p.saleAvgPrice12m) : null,
@@ -123,13 +128,18 @@ export default async function OffiDetailPage({ params }: Params) {
     'officetel',
   );
 
+  const addr = propertyAddress(property, property.region);
+  const jibunConfirmed = addr.street !== null ? await cachedHasSingleJibun(propId) : false;
+
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
       <JsonLd
         data={[
           residenceSchema({
             name: property.name,
-            address: property.region.fullName,
+            address: jibunConfirmed && addr.street ? addr.street : undefined,
+            addressRegion: property.region.sido,
+            addressLocality: property.region.sigungu ?? undefined,
             lat: coord?.lat,
             lng: coord?.lng,
             url: `${SITE_URL}/officetel/${property.id}`,
@@ -159,6 +169,7 @@ export default async function OffiDetailPage({ params }: Params) {
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">
                 위치 · 로드뷰
               </h2>
+              {addr.street && <AddressLine display={addr.display} confirmed={jibunConfirmed} />}
               <LocationViewer
                 lat={coord.lat}
                 lng={coord.lng}
