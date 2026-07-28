@@ -114,6 +114,7 @@ export function placeSchema(input: PlaceInput & { type: PlaceType; id?: string; 
     ...(input.id ? { '@id': input.id } : {}),
     name: input.name,
     url: input.url,
+    // addressRegion/addressLocality는 Residence 전용이라 의도적으로 전달하지 않는다.
     address: postalAddress(input.address),
     geo: geoOf(input.lat, input.lng),
     image: input.image,

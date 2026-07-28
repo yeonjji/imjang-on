@@ -24,7 +24,7 @@ export function AddressLine({ display, confirmed }: AddressLineProps) {
         <CopyButton value={display} label="주소 복사" />
       </div>
       {!confirmed && (
-        <p className="mt-1 text-xs text-[var(--color-muted)]">
+        <p className="mt-1 text-sm text-[var(--color-muted)]">
           이 단지의 거래는 여러 지번에 걸쳐 있습니다.
         </p>
       )}
