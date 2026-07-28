@@ -10,10 +10,14 @@ const SGG = '11710';
 const NAME_SINGLE = 'UT-JIBUN-SINGLE';
 const NAME_MULTI = 'UT-JIBUN-MULTI';
 const NAME_NULL = 'UT-JIBUN-NULL';
+const NAME_UMD = 'UT-JIBUN-UMD';
+const NAME_MIXED = 'UT-JIBUN-MIXED';
 
 let singleId: bigint;
 let multiId: bigint;
 let nullId: bigint;
+let umdId: bigint;
+let mixedId: bigint;
 
 async function seedProperty(name: string, address: string): Promise<bigint> {
   const p = await prisma.property.create({
@@ -28,7 +32,12 @@ async function seedProperty(name: string, address: string): Promise<bigint> {
   return p.id;
 }
 
-async function seedTx(propertyId: bigint, jibun: string | null, hashSuffix: string) {
+async function seedTx(
+  propertyId: bigint,
+  jibun: string | null,
+  hashSuffix: string,
+  umd = '가락동',
+) {
   await prisma.transaction.create({
     data: {
       propertyId,
@@ -38,7 +47,7 @@ async function seedTx(propertyId: bigint, jibun: string | null, hashSuffix: stri
       dealType: DealType.SALE,
       contractDate: new Date('2026-01-05'),
       exclusiveArea: 84.97,
-      umd: '가락동',
+      umd,
       jibun,
       source: 'ut-jibun-gate',
       rawHash: `ut-jibun-gate-${hashSuffix}`.padEnd(64, '0'),
@@ -63,17 +72,25 @@ beforeAll(async () => {
   singleId = await seedProperty(NAME_SINGLE, '가락동 913');
   multiId = await seedProperty(NAME_MULTI, '가락동 913');
   nullId = await seedProperty(NAME_NULL, '가락동 913');
+  umdId = await seedProperty(NAME_UMD, '가락동 100');
+  mixedId = await seedProperty(NAME_MIXED, '가락동 913');
 
   await seedTx(singleId, '913', 'single-a');
   await seedTx(singleId, '913', 'single-b');
   await seedTx(multiId, '913', 'multi-a');
   await seedTx(multiId, '456-4', 'multi-b');
   await seedTx(nullId, null, 'null-a');
+  await seedTx(umdId, '100', 'umd-a', '가락동');
+  await seedTx(umdId, '100', 'umd-b', '신천동');
+  await seedTx(mixedId, '913', 'mixed-a');
+  await seedTx(mixedId, null, 'mixed-b');
 });
 
 afterAll(async () => {
   await prisma.transaction.deleteMany({ where: { source: 'ut-jibun-gate' } });
-  await prisma.property.deleteMany({ where: { name: { in: [NAME_SINGLE, NAME_MULTI, NAME_NULL] } } });
+  await prisma.property.deleteMany({
+    where: { name: { in: [NAME_SINGLE, NAME_MULTI, NAME_NULL, NAME_UMD, NAME_MIXED] } },
+  });
   await prisma.$disconnect();
 });
 
@@ -88,6 +105,16 @@ describe('hasSingleJibun (integration)', () => {
 
   it('지번이 전부 null이면 확인 불가이므로 false', async () => {
     expect(await hasSingleJibun(nullId)).toBe(false);
+  });
+
+  // Property.address는 umd + jibun으로 조립되므로 지번 하나만 세면 이 단지가 통과해버린다.
+  it('지번이 같아도 법정동이 다르면 false', async () => {
+    expect(await hasSingleJibun(umdId)).toBe(false);
+  });
+
+  // jibun IS NOT NULL 필터가 지키는 판정 — NULL은 '다른 건물'이 아니다.
+  it('지번 하나에 NULL이 섞여 있으면 true', async () => {
+    expect(await hasSingleJibun(mixedId)).toBe(true);
   });
 
   it('거래가 없는 단지는 false', async () => {

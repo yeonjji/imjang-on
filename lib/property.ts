@@ -73,15 +73,22 @@ export async function getPropertyById(id: bigint) {
 }
 
 /**
- * 이 단지의 거래가 단일 지번에 모여 있는지.
+ * 이 단지의 거래가 단일 지번주소에 모여 있는지.
  * false면 Property.address는 여러 지번 중 하나일 뿐이므로 '대표 지번'으로만 다뤄야 한다.
  * (동명 단지가 이름만으로 병합되는 문제 — 전체 단지의 3.9%)
+ *
+ * 세는 단위는 buildAddress()의 조립 단위인 (법정동, 지번) 쌍이다. jibun만 세면 서로 다른
+ * 법정동의 같은 번지수로 병합된 단지가 통과한다.
+ * `jibun IS NOT NULL`은 필수다 — 복합 COUNT(DISTINCT (a,b))는 스칼라와 달리 NULL을 포함한
+ * 행도 값으로 세므로, 필터가 없으면 지번이 전부 NULL인 단지가 1이 되어 통과한다.
  *
  * Transaction_propertyId_contractDate_idx 인덱스 스캔. 최다 거래 단지 기준 22.9ms.
  */
 export async function hasSingleJibun(propertyId: bigint): Promise<boolean> {
   const rows = await prisma.$queryRaw<{ n: bigint }[]>`
-    SELECT COUNT(DISTINCT jibun) AS n FROM "Transaction" WHERE "propertyId" = ${propertyId}
+    SELECT COUNT(DISTINCT (umd, jibun)) AS n
+    FROM "Transaction"
+    WHERE "propertyId" = ${propertyId} AND jibun IS NOT NULL
   `;
   return Number(rows[0]?.n ?? 0) === 1;
 }
