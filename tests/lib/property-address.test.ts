@@ -89,13 +89,23 @@ describe('propertyAddress', () => {
     });
   });
 
-  it('Region이 다른 법정동으로 끝나면 그 꼬리를 떼어 법정동 중복을 막는다', () => {
+  it('Region이 다른 법정동으로 끝나면 그 꼬리를 떼어 법정동 모순을 막는다', () => {
     expect(propertyAddress({ address: '산울동 가-' }, sejongYongho)).toEqual({
       locality: '산울동',
       jibun: null,
       street: null,
       display: '세종특별자치시 산울동',
       localityDisplay: '세종특별자치시 산울동',
+    });
+  });
+
+  it('Region 꼬리와 법정동이 같아도 떼어 중복을 막는다', () => {
+    expect(propertyAddress({ address: '용호동 123' }, sejongYongho)).toEqual({
+      locality: '용호동',
+      jibun: '123',
+      street: '용호동 123',
+      display: '세종특별자치시 용호동 123',
+      localityDisplay: '세종특별자치시 용호동',
     });
   });
 });

@@ -36,19 +36,15 @@ export interface PropertyAddress {
 
 /**
  * Region.fullName이 법정동으로 끝나면(세종 등 시드 레벨 오분류) 그 꼬리를 떼어낸다.
- * 안 떼면 "세종특별자치시 용호동" + "산울동 가-" → 서로 모순되는 법정동 두 개가 한 줄에 들어간다.
+ * address가 자기 법정동을 들고 있으면 Region의 꼬리 법정동은 중복이거나 모순이다 —
+ * "세종특별자치시 용호동" + "산울동 가-"는 법정동 두 개가 한 줄에 들어가고,
+ * 둘이 일치할 때는 같은 법정동이 두 번 나온다. 어느 쪽이든 떼는 게 맞다.
  * 시군구는 구/시/군으로 끝나므로 이 검사에 걸리지 않는다.
  */
 function regionPrefix(fullName: string, locality: string | null): string {
   const tokens = fullName.trim().split(/\s+/).filter(Boolean);
   const last = tokens[tokens.length - 1];
-  if (
-    tokens.length >= 2 &&
-    last !== undefined &&
-    /(?:동|읍|면|리)$/.test(last) &&
-    locality !== null &&
-    locality !== last
-  ) {
+  if (tokens.length >= 2 && last !== undefined && /(?:동|읍|면|리)$/.test(last) && locality !== null) {
     return tokens.slice(0, -1).join(' ');
   }
   return fullName;
