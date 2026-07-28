@@ -19,6 +19,20 @@ beforeAll(async () => {
     },
     update: {},
   });
+  // 2026-07-01 통합 시도 — 구 명칭(광주광역시/전라남도) 주소도 매칭돼야 한다
+  await prisma.region.upsert({
+    where: { code: '1220000000' },
+    create: {
+      code: '1220000000',
+      sido: '전남광주통합특별시',
+      sigungu: '북구',
+      level: 2,
+      isAbolished: false,
+      fullName: '전남광주통합특별시 북구',
+      sourceVersion: 'test',
+    },
+    update: {},
+  });
   __resetRegionCatalogCacheForTests();
 });
 
@@ -29,6 +43,17 @@ describe('resolveSigunguFromAddress', () => {
 
   it('returns sigunguCode for short sido + sigungu prefix (alias)', async () => {
     expect(await resolveSigunguFromAddress('서울 서초구 서초동 1234')).toBe('11650');
+  });
+
+  // 2026-07-01 광주+전남 통합. alias 누락 시 광주·전남 주소 15,804행이 매칭 실패했다.
+  it('matches the merged sido by its new name', async () => {
+    expect(await resolveSigunguFromAddress('전남광주통합특별시 북구 운암동 1')).toBe('12200');
+  });
+
+  it('matches the merged sido by pre-merger names', async () => {
+    expect(await resolveSigunguFromAddress('광주광역시 북구 운암동 1')).toBe('12200');
+    expect(await resolveSigunguFromAddress('광주 북구 운암동 1')).toBe('12200');
+    expect(await resolveSigunguFromAddress('전라남도 북구 운암동 1')).toBe('12200');
   });
 
   it('returns null when no sigungu matches', async () => {
