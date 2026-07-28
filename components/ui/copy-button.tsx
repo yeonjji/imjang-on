@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface CopyButtonProps {
   /** 클립보드에 복사할 값 */
@@ -17,9 +17,14 @@ interface CopyButtonProps {
 export function CopyButton({ value, label }: CopyButtonProps) {
   const [supported, setSupported] = useState(false);
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     setSupported(typeof navigator !== 'undefined' && !!navigator.clipboard);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   if (!supported) return null;
@@ -30,9 +35,16 @@ export function CopyButton({ value, label }: CopyButtonProps) {
         type="button"
         aria-label={label}
         onClick={async () => {
-          await navigator.clipboard.writeText(value);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
+          try {
+            await navigator.clipboard.writeText(value);
+            // 이전 타이머가 있으면 먼저 취소한다 (빠른 클릭 대응).
+            if (timerRef.current) clearTimeout(timerRef.current);
+            setCopied(true);
+            timerRef.current = setTimeout(() => setCopied(false), 2000);
+          } catch {
+            // 클립보드 API 실패 (권한 거부, 비보안 컨텍스트 등).
+            // 복사 상태를 설정하지 않는다 — 실패한 복사를 성공으로 표시하지 않는다.
+          }
         }}
         className="rounded-full border border-[var(--color-line)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-blue)] transition hover:bg-[var(--color-soft)]"
       >
