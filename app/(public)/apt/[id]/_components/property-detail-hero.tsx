@@ -1,13 +1,21 @@
 import type { Property, Region } from '@prisma/client';
 import { formatBillion } from '@/lib/format';
+import { propertyAddress } from '@/lib/property';
 
 export function PropertyDetailHero({
   property,
   region,
+  confirmed,
 }: {
   property: Property;
   region: Region;
+  /** 이 단지의 거래가 단일 지번에 모여 있는지. 아니면 히어로는 법정동까지만 표기한다 */
+  confirmed: boolean;
 }) {
+  const addr = propertyAddress(property, region);
+  // 미확정 지번을 접힘선 위에 확정 주소처럼 내보내지 않는다. 전체 지번은 '대표 지번' 배지가
+  // 붙는 주소 줄(AddressLine)에서만 보여준다.
+  const display = confirmed ? addr.display : addr.localityDisplay;
   const txCount = Number(property.txCount12m ?? 0);
   const trend = txCount > 10 ? '거래 활발' : txCount > 3 ? '소폭 거래' : '거래 소강';
 
@@ -33,7 +41,7 @@ export function PropertyDetailHero({
           </span>
           <h1 className="text-3xl font-black tracking-tight md:text-4xl">{property.name}</h1>
           <p className="mt-2 text-white/80">
-            {region.fullName}
+            {display}
             {property.builtYear ? ` · ${property.builtYear}년 준공` : ''}
             {property.households
               ? ` · ${Number(property.households).toLocaleString('ko-KR')}세대`

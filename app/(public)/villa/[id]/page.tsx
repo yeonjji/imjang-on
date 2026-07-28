@@ -8,10 +8,12 @@ import {
   getSameFloorComparison,
 } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
+import { propertyAddress, metaRegionName } from '@/lib/property';
 import type { getNearbyInfra } from '@/lib/amenity/nearby';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
 import { LocationViewer } from '@/components/ui/location-viewer';
+import { AddressLine } from '@/components/ui/address-line';
 import { Card } from '@/components/ui/card';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { PropertyType } from '@prisma/client';
@@ -30,6 +32,7 @@ import { JsonLd, residenceSchema, breadcrumbSchema, aptProvenanceNodes } from '@
 import { InsightSection } from '@/components/ui/insight-section';
 import {
   cachedPropertyById,
+  cachedHasSingleJibun,
   cachedPropertyLatLng,
   cachedNearbySubway,
   cachedNearbyInfra,
@@ -65,12 +68,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!p || (p.propertyType !== PropertyType.ROW_HOUSE && p.propertyType !== PropertyType.MULTIPLEX)) return {};
   const { narrative } = await loadAptInsight(BigInt(id));
   const indexable = isNarrativeIndexable(narrative);
+  const addr = propertyAddress(p, p.region);
+  const jibunConfirmed = addr.street !== null ? await cachedHasSingleJibun(BigInt(id)) : false;
   return {
     title: `${p.name} 실거래가 · ${detailTitleLocality(p.region, p.address)}`,
     description: narrative?.text.slice(0, 150) ?? propertyMetaDescription({
       name: p.name,
       typeLabel: '연립·다세대',
-      regionFullName: p.region.fullName,
+      regionFullName: metaRegionName(addr, p.region, jibunConfirmed),
       builtYear: p.builtYear,
       households: p.households,
       saleAvgPrice12m: p.saleAvgPrice12m ? Number(p.saleAvgPrice12m) : null,
@@ -127,13 +132,20 @@ export default async function VillaDetailPage({ params }: Params) {
     'villa',
   );
 
+  const addr = propertyAddress(property, property.region);
+  // 게이트 실패는 페이지를 죽일 이유가 없다 — 보수적으로 '대표 지번' 표기로 낮춘다.
+  const jibunConfirmed =
+    addr.street !== null ? await cachedHasSingleJibun(propId).catch(() => false) : false;
+
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
       <JsonLd
         data={[
           residenceSchema({
             name: property.name,
-            address: property.region.fullName,
+            address: jibunConfirmed && addr.street ? addr.street : undefined,
+            addressRegion: property.region.sido,
+            addressLocality: property.region.sigungu ?? undefined,
             lat: coord?.lat,
             lng: coord?.lng,
             url: `${SITE_URL}/villa/${property.id}`,
@@ -153,11 +165,13 @@ export default async function VillaDetailPage({ params }: Params) {
           }),
         ]}
       />
-      <PropertyDetailHero property={property} region={property.region} />
+      <PropertyDetailHero property={property} region={property.region} confirmed={jibunConfirmed} />
       {narrative && <InsightSection sentences={narrative.sentences} />}
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-8">
           <DealSummarySection id="summary" property={property} />
+          {/* 좌표가 없어도 유보 표기와 출처가 사라지지 않도록 지도 카드 밖에 둔다. */}
+          {addr.street && <AddressLine display={addr.display} confirmed={jibunConfirmed} />}
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">

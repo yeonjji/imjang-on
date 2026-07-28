@@ -18,11 +18,113 @@ export function typeToSlug(t: PropertyType): PropertyTypeSlug {
   return 'villa';
 }
 
+/** 지번 토큰 판정. 접두가 아니라 전체 토큰이 매치해야 한다. */
+const JIBUN_PATTERN = /^(?:산)?\d+(?:-\d+)?$/;
+
+export interface PropertyAddress {
+  /** 법정동(읍·면·리 포함). 지번이 없어도 이것은 정확한 정보다 */
+  locality: string | null;
+  /** 지번. 엄격 패턴을 통과했을 때만 채워진다 */
+  jibun: string | null;
+  /** 정확한 지번주소(locality + jibun). 둘 중 하나라도 없으면 null */
+  street: string | null;
+  /** 화면 표시용 최선의 문자열. street → locality → 시군구 순으로 낮아진다 */
+  display: string;
+  /** display에서 지번을 뺀 것. 지번이 확정되지 않았을 때 쓴다 */
+  localityDisplay: string;
+}
+
+/**
+ * Region.fullName이 법정동으로 끝나면(세종 등 시드 레벨 오분류) 그 꼬리를 떼어낸다.
+ * address가 자기 법정동을 들고 있으면 Region의 꼬리 법정동은 중복이거나 모순이다 —
+ * "세종특별자치시 용호동" + "산울동 가-"는 법정동 두 개가 한 줄에 들어가고,
+ * 둘이 일치할 때는 같은 법정동이 두 번 나온다. 어느 쪽이든 떼는 게 맞다.
+ * 시군구는 구/시/군으로 끝나므로 이 검사에 걸리지 않는다.
+ */
+function regionPrefix(fullName: string, locality: string | null): string {
+  const tokens = fullName.trim().split(/\s+/).filter(Boolean);
+  const last = tokens[tokens.length - 1];
+  if (tokens.length >= 2 && last !== undefined && /(?:동|읍|면|리)$/.test(last) && locality !== null) {
+    return tokens.slice(0, -1).join(' ');
+  }
+  return fullName;
+}
+
+/**
+ * Property.address("법정동 지번")를 파싱해 정확한 지번주소와 법정동 폴백을 분리한다.
+ * buildAddress()가 umd + jibun 순으로 조립하므로 마지막 토큰이 항상 지번 자리다.
+ * 이 전제는 roadName이 현재 전 행 null이라는 데이터 상태에 기댄다 — 설계 §7.1의 roadnm
+ * 필드명 수정으로 도로명이 채워지기 시작하면 이 파서도 함께 손봐야 한다.
+ */
+export function propertyAddress(
+  property: { address: string },
+  region: { fullName: string },
+): PropertyAddress {
+  const tokens = property.address.trim().split(/\s+/).filter(Boolean);
+  const last = tokens[tokens.length - 1];
+  const lastIsJibun = last !== undefined && JIBUN_PATTERN.test(last);
+
+  let locality: string | null = null;
+  let jibun: string | null = null;
+
+  if (tokens.length >= 2) {
+    // 법정동 없는 맨 숫자를 주소로 승격하지 않기 위해 토큰 2개 이상일 때만 지번을 인정한다.
+    locality = tokens.slice(0, -1).join(' ');
+    if (lastIsJibun) jibun = last;
+  } else if (tokens.length === 1 && !lastIsJibun) {
+    locality = tokens[0];
+  }
+
+  const street = locality && jibun ? `${locality} ${jibun}` : null;
+  const tail = street ?? locality;
+  const prefix = regionPrefix(region.fullName, locality);
+  return {
+    locality,
+    jibun,
+    street,
+    display: tail ? `${prefix} ${tail}` : prefix,
+    localityDisplay: locality ? `${prefix} ${locality}` : prefix,
+  };
+}
+
+/**
+ * meta description에 넣을 지역 문자열.
+ * 지번이 확정되지 않았으면 지번주소를 쓰지 않고 시군구로 낮춘다.
+ */
+export function metaRegionName(
+  addr: PropertyAddress,
+  region: { fullName: string },
+  confirmed: boolean,
+): string {
+  return confirmed ? addr.display : region.fullName;
+}
+
 export async function getPropertyById(id: bigint) {
   return prisma.property.findUnique({
     where: { id },
     include: { region: true },
   });
+}
+
+/**
+ * 이 단지의 거래가 단일 지번주소에 모여 있는지.
+ * false면 Property.address는 여러 지번 중 하나일 뿐이므로 '대표 지번'으로만 다뤄야 한다.
+ * (동명 단지가 이름만으로 병합되는 문제 — 전체 단지의 3.9%)
+ *
+ * 세는 단위는 buildAddress()의 조립 단위인 (법정동, 지번) 쌍이다. jibun만 세면 서로 다른
+ * 법정동의 같은 번지수로 병합된 단지가 통과한다.
+ * `jibun IS NOT NULL`은 필수다 — 복합 COUNT(DISTINCT (a,b))는 스칼라와 달리 NULL을 포함한
+ * 행도 값으로 세므로, 필터가 없으면 지번이 전부 NULL인 단지가 1이 되어 통과한다.
+ *
+ * Transaction_propertyId_contractDate_idx 인덱스 스캔. 최다 거래 단지 기준 22.9ms.
+ */
+export async function hasSingleJibun(propertyId: bigint): Promise<boolean> {
+  const rows = await prisma.$queryRaw<{ n: bigint }[]>`
+    SELECT COUNT(DISTINCT (umd, jibun)) AS n
+    FROM "Transaction"
+    WHERE "propertyId" = ${propertyId} AND jibun IS NOT NULL
+  `;
+  return Number(rows[0]?.n ?? 0) === 1;
 }
 
 export type DealFilter = 'all' | 'sale' | 'jeonse' | 'wolse';
