@@ -18,6 +18,7 @@ import { RelatedGuides } from '../../_components/related-guides';
 import { Faq } from '../../_components/faq';
 import { composeDetailFaq } from '@/lib/faq/compose';
 import { buildLoanFaq } from '@/lib/faq/builders/loan';
+import { qualifiedTitle } from '@/lib/seo/title';
 
 export const revalidate = 86_400;
 
@@ -38,7 +39,7 @@ export async function generateMetadata({
   const limit = product.lnlmt ? ` 한도 ${product.lnlmt.toLocaleString('ko-KR')}만원` : '';
   const target = product.targetTags.length ? `, ${product.targetTags.slice(0, 2).join('·')} 대상` : '';
   return {
-    title: `${product.finprdnm} 한도·금리 — 주거금융`,
+    title: qualifiedTitle(product.finprdnm, product.ofrinstnm, '한도·금리 — 주거금융'),
     description: `${provider}${product.finprdnm}${limit}${target}. 금리·자격요건·신청방법을 한눈에 확인하세요.`,
     alternates: { canonical: `/finance/${seq}` },
   };
