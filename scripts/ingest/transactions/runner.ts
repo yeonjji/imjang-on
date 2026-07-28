@@ -261,10 +261,17 @@ async function fetchAll(adapter: Adapter, sigungu: string, yyyymm: string): Prom
   return all;
 }
 
-function buildAddress(row: NormalizedTransaction): string {
+/**
+ * Property.address를 "법정동 + 지번"으로 조립한다.
+ *
+ * 도로명주소는 일부러 넣지 않는다. lib/property.ts의 propertyAddress()가 이 문자열을
+ * "법정동 + 지번"으로 파싱하므로, 사이에 도로명을 끼우면 "가정동 봉오재2로 13 597-1"이
+ * 되어 도로명이 법정동으로 둔갑한다 — 도로명 건물번호와 지번은 서로 다른 번호 체계라
+ * 실존하지 않는 주소가 만들어진다. 도로명은 Transaction.roadName에 따로 보존된다.
+ */
+export function buildAddress(row: NormalizedTransaction): string {
   const parts: string[] = [];
   if (row.umd) parts.push(row.umd);
-  if (row.roadName) parts.push(row.roadName);
   if (row.jibun) parts.push(row.jibun);
   return parts.join(' ').trim();
 }

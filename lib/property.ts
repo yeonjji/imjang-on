@@ -52,9 +52,9 @@ function regionPrefix(fullName: string, locality: string | null): string {
 
 /**
  * Property.address("법정동 지번")를 파싱해 정확한 지번주소와 법정동 폴백을 분리한다.
- * buildAddress()가 umd + jibun 순으로 조립하므로 마지막 토큰이 항상 지번 자리다.
- * 이 전제는 roadName이 현재 전 행 null이라는 데이터 상태에 기댄다 — 설계 §7.1의 roadnm
- * 필드명 수정으로 도로명이 채워지기 시작하면 이 파서도 함께 손봐야 한다.
+ * buildAddress()가 umd + jibun만으로 조립하므로 마지막 토큰이 항상 지번 자리다.
+ * 도로명은 address에 들어가지 않는다(Transaction.roadName에 따로 보존) — 그래서 이
+ * 전제는 도로명 수집 여부와 무관하게 성립한다.
  */
 export function propertyAddress(
   property: { address: string },

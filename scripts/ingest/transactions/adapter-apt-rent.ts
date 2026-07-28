@@ -38,7 +38,9 @@ export const adapterAptRent: Adapter = {
         sigunguCode,
         umd: item.umdNm ? String(item.umdNm) : null,
         jibun: item.jibun ? String(item.jibun) : null,
-        roadName: item.roadNm ? String(item.roadNm) : null,
+        // 이 API의 도로명 필드는 전부 소문자 roadnm이다(대문자 N인 roadNm이 아니다).
+        // 건물번호까지 포함한 완전한 도로명주소가 온다: "봉오재2로 13".
+        roadName: item.roadnm ? String(item.roadnm) : null,
         externalKey: null,
       };
     });

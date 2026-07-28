@@ -295,7 +295,13 @@ function postalAddress(address?: string, region?: string, locality?: string): Js
 
 실측 과정에서 발견했으나 이번 범위에서 의도적으로 제외한 결함 2건이다.
 
-### 7.1 `roadnm` 필드명 오타 — 도로명주소 379만 행 유실
+### 7.1 `roadnm` 필드명 오타 — 도로명주소 379만 행 유실 ✅ 코드 수정 완료 (재수집은 미결)
+
+> **2026-07-28 수정됨.** `adapter-apt-rent.ts`가 `item.roadnm`을 읽도록 고쳤고, `buildAddress()`에서 도로명을 제거했다(아래 주의 참조). **기존 379만 행은 여전히 null이다** — 재수집은 별도 결정 사항이다.
+>
+> `buildAddress()`를 함께 고친 이유: 도로명이 채워지기 시작하면 `umd → roadName → jibun` 조립이 `가정동 봉오재2로 13 597-1`을 만들고, `propertyAddress()`가 이를 `locality = "가정동 봉오재2로 13"`으로 파싱해 **도로명이 법정동으로 둔갑한다.** 도로명 건물번호와 지번은 다른 번호 체계라 실존하지 않는 주소가 된다. 이제 `Property.address`는 `법정동 + 지번`만 담고, 도로명은 `Transaction.roadName`에 보존된다.
+>
+> 현재 앱에서 `Transaction.roadName`을 소비하는 코드는 없다. 이 수정은 **유실을 멈출 뿐 화면에 새로 노출되는 것은 없다.**
 
 국토부 아파트 **전월세** API는 `roadnm`(전부 소문자)으로 **건물번호까지 포함한 완전한 도로명주소**를 준다.
 

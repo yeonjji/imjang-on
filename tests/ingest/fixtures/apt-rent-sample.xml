@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  국토교통부 아파트 전월세(RTMSDataSvcAptRent) 실제 응답 형태.
+  2026-07-28 LAWD_CD=28275 / DEAL_YMD=202302 응답에서 발췌.
+  도로명 필드가 roadNm이 아니라 전부 소문자 roadnm이고, 건물번호까지 포함한다.
+-->
+<response>
+  <header><resultCode>00</resultCode></header>
+  <body>
+    <items>
+      <item>
+        <aptNm>루원더퍼스트</aptNm>
+        <aptSeq>28260-4659</aptSeq>
+        <buildYear>2019</buildYear>
+        <contractTerm> </contractTerm>
+        <contractType> </contractType>
+        <dealYear>2023</dealYear>
+        <dealMonth>2</dealMonth>
+        <dealDay>10</dealDay>
+        <deposit>20,000</deposit>
+        <monthlyRent>0</monthlyRent>
+        <excluUseAr>59.96</excluUseAr>
+        <floor>9</floor>
+        <umdNm>가정동</umdNm>
+        <jibun>597-1</jibun>
+        <roadnm>봉오재2로 13</roadnm>
+        <roadnmbonbun>00013</roadnmbonbun>
+        <roadnmbubun>00000</roadnmbubun>
+        <sggCd>28275</sggCd>
+        <preDeposit> </preDeposit>
+        <preMonthlyRent> </preMonthlyRent>
+        <useRRRight> </useRRRight>
+      </item>
+      <item>
+        <aptNm>루원시티2차SKLeaders`VIEW</aptNm>
+        <aptSeq>28260-4712</aptSeq>
+        <buildYear>2020</buildYear>
+        <contractTerm> </contractTerm>
+        <contractType> </contractType>
+        <dealYear>2023</dealYear>
+        <dealMonth>2</dealMonth>
+        <dealDay>15</dealDay>
+        <deposit>15,000</deposit>
+        <monthlyRent>60</monthlyRent>
+        <excluUseAr>84.98</excluUseAr>
+        <floor>12</floor>
+        <umdNm>가정동</umdNm>
+        <jibun>가-</jibun>
+        <roadnm>봉오대로 270</roadnm>
+        <sggCd>28275</sggCd>
+        <preDeposit> </preDeposit>
+        <preMonthlyRent> </preMonthlyRent>
+        <useRRRight> </useRRRight>
+      </item>
+    </items>
+    <totalCount>2</totalCount>
+  </body>
+</response>
