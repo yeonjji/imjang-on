@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { getPropertyById, getPropertyLatLng, getRegionStats } from '@/lib/property';
+import { getPropertyById, getPropertyLatLng, getRegionStats, hasSingleJibun } from '@/lib/property';
 import { getUnifiedTransactions, getMonthlyChartData, getFloorPremium, getTransactionFlags } from '@/lib/transaction';
 import { deriveHeaderStats } from '@/lib/price-chart';
 import { getNearbySubwayStations } from '@/lib/subway/nearby';
@@ -8,6 +8,7 @@ import { buildAptNarrative, type AptNarrative } from '@/lib/insights/apt';
 
 // 요청 스코프 캐시: generateMetadata와 본문에서 같은 인자로 호출하면 1회만 실행된다.
 export const cachedPropertyById = cache(getPropertyById);
+export const cachedHasSingleJibun = cache(hasSingleJibun);
 export const cachedPropertyLatLng = cache(getPropertyLatLng);
 export const cachedNearbySubway = cache(getNearbySubwayStations);
 export const cachedNearbyInfra = cache((lat: number, lng: number) =>

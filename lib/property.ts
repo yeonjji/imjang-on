@@ -72,6 +72,20 @@ export async function getPropertyById(id: bigint) {
   });
 }
 
+/**
+ * 이 단지의 거래가 단일 지번에 모여 있는지.
+ * false면 Property.address는 여러 지번 중 하나일 뿐이므로 '대표 지번'으로만 다뤄야 한다.
+ * (동명 단지가 이름만으로 병합되는 문제 — 전체 단지의 3.9%)
+ *
+ * Transaction_propertyId_contractDate_idx 인덱스 스캔. 최다 거래 단지 기준 22.9ms.
+ */
+export async function hasSingleJibun(propertyId: bigint): Promise<boolean> {
+  const rows = await prisma.$queryRaw<{ n: bigint }[]>`
+    SELECT COUNT(DISTINCT jibun) AS n FROM "Transaction" WHERE "propertyId" = ${propertyId}
+  `;
+  return Number(rows[0]?.n ?? 0) === 1;
+}
+
 export type DealFilter = 'all' | 'sale' | 'jeonse' | 'wolse';
 export type AreaRange = 'small' | 'medium' | 'large' | 'xlarge';
 export type SortOption = 'recent' | 'volume' | 'price_desc' | 'price_asc';
