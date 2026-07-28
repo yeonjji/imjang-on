@@ -53,7 +53,12 @@ export function breadcrumbSchema(items: BreadcrumbItem[]): Json {
 
 interface PlaceInput {
   name: string;
-  address: string;
+  /** 확정된 주소가 없으면 생략한다. 시군구 등으로 대체 채우지 않는다. */
+  address?: string;
+  /** 시도 (Residence 전용, 그 외 소비자는 주지 않는다) */
+  addressRegion?: string;
+  /** 시군구 (Residence 전용) */
+  addressLocality?: string;
   lat?: number | null;
   lng?: number | null;
   url: string;
@@ -67,8 +72,14 @@ function geoOf(lat?: number | null, lng?: number | null): Json | undefined {
   return { '@type': 'GeoCoordinates', latitude: lat, longitude: lng };
 }
 
-function postalAddress(address: string): Json {
-  return { '@type': 'PostalAddress', addressCountry: 'KR', streetAddress: address };
+function postalAddress(address?: string, region?: string, locality?: string): Json {
+  return {
+    '@type': 'PostalAddress',
+    addressCountry: 'KR',
+    ...(region ? { addressRegion: region } : {}),
+    ...(locality ? { addressLocality: locality } : {}),
+    ...(address ? { streetAddress: address } : {}),
+  };
 }
 
 export function residenceSchema(input: PlaceInput & { id?: string; mainEntityOfPageId?: string }): Json {
@@ -78,7 +89,7 @@ export function residenceSchema(input: PlaceInput & { id?: string; mainEntityOfP
     ...(input.id ? { '@id': input.id } : {}),
     name: input.name,
     url: input.url,
-    address: postalAddress(input.address),
+    address: postalAddress(input.address, input.addressRegion, input.addressLocality),
     geo: geoOf(input.lat, input.lng),
     image: input.image,
     ...(input.mainEntityOfPageId ? { mainEntityOfPage: { '@id': input.mainEntityOfPageId } } : {}),
