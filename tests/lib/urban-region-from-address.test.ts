@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { prisma } from '@/lib/db';
-import { resolveSigunguFromAddress, __resetRegionCatalogCacheForTests } from '@/lib/urban/region-from-address';
+import { resolveSigunguFromAddress, __resetRegionCatalogCacheForTests } from '@/lib/region/from-address';
 
 beforeAll(async () => {
   __resetRegionCatalogCacheForTests();

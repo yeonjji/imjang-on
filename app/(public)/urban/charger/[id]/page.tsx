@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getUrbanById, getUrbanLatLng } from '@/lib/urban/detail';
 import { getUrbanList } from '@/lib/urban/list';
-import { resolveSigunguFromAddress } from '@/lib/urban/region-from-address';
+import { resolveSigunguFromAddress } from '@/lib/region/from-address';
 import { fetchChargerStatus } from '@/lib/urban/ev-status';
 import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
 import { getNearbySubwayStations } from '@/lib/subway/nearby';

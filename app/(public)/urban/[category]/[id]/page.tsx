@@ -5,7 +5,7 @@ import { getUrbanCategoryDef, URBAN_SOURCE } from '@/lib/urban/category';
 import type { UrbanItem } from '@/lib/urban/category';
 import { getUrbanById, getUrbanLatLng } from '@/lib/urban/detail';
 import { getUrbanList } from '@/lib/urban/list';
-import { resolveSigunguFromAddress } from '@/lib/urban/region-from-address';
+import { resolveSigunguFromAddress } from '@/lib/region/from-address';
 import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
 import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { getSigunguByCode } from '@/lib/region';
