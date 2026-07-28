@@ -252,6 +252,18 @@ const label = sidosByName.get(r.sigungu)!.size > 1
   : r.sigungu;                                       // '강남구'
 ```
 
+**③ 구·군이 없는 시는 시 이름으로 접는다.** 세종은 `Region` level-2에 읍면동 33행이 `sigunguCode` 하나(`36110`)를 공유한다. ② 규칙만 적용하면 `(조치원읍)`처럼 동 이름이 나와 `(강남구)`와 단위가 어긋난다.
+
+```ts
+// 한 sigunguCode를 여러 행이 공유 = 구·군이 없는 시(세종) → 동 이름 대신 시 이름
+const rowsPerCode = new Map<string, number>();     // sigunguCode → 행 수
+const label = rowsPerCode.get(r.sigunguCode)! > 1
+  ? (shortSido(r.sido) ?? r.sido)                  // '세종'
+  : /* ② 규칙 */;
+```
+
+기존 `collapseSigungus()`(`lib/region.ts`)가 시군구 목록에서 쓰는 것과 같은 규칙이다. 다만 그 함수는 동 단위 행을 접어 없애므로 여기서 재사용하지 않는다(`lib/region.ts:146` 주석) — 주소 매칭에는 동 단위 행이 필요하고, 라벨만 접는다.
+
 `?? r.sido` 폴백을 둔다. 앞으로 행정구역이 개편돼 `SIDO_LIST`에 없는 시도가 `Region`에 먼저 들어와도, 숫자나 `undefined` 대신 풀네임(`○○특별시 서구`)이 나온다 — 길지만 정확하다.
 
 **③ 라벨 반환 함수 신규.** 기존 `resolveSigunguFromAddress` 시그니처는 바꾸지 않는다.
@@ -308,7 +320,7 @@ title: qualifiedTitle(item.name, locality, `— ${def.label} 정보·주변 아�
 ## 6. 테스트
 
 - **`qualifiedTitle` 단위** — qualifier 있음 / `null` / 빈 문자열
-- **`resolveSigunguLabelFromAddress` 단위** — 동명 시군구(`대전 서구`) / 유일 시군구(`강남구`) / 신 시도명(`전남광주통합특별시`) / 구 시도명 alias(`광주광역시` → `전남광주 …`) / 미매칭(`null`)
+- **`resolveSigunguLabelFromAddress` 단위** — 동명 시군구(`대전 서구`) / 유일 시군구(`강남구`) / 구·군 없는 시(`세종특별자치시 조치원읍 …` → `세종`) / 신 시도명(`전남광주통합특별시`) / 구 시도명 alias(`광주광역시` → `전남광주 …`) / 미매칭(`null`)
 - **`shortSido` 단위** — 풀네임 매칭 / 미등록 시도(`undefined`)
 - **`generateMetadata` SSR 2종** — `hospital`(대표), `amenity/cafe`(카테고리 라벨 경로)
 
