@@ -72,11 +72,16 @@ describe('시설 상세 generateMetadata title', () => {
       where: { id: HOSPITAL_ID },
       data: { address: '미상지역 어딘가 1' },
     });
-    const meta = await hospitalMeta(params({ sigunguCode: '110019', id: String(HOSPITAL_ID) }));
-    expect(meta.title).toBe('서울치과의원 — 치과의원 정보·주변 아파트');
-    await prisma.hospital.update({
-      where: { id: HOSPITAL_ID },
-      data: { address: '서울특별시 강남구 테헤란로 1' },
-    });
+    try {
+      const meta = await hospitalMeta(params({ sigunguCode: '110019', id: String(HOSPITAL_ID) }));
+      expect(meta.title).toBe('서울치과의원 — 치과의원 정보·주변 아파트');
+    } finally {
+      // assert 실패 시에도 픽스처를 복원한다 — .env.test는 영속 로컬 DB라
+      // 복원이 스킵되면 다음 실행까지 이 행이 오염된 채로 남는다.
+      await prisma.hospital.update({
+        where: { id: HOSPITAL_ID },
+        data: { address: '서울특별시 강남구 테헤란로 1' },
+      });
+    }
   });
 });
