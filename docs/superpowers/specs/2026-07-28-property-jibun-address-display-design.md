@@ -121,9 +121,11 @@ export interface PropertyAddress {
 
 export function propertyAddress(
   property: { address: string },
-  region: { fullName: string; sido: string; sigungu: string | null },
+  region: { fullName: string },
 ): PropertyAddress
 ```
+
+`region.sido`/`region.sigungu`는 이 함수가 쓰지 않는다. JSON-LD의 `addressRegion`/`addressLocality`는 호출부에서 `property.region`을 직접 읽는다.
 
 **판정 규칙:** 공백으로 토큰을 나누고 **마지막 토큰 전체**가 `/^(?:산)?\d+(?:-\d+)?$/`에 매치할 때만 지번으로 인정한다. 접두 검사(`^(산)?\d`)가 아니라 전체 토큰 검사다 — `1234블록` 같은 값이 지번으로 통과하지 않는다.
 
