@@ -66,7 +66,22 @@
 
 루원시티 같은 **도시개발구역에서 지번 미부여 상태**를 국토부가 `가-`로 내려준다. 수집 과정의 절단이 아니다.
 
-`Property` 단위로 보면 주소에 숫자가 전혀 없는 단지는 **147개(0.05%)** 다.
+### 판정 규칙 실측
+
+`Property.address`의 마지막 토큰을 §4.A의 엄격 패턴 `^(산)?\d+(-\d+)?$`로 검사했을 때 실패하는 단지는 **240개(0.087%)** 다. 토큰이 1개뿐인 단지는 27개.
+
+느슨한 접두 검사(`^(산)?\d`)와 엄격한 전체 토큰 검사의 차이도 측정했다. 접두 검사를 통과하면서 엄격 검사에 실패하는 값은 **0건**이다. 즉 현재 데이터에서 두 규칙은 동작이 같고, 엄격 규칙은 향후 유입될 이상 형태에 대한 방어일 뿐 기존 주소를 추가로 버리지 않는다.
+
+### 신뢰도 게이트 비용
+
+§4.A의 게이트가 쓸 `SELECT COUNT(DISTINCT jibun) ... WHERE "propertyId" = $1`을 운영 DB에서 `EXPLAIN ANALYZE`로 측정했다. `Transaction_propertyId_contractDate_idx` 인덱스 스캔을 탄다.
+
+| 대상 | 거래 행수 | 실행 시간 |
+|---|---:|---:|
+| 헬리오시티 (id 84658, 최다 거래급) | 9,176 | **22.9ms** |
+| 다세대주택 (id 119438, 병합 사례) | 119 | **0.75ms** |
+
+상세 페이지는 ISR 24시간이므로 단지당 하루 1회 수준이다. 이 비용으로 3.9% 단지의 부정확한 구조화 데이터 방출을 막을 수 있다.
 
 ## 3. 목표
 
@@ -84,15 +99,23 @@
 
 ## 4. 설계
 
-### A. 데이터 계층 — 주소 조립 유틸
+### A. 데이터 계층
 
-`lib/property.ts`에 순수 함수를 추가한다. 읽는 것은 기존 `Property.address`와 `Region`뿐이다.
+두 가지를 `lib/property.ts`에 추가한다. 이 파일은 이미 쿼리(`getPropertyById`)와 순수 헬퍼(`typeToSlug`)가 공존하는 곳이다.
+
+#### A-1. 주소 파싱 — 순수 함수
+
+핵심은 **정확한 지번주소와 법정동 폴백을 타입 수준에서 구분**하는 것이다. 둘을 한 필드에 담으면 소비자가 구분할 수 없어, 법정동일 뿐인 값이 복사 버튼과 `streetAddress`로 새어나간다.
 
 ```ts
 export interface PropertyAddress {
-  /** 화면·streetAddress용 지역 파트. 비정형이면 법정동까지만. 없으면 null */
+  /** 법정동(읍·면·리 포함). 지번이 없어도 이것은 정확한 정보다 */
+  locality: string | null;
+  /** 지번. 엄격 패턴을 통과했을 때만 채워진다 */
+  jibun: string | null;
+  /** 정확한 지번주소(locality + jibun). 둘 중 하나라도 없으면 null */
   street: string | null;
-  /** 완성된 표시 문자열: "서울특별시 송파구 가락동 913" */
+  /** 화면 표시용 최선의 문자열. street → locality → 시군구 순으로 낮아진다 */
   display: string;
 }
 
@@ -102,22 +125,52 @@ export function propertyAddress(
 ): PropertyAddress
 ```
 
-**판정 규칙:** 공백으로 토큰을 나눠 **마지막 토큰**이 `/^(산)?\d/`에 매치하면 지번으로 인정하고, 아니면 버린다.
+**판정 규칙:** 공백으로 토큰을 나누고 **마지막 토큰 전체**가 `/^(?:산)?\d+(?:-\d+)?$/`에 매치할 때만 지번으로 인정한다. 접두 검사(`^(산)?\d`)가 아니라 전체 토큰 검사다 — `1234블록` 같은 값이 지번으로 통과하지 않는다.
 
-| 입력 `address` | `street` | `display` |
-|---|---|---|
-| `가락동 913` | `가락동 913` | 서울특별시 송파구 가락동 913 |
-| `외동읍 모화리 1853` | `외동읍 모화리 1853` | 경상북도 경주시 외동읍 모화리 1853 |
-| `내곡동 산123` | `내곡동 산123` | 서울특별시 서초구 내곡동 산123 |
-| `가정동 가-` | `가정동` | 인천광역시 서구 가정동 |
-| `913` (단일 토큰) | `913` | 서울특별시 송파구 913 |
-| `` (빈 문자열, 방어용) | `null` | 서울특별시 송파구 |
+토큰이 1개뿐이면 지번으로 인정하지 않는다. 법정동 없는 맨 숫자는 주소가 아니다.
 
-법정동이 두 단어인 주소(`외동읍 모화리 1853`, `고촌읍 태리 1234`)가 실재하므로 앞에서 자르지 않고 **뒤에서 한 토큰만** 검사한다.
+| 입력 `address` | `locality` | `jibun` | `street` | `display` |
+|---|---|---|---|---|
+| `가락동 913` | 가락동 | 913 | 가락동 913 | 서울특별시 송파구 가락동 913 |
+| `외동읍 모화리 1853` | 외동읍 모화리 | 1853 | 외동읍 모화리 1853 | 경상북도 경주시 외동읍 모화리 1853 |
+| `내곡동 산123` | 내곡동 | 산123 | 내곡동 산123 | 서울특별시 서초구 내곡동 산123 |
+| `잠실동 19-1` | 잠실동 | 19-1 | 잠실동 19-1 | 서울특별시 송파구 잠실동 19-1 |
+| `가정동 가-` | 가정동 | `null` | `null` | 인천광역시 서구 가정동 |
+| `역삼동` (지번 결측) | 역삼동 | `null` | `null` | 서울특별시 강남구 역삼동 |
+| `913` (단일 토큰) | `null` | `null` | `null` | 서울특별시 송파구 |
+| `` (빈 문자열, 방어용) | `null` | `null` | `null` | 서울특별시 송파구 |
 
-**함수를 새로 만드는 이유:** 히어로·지도 섹션·JSON-LD·description 네 곳이 같은 판정을 해야 한다. 규칙이 흩어지면 화면과 구조화 데이터가 어긋난다.
+법정동이 두 단어인 주소(`외동읍 모화리 1853`, `고촌읍 태리 1234`)가 실재하므로 앞에서 자르지 않고 **뒤에서 한 토큰만** 검사한다. `buildAddress()`가 `umd + jibun` 순으로 조립하므로 마지막 토큰은 항상 지번 자리다.
 
 기존 `detailTitleLocality()`(`lib/region.ts:284`)는 title 전용이고 목적이 다르므로(법정동 추출) **건드리지 않는다.**
+
+#### A-2. 신뢰도 게이트 — 단일 지번 확인
+
+§7.2의 이름 충돌 때문에, `Property.address`가 **그 페이지 단지의 주소라고 단정할 수 없는 경우가 3.9% 있다.** 병합된 단지에서 `Property.address`는 먼저 수집된 거래의 지번일 뿐이다.
+
+이 구분은 추측할 필요 없이 **측정 가능하다.**
+
+```ts
+/**
+ * 이 단지의 거래가 단일 지번에 모여 있는지.
+ * false면 Property.address는 여러 지번 중 하나일 뿐이므로 '대표 지번'으로만 다뤄야 한다.
+ */
+export async function hasSingleJibun(propertyId: bigint): Promise<boolean>
+```
+
+`SELECT COUNT(DISTINCT jibun) FROM "Transaction" WHERE "propertyId" = $1` 한 방이고, `Transaction_propertyId_contractDate_idx`를 탄다 (§2 실측: 최악 22.9ms, 통상 0.75ms).
+
+상세 페이지는 이 둘을 합쳐 **확정 주소인지**를 판단한다.
+
+```ts
+const addr = propertyAddress(property, property.region);
+const confirmed = addr.street !== null && (await hasSingleJibun(property.id));
+```
+
+- `confirmed === true` — 정확한 지번주소다. 복사·`streetAddress`·description에 쓴다.
+- `confirmed === false` — 화면에는 `대표 지번` 라벨을 달아 보여주되, 구조화 데이터에는 넣지 않는다.
+
+**게이트를 두는 이유:** 목표는 "주소를 보여준다"가 아니라 "정확한 주소를 보여준다"다. 3.9%에 대해 검증되지 않은 주소를 `streetAddress`로 방출하는 것은 과장이며, PRODUCT.md의 "과장 금지" 원칙에 어긋난다. 게이트가 없다면 JSON-LD 반영 자체를 후속으로 미루는 게 맞지만, 비용이 22.9ms라면 미룰 이유가 없다.
 
 ### B. 표시 계층
 
@@ -125,22 +178,36 @@ export function propertyAddress(
 
 36번 줄 `{region.fullName}` → `{display}`. 이 컴포넌트는 아파트·오피스텔·빌라 상세가 **공유**하므로(`villa/[id]/page.tsx:18`, `officetel/[id]/page.tsx:18`) 한 번 고치면 셋 다 반영된다. 서버 컴포넌트를 유지한다.
 
-**주소 줄 — `components/ui/address-line.tsx` (신규)**
+**주소 줄 — `components/ui/address-line.tsx` (신규, 서버 컴포넌트)**
+
+`confirmed === true`:
 
 ```
 서울특별시 송파구 가락동 913   [복사]
 출처: 국토교통부 · 자세히 보기
 ```
 
-- 복사 버튼 때문에만 `'use client'`
-- `navigator.clipboard.writeText(display)`
-- 버튼에 `aria-label="주소 복사"`, 복사 후 `role="status"`로 "복사됨" 안내 (WCAG 2.1 AA)
+`confirmed === false` (거래가 여러 지번에 걸친 단지):
+
+```
+서울특별시 송파구 가락동 913   [대표 지번]   [복사]
+이 단지의 거래는 여러 지번에 걸쳐 있습니다.
+출처: 국토교통부 · 자세히 보기
+```
+
+- **서버 컴포넌트를 유지한다.** 복사 기능만 `components/ui/copy-button.tsx`(신규, `'use client'`)로 분리한다. 주소 텍스트·`대표 지번` 배지·`SourceCaption`은 클라이언트 번들에 들어갈 이유가 없다
+- `CopyButton`은 `value: string`, `label: string`만 받는 범용 컴포넌트로 둔다
+- `navigator.clipboard.writeText(value)`
+- `aria-label="주소 복사"`, 복사 후 `role="status"`로 "복사됨" 안내 (WCAG 2.1 AA)
+- 클립보드 API가 없으면 버튼을 렌더하지 않는다 — 동작하지 않는 버튼을 보여주지 않는다
 - 출처는 기존 `<SourceCaption ids={['molit-rtms']} />` 재사용 — `lib/data-sources.ts` 레지스트리가 SSOT이므로 문구를 직접 쓰지 않는다
-- 클립보드 API가 없으면 버튼을 렌더하지 않고 텍스트만 — 동작하지 않는 버튼을 보여주지 않는다
+- `대표 지번` 배지는 기존 `<Badge>` 재사용
+
+> 서버/클라이언트 분리의 이득은 **번들 크기**다. Next.js는 클라이언트 컴포넌트도 SSR하므로, 전체를 클라이언트로 만들어도 주소 텍스트는 HTML에 들어가고 크롤러가 읽는다. 색인 때문에 나누는 게 아니다.
 
 `apt`·`villa`·`officetel` 세 페이지의 `<Card id="map">` 안, `<LocationViewer>` 위에 삽입한다 (3곳).
 
-**`street === null`인 경우 (147개 단지):** 히어로는 시군구까지만 출력하고, 지도 섹션의 주소 줄은 **렌더하지 않는다.** 시군구만 복사시키는 것은 의미가 없다.
+**`street === null`인 경우 (240개 단지, 0.087%):** 히어로는 `display`가 알아서 법정동 또는 시군구까지 낮춰 출력한다. 지도 섹션의 주소 줄은 **렌더하지 않는다** — 복사할 정확한 주소가 없기 때문이다.
 
 ### C. SEO 계층
 
@@ -149,20 +216,20 @@ export function propertyAddress(
 `postalAddress()`는 `placeSchema()`(병원·학교·공원 등)와 공용이므로 **선택 인자만 추가**한다.
 
 ```ts
-function postalAddress(address: string, region?: string, locality?: string): Json {
+function postalAddress(address?: string, region?: string, locality?: string): Json {
   return {
     '@type': 'PostalAddress',
     addressCountry: 'KR',
     ...(region ? { addressRegion: region } : {}),
     ...(locality ? { addressLocality: locality } : {}),
-    streetAddress: address,
+    ...(address ? { streetAddress: address } : {}),
   };
 }
 ```
 
-`PlaceInput`에 optional `addressRegion` / `addressLocality`를 더하고 `residenceSchema` 호출부 3곳만 채운다. 인자를 주지 않는 `placeSchema` 소비자(병원·학교 등)는 **출력이 완전히 동일**하다.
+`PlaceInput`에 optional `addressRegion` / `addressLocality`를 더하고 `residenceSchema` 호출부 3곳만 채운다. 인자를 주지 않는 `placeSchema` 소비자(병원·학교 등)는 항상 `address`를 넘기므로 **출력이 완전히 동일**하다.
 
-결과:
+`confirmed === true`일 때:
 
 ```jsonc
 "address": {
@@ -174,11 +241,24 @@ function postalAddress(address: string, region?: string, locality?: string): Jso
 }
 ```
 
-`street`가 null이면 `streetAddress`에 기존처럼 `region.fullName`을 넣어 필드를 비우지 않는다.
+`confirmed === false`일 때 — **`streetAddress` 속성 자체를 생략한다.**
+
+```jsonc
+"address": {
+  "@type": "PostalAddress",
+  "addressCountry": "KR",
+  "addressRegion":   "서울특별시",
+  "addressLocality": "송파구"
+}
+```
+
+시군구 값을 `streetAddress`에 넣는 폴백은 쓰지 않는다. 그것이 바로 지금 고치려는 부정확함이고(§1), schema.org의 모든 `PostalAddress` 속성은 선택이므로 생략이 정상이다. 검증되지 않은 값을 채우는 것보다 비우는 편이 정확하다.
 
 **description — 상세 페이지 `generateMetadata` 3곳**
 
-`propertyMetaDescription`에 넘기는 `regionFullName` 인자 값을 `display`로 교체한다. **`lib/seo/blurb.ts`는 수정하지 않는다** — 시그니처 변경 없이 호출부에서 값만 바꾼다.
+`propertyMetaDescription`에 넘기는 `regionFullName` 인자 값을 **`confirmed === true`일 때만** `display`로 교체한다. 아니면 기존 `region.fullName`을 그대로 넘긴다. **`lib/seo/blurb.ts`는 수정하지 않는다** — 시그니처 변경 없이 호출부에서 값만 바꾼다.
+
+`generateMetadata`도 `hasSingleJibun`을 호출해야 하지만, `cachedPropertyById`와 마찬가지로 `React.cache`로 감싸면 같은 요청 내 렌더와 중복 조회되지 않는다.
 
 **title은 변경하지 않는다.** 이미 색인된 27만여 페이지의 title이 일제히 바뀌는 리스크를 감수할 만한 이득이 없다.
 
@@ -186,8 +266,9 @@ function postalAddress(address: string, region?: string, locality?: string): Jso
 
 ### D. 테스트
 
-- `propertyAddress()` 단위 테스트 — §4.A 표의 6개 케이스 전부
-- `residenceSchema` — `addressRegion`/`addressLocality` 출력 확인, `street === null` 폴백 확인
+- `propertyAddress()` 단위 테스트 — §4.A-1 표의 8개 케이스 전부. 특히 `가정동 가-`가 `street === null`이면서 `locality === '가정동'`인지 (폴백과 정확한 주소가 섞이지 않는지)
+- `hasSingleJibun()` 통합 테스트 — 단일 지번 단지와 다중 지번 단지를 **자체 시드**로 만들어 검증. 앰비언트 데이터에 의존하면 CI에서 깨진다
+- `residenceSchema` — `confirmed === true`면 `streetAddress` 존재, `false`면 **속성 자체가 없는지**. `'streetAddress' in address` 로 검사해 `undefined` 통과를 막는다
 - `placeSchema` 회귀 — 병원 스키마 출력이 **변하지 않았는지**. 공용 함수를 건드리므로 이것이 핵심 방어선이다
 - `pnpm lint` + `pnpm typecheck`
 
@@ -195,15 +276,18 @@ function postalAddress(address: string, region?: string, locality?: string): Jso
 
 | 파일 | 변경 |
 |---|---|
-| `lib/property.ts` | `propertyAddress()` 추가 |
-| `lib/seo/json-ld.tsx` | `postalAddress()` 선택 인자 2개, `PlaceInput` 필드 2개 |
+| `lib/property.ts` | `propertyAddress()` · `hasSingleJibun()` 추가 |
+| `lib/seo/json-ld.tsx` | `postalAddress()` 인자 3개(`address`를 선택으로), `PlaceInput` 필드 2개 |
 | `app/(public)/apt/[id]/_components/property-detail-hero.tsx` | 1줄 교체 (3개 페이지 공용) |
-| `components/ui/address-line.tsx` | 신규 |
-| `app/(public)/{apt,villa,officetel}/[id]/page.tsx` | `AddressLine` 삽입, `residenceSchema` 인자, description 인자 |
+| `components/ui/address-line.tsx` | 신규 (서버) |
+| `components/ui/copy-button.tsx` | 신규 (클라이언트) |
+| `app/(public)/{apt,villa,officetel}/[id]/page.tsx` | `AddressLine` 삽입, 게이트 호출, `residenceSchema` 인자, description 인자 |
 
 ## 6. 배포
 
 스키마 변경·마이그레이션·재수집·ETL 변경이 **없다.** 상세 페이지는 ISR 24시간이므로 배포 후 순차 반영된다. 롤백은 커밋 되돌리기로 끝난다.
+
+추가되는 부하는 상세 페이지당 `hasSingleJibun` 쿼리 1회다. 인덱스 스캔 22.9ms(최악)이고 ISR 캐시 뒤에 있으므로 단지당 하루 1회 수준이다.
 
 ## 7. 분리된 후속 이슈
 
@@ -240,6 +324,8 @@ function postalAddress(address: string, region?: string, locality?: string): Jso
 
 영향은 주소가 아니라 **통계**다 — 상세 페이지의 평균가·거래량·가격 차트가 다른 단지 거래를 섞어 계산한다.
 
-이번 설계가 이 문제를 **악화시키지는 않는다.** 대표 주소로 `Property.address`를 쓰므로 병합 단지도 주소 하나만 보여주며, 현재 노출 중인 시군구 정보와 정합성이 어긋나지 않는다. 다만 근본 수정 없이는 부정확한 통계가 유지된다.
+이번 설계는 이 문제를 **드러내되 과장하지 않는다.** §4.A-2의 게이트가 다중 지번 단지를 판별해, 화면에는 `대표 지번` 라벨을 달고 구조화 데이터에서는 `streetAddress`를 생략한다. 검증되지 않은 주소를 확정 주소인 것처럼 방출하지 않는다.
+
+다만 게이트는 **주소 표기만 막아줄 뿐 통계 오염 자체는 그대로다.** 평균가·거래량·가격 차트는 여전히 병합된 거래를 섞어 계산한다. 근본 수정이 필요하다.
 
 수정 후보는 매칭 키를 `(유형, 이름, 법정동, 지번)`으로 넓히는 것인데, 여러 지번에 걸친 정상 대단지가 쪼개지는 반대편 문제가 생긴다. 별도 설계가 필요하다.
