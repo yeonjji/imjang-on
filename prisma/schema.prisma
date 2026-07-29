@@ -90,6 +90,10 @@ model Property {
   redirectTo     Property?    @relation("PropertyRedirect", fields: [redirectToId], references: [id], onDelete: SetNull)
   redirectedFrom Property[]   @relation("PropertyRedirect")
 
+  // Property_dedupe_key — (propertyType, nameNorm, regionCode, address) WHERE redirectToId IS NULL
+  // 부분 유니크 인덱스라 Prisma 스키마로 표현할 수 없다. raw SQL 마이그레이션
+  // 20260729000000_add_property_dedupe_unique 참조. 같은 이유로 관리되는 인덱스가
+  // 이미 여럿 있다(Property_nameNorm_trgm_idx, Property_location_gix, Property_areaTypes_gin).
   @@index([propertyType, regionCode])
   @@index([redirectToId])
   @@index([name])
