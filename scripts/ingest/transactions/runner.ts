@@ -52,6 +52,39 @@ function parseArgs(): RunArgs {
   return { api, mode, months, monthOffset, limit, from, to };
 }
 
+export interface IngestTaskKey {
+  api: string;
+  source: string;
+  sgg: string;
+  yyyymm: string;
+}
+
+/**
+ * 실행할 (api, 월, 시군구) 조합을 만든다.
+ *
+ * 월을 바깥, 시군구를 안쪽에 두는 순서가 load-bearing이다. runWithLimit이 동시에
+ * 돌리는 인접 두 태스크가 같은 시군구면, 각 runOne의 propCache가 서로의 신규 생성을
+ * 못 봐서 같은 단지를 둘 다 만든다(실측 2,025그룹). 시군구를 안쪽에 두면 인접 쌍이
+ * 항상 다른 시군구가 되어 이 경합이 성립하지 않는다.
+ */
+export function buildIngestTaskKeys(
+  apis: Array<{ api: string; source: string }>,
+  months: string[],
+  sigunguIds: string[],
+  doneKeys: Set<string>,
+): IngestTaskKey[] {
+  const out: IngestTaskKey[] = [];
+  for (const { api, source } of apis) {
+    for (const yyyymm of months) {
+      for (const sgg of sigunguIds) {
+        if (doneKeys.has(`${source}:${sgg}-${yyyymm}`)) continue;
+        out.push({ api, source, sgg, yyyymm });
+      }
+    }
+  }
+  return out;
+}
+
 async function main() {
   const args = parseArgs();
   const apis = args.api === 'all' ? (Object.keys(ADAPTERS) as ApiType[]) : [args.api];
@@ -86,29 +119,29 @@ async function main() {
   let skipped = 0;
   const affectedPropertyIds = new Set<bigint>();
 
-  const tasks: Array<() => Promise<void>> = [];
-  for (const api of apis) {
-    const adapter = ADAPTERS[api];
-    for (const sgg of sigunguIds) {
-      const regionCode = sigunguToRegionCode.get(sgg)!;
-      for (const yyyymm of months) {
-        const targetKey = `${sgg}-${yyyymm}`;
-        if (doneKeys.has(`${adapter.source}:${targetKey}`)) {
-          skipped++;
-          continue;
-        }
-        tasks.push(async () => {
-          try {
-            const upserted = await runOne(adapter, sgg, regionCode, yyyymm, affectedPropertyIds);
-            totalUpserted += upserted;
-          } catch (err) {
-            failed++;
-            logger.error({ err, api: adapter.source, sgg, yyyymm }, 'sigungu-month failed');
-          }
-        });
-      }
+  const taskKeys = buildIngestTaskKeys(
+    apis.map((a) => ({ api: a, source: ADAPTERS[a].source })),
+    months,
+    sigunguIds,
+    doneKeys,
+  );
+  skipped = apis.length * months.length * sigunguIds.length - taskKeys.length;
+
+  const tasks: Array<() => Promise<void>> = taskKeys.map((k) => async () => {
+    try {
+      const upserted = await runOne(
+        ADAPTERS[k.api as ApiType],
+        k.sgg,
+        sigunguToRegionCode.get(k.sgg)!,
+        k.yyyymm,
+        affectedPropertyIds,
+      );
+      totalUpserted += upserted;
+    } catch (err) {
+      failed++;
+      logger.error({ err, api: k.source, sgg: k.sgg, yyyymm: k.yyyymm }, 'sigungu-month failed');
     }
-  }
+  });
   // --limit: 한 실행이 처리할 타깃(시군구·월) 수 상한. 대량 write가 누적되면 Supabase가
   // 디스크 압박으로 read-only(25006)로 빠지므로, 짧게 나눠 실행해 스파이크를 낮춘다.
   // resume(doneKeys)가 이어주므로 여러 번 돌리면 전체가 완료된다.
