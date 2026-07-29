@@ -421,7 +421,13 @@ async function runWithLimit(tasks: Array<() => Promise<void>>, concurrency: numb
   await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, worker));
 }
 
-main().catch((err) => {
-  logger.error({ err }, 'runner fatal');
-  process.exit(1);
-});
+// merge-duplicate-properties가 computeHash를 라이브러리로 import한다. 가드 없이 main()을
+// 모듈 스코프에서 그냥 부르면 그 import만으로 실제 ETL이 백그라운드에서 돌기 시작한다
+// (운영에서는 병합 스크립트를 실행할 때마다 진짜 수집 job이 같이 뜨는 셈). 직접 실행(tsx로
+// 이 파일을 돌릴 때)에만 main()이 실행되도록 막는다.
+if (process.argv[1]?.includes('transactions/runner')) {
+  main().catch((err) => {
+    logger.error({ err }, 'runner fatal');
+    process.exit(1);
+  });
+}
