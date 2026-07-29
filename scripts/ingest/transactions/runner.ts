@@ -64,8 +64,15 @@ export interface IngestTaskKey {
  *
  * 월을 바깥, 시군구를 안쪽에 두는 순서가 load-bearing이다. runWithLimit이 동시에
  * 돌리는 인접 두 태스크가 같은 시군구면, 각 runOne의 propCache가 서로의 신규 생성을
- * 못 봐서 같은 단지를 둘 다 만든다(실측 2,025그룹). 시군구를 안쪽에 두면 인접 쌍이
- * 항상 다른 시군구가 되어 이 경합이 성립하지 않는다.
+ * 못 봐서 같은 단지를 둘 다 만든다(실측 2,025그룹). 시군구를 안쪽에 두면 같은 월 안에서는
+ * 인접 쌍이 항상 다른 시군구가 된다.
+ *
+ * 하지만 doneKeys 필터링은 (source, sgg, yyyymm) 조합별로 독립적으로 적용되므로, 월·api
+ * 경계에서 살아남는 시군구 집합이 비대칭이 될 수 있다(예: 이전 --limit 실행이 한 달의
+ * 일부만 완료). 이 경우 경계에서 우연히 같은 시군구가 인접할 수 있어, dedupeAdjacentSgg가
+ * 그 잔여 인접 쌍을 결정적으로 재배치해 없앤다. 살아남은 시군구가 2개 미만이라 물리적으로
+ * 피할 수 없는 경우만 그대로 남고, 그 잔여는 유니크 제약 추가 시 P2002 재조회 로직이
+ * 최종 방어선이 된다.
  */
 export function buildIngestTaskKeys(
   apis: Array<{ api: string; source: string }>,
@@ -81,6 +88,33 @@ export function buildIngestTaskKeys(
         out.push({ api, source, sgg, yyyymm });
       }
     }
+  }
+  return dedupeAdjacentSgg(out);
+}
+
+/**
+ * 인접한 두 태스크가 같은 시군구를 갖지 않도록 결정적으로 재배치한다. 항목을 버리거나
+ * 복제하거나 값을 바꾸지 않고 순서만 바꾼다(같은 입력엔 항상 같은 출력).
+ *
+ * 같은 시군구가 인접하면, 뒤쪽에서 앞·뒤 이웃 모두와 시군구가 다른 가장 가까운 항목을
+ * 찾아 자리를 바꾼다. 그런 항목이 없으면(예: 남은 시군구가 사실상 하나뿐) 무한루프를
+ * 피하기 위해 그 인접 쌍은 그대로 둔다 — 이 잔여는 문서화된 한계다.
+ */
+function dedupeAdjacentSgg(keys: IngestTaskKey[]): IngestTaskKey[] {
+  const out = keys.slice();
+  for (let i = 1; i < out.length; i++) {
+    if (out[i].sgg !== out[i - 1].sgg) continue;
+    const prevSgg = out[i - 1].sgg;
+    const nextSgg = i + 1 < out.length ? out[i + 1].sgg : undefined;
+    let swapIdx = -1;
+    for (let j = i + 1; j < out.length; j++) {
+      if (out[j].sgg !== prevSgg && out[j].sgg !== nextSgg) {
+        swapIdx = j;
+        break;
+      }
+    }
+    if (swapIdx === -1) continue;
+    [out[i], out[swapIdx]] = [out[swapIdx], out[i]];
   }
   return out;
 }
