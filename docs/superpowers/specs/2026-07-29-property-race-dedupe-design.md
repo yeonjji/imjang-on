@@ -126,11 +126,13 @@ A가 먼저 나가야 병합 후 재발이 없다. C는 운영이 깨끗해진 �
 
 **한계:** 시군구가 1개뿐인 실행이나 ETL 프로세스가 둘 이상 겹치는 경우는 순서만으로 막지 못한다. 그래서 4.2와 C가 함께 필요하다.
 
-### 4.2 `findOrCreateProperty`에 유니크 위반 재조회
+### 4.2 `findOrCreateProperty`의 유니크 위반 재조회 — C로 옮긴다
 
-C에서 제약이 생긴 뒤, `create`가 P2002로 실패하면 형제가 방금 만들었다는 뜻이다. 잡아서 다시 조회해 그 행을 반환한다.
+제약이 생긴 뒤 `create`가 P2002로 실패하면 형제가 방금 만들었다는 뜻이므로, 잡아서 다시 조회해 그 행을 반환해야 한다.
 
-C 이전에는 제약이 없어 이 경로가 발동하지 않는다. A에 함께 넣는 이유는 C 배포 시점에 코드가 준비돼 있어야 하기 때문이다.
+당초 A에 넣으려 했으나 **C로 옮긴다.** C 이전에는 제약이 없어 이 경로가 발동하지 않는 죽은 코드이고, 이 저장소의 테스트는 로컬 실 DB를 쓰므로(`tests/ingest/property-matcher.test.ts`의 `assertLocalDatabase()`) 인덱스가 없는 상태에서는 P2002를 재현할 수단이 없다. C에서 마이그레이션과 함께 넣으면 발동도 검증도 된다.
+
+A의 순서 반전만으로 실측된 경합(2,025그룹 전부)은 사라진다.
 
 ---
 
@@ -169,6 +171,18 @@ function computeHash(row, propertyId) {
 
 `Transaction.regionCode`는 생존자와 패자가 동일하므로(§1.4 시군구 다름 0) 갱신하지 않는다.
 
+**해시 입력값의 타입을 ETL과 정확히 맞춰야 한다.** `computeHash`는 `JSON.stringify`를 쓰므로 타입이 다르면 같은 값이라도 다른 해시가 나온다. 실증 확인:
+
+| 필드 | ETL(`NormalizedTransaction`) | DB(`Transaction`) | 조치 |
+|---|---|---|---|
+| `exclusiveArea` | `number` → `{"a":84.9}` | `Decimal` → `{"a":"84.9"}` | **`Number()` 변환 필수** |
+| `contractDate` | `Date.UTC(...)` | `@db.Date`(UTC 자정) | 그대로 (`toISOString().slice(0,10)` 일치) |
+| `floor`·`dealAmount`·`deposit`·`monthlyRent` | 어댑터가 `null` 사용 | `null` | 그대로 |
+
+`Number()`는 후행 0도 정규화한다 — `Decimal('84.00')` → `84`, ETL의 `Number('84')` → `84`로 일치한다.
+
+**남는 위험:** 원본 API가 소수 3자리 이상을 주면 `Decimal(6,2)` 저장 시 정밀도가 깎여, 재계산 해시가 다음 수집분과 어긋나 중복이 다시 생길 수 있다. §9의 사후 검증으로 잡는다.
+
 ### 5.3 패자는 삭제하지 않는다
 
 `redirectToId`를 세워 301로 보낸다. 상세 페이지 3종에 이미 처리가 있다.
@@ -188,10 +202,12 @@ if (property.redirectToId) permanentRedirect(`/apt/${property.redirectToId}`);
 ## 6. C — 유니크 제약
 
 ```sql
-CREATE UNIQUE INDEX CONCURRENTLY "Property_dedupe_key"
+CREATE UNIQUE INDEX "Property_dedupe_key"
   ON "Property" ("propertyType", "nameNorm", "regionCode", "address")
   WHERE "redirectToId" IS NULL;
 ```
+
+**`CONCURRENTLY`는 쓰지 않는다.** Prisma는 마이그레이션 파일을 트랜잭션으로 감싸 실행하는데 `CREATE INDEX CONCURRENTLY`는 트랜잭션 안에서 동작하지 않는다. 저장소에 선례도 없다. `Property`는 275,645행이라 일반 인덱스 생성이 수 초 안에 끝나므로, 그동안의 쓰기 잠금은 감수한다.
 
 **`address`를 포함하는 것이 중요하다.** 빼면 주소가 다른 20그룹(§1.3)이 제약을 위반해, 보류하기로 한 과잉병합을 강제로 끌어들이게 된다. 그 20그룹에는 별개 건물이 섞여 있어 강제 병합은 데이터 손상이다.
 
@@ -233,6 +249,8 @@ Prisma 스키마는 부분 유니크 인덱스를 표현하지 못하므로 raw 
 **A** — 코드만. revert로 끝난다.
 
 **B** — `--dry-run` 출력을 확인한 뒤 `--apply`. `redirectToId`가 남아 어느 행이 어디로 갔는지는 추적할 수 있지만 거래 이관 자체는 되돌리기 어렵다. 실행 전 `Transaction`·`Property` 백업을 남긴다.
+
+**B 사후 검증 (필수).** 병합 직후 생존자들의 거래 건수를 기록해 두고, 다음 daily ETL이 한 바퀴 돈 뒤 같은 수치를 다시 잰다. 늘었다면 §5.2에 적은 정밀도 문제로 해시가 어긋나 중복이 재삽입된 것이므로, 재계산 로직을 고치고 늘어난 행을 정리한다.
 
 **C** — `DROP INDEX "Property_dedupe_key"`.
 
