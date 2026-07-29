@@ -1,0 +1,936 @@
+# 경합 중복 단지 병합 Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** ETL 경합으로 갈라진 중복 단지 레코드를 병합하고, 같은 경합이 다시 나지 않게 태스크 순서를 고친다.
+
+**Architecture:** 태스크 목록 생성을 순수 함수로 뽑아 `월 → 시군구` 순으로 뒤집으면, 동시에 도는 두 태스크가 항상 다른 시군구가 되어 같은 단지를 만들 수 없다. 병합은 순수 로직(생존자 선택·해시 재계산)과 DB 실행을 분리해, 로직은 단위 테스트로 고정하고 실행은 `--dry-run` 기본의 ops 스크립트로 감싼다.
+
+**Tech Stack:** TypeScript, Prisma, PostgreSQL, vitest, tsx
+
+**설계 문서:** `docs/superpowers/specs/2026-07-29-property-race-dedupe-design.md`
+
+## Global Constraints
+
+- 이 계획은 스펙의 **A(경합 방지)와 B(병합 스크립트)만** 다룬다. **C(유니크 제약 마이그레이션)는 이 계획에 포함하지 않는다** — B를 운영에 적용해 중복이 사라진 뒤에야 안전하므로 별도 계획으로 쓴다.
+- 병합 그룹 키는 `(propertyType, nameNorm, regionCode, address)` 네 값이 모두 같은 행들. 생존자는 **최소 `id`**.
+- 패자는 **삭제하지 않는다.** `redirectToId`를 생존자로 세워 301로 보낸다.
+- 거래 이관 시 `rawHash`를 생존자 `id`로 **재계산해야 한다.** `rawHash`는 `propertyId`를 포함하고 `@@unique([rawHash])`다.
+- 해시 재계산 시 `exclusiveArea`는 반드시 `Number()`로 변환한다. Prisma `Decimal`은 `JSON.stringify`에서 문자열 `"84.9"`가 되어 ETL의 `84.9`와 다른 해시를 낸다.
+- ops 스크립트는 기본 dry-run, `--apply`가 있을 때만 쓴다 (`scripts/ops/coord-quality.ts:20` 관례).
+- 통합 테스트는 자체 시드를 쓴다. CI의 check 잡은 시드를 돌리지 않으므로 앰비언트 데이터에 의존하면 깨진다.
+- 완료 전 `pnpm lint`를 반드시 통과시킨다. `pnpm typecheck`는 미사용 변수를 잡지 못한다(`noUnusedLocals` 없음).
+
+---
+
+## File Structure
+
+| 파일 | 책임 | 상태 |
+|---|---|---|
+| `scripts/ingest/transactions/runner.ts` | 태스크 키 생성을 순수 함수로 추출 + 순서 반전, `computeHash` export | 수정 |
+| `scripts/ops/merge-duplicate-properties/core.ts` | 순수 로직 — 생존자 선택, 해시 재계산 입력 조립 | 생성 |
+| `scripts/ops/merge-duplicate-properties/index.ts` | DB 실행 + CLI (`--dry-run`/`--apply`) | 생성 |
+| `tests/ingest/ingest-task-order.test.ts` | 태스크 순서 단위 | 생성 |
+| `tests/ops/merge-properties-core.test.ts` | 병합 순수 로직 단위 | 생성 |
+| `tests/integration/merge-duplicate-properties.test.ts` | 실 DB 병합 통합 | 생성 |
+
+병합을 디렉터리로 나눈 이유는 순수 로직과 DB 실행의 경계를 파일로 강제하기 위해서다. `core.ts`는 prisma를 import하지 않으므로 단위 테스트가 DB 없이 돈다.
+
+`tests/ops/`는 새 디렉터리다. `test:unit`이 `tests/lib tests/ingest tests/components`만 돌리므로 `package.json`에 추가해야 한다(Task 2에서 처리).
+
+---
+
+### Task 1: 태스크 순서 반전
+
+동시에 도는 두 태스크가 항상 다른 시군구가 되게 한다. 이것만으로 실측된 경합 2,025그룹이 구조적으로 사라진다.
+
+**Files:**
+- Modify: `scripts/ingest/transactions/runner.ts` (`main()` 내 태스크 생성 루프, 약 89~110행)
+- Test: `tests/ingest/ingest-task-order.test.ts` (생성)
+
+**Interfaces:**
+- Consumes: 없음
+- Produces:
+  ```ts
+  export interface IngestTaskKey { api: string; source: string; sgg: string; yyyymm: string }
+  export function buildIngestTaskKeys(
+    apis: Array<{ api: string; source: string }>,
+    months: string[],
+    sigunguIds: string[],
+    doneKeys: Set<string>,
+  ): IngestTaskKey[]
+  ```
+
+- [ ] **Step 1: 실패하는 테스트 작성**
+
+`tests/ingest/ingest-task-order.test.ts`:
+
+```ts
+import { describe, it, expect } from 'vitest';
+import { buildIngestTaskKeys } from '@/scripts/ingest/transactions/runner';
+
+const API = [{ api: 'aptTrade', source: 'MOLIT_APT_TRADE' }];
+
+describe('buildIngestTaskKeys', () => {
+  // 핵심 계약: runWithLimit(…, 2)가 동시에 돌리는 인접 두 태스크가 같은 시군구면
+  // 같은 단지를 동시에 생성하는 경합이 난다. 시군구가 2개 이상이면 인접 쌍은 항상 달라야 한다.
+  it('인접 태스크는 서로 다른 시군구를 갖는다', () => {
+    const keys = buildIngestTaskKeys(API, ['202601', '202602'], ['11110', '11140', '11170'], new Set());
+    expect(keys).toHaveLength(6);
+    for (let i = 1; i < keys.length; i++) {
+      expect(keys[i].sgg).not.toBe(keys[i - 1].sgg);
+    }
+  });
+
+  // 월 경계에서도 깨지지 않아야 한다 — 이전 달 마지막 시군구 vs 다음 달 첫 시군구
+  it('월이 바뀌는 지점에서도 시군구가 겹치지 않는다', () => {
+    const keys = buildIngestTaskKeys(API, ['202601', '202602'], ['11110', '11140'], new Set());
+    expect(keys.map((k) => `${k.yyyymm}:${k.sgg}`)).toEqual([
+      '202601:11110', '202601:11140',
+      '202602:11110', '202602:11140',
+    ]);
+    expect(keys[2].sgg).not.toBe(keys[1].sgg);
+  });
+
+  it('doneKeys에 있는 조합은 제외한다', () => {
+    const done = new Set(['MOLIT_APT_TRADE:11110-202601']);
+    const keys = buildIngestTaskKeys(API, ['202601'], ['11110', '11140'], done);
+    expect(keys).toHaveLength(1);
+    expect(keys[0].sgg).toBe('11140');
+  });
+
+  it('api가 여럿이면 api별로 전체 조합을 낸다', () => {
+    const apis = [
+      { api: 'aptTrade', source: 'MOLIT_APT_TRADE' },
+      { api: 'aptRent', source: 'MOLIT_APT_RENT' },
+    ];
+    const keys = buildIngestTaskKeys(apis, ['202601'], ['11110', '11140'], new Set());
+    expect(keys).toHaveLength(4);
+    expect(keys.slice(0, 2).every((k) => k.source === 'MOLIT_APT_TRADE')).toBe(true);
+  });
+
+  // 알려진 한계: 시군구가 1개뿐이면 순서로는 못 막는다. 스펙 §4.1의 P2002 재조회(C)가 받는다.
+  it('시군구가 1개면 인접 태스크가 같은 시군구다 (한계 문서화)', () => {
+    const keys = buildIngestTaskKeys(API, ['202601', '202602'], ['11110'], new Set());
+    expect(keys[0].sgg).toBe(keys[1].sgg);
+  });
+});
+```
+
+- [ ] **Step 2: 실패 확인**
+
+Run: `pnpm dotenv -e .env.test -- vitest run tests/ingest/ingest-task-order.test.ts`
+Expected: FAIL — `buildIngestTaskKeys is not a function`
+
+- [ ] **Step 3: 순수 함수 추출**
+
+`scripts/ingest/transactions/runner.ts`에 추가한다. 위치는 `main()` 위, 다른 top-level export 근처.
+
+```ts
+export interface IngestTaskKey {
+  api: string;
+  source: string;
+  sgg: string;
+  yyyymm: string;
+}
+
+/**
+ * 실행할 (api, 월, 시군구) 조합을 만든다.
+ *
+ * 월을 바깥, 시군구를 안쪽에 두는 순서가 load-bearing이다. runWithLimit이 동시에
+ * 돌리는 인접 두 태스크가 같은 시군구면, 각 runOne의 propCache가 서로의 신규 생성을
+ * 못 봐서 같은 단지를 둘 다 만든다(실측 2,025그룹). 시군구를 안쪽에 두면 인접 쌍이
+ * 항상 다른 시군구가 되어 이 경합이 성립하지 않는다.
+ */
+export function buildIngestTaskKeys(
+  apis: Array<{ api: string; source: string }>,
+  months: string[],
+  sigunguIds: string[],
+  doneKeys: Set<string>,
+): IngestTaskKey[] {
+  const out: IngestTaskKey[] = [];
+  for (const { api, source } of apis) {
+    for (const yyyymm of months) {
+      for (const sgg of sigunguIds) {
+        if (doneKeys.has(`${source}:${sgg}-${yyyymm}`)) continue;
+        out.push({ api, source, sgg, yyyymm });
+      }
+    }
+  }
+  return out;
+}
+```
+
+- [ ] **Step 4: 통과 확인**
+
+Run: `pnpm dotenv -e .env.test -- vitest run tests/ingest/ingest-task-order.test.ts`
+Expected: PASS (5 tests)
+
+- [ ] **Step 5: `main()`이 새 함수를 쓰도록 교체**
+
+기존 3중 루프(`for (const api of apis) { for (const sgg of sigunguIds) { for (const yyyymm of months) {`)를 통째로 아래로 바꾼다. `skipped` 카운터는 전체 조합 수에서 빼는 방식으로 유지한다.
+
+```ts
+  const taskKeys = buildIngestTaskKeys(
+    apis.map((a) => ({ api: a, source: ADAPTERS[a].source })),
+    months,
+    sigunguIds,
+    doneKeys,
+  );
+  skipped = apis.length * months.length * sigunguIds.length - taskKeys.length;
+
+  const tasks: Array<() => Promise<void>> = taskKeys.map((k) => async () => {
+    try {
+      const upserted = await runOne(
+        ADAPTERS[k.api as ApiType],
+        k.sgg,
+        sigunguToRegionCode.get(k.sgg)!,
+        k.yyyymm,
+        affectedPropertyIds,
+      );
+      totalUpserted += upserted;
+    } catch (err) {
+      failed++;
+      logger.error({ err, api: k.source, sgg: k.sgg, yyyymm: k.yyyymm }, 'sigungu-month failed');
+    }
+  });
+```
+
+`let skipped = 0;` 선언은 그대로 두고 대입만 바뀐다. `--limit` 주석(“한 실행이 처리할 타깃 수 상한”)은 여전히 맞으므로 건드리지 않는다.
+
+- [ ] **Step 6: typecheck + lint**
+
+Run: `pnpm typecheck && pnpm lint`
+Expected: 무출력 + `✔ No ESLint warnings or errors`
+
+- [ ] **Step 7: 기존 ETL 테스트 회귀 확인**
+
+Run: `pnpm dotenv -e .env.test -- vitest run tests/ingest`
+Expected: 전부 PASS. `runner`의 다른 동작을 건드리지 않았으므로 하나라도 깨지면 추출이 잘못된 것이다.
+
+- [ ] **Step 8: 커밋**
+
+```bash
+git add scripts/ingest/transactions/runner.ts tests/ingest/ingest-task-order.test.ts
+git commit -m "fix(etl): 태스크 순서를 월→시군구로 반전해 단지 생성 경합 제거"
+```
+
+---
+
+### Task 2: 병합 순수 로직
+
+DB를 타지 않는 부분만 먼저 만든다. 생존자 선택과 해시 재계산 입력 조립이 여기 속한다.
+
+**Files:**
+- Create: `scripts/ops/merge-duplicate-properties/core.ts`
+- Create: `tests/ops/merge-properties-core.test.ts`
+- Modify: `scripts/ingest/transactions/runner.ts` (`computeHash`를 export)
+- Modify: `package.json:17` (`test:unit`에 `tests/ops` 추가)
+
+**Interfaces:**
+- Consumes: `buildIngestTaskKeys`는 쓰지 않는다. `computeHash(row, propertyId)`를 Task 2에서 export로 바꿔 쓴다.
+- Produces:
+  ```ts
+  export interface MergeRow { id: bigint; builtYear: number | null }
+  export interface MergePlan<T extends MergeRow> { survivor: T; losers: T[]; builtYear: number | null }
+  export function planGroupMerge<T extends MergeRow>(rows: T[]): MergePlan<T> | null
+
+  export interface TxHashInput {
+    dealType: string; contractDate: Date; exclusiveArea: unknown;
+    floor: number | null; dealAmount: number | null;
+    deposit: number | null; monthlyRent: number | null;
+  }
+  export function hashInputFromDbRow(tx: TxHashInput): {
+    dealType: string; contractDate: Date; exclusiveArea: number;
+    floor: number | null; dealAmount: number | null;
+    deposit: number | null; monthlyRent: number | null;
+  }
+  ```
+
+- [ ] **Step 1: 실패하는 테스트 작성**
+
+`tests/ops/merge-properties-core.test.ts`:
+
+```ts
+import { describe, it, expect } from 'vitest';
+import { Prisma } from '@prisma/client';
+import { planGroupMerge, hashInputFromDbRow } from '@/scripts/ops/merge-duplicate-properties/core';
+
+describe('planGroupMerge', () => {
+  // 생존자 = 최소 id. 먼저 생성된 쪽이 색인·외부링크를 가졌을 가능성이 높아 SEO 손실이 작다.
+  it('최소 id를 생존자로 고른다', () => {
+    const plan = planGroupMerge([
+      { id: 41205n, builtYear: 2001 },
+      { id: 41203n, builtYear: 2001 },
+      { id: 41210n, builtYear: 2001 },
+    ])!;
+    expect(plan.survivor.id).toBe(41203n);
+    expect(plan.losers.map((l) => l.id)).toEqual([41205n, 41210n]);
+  });
+
+  it('입력 순서가 달라도 같은 결과를 낸다', () => {
+    const a = planGroupMerge([{ id: 2n, builtYear: null }, { id: 1n, builtYear: null }])!;
+    const b = planGroupMerge([{ id: 1n, builtYear: null }, { id: 2n, builtYear: null }])!;
+    expect(a.survivor.id).toBe(b.survivor.id);
+  });
+
+  it('행이 1개 이하면 병합할 게 없어 null', () => {
+    expect(planGroupMerge([{ id: 1n, builtYear: null }])).toBeNull();
+    expect(planGroupMerge([])).toBeNull();
+  });
+
+  // 실측: 2,028그룹 중 15그룹만 준공년이 갈린다. 생존자가 비었을 때만 패자 값으로 채운다.
+  it('생존자의 builtYear가 null이면 패자 값으로 보충한다', () => {
+    const plan = planGroupMerge([
+      { id: 1n, builtYear: null },
+      { id: 2n, builtYear: 1998 },
+    ])!;
+    expect(plan.builtYear).toBe(1998);
+  });
+
+  it('생존자에 builtYear가 있으면 패자 값으로 덮지 않는다', () => {
+    const plan = planGroupMerge([
+      { id: 1n, builtYear: 2001 },
+      { id: 2n, builtYear: 1998 },
+    ])!;
+    expect(plan.builtYear).toBe(2001);
+  });
+
+  it('전부 null이면 null', () => {
+    const plan = planGroupMerge([{ id: 1n, builtYear: null }, { id: 2n, builtYear: null }])!;
+    expect(plan.builtYear).toBeNull();
+  });
+});
+
+describe('hashInputFromDbRow', () => {
+  // computeHash는 JSON.stringify를 쓴다. Prisma Decimal은 문자열 "84.9"로 직렬화되어
+  // ETL이 만드는 숫자 84.9와 다른 해시를 낸다 — 반드시 Number()로 변환해야 한다.
+  it('Decimal exclusiveArea를 number로 바꾼다', () => {
+    const out = hashInputFromDbRow({
+      dealType: 'SALE',
+      contractDate: new Date(Date.UTC(2026, 0, 15)),
+      exclusiveArea: new Prisma.Decimal('84.90'),
+      floor: 3, dealAmount: 120000, deposit: null, monthlyRent: null,
+    });
+    expect(out.exclusiveArea).toBe(84.9);
+    expect(JSON.stringify({ a: out.exclusiveArea })).toBe('{"a":84.9}');
+  });
+
+  it('후행 0을 ETL과 같게 정규화한다', () => {
+    const out = hashInputFromDbRow({
+      dealType: 'SALE',
+      contractDate: new Date(Date.UTC(2026, 0, 15)),
+      exclusiveArea: new Prisma.Decimal('84.00'),
+      floor: null, dealAmount: null, deposit: null, monthlyRent: null,
+    });
+    // ETL은 Number('84') → 84
+    expect(JSON.stringify({ a: out.exclusiveArea })).toBe('{"a":84}');
+  });
+
+  it('null 필드를 undefined로 바꾸지 않는다', () => {
+    const out = hashInputFromDbRow({
+      dealType: 'JEONSE',
+      contractDate: new Date(Date.UTC(2026, 0, 15)),
+      exclusiveArea: new Prisma.Decimal('59.99'),
+      floor: null, dealAmount: null, deposit: 50000, monthlyRent: null,
+    });
+    // JSON.stringify는 undefined인 키를 통째로 빼버려 해시가 달라진다
+    expect(JSON.stringify(out)).toContain('"floor":null');
+    expect(JSON.stringify(out)).toContain('"monthlyRent":null');
+  });
+});
+```
+
+- [ ] **Step 2: 실패 확인**
+
+Run: `pnpm dotenv -e .env.test -- vitest run tests/ops/merge-properties-core.test.ts`
+Expected: FAIL — `Failed to resolve import ".../core"`
+
+- [ ] **Step 3: `core.ts` 구현**
+
+`scripts/ops/merge-duplicate-properties/core.ts` (신규). prisma를 import하지 않는다 — DB 없이 도는 순수 로직이다.
+
+```ts
+export interface MergeRow {
+  id: bigint;
+  builtYear: number | null;
+}
+
+export interface MergePlan<T extends MergeRow> {
+  survivor: T;
+  losers: T[];
+  /** 생존자에 적용할 builtYear. 생존자가 비었을 때만 패자 값으로 채운다. */
+  builtYear: number | null;
+}
+
+/**
+ * 한 중복 그룹의 병합 계획을 세운다. 생존자는 최소 id —
+ * 먼저 생성된 쪽이 색인·외부링크를 가졌을 가능성이 높아 301로 밀 때 손실이 가장 작고,
+ * 규칙이 결정적이라 재실행해도 같은 결과가 나온다.
+ */
+export function planGroupMerge<T extends MergeRow>(rows: T[]): MergePlan<T> | null {
+  if (rows.length < 2) return null;
+  const sorted = [...rows].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const [survivor, ...losers] = sorted;
+  const builtYear = survivor.builtYear ?? losers.find((l) => l.builtYear != null)?.builtYear ?? null;
+  return { survivor, losers, builtYear };
+}
+
+export interface TxHashInput {
+  dealType: string;
+  contractDate: Date;
+  exclusiveArea: unknown;
+  floor: number | null;
+  dealAmount: number | null;
+  deposit: number | null;
+  monthlyRent: number | null;
+}
+
+/**
+ * DB에서 읽은 Transaction 행을 computeHash가 기대하는 형태로 맞춘다.
+ *
+ * computeHash는 JSON.stringify를 쓰므로 타입이 다르면 같은 값이라도 해시가 달라진다.
+ * Prisma Decimal은 {"a":"84.9"}로, ETL의 number는 {"a":84.9}로 직렬화된다.
+ * Number()는 후행 0도 정규화해 ETL과 일치시킨다(Decimal('84.00') → 84).
+ */
+export function hashInputFromDbRow(tx: TxHashInput) {
+  return {
+    dealType: tx.dealType,
+    contractDate: tx.contractDate,
+    exclusiveArea: Number(tx.exclusiveArea),
+    floor: tx.floor,
+    dealAmount: tx.dealAmount,
+    deposit: tx.deposit,
+    monthlyRent: tx.monthlyRent,
+  };
+}
+```
+
+- [ ] **Step 4: `test:unit`이 `tests/ops`를 포함하도록 수정**
+
+`package.json:17`:
+
+```json
+"test:unit": "dotenv -e .env.test -- vitest run tests/lib tests/ingest tests/components tests/ops",
+```
+
+- [ ] **Step 5: `computeHash`를 export로 변경**
+
+`scripts/ingest/transactions/runner.ts:279`:
+
+```ts
+// 변경 전
+function computeHash(row: NormalizedTransaction, propertyId: bigint): string {
+// 변경 후
+export function computeHash(row: NormalizedTransaction, propertyId: bigint): string {
+```
+
+본문은 건드리지 않는다. 병합 스크립트가 ETL과 **같은 함수**를 써야 해시가 어긋나지 않는다 — 복제하면 한쪽만 바뀔 때 조용히 깨진다.
+
+- [ ] **Step 6: 통과 확인**
+
+Run: `pnpm dotenv -e .env.test -- vitest run tests/ops/merge-properties-core.test.ts`
+Expected: PASS (9 tests)
+
+- [ ] **Step 7: typecheck + lint**
+
+Run: `pnpm typecheck && pnpm lint`
+Expected: 무출력 + `✔ No ESLint warnings or errors`
+
+- [ ] **Step 8: 커밋**
+
+```bash
+git add scripts/ops/merge-duplicate-properties/core.ts tests/ops/merge-properties-core.test.ts scripts/ingest/transactions/runner.ts package.json
+git commit -m "feat(ops): 단지 병합 순수 로직 (생존자 선택·해시 입력 정규화)"
+```
+
+---
+
+### Task 3: 병합 실행 스크립트
+
+DB를 실제로 건드리는 부분. 기본 dry-run이고 `--apply`가 있을 때만 쓴다.
+
+**Files:**
+- Create: `scripts/ops/merge-duplicate-properties/index.ts`
+- Create: `tests/integration/merge-duplicate-properties.test.ts`
+- Modify: `package.json` (scripts에 `ops:merge-properties` 추가)
+
+**Interfaces:**
+- Consumes:
+  ```ts
+  // scripts/ops/merge-duplicate-properties/core.ts (Task 2)
+  planGroupMerge<T extends MergeRow>(rows: T[]): MergePlan<T> | null
+  hashInputFromDbRow(tx: TxHashInput): { dealType; contractDate; exclusiveArea: number; floor; dealAmount; deposit; monthlyRent }
+  // scripts/ingest/transactions/runner.ts (Task 2에서 export로 변경)
+  computeHash(row: NormalizedTransaction, propertyId: bigint): string
+  // scripts/ingest/aggregator.ts (기존)
+  updatePropertyAggregates(propertyIds: bigint[]): Promise<void>
+  ```
+- Produces:
+  ```ts
+  export interface MergeStats { groups: number; losers: number; moved: number; deleted: number }
+  export async function mergeDuplicateProperties(opts: { apply: boolean; limit?: number }): Promise<MergeStats>
+  ```
+
+- [ ] **Step 1: 실패하는 통합 테스트 작성**
+
+`tests/integration/merge-duplicate-properties.test.ts`:
+
+```ts
+import { describe, it, expect, beforeEach } from 'vitest';
+import { prisma } from '@/lib/db';
+import { PropertyType, DealType } from '@prisma/client';
+import { mergeDuplicateProperties } from '@/scripts/ops/merge-duplicate-properties';
+import { computeHash } from '@/scripts/ingest/transactions/runner';
+import type { NormalizedTransaction } from '@/scripts/ingest/types';
+import { assertLocalDatabase } from '../_helpers/assert-local-db';
+
+const REGION = '1168000000';
+
+async function seedRegion() {
+  await prisma.region.upsert({
+    where: { code: REGION },
+    create: {
+      code: REGION, sido: '서울특별시', sigungu: '강남구',
+      level: 2, isAbolished: false, fullName: '서울특별시 강남구', sourceVersion: 'test',
+    },
+    update: {},
+  });
+}
+
+// ETL이 만들 해시와 같은 방식으로 시드해야 병합의 재계산을 진짜로 검증할 수 있다.
+function tx(propertyId: bigint, day: number, area: number, amount: number) {
+  const row = {
+    propertyType: PropertyType.APARTMENT,
+    dealType: DealType.SALE,
+    contractDate: new Date(Date.UTC(2026, 0, day)),
+    exclusiveArea: area,
+    floor: 3,
+    dealAmount: amount,
+    deposit: null,
+    monthlyRent: null,
+  };
+  return {
+    rawHash: computeHash(row as unknown as NormalizedTransaction, propertyId),
+    propertyId,
+    propertyType: PropertyType.APARTMENT,
+    regionCode: REGION,
+    sigunguCode: '11680',
+    dealType: DealType.SALE,
+    contractDate: row.contractDate,
+    exclusiveArea: area,
+    floor: 3,
+    dealAmount: amount,
+    source: 'TEST',
+  };
+}
+
+describe('mergeDuplicateProperties', () => {
+  beforeEach(async () => {
+    assertLocalDatabase();
+    await prisma.transaction.deleteMany();
+    await prisma.property.deleteMany();
+    await seedRegion();
+  });
+
+  it('dry-run은 아무것도 바꾸지 않고 건수만 센다', async () => {
+    const a = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    const b = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    await prisma.transaction.create({ data: tx(b.id, 5, 84.9, 120000) });
+
+    const stats = await mergeDuplicateProperties({ apply: false });
+    expect(stats.groups).toBe(1);
+    expect(stats.losers).toBe(1);
+    // dry-run도 해시·충돌 판정을 실제로 돌리므로 --apply와 같은 수치가 나와야 한다
+    expect(stats.moved).toBe(1);
+    expect(stats.deleted).toBe(0);
+
+    expect((await prisma.property.findUnique({ where: { id: b.id } }))!.redirectToId).toBeNull();
+    expect((await prisma.transaction.findFirst())!.propertyId).toBe(b.id);
+    expect(a.id < b.id).toBe(true);
+  });
+
+  it('패자 둘의 거래 내용이 같으면 하나만 옮기고 나머지는 삭제한다', async () => {
+    const a = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    const b = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    const c = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    // 생존자 a에는 없고, 패자 b·c에 같은 내용의 거래가 하나씩.
+    // 둘 다 같은 새 해시로 매핑되므로 하나만 살아남아야 한다 — 아니면 @@unique(rawHash) 위반.
+    await prisma.transaction.create({ data: tx(b.id, 7, 84.9, 140000) });
+    await prisma.transaction.create({ data: tx(c.id, 7, 84.9, 140000) });
+
+    const stats = await mergeDuplicateProperties({ apply: true });
+    expect(stats.moved).toBe(1);
+    expect(stats.deleted).toBe(1);
+    expect(await prisma.transaction.count()).toBe(1);
+    expect((await prisma.transaction.findFirst())!.propertyId).toBe(a.id);
+  });
+
+  it('거래를 생존자로 옮기고 해시를 재계산한다', async () => {
+    const a = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    const b = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    await prisma.transaction.create({ data: tx(a.id, 5, 84.9, 120000) });
+    await prisma.transaction.create({ data: tx(b.id, 6, 84.9, 130000) });
+
+    const stats = await mergeDuplicateProperties({ apply: true });
+    expect(stats.moved).toBe(1);
+    expect(stats.deleted).toBe(0);
+
+    const all = await prisma.transaction.findMany();
+    expect(all).toHaveLength(2);
+    expect(all.every((t) => t.propertyId === a.id)).toBe(true);
+
+    // 재계산된 해시가 ETL이 다음에 만들 값과 같아야 한다. 아니면 재수집 때 중복이 다시 들어온다.
+    const moved = all.find((t) => t.dealAmount === 130000)!;
+    const expected = computeHash(
+      { propertyType: PropertyType.APARTMENT, dealType: DealType.SALE,
+        contractDate: new Date(Date.UTC(2026, 0, 6)), exclusiveArea: 84.9,
+        floor: 3, dealAmount: 130000, deposit: null, monthlyRent: null } as never,
+      a.id,
+    );
+    expect(moved.rawHash).toBe(expected);
+  });
+
+  it('생존자에 같은 거래가 이미 있으면 패자 쪽을 삭제한다', async () => {
+    const a = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    const b = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    // 같은 내용의 거래가 양쪽에 하나씩 — 해시는 propertyId 때문에 다르다
+    await prisma.transaction.create({ data: tx(a.id, 5, 84.9, 120000) });
+    await prisma.transaction.create({ data: tx(b.id, 5, 84.9, 120000) });
+
+    const stats = await mergeDuplicateProperties({ apply: true });
+    expect(stats.deleted).toBe(1);
+    expect(stats.moved).toBe(0);
+    expect(await prisma.transaction.count()).toBe(1);
+  });
+
+  it('패자에 redirectToId를 세우고 삭제하지 않는다', async () => {
+    const a = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    const b = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+
+    await mergeDuplicateProperties({ apply: true });
+
+    const loser = await prisma.property.findUnique({ where: { id: b.id } });
+    expect(loser).not.toBeNull();
+    expect(loser!.redirectToId).toBe(a.id);
+  });
+
+  it('생존자 집계를 다시 계산한다', async () => {
+    const a = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    const b = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    await prisma.transaction.create({ data: tx(a.id, 5, 84.9, 120000) });
+    await prisma.transaction.create({ data: tx(b.id, 6, 84.9, 130000) });
+
+    await mergeDuplicateProperties({ apply: true });
+
+    const survivor = await prisma.property.findUnique({ where: { id: a.id } });
+    expect(survivor!.txCountTotal).toBe(2);
+  });
+
+  it('주소가 다르면 같은 그룹으로 묶지 않는다', async () => {
+    await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '동신', nameNorm: '동신', regionCode: REGION, address: '금동 10' },
+    });
+    await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '동신', nameNorm: '동신', regionCode: REGION, address: '수송동 904' },
+    });
+
+    const stats = await mergeDuplicateProperties({ apply: true });
+    expect(stats.groups).toBe(0);
+    expect(await prisma.property.count({ where: { redirectToId: { not: null } } })).toBe(0);
+  });
+
+  it('이미 리다이렉트된 행은 그룹에서 제외한다', async () => {
+    const a = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1', redirectToId: a.id },
+    });
+
+    const stats = await mergeDuplicateProperties({ apply: true });
+    expect(stats.groups).toBe(0);
+  });
+});
+```
+
+- [ ] **Step 2: 실패 확인**
+
+Run: `pnpm dotenv -e .env.test -- vitest run tests/integration/merge-duplicate-properties.test.ts`
+Expected: FAIL — `Failed to resolve import ".../merge-duplicate-properties"`
+
+- [ ] **Step 3: 실행 모듈 구현**
+
+`scripts/ops/merge-duplicate-properties/index.ts` (신규):
+
+```ts
+// 경합으로 갈라진 중복 단지를 병합한다. 기본 DRY-RUN, 실제 반영은 --apply.
+// 그룹 키: (propertyType, nameNorm, regionCode, address), 생존자: 최소 id.
+// 패자는 삭제하지 않고 redirectToId로 301을 건다.
+import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import type { PropertyType } from '@prisma/client';
+import { updatePropertyAggregates } from '@/scripts/ingest/aggregator';
+import { computeHash } from '@/scripts/ingest/transactions/runner';
+import type { NormalizedTransaction } from '@/scripts/ingest/types';
+import { planGroupMerge, hashInputFromDbRow } from './core';
+
+export interface MergeStats {
+  groups: number;
+  losers: number;
+  moved: number;
+  deleted: number;
+}
+
+interface GroupRow {
+  propertyType: string;
+  nameNorm: string;
+  regionCode: string;
+  address: string;
+}
+
+export async function mergeDuplicateProperties(opts: { apply: boolean; limit?: number }): Promise<MergeStats> {
+  const stats: MergeStats = { groups: 0, losers: 0, moved: 0, deleted: 0 };
+
+  // redirectToId IS NULL — 이미 리다이렉트된 행(2026-07-01 개편분, 이전 병합분)은 대상이 아니다.
+  const groups = await prisma.$queryRaw<GroupRow[]>`
+    SELECT "propertyType"::text AS "propertyType", "nameNorm", "regionCode", address
+    FROM "Property"
+    WHERE "redirectToId" IS NULL
+    GROUP BY 1, 2, 3, 4
+    HAVING COUNT(*) > 1
+    ORDER BY 1, 2, 3, 4
+  `;
+
+  const targets = opts.limit ? groups.slice(0, opts.limit) : groups;
+  logger.info({ groups: targets.length, total: groups.length, apply: opts.apply }, 'merge targets');
+
+  for (const g of targets) {
+    const rows = await prisma.property.findMany({
+      where: {
+        propertyType: g.propertyType as PropertyType,
+        nameNorm: g.nameNorm,
+        regionCode: g.regionCode,
+        address: g.address,
+        redirectToId: null,
+      },
+      select: { id: true, builtYear: true },
+    });
+    const plan = planGroupMerge(rows);
+    if (!plan) continue;
+
+    stats.groups++;
+    stats.losers += plan.losers.length;
+    const loserIds = plan.losers.map((l) => l.id);
+
+    const txs = await prisma.transaction.findMany({
+      where: { propertyId: { in: loserIds } },
+      select: {
+        id: true, dealType: true, contractDate: true, exclusiveArea: true,
+        floor: true, dealAmount: true, deposit: true, monthlyRent: true,
+      },
+    });
+
+    // 해시 계산과 충돌 판정은 읽기 전용이라 dry-run에서도 그대로 돌린다.
+    // 그래야 dry-run의 moved/deleted가 --apply의 실제 결과와 같아진다.
+    const toMove: Array<{ id: bigint; hash: string }> = [];
+    const toDelete: bigint[] = [];
+    const claimed = new Set<string>();
+    for (const row of txs) {
+      // rawHash는 propertyId를 포함하고 @@unique다. 재계산하지 않으면 다음 수집 때
+      // ETL이 생존자 id로 만든 해시와 달라 같은 거래가 다시 삽입된다.
+      const newHash = computeHash(hashInputFromDbRow(row) as unknown as NormalizedTransaction, plan.survivor.id);
+      // 패자가 둘 이상인 그룹에서는 서로 내용이 같은 거래가 같은 새 해시로 매핑될 수 있다.
+      // claimed로 걸러내지 않으면 두 번째 update가 @@unique(rawHash)를 위반한다.
+      if (claimed.has(newHash)) {
+        toDelete.push(row.id);
+        continue;
+      }
+      const clash = await prisma.transaction.findUnique({ where: { rawHash: newHash }, select: { id: true } });
+      if (clash) {
+        toDelete.push(row.id);
+      } else {
+        claimed.add(newHash);
+        toMove.push({ id: row.id, hash: newHash });
+      }
+    }
+    stats.moved += toMove.length;
+    stats.deleted += toDelete.length;
+
+    if (!opts.apply) {
+      logger.info(
+        { name: g.nameNorm, address: g.address, survivor: String(plan.survivor.id),
+          losers: loserIds.map(String), move: toMove.length, del: toDelete.length },
+        'DRY-RUN group',
+      );
+      continue;
+    }
+
+    await prisma.$transaction(async (t) => {
+      if (toDelete.length > 0) {
+        await t.transaction.deleteMany({ where: { id: { in: toDelete } } });
+      }
+      for (const m of toMove) {
+        await t.transaction.update({
+          where: { id: m.id },
+          data: { propertyId: plan.survivor.id, rawHash: m.hash },
+        });
+      }
+      if (plan.builtYear !== null) {
+        await t.property.update({ where: { id: plan.survivor.id }, data: { builtYear: plan.builtYear } });
+      }
+      await t.property.updateMany({
+        where: { id: { in: loserIds } },
+        data: { redirectToId: plan.survivor.id },
+      });
+    });
+
+    await updatePropertyAggregates([plan.survivor.id]);
+  }
+
+  logger.info(stats, opts.apply ? 'merge applied' : 'merge dry-run complete');
+  return stats;
+}
+
+async function main() {
+  const apply = process.argv.includes('--apply');
+  const limitArg = process.argv.find((a) => a.startsWith('--limit='));
+  const limit = limitArg ? Number(limitArg.split('=')[1]) : undefined;
+
+  const stats = await mergeDuplicateProperties({ apply, limit });
+  if (!apply) {
+    console.log('\n[DRY-RUN] 실제 반영하려면 --apply');
+  }
+  console.log(JSON.stringify(stats, null, 2));
+  await prisma.$disconnect();
+}
+
+// 테스트에서 import할 때는 main을 돌리지 않는다.
+if (process.argv[1]?.includes('merge-duplicate-properties')) {
+  main().catch((err) => {
+    logger.error({ err }, 'merge failed');
+    process.exit(1);
+  });
+}
+```
+
+- [ ] **Step 4: package.json에 스크립트 등록**
+
+`scripts` 블록에 `ingest:run` 옆으로 추가한다:
+
+```json
+"ops:merge-properties": "dotenv -e .env.local -- tsx scripts/ops/merge-duplicate-properties/index.ts",
+```
+
+- [ ] **Step 5: 통합 테스트 통과 확인**
+
+Run: `pnpm dotenv -e .env.test -- vitest run tests/integration/merge-duplicate-properties.test.ts`
+Expected: PASS (8 tests)
+
+`assertLocalDatabase()`가 막으면 `.env.test`가 로컬 docker(5433)를 가리키는지 확인한다. 운영 DB를 가리킨 채로는 절대 돌리지 않는다.
+
+- [ ] **Step 6: 전체 스위트 + typecheck + lint**
+
+Run: `pnpm typecheck && pnpm lint && pnpm test:unit && pnpm dotenv -e .env.test -- vitest run tests/integration`
+Expected: 전부 PASS
+
+- [ ] **Step 7: 커밋**
+
+```bash
+git add scripts/ops/merge-duplicate-properties/index.ts tests/integration/merge-duplicate-properties.test.ts package.json
+git commit -m "feat(ops): 중복 단지 병합 스크립트 (dry-run 기본, 해시 재계산)"
+```
+
+---
+
+## 검증
+
+전 태스크 완료 후:
+
+| 항목 | 방법 | 기대 |
+|---|---|---|
+| 태스크 순서 | `tests/ingest/ingest-task-order.test.ts` | 인접 쌍 시군구 상이 |
+| 병합 로직 | `tests/ops/merge-properties-core.test.ts` | 9개 통과 |
+| 병합 실행 | `tests/integration/merge-duplicate-properties.test.ts` | 8개 통과 |
+| ETL 회귀 | `pnpm dotenv -e .env.test -- vitest run tests/ingest` | 전부 통과 |
+| 빌드 | `pnpm build` | 성공 |
+| lint | `pnpm lint` | 클린 |
+
+`pnpm build`는 CI에 없으므로 직접 돌린다.
+
+## 구현 중 변경된 것
+
+아래 태스크 코드 블록은 그대로 두었다(계획했던 원안의 기록). 실제 구현은 다음 세 지점에서 갈렸다 — 나중에 이 계획을 참고할 때 원안(3중 루프, 무필터 delete)을 그대로 베끼거나 충분하다고 가정하면 안 된다.
+
+- **Task 1의 `buildIngestTaskKeys`에 `dedupeAdjacentSgg` 최빈값 우선 재배치가 추가됐다.** Step 3 코드 블록의 단순 3중 루프(월→시군구)만으로는 `doneKeys` 필터링이 (source, sgg, yyyymm) 조합별로 독립 적용되어 월·api 경계에서 살아남는 시군구 집합이 비대칭이 될 수 있고, 그 경계에서 우연히 같은 시군구가 인접하는 경우가 남았다. `dedupeAdjacentSgg`가 그 잔여 인접을 결정적으로 없앤다(`scripts/ingest/transactions/runner.ts`).
+- **Task 3의 `beforeEach`가 `regionCode: REGION`으로 스코프됐다.** Step 1 코드 블록의 무필터 `prisma.transaction.deleteMany()` / `prisma.property.deleteMany()`는 `tests/integration`이 파일 간 병렬로 도는 동안 `tests/integration/og-coord.test.ts`의 픽스처를 지워 그 파일을 플레이키하게 만드는 버그였다(확인됨: 전체 스위트 3회 중 매번 4~5개 실패, 스코프 후 3회 연속 38/38 통과). 이 계획을 참고해 유사한 통합 테스트를 새로 쓸 때 무필터 delete를 베끼면 안 된다.
+- **`runner.ts`가 `main()` 모듈 스코프 호출에 직접 실행 가드를 얻었다.** 계획 어디에도 안 나온다. Task 2에서 `computeHash`를 export하면서 이 모듈이 병합 스크립트에 라이브러리로 import되기 시작했는데, 가드 없는 최상위 `main()`은 그 import만으로 실제 ETL을 백그라운드에서 실행시킨다(운영에서 병합 스크립트를 실행할 때마다 별도 수집 job이 같이 뜨는 셈). `if (process.argv[1]?.includes('transactions/runner'))`로 직접 실행(tsx)에서만 돌게 막았다.
+- **`index.ts`의 `--apply` 경로에 그룹 완료 로그(`'group merged'`)가 추가됐다.** Step 3 코드 블록은 `!opts.apply`(DRY-RUN) 분기에만 그룹별 로그를 찍는다. 실제 `--apply` 실행은 전체 루프 종료 후 집계 하나만 찍혀 처리 중 진행 상황이 전혀 안 보였고, 운영 적용 절차 6번이 가리키는 "그룹별 로그"가 `--apply`에서는 애초에 존재하지 않는 참조였다. `$transaction` 커밋 + `updatePropertyAggregates` 완료 뒤 그룹마다 survivor·losers·move·del을 로그로 남기도록 고쳤다 — 아래 6번 절차는 이 로그를 전제로 쓰여 있다.
+
+## 운영 적용 (머지·배포 후)
+
+이 계획은 **코드만** 담는다. 실제 병합은 배포 후 사람이 실행한다.
+
+1. 운영 DB 백업 (`Property`, `Transaction`)
+2. **병합 도중 daily ETL이 돌지 않는지 확인한다.**
+   - `.github/workflows/ingest-transactions-daily.yml`은 `cron '0 15,19 * * *'`(KST 00·04시)로 6-way api matrix를 돌린다. `deploy/systemd/install-timers.sh`의 온박스 타이머도 같은 시각(`15,19:00:00`)에 걸려 있다 — 병합 작업 시간대가 이 두 스케줄과 겹치지 않는지 먼저 맞춘다.
+   - **이 GitHub Actions 워크플로우가 OCI 자가호스팅 마이그레이션 이후에도 실제로 운영 DB에 닿는지는 리포지토리만 보고는 판단할 수 없다.** 닿는다고도, 안 닿는다고도 가정하지 말고 실행 전에 직접 확인한다(예: 최근 워크플로우 run의 성공/실패, `IngestionRun`의 최근 상태). 여전히 닿는다면 온박스 타이머와 이중으로 도는 셈이니 그 경우도 함께 처리한다.
+   - 병합의 해시 충돌 체크(`transaction.findUnique`)는 `$transaction`이 열리기 전에 돌고 `update`는 그 안에서 도는 TOCTOU 구간이 있다 — 그 사이에 ETL이 같은 해시의 거래를 넣으면 `@@unique(rawHash)` 위반으로 그 그룹의 `$transaction`이 실패한다(그룹 단위 `try/catch`로 격리되어 있어 그 그룹만 `failed`로 집계되고 나머지는 계속 진행된다 — 데이터가 깨지지는 않는다). 그래도 매번 실패 그룹을 붙들 필요가 없도록 미리 확인한다.
+3. `--dry-run`으로 대상 확인 — 예상 2,012그룹 / 4,096행, 이관 대상 거래 약 48,264건. **이 시점에 7번의 필수 검증 쿼리를 한 번 먼저 돌려 베이스라인 건수를 기록해둔다.** `Property.redirectToId`는 이 병합 이전에도 2026-07-01 행정구역 개편 리다이렉트로 이미 세워져 있을 수 있고, 그 개편 스크립트는 거래를 옮기지 않으므로(별도 `delete-region-orphans.ts`가 처리) 이 쿼리가 병합 시작 전에도 0행이 아닐 수 있다 — 그 기존 값이 베이스라인이다.
+4. **`--limit=200` 단위로 나눠 순차 적용한다(전체 `--apply` 한 번에 돌리지 않는다).** 전체는 약 48,264건의 충돌 조회 + 갱신을 운영 DB로의 SSH 터널 너머로 수행해야 해서, 수동 감독 하에 실측상 30~60분+ 걸리고 그동안 터널이 끊길 위험이 있다. 병합은 재실행해도 이미 처리된 그룹을 `redirectToId IS NULL` 필터로 건너뛰므로 재개 가능하다 — `--limit=200`씩 여러 번 도는 쪽이 전체 한 방보다 항상 낫다. 회차마다 3번의 dry-run 대상 총계가 줄어드는지 확인하며 진행한다. **각 회차 실행 직전에 현재 시각(UTC)을 적어둔다** — 5번의 크래시 복구가 이 타임스탬프를 쓴다.
+5. **중간에 프로세스가 죽었다면(또는 일부 그룹이 `failed`로 집계됐다면)**, 그 시점까지 커밋된 그룹은 거래 이관과 `redirectToId`까지는 끝났지만 생존자의 `updatePropertyAggregates`(집계 갱신)는 `$transaction` 커밋 **이후**에 별도로 돈다 — 중단 시점이 그 사이였다면 생존자의 `txCountTotal` 등 집계가 갱신되지 않은 채로 남는다. 그 그룹은 이미 `redirectToId`가 세워져 있어 재실행해도 다시 잡히지 않고, 7번(다음 daily ETL 후 재확인) 절차도 그 생존자가 새 거래를 안 받으면 잡아내지 못해 영영 stale로 남는다.
+   - **stdout을 반드시 `tee`로 파일에 남긴다** (예: `pnpm ops:merge-properties --apply --limit=200 2>&1 | tee merge-run-$(date +%s).log`). 아래 식별 절차는 완료 로그 확인에 이 파일을 쓴다.
+   - `--apply` 실행은 그룹마다 `$transaction` 커밋 + `updatePropertyAggregates`가 **모두** 끝난 뒤에만 `'group merged'` 로그 라인(survivor·losers·move·del)을 찍는다. 즉 죽은 시점에 처리 중이던 그룹 하나만 "커밋은 됐는데 로그가 없는" 상태로 남을 수 있고, 그 외 그룹은 로그가 있으면 완전히 끝난 것, 없으면(=`'merge targets'` 로그 이후 로그가 아예 없는 그룹) 아직 손도 안 댄 것이라 재실행하면 정상 처리된다.
+   - **식별(시간 스코프로 순환 참조를 피한다):** 로그에서 `'group merged'` 완료 라인들의 survivor id 집합을 모은다(A). 이번 회차 시작 시각 이후로 `redirectToId`가 세워진 survivor id 집합을 아래처럼 **시간으로 좁혀서** 구한다(B) — 전체 테이블에서 `WHERE "redirectToId" IS NOT NULL`만으로 차집합을 뜨면 2026-07-01 개편 리다이렉트 타깃까지 전부 섞여 들어와 차집합이 실제보다 훨씬 커지고 식별이 불가능해진다. `updateMany`는 Prisma의 `@updatedAt`으로 패자 행의 `updatedAt`을 자동 갱신하므로, 이번 회차에 커밋된 패자만 시간으로 걸러진다.
+     ```sql
+     SELECT DISTINCT "redirectToId"
+     FROM "Property"
+     WHERE "redirectToId" IS NOT NULL
+       AND "updatedAt" >= '<이번 회차 시작 시각(UTC)>';
+     ```
+     B에서 A를 뺀 차집합이 "커밋은 됐는데 집계가 stale한" survivor id다. 그 id들에 대해 `updatePropertyAggregates([...])`를 수동으로 다시 돌린다.
+   - **`failed`로 집계된 그룹은 위 절차로 찾을 수 없다.** `index.ts`의 catch 로그(`'group merge failed — skipping'`)는 `propertyType`/`name`(nameNorm)/`address`/`regionCode` 네 값만 담고 id는 담지 않는다 — 그 그룹의 `plan`(생존자/패자 id 확정)이 `try` 블록 안에서만 계산되기 때문이다. 이 네 값의 조합이 그 그룹을 유일하게 특정하므로, 재실행 시 `redirectToId IS NULL` 필터가 그대로 다시 잡아 처리한다(별도 조치 불필요) — 다만 반복적으로 실패한다면 이 네 값으로 해당 그룹을 직접 조회해 원인을 살펴본다.
+   - 그런 다음 스크립트를 그대로 다시 `--apply --limit=200`으로 돌려 나머지 그룹을 이어간다(`redirectToId IS NULL` 필터가 이미 커밋된 그룹을 자동 스킵한다).
+6. 생존자들의 거래 건수를 기록
+7. **다음 daily ETL이 한 바퀴 돈 뒤 아래 두 가지를 확인한다.**
+   - 6번에서 기록한 생존자 거래 건수가 늘었다면 `exclusiveArea` 정밀도 문제로 해시가 어긋나 중복이 재삽입된 것이므로, 재계산 로직을 고치고 늘어난 행을 정리한다.
+   - **(필수) 아래 쿼리를 다시 돌려 3번에서 기록한 베이스라인과 비교한다.**
+     ```sql
+     SELECT p.id, count(t.id)
+     FROM "Property" p JOIN "Transaction" t ON t."propertyId" = p.id
+     WHERE p."redirectToId" IS NOT NULL
+     GROUP BY 1;
+     ```
+     베이스라인에 없던 `id`가 새로 나타나면 회귀다 — 조사한다. (베이스라인 자체가 0행이 아니었다면 그건 이 병합과 무관한 기존 2026-07-01 orphan이므로 그대로 둔다.) 생존자 거래 건수가 늘지 않는 첫 번째 체크만으로는 안전하지 않다 — 새 ETL이 리다이렉트된 패자에게 거래를 다시 붙이는 회귀(예: `findOrCreateProperty`/`propCache`가 `redirectToId`를 다시 필터링하지 않게 되는 경우)가 나면 생존자 건수는 그대로인 채 패자 쪽에서만 조용히 늘어나 첫 체크를 통과해버린다. 이 쿼리는 그 회귀와, 원래 이 체크가 잡으려던 `exclusiveArea` `Decimal(6,2)` 정밀도 문제(해시 불일치로 인한 중복 재삽입) 둘 다를 잡는다.
+
+이 스크립트는 운영 DB에 **쓰기**를 한다. 지금까지 쓰던 읽기전용 터널로는 실행할 수 없고, 실행 시점과 결과를 기록한다.
+
+## 다음 계획 (이 계획 밖)
+
+운영 병합이 끝나고 6번 검증까지 통과하면 **C(유니크 제약)**를 별도 계획으로 쓴다. 내용은 부분 유니크 인덱스 마이그레이션과 `findOrCreateProperty`의 P2002 재조회다. 중복이 남은 상태로 배포하면 `prisma migrate deploy`가 실패해 배포 전체가 죽으므로, 순서를 지켜야 한다.

@@ -195,7 +195,8 @@ export async function getPropertyList({
   perPage = 30,
   stationId,
 }: PropertyListParams) {
-  const where: Prisma.PropertyWhereInput = { propertyType: { in: types } };
+  // redirectToId: null — 병합 패자는 301로 넘어간 행이라 목록/검색 결과에 노출하지 않는다.
+  const where: Prisma.PropertyWhereInput = { propertyType: { in: types }, redirectToId: null };
 
   if (stationId) {
     const ids = await prisma.$queryRaw<{ id: bigint }[]>`
@@ -323,6 +324,7 @@ export async function getTopPropertiesByVolume({ types, sigunguCode, sidoPrefixe
     where: {
       propertyType: { in: types },
       txCount12m: { gt: 0 },
+      redirectToId: null,
       ...(sigunguCode ? { sigunguCode } : {}),
       ...(sidoPrefixes && sidoPrefixes.length > 0
         ? { OR: sidoPrefixes.map((p) => ({ sigunguCode: { startsWith: p } })) }
@@ -432,6 +434,7 @@ export async function getRegionStats(
     WHERE "sigunguCode" = ${sigunguCode}
       AND "propertyType"::text = ${propertyType}
       AND "txCount12m" > 0
+      AND "redirectToId" IS NULL
   `;
   const r = rows[0];
   return {

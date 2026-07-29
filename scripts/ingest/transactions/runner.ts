@@ -52,6 +52,99 @@ function parseArgs(): RunArgs {
   return { api, mode, months, monthOffset, limit, from, to };
 }
 
+export interface IngestTaskKey {
+  api: string;
+  source: string;
+  sgg: string;
+  yyyymm: string;
+}
+
+/**
+ * 실행할 (api, 월, 시군구) 조합을 만든다.
+ *
+ * 월을 바깥, 시군구를 안쪽에 두는 순서가 load-bearing이다. runWithLimit이 동시에
+ * 돌리는 인접 두 태스크가 같은 시군구면, 각 runOne의 propCache가 서로의 신규 생성을
+ * 못 봐서 같은 단지를 둘 다 만든다(실측 2,025그룹). 시군구를 안쪽에 두면 같은 월 안에서는
+ * 인접 쌍이 항상 다른 시군구가 된다.
+ *
+ * 하지만 doneKeys 필터링은 (source, sgg, yyyymm) 조합별로 독립적으로 적용되므로, 월·api
+ * 경계에서 살아남는 시군구 집합이 비대칭이 될 수 있다(예: 이전 --limit 실행이 한 달의
+ * 일부만 완료). 이 경우 경계에서 우연히 같은 시군구가 인접할 수 있어, dedupeAdjacentSgg가
+ * 최빈값 우선(most-frequent-first) 배치로 재정렬해 없앤다. `maxCount <= ceil(n/2)`이면
+ * 인접 충돌 없는 배치가 항상 존재하고 이 알고리즘이 그 배치를 찾아낸다. 그 임계값을 넘는
+ * 초과분만 산술적으로 불가피한 잔여로 남으며, 그 잔여는 유니크 제약 추가 시 P2002 재조회
+ * 로직이 최종 방어선이 된다.
+ */
+export function buildIngestTaskKeys(
+  apis: Array<{ api: string; source: string }>,
+  months: string[],
+  sigunguIds: string[],
+  doneKeys: Set<string>,
+): IngestTaskKey[] {
+  const out: IngestTaskKey[] = [];
+  for (const { api, source } of apis) {
+    for (const yyyymm of months) {
+      for (const sgg of sigunguIds) {
+        if (doneKeys.has(`${source}:${sgg}-${yyyymm}`)) continue;
+        out.push({ api, source, sgg, yyyymm });
+      }
+    }
+  }
+  return dedupeAdjacentSgg(out);
+}
+
+/**
+ * 인접한 두 태스크가 같은 시군구를 갖지 않도록 최빈값 우선(most-frequent-first)으로
+ * 재정렬한다. reorganize-array/task-scheduler류 문제의 표준 해법이며, `maxCount <=
+ * ceil(n/2)`인 한 인접 충돌 없는 배치를 항상 찾아낸다(단순 전방 그리디 스왑은 뒤쪽 충돌을
+ * 풀 유일한 후보를 앞에서 먼저 써버릴 수 있어 이 보장이 없었다).
+ *
+ * 매 단계마다 "직전에 배치한 시군구를 제외하고" 남은 개수가 가장 많은 시군구를 고른다.
+ * 동률이면 시군구 문자열 사전순으로 타이브레이크한다(결정적). 같은 시군구 안에서는 원래
+ * 상대 순서(월 순서)를 유지한다. 직전 시군구 말고 고를 게 없는 경우(=그 시군구 개수가
+ * n의 과반을 넘어 산술적으로 불가피한 경우)만 예외적으로 이어 붙인다 — 이 잔여는 유니크
+ * 제약 추가 시 P2002 재조회 로직이 최종 방어선이 된다.
+ *
+ * 항목을 버리거나 복제하거나 값을 바꾸지 않고 순서만 바꾸며, 인자로 받은 배열은 변경하지
+ * 않는다(같은 입력엔 항상 같은 출력).
+ */
+function dedupeAdjacentSgg(keys: IngestTaskKey[]): IngestTaskKey[] {
+  if (keys.length <= 1) return keys.slice();
+
+  // 시군구별로 원래 상대 순서를 유지하며 그룹화
+  const groups = new Map<string, IngestTaskKey[]>();
+  for (const k of keys) {
+    const group = groups.get(k.sgg);
+    if (group) group.push(k);
+    else groups.set(k.sgg, [k]);
+  }
+
+  const sggList = Array.from(groups.keys()).sort();
+  const remaining = new Map(sggList.map((sgg) => [sgg, groups.get(sgg)!.length]));
+  const cursors = new Map(sggList.map((sgg) => [sgg, 0]));
+
+  const out: IngestTaskKey[] = [];
+  let lastSgg: string | null = null;
+  for (let n = 0; n < keys.length; n++) {
+    let best: string | null = null;
+    for (const candidate of sggList) {
+      if (remaining.get(candidate) === 0) continue;
+      if (candidate === lastSgg) continue;
+      if (best === null || remaining.get(candidate)! > remaining.get(best)!) {
+        best = candidate;
+      }
+    }
+    // 직전 시군구 말고 고를 게 없는 불가피한 경우 — 그대로 이어 붙인다.
+    const chosenSgg: string = best ?? lastSgg!;
+    const cursor = cursors.get(chosenSgg)!;
+    out.push(groups.get(chosenSgg)![cursor]);
+    cursors.set(chosenSgg, cursor + 1);
+    remaining.set(chosenSgg, remaining.get(chosenSgg)! - 1);
+    lastSgg = chosenSgg;
+  }
+  return out;
+}
+
 async function main() {
   const args = parseArgs();
   const apis = args.api === 'all' ? (Object.keys(ADAPTERS) as ApiType[]) : [args.api];
@@ -86,29 +179,29 @@ async function main() {
   let skipped = 0;
   const affectedPropertyIds = new Set<bigint>();
 
-  const tasks: Array<() => Promise<void>> = [];
-  for (const api of apis) {
-    const adapter = ADAPTERS[api];
-    for (const sgg of sigunguIds) {
-      const regionCode = sigunguToRegionCode.get(sgg)!;
-      for (const yyyymm of months) {
-        const targetKey = `${sgg}-${yyyymm}`;
-        if (doneKeys.has(`${adapter.source}:${targetKey}`)) {
-          skipped++;
-          continue;
-        }
-        tasks.push(async () => {
-          try {
-            const upserted = await runOne(adapter, sgg, regionCode, yyyymm, affectedPropertyIds);
-            totalUpserted += upserted;
-          } catch (err) {
-            failed++;
-            logger.error({ err, api: adapter.source, sgg, yyyymm }, 'sigungu-month failed');
-          }
-        });
-      }
+  const taskKeys = buildIngestTaskKeys(
+    apis.map((a) => ({ api: a, source: ADAPTERS[a].source })),
+    months,
+    sigunguIds,
+    doneKeys,
+  );
+  skipped = apis.length * months.length * sigunguIds.length - taskKeys.length;
+
+  const tasks: Array<() => Promise<void>> = taskKeys.map((k) => async () => {
+    try {
+      const upserted = await runOne(
+        ADAPTERS[k.api as ApiType],
+        k.sgg,
+        sigunguToRegionCode.get(k.sgg)!,
+        k.yyyymm,
+        affectedPropertyIds,
+      );
+      totalUpserted += upserted;
+    } catch (err) {
+      failed++;
+      logger.error({ err, api: k.source, sgg: k.sgg, yyyymm: k.yyyymm }, 'sigungu-month failed');
     }
-  }
+  });
   // --limit: 한 실행이 처리할 타깃(시군구·월) 수 상한. 대량 write가 누적되면 Supabase가
   // 디스크 압박으로 read-only(25006)로 빠지므로, 짧게 나눠 실행해 스파이크를 낮춘다.
   // resume(doneKeys)가 이어주므로 여러 번 돌리면 전체가 완료된다.
@@ -156,8 +249,11 @@ async function runOne(
     const rows = await fetchAll(adapter, sigungu, yyyymm);
 
     // 시군구 내 기존 매물 일괄 로드 → findOrCreateProperty의 findFirst N번 → 1번으로 축소
+    // redirectToId: null — 병합으로 리다이렉트된 패자는 캐시에서 제외한다. 안 그러면
+    // (type, name) 키가 생존자/패자 중 findMany가 마지막으로 돌려준 쪽으로 고정되어,
+    // 패자로 확정되면 그날 이후의 거래가 전부 301된 행에 쌓여 영영 복구 불가능해진다.
     const existingProps = await prisma.property.findMany({
-      where: { regionCode: { startsWith: sigungu } },
+      where: { regionCode: { startsWith: sigungu }, redirectToId: null },
     });
     const propCache = new Map<string, (typeof existingProps)[0]>();
     for (const p of existingProps) {
@@ -276,7 +372,7 @@ export function buildAddress(row: NormalizedTransaction): string {
   return parts.join(' ').trim();
 }
 
-function computeHash(row: NormalizedTransaction, propertyId: bigint): string {
+export function computeHash(row: NormalizedTransaction, propertyId: bigint): string {
   const key = JSON.stringify({
     p: String(propertyId),
     t: row.dealType,
@@ -328,7 +424,13 @@ async function runWithLimit(tasks: Array<() => Promise<void>>, concurrency: numb
   await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, worker));
 }
 
-main().catch((err) => {
-  logger.error({ err }, 'runner fatal');
-  process.exit(1);
-});
+// merge-duplicate-properties가 computeHash를 라이브러리로 import한다. 가드 없이 main()을
+// 모듈 스코프에서 그냥 부르면 그 import만으로 실제 ETL이 백그라운드에서 돌기 시작한다
+// (운영에서는 병합 스크립트를 실행할 때마다 진짜 수집 job이 같이 뜨는 셈). 직접 실행(tsx로
+// 이 파일을 돌릴 때)에만 main()이 실행되도록 막는다.
+if (process.argv[1]?.includes('transactions/runner')) {
+  main().catch((err) => {
+    logger.error({ err }, 'runner fatal');
+    process.exit(1);
+  });
+}
