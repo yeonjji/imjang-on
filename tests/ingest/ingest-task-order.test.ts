@@ -74,7 +74,34 @@ describe('buildIngestTaskKeys', () => {
     }
   });
 
-  // 재배치는 순서만 바꿀 뿐 항목을 버리거나 복제해서는 안 된다.
+  // 리뷰어 반례: 3개 구간에 걸쳐 생존 시군구가 겹치며 비대칭이면(A/AB/BC), 단순 전방
+  // 그리디는 뒤쪽 충돌을 풀 유일한 후보를 앞에서 먼저 써버려 B,B 인접이 남았다.
+  // month1 생존=[A], month2 생존=[A,B], month3 생존=[B,C] → 사전 재배치 시퀀스는 A,A,B,B,C.
+  it('세 구간 비대칭 생존 패턴에서도 인접 쌍은 같은 시군구를 갖지 않는다 (리뷰어 반례)', () => {
+    const done = new Set([
+      'MOLIT_APT_TRADE:11140-202601',
+      'MOLIT_APT_TRADE:11170-202601',
+      'MOLIT_APT_TRADE:11170-202602',
+      'MOLIT_APT_TRADE:11110-202603',
+    ]);
+    const keys = buildIngestTaskKeys(API, ['202601', '202602', '202603'], ['11110', '11140', '11170'], done);
+    expect(keys).toHaveLength(5);
+    for (let i = 1; i < keys.length; i++) {
+      expect(keys[i].sgg).not.toBe(keys[i - 1].sgg);
+    }
+  });
+
+  // maxCount(시군구 A) = 3 > ceil(n/2) = ceil(4/2) = 2 이면 인접 충돌 1건은 산술적으로
+  // 피할 수 없다(비둘기집 원리). 드롭·무한루프 없이 전부 반환하고, 잔여는 정확히 1건이어야 한다.
+  it('시군구 하나가 과반을 넘으면 인접 충돌 1건이 산술적으로 불가피하다 (잔여 문서화)', () => {
+    const done = new Set(['MOLIT_APT_TRADE:11140-202601', 'MOLIT_APT_TRADE:11140-202602']);
+    const keys = buildIngestTaskKeys(API, ['202601', '202602', '202603'], ['11110', '11140'], done);
+    expect(keys).toHaveLength(4);
+    const adjacentClashes = keys.slice(1).filter((k, i) => k.sgg === keys[i].sgg).length;
+    expect(adjacentClashes).toBe(1);
+  });
+
+  // 재배치는 순서만 바꿀 뿐 항목을 버리거나 복제해서는 안 된다. 2구간·3구간 입력 모두 확인.
   it('재배치 후에도 원본과 동일한 멀티셋을 유지한다 (드롭·중복 없음)', () => {
     const done = new Set(['MOLIT_APT_TRADE:11140-202601', 'MOLIT_APT_TRADE:11170-202601']);
     const keys = buildIngestTaskKeys(API, ['202601', '202602'], ['11110', '11140', '11170'], done);
@@ -85,13 +112,41 @@ describe('buildIngestTaskKeys', () => {
       'MOLIT_APT_TRADE:11140-202602',
       'MOLIT_APT_TRADE:11170-202602',
     ].sort());
+
+    // 리뷰어 반례(3구간 비대칭)도 동일 멀티셋을 유지해야 한다.
+    const done3 = new Set([
+      'MOLIT_APT_TRADE:11140-202601',
+      'MOLIT_APT_TRADE:11170-202601',
+      'MOLIT_APT_TRADE:11170-202602',
+      'MOLIT_APT_TRADE:11110-202603',
+    ]);
+    const keys3 = buildIngestTaskKeys(API, ['202601', '202602', '202603'], ['11110', '11140', '11170'], done3);
+    const composed3 = keys3.map((k) => `${k.source}:${k.sgg}-${k.yyyymm}`).sort();
+    expect(composed3).toEqual([
+      'MOLIT_APT_TRADE:11110-202601',
+      'MOLIT_APT_TRADE:11110-202602',
+      'MOLIT_APT_TRADE:11140-202602',
+      'MOLIT_APT_TRADE:11140-202603',
+      'MOLIT_APT_TRADE:11170-202603',
+    ].sort());
   });
 
   // 재실행마다 순서가 흔들리면 재현이 안 된다 — 같은 입력엔 항상 같은 출력이어야 한다.
+  // 2구간·3구간(리뷰어 반례) 입력 모두 확인.
   it('같은 입력을 두 번 호출해도 동일한 순서를 낸다 (결정성)', () => {
     const done = new Set(['MOLIT_APT_TRADE:11140-202601', 'MOLIT_APT_TRADE:11170-202601']);
     const first = buildIngestTaskKeys(API, ['202601', '202602'], ['11110', '11140', '11170'], done);
     const second = buildIngestTaskKeys(API, ['202601', '202602'], ['11110', '11140', '11170'], done);
     expect(second).toEqual(first);
+
+    const done3 = new Set([
+      'MOLIT_APT_TRADE:11140-202601',
+      'MOLIT_APT_TRADE:11170-202601',
+      'MOLIT_APT_TRADE:11170-202602',
+      'MOLIT_APT_TRADE:11110-202603',
+    ]);
+    const first3 = buildIngestTaskKeys(API, ['202601', '202602', '202603'], ['11110', '11140', '11170'], done3);
+    const second3 = buildIngestTaskKeys(API, ['202601', '202602', '202603'], ['11110', '11140', '11170'], done3);
+    expect(second3).toEqual(first3);
   });
 });

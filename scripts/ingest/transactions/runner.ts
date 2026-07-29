@@ -70,9 +70,10 @@ export interface IngestTaskKey {
  * 하지만 doneKeys 필터링은 (source, sgg, yyyymm) 조합별로 독립적으로 적용되므로, 월·api
  * 경계에서 살아남는 시군구 집합이 비대칭이 될 수 있다(예: 이전 --limit 실행이 한 달의
  * 일부만 완료). 이 경우 경계에서 우연히 같은 시군구가 인접할 수 있어, dedupeAdjacentSgg가
- * 그 잔여 인접 쌍을 결정적으로 재배치해 없앤다. 살아남은 시군구가 2개 미만이라 물리적으로
- * 피할 수 없는 경우만 그대로 남고, 그 잔여는 유니크 제약 추가 시 P2002 재조회 로직이
- * 최종 방어선이 된다.
+ * 최빈값 우선(most-frequent-first) 배치로 재정렬해 없앤다. `maxCount <= ceil(n/2)`이면
+ * 인접 충돌 없는 배치가 항상 존재하고 이 알고리즘이 그 배치를 찾아낸다. 그 임계값을 넘는
+ * 초과분만 산술적으로 불가피한 잔여로 남으며, 그 잔여는 유니크 제약 추가 시 P2002 재조회
+ * 로직이 최종 방어선이 된다.
  */
 export function buildIngestTaskKeys(
   apis: Array<{ api: string; source: string }>,
@@ -93,28 +94,53 @@ export function buildIngestTaskKeys(
 }
 
 /**
- * 인접한 두 태스크가 같은 시군구를 갖지 않도록 결정적으로 재배치한다. 항목을 버리거나
- * 복제하거나 값을 바꾸지 않고 순서만 바꾼다(같은 입력엔 항상 같은 출력).
+ * 인접한 두 태스크가 같은 시군구를 갖지 않도록 최빈값 우선(most-frequent-first)으로
+ * 재정렬한다. reorganize-array/task-scheduler류 문제의 표준 해법이며, `maxCount <=
+ * ceil(n/2)`인 한 인접 충돌 없는 배치를 항상 찾아낸다(단순 전방 그리디 스왑은 뒤쪽 충돌을
+ * 풀 유일한 후보를 앞에서 먼저 써버릴 수 있어 이 보장이 없었다).
  *
- * 같은 시군구가 인접하면, 뒤쪽에서 앞·뒤 이웃 모두와 시군구가 다른 가장 가까운 항목을
- * 찾아 자리를 바꾼다. 그런 항목이 없으면(예: 남은 시군구가 사실상 하나뿐) 무한루프를
- * 피하기 위해 그 인접 쌍은 그대로 둔다 — 이 잔여는 문서화된 한계다.
+ * 매 단계마다 "직전에 배치한 시군구를 제외하고" 남은 개수가 가장 많은 시군구를 고른다.
+ * 동률이면 시군구 문자열 사전순으로 타이브레이크한다(결정적). 같은 시군구 안에서는 원래
+ * 상대 순서(월 순서)를 유지한다. 직전 시군구 말고 고를 게 없는 경우(=그 시군구 개수가
+ * n의 과반을 넘어 산술적으로 불가피한 경우)만 예외적으로 이어 붙인다 — 이 잔여는 유니크
+ * 제약 추가 시 P2002 재조회 로직이 최종 방어선이 된다.
+ *
+ * 항목을 버리거나 복제하거나 값을 바꾸지 않고 순서만 바꾸며, 인자로 받은 배열은 변경하지
+ * 않는다(같은 입력엔 항상 같은 출력).
  */
 function dedupeAdjacentSgg(keys: IngestTaskKey[]): IngestTaskKey[] {
-  const out = keys.slice();
-  for (let i = 1; i < out.length; i++) {
-    if (out[i].sgg !== out[i - 1].sgg) continue;
-    const prevSgg = out[i - 1].sgg;
-    const nextSgg = i + 1 < out.length ? out[i + 1].sgg : undefined;
-    let swapIdx = -1;
-    for (let j = i + 1; j < out.length; j++) {
-      if (out[j].sgg !== prevSgg && out[j].sgg !== nextSgg) {
-        swapIdx = j;
-        break;
+  if (keys.length <= 1) return keys.slice();
+
+  // 시군구별로 원래 상대 순서를 유지하며 그룹화
+  const groups = new Map<string, IngestTaskKey[]>();
+  for (const k of keys) {
+    const group = groups.get(k.sgg);
+    if (group) group.push(k);
+    else groups.set(k.sgg, [k]);
+  }
+
+  const sggList = Array.from(groups.keys()).sort();
+  const remaining = new Map(sggList.map((sgg) => [sgg, groups.get(sgg)!.length]));
+  const cursors = new Map(sggList.map((sgg) => [sgg, 0]));
+
+  const out: IngestTaskKey[] = [];
+  let lastSgg: string | null = null;
+  for (let n = 0; n < keys.length; n++) {
+    let best: string | null = null;
+    for (const candidate of sggList) {
+      if (remaining.get(candidate) === 0) continue;
+      if (candidate === lastSgg) continue;
+      if (best === null || remaining.get(candidate)! > remaining.get(best)!) {
+        best = candidate;
       }
     }
-    if (swapIdx === -1) continue;
-    [out[i], out[swapIdx]] = [out[swapIdx], out[i]];
+    // 직전 시군구 말고 고를 게 없는 불가피한 경우 — 그대로 이어 붙인다.
+    const chosenSgg: string = best ?? lastSgg!;
+    const cursor = cursors.get(chosenSgg)!;
+    out.push(groups.get(chosenSgg)![cursor]);
+    cursors.set(chosenSgg, cursor + 1);
+    remaining.set(chosenSgg, remaining.get(chosenSgg)! - 1);
+    lastSgg = chosenSgg;
   }
   return out;
 }
