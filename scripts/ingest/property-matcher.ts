@@ -2,7 +2,8 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { normalizeName } from '@/lib/slug';
 import { geocode, buildGeocodeQuery } from '@/scripts/ingest/geocoder';
-import type { PropertyType } from '@prisma/client';
+import type { Property, PropertyType } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 export interface MatcherInput {
   propertyType: PropertyType;
@@ -54,16 +55,43 @@ export async function findOrCreateProperty(input: MatcherInput) {
     select: { fullName: true },
   });
   const coord = await geocode(buildGeocodeQuery(region?.fullName, input.address));
-  const created = await prisma.property.create({
-    data: {
-      propertyType: input.propertyType,
-      name: input.name,
-      nameNorm,
-      regionCode: input.regionCode,
-      address: input.address,
-      builtYear: input.buildYear,
-    },
-  });
+  let created: Property;
+  try {
+    created = await prisma.property.create({
+      data: {
+        propertyType: input.propertyType,
+        name: input.name,
+        nameNorm,
+        regionCode: input.regionCode,
+        address: input.address,
+        builtYear: input.buildYear,
+      },
+    });
+  } catch (err) {
+    // P2002 = Property_dedupe_key 위반. 조회와 create 사이에 형제 프로세스가 같은 단지를
+    // 만들었다는 뜻이다. 던지면 그 시군구·월 태스크 전체가 실패하므로, 그 행을 찾아 돌려준다.
+    // 인덱스 키와 정확히 같은 조건으로 조회해야 방금 충돌한 행이 잡힌다
+    // (앞의 조회들은 regionCode를 prefix로 보므로 키가 다르다).
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      const winner = await prisma.property.findFirst({
+        where: {
+          propertyType: input.propertyType,
+          nameNorm,
+          regionCode: input.regionCode,
+          address: input.address,
+          redirectToId: null,
+        },
+      });
+      if (winner) {
+        logger.info(
+          { name: input.name, sigungu: input.sigunguCode, id: String(winner.id) },
+          'P2002 — 형제가 만든 단지 재사용',
+        );
+        return winner;
+      }
+    }
+    throw err;
+  }
   if (coord) {
     await prisma.$executeRaw`
       UPDATE "Property"
