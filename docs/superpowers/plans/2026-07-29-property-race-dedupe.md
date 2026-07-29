@@ -884,16 +884,26 @@ git commit -m "feat(ops): 중복 단지 병합 스크립트 (dry-run 기본, 해
 
 `pnpm build`는 CI에 없으므로 직접 돌린다.
 
+## 구현 중 변경된 것
+
+아래 태스크 코드 블록은 그대로 두었다(계획했던 원안의 기록). 실제 구현은 다음 세 지점에서 갈렸다 — 나중에 이 계획을 참고할 때 원안(3중 루프, 무필터 delete)을 그대로 베끼거나 충분하다고 가정하면 안 된다.
+
+- **Task 1의 `buildIngestTaskKeys`에 `dedupeAdjacentSgg` 최빈값 우선 재배치가 추가됐다.** Step 3 코드 블록의 단순 3중 루프(월→시군구)만으로는 `doneKeys` 필터링이 (source, sgg, yyyymm) 조합별로 독립 적용되어 월·api 경계에서 살아남는 시군구 집합이 비대칭이 될 수 있고, 그 경계에서 우연히 같은 시군구가 인접하는 경우가 남았다. `dedupeAdjacentSgg`가 그 잔여 인접을 결정적으로 없앤다(`scripts/ingest/transactions/runner.ts`).
+- **Task 3의 `beforeEach`가 `regionCode: REGION`으로 스코프됐다.** Step 1 코드 블록의 무필터 `prisma.transaction.deleteMany()` / `prisma.property.deleteMany()`는 `tests/integration`이 파일 간 병렬로 도는 동안 `tests/integration/og-coord.test.ts`의 픽스처를 지워 그 파일을 플레이키하게 만드는 버그였다(확인됨: 전체 스위트 3회 중 매번 4~5개 실패, 스코프 후 3회 연속 38/38 통과). 이 계획을 참고해 유사한 통합 테스트를 새로 쓸 때 무필터 delete를 베끼면 안 된다.
+- **`runner.ts`가 `main()` 모듈 스코프 호출에 직접 실행 가드를 얻었다.** 계획 어디에도 안 나온다. Task 2에서 `computeHash`를 export하면서 이 모듈이 병합 스크립트에 라이브러리로 import되기 시작했는데, 가드 없는 최상위 `main()`은 그 import만으로 실제 ETL을 백그라운드에서 실행시킨다(운영에서 병합 스크립트를 실행할 때마다 별도 수집 job이 같이 뜨는 셈). `if (process.argv[1]?.includes('transactions/runner'))`로 직접 실행(tsx)에서만 돌게 막았다.
+
 ## 운영 적용 (머지·배포 후)
 
 이 계획은 **코드만** 담는다. 실제 병합은 배포 후 사람이 실행한다.
 
 1. 운영 DB 백업 (`Property`, `Transaction`)
-2. `--dry-run`으로 대상 확인 — 예상 2,012그룹 / 4,096행, 이관 대상 거래 약 48,264건
-3. `--limit=50`으로 소규모 선반영 후 결과 확인
-4. 전체 `--apply`
-5. 생존자들의 거래 건수를 기록
-6. **다음 daily ETL이 한 바퀴 돈 뒤 같은 수치를 다시 잰다.** 늘었다면 `exclusiveArea` 정밀도 문제로 해시가 어긋나 중복이 재삽입된 것이므로, 재계산 로직을 고치고 늘어난 행을 정리한다
+2. **daily ETL이 지금 돌고 있지 않은지 확인한다.** (예: `IngestionRun`의 최근 상태나 GitHub Actions 스케줄 확인) 병합의 해시 충돌 체크(`transaction.findUnique`)는 `$transaction`이 열리기 전에 돌고 `update`는 그 안에서 도는 TOCTOU 구간이 있다 — 그 사이에 ETL이 같은 해시의 거래를 넣으면 `@@unique(rawHash)` 위반으로 그 그룹의 `$transaction`이 통째로 실패한다. 크래시일 뿐 데이터가 깨지지는 않고(커밋된 그룹은 그대로 유효), 재실행하면 이미 병합된 그룹은 `redirectToId IS NULL` 필터로 건너뛰고 나머지가 이어진다. 그래도 매번 재시도가 필요 없도록 미리 확인한다.
+3. `--dry-run`으로 대상 확인 — 예상 2,012그룹 / 4,096행, 이관 대상 거래 약 48,264건
+4. `--limit=50`으로 소규모 선반영 후 결과 확인
+5. 전체 `--apply`
+6. **중간에 프로세스가 죽었다면**, 그 시점까지 커밋된 그룹은 거래 이관과 `redirectToId`까지는 끝났지만 생존자의 `updatePropertyAggregates`(집계 갱신)는 `$transaction` 커밋 **이후**에 별도로 돈다 — 중단 시점이 그 사이였다면 생존자의 `txCountTotal` 등 집계가 갱신되지 않은 채로 남는다. 그 그룹은 이미 `redirectToId`가 세워져 있어 재실행해도 다시 잡히지 않고, 6번(다음 daily ETL 후 재확인) 절차도 그 생존자가 새 거래를 안 받으면 잡아내지 못해 영영 stale로 남는다. 조치: 중단 직전 병합된 그룹들의 생존자 id를 스크립트 로그(그룹별 `survivor` 필드가 찍힌 마지막 로그 라인들, `apply: true` 실행 시 매 그룹 커밋 후 다음 그룹으로 넘어가므로 로그 순서가 곧 처리 순서다)에서 찾아, 그 id들에 대해 `updatePropertyAggregates([...])`를 수동으로 다시 돌린다.
+7. 생존자들의 거래 건수를 기록
+8. **다음 daily ETL이 한 바퀴 돈 뒤 같은 수치를 다시 잰다.** 늘었다면 `exclusiveArea` 정밀도 문제로 해시가 어긋나 중복이 재삽입된 것이므로, 재계산 로직을 고치고 늘어난 행을 정리한다
 
 이 스크립트는 운영 DB에 **쓰기**를 한다. 지금까지 쓰던 읽기전용 터널로는 실행할 수 없고, 실행 시점과 결과를 기록한다.
 
