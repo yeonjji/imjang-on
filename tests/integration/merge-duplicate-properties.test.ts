@@ -54,6 +54,14 @@ describe('mergeDuplicateProperties', () => {
   // byte-identical해야 한다 — 어긋나면 이후 이 스위트가 검증하는 건 운영과 다른 제약이 된다.
   // integration 스위트는 --no-file-parallelism으로 직렬 실행되므로, 인덱스가 없는 동안
   // 다른 파일이 끼어들어 중복을 만들 걱정은 없다.
+  //
+  // 복구: beforeAll의 DROP INDEX와 afterAll의 재생성 사이(Ctrl-C, OOM, 워커 크래시 등)에
+  // 프로세스가 죽으면 로컬 테스트 DB에 인덱스가 없는 채로 남는다. 이 마이그레이션은 이미
+  // applied로 기록돼 있어 `pnpm test:db:migrate`로는 복구되지 않는다 — 다음 test:unit에서
+  // 새 P2002 테스트가 "두 번째 create가 성공해버렸다"는 헷갈리는 증상으로 실패한다.
+  // 이 파일을 다시 돌리거나(afterAll이 인덱스를 재생성한다), 또는
+  // prisma/migrations/20260729000000_add_property_dedupe_unique/migration.sql의
+  // CREATE UNIQUE INDEX 문을 직접 실행해 복구한다.
   beforeAll(async () => {
     await prisma.$executeRaw`DROP INDEX IF EXISTS "Property_dedupe_key"`;
   });

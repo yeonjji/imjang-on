@@ -12,11 +12,16 @@ vi.mock('@/scripts/ingest/geocoder', async (importActual) => {
   };
 });
 
+// tests/lib, tests/ingest, tests/components, tests/ops는 파일 간 병렬로 하나의 공유 DB에
+// 붙는다(test:unit). 무필터 deleteMany는 동시에 도는 다른 스위트(briefing 등)의 픽스처를
+// 지워 플레이키를 만든다. 이 파일이 실제로 쓰는 regionCode 두 개로 좁힌다.
+const REGION_CODES = ['1165010100', '1168000000'];
+
 describe('property-matcher', () => {
   beforeEach(async () => {
     assertLocalDatabase();
-    await prisma.transaction.deleteMany();
-    await prisma.property.deleteMany();
+    await prisma.transaction.deleteMany({ where: { regionCode: { in: REGION_CODES } } });
+    await prisma.property.deleteMany({ where: { regionCode: { in: REGION_CODES } } });
   });
 
   it('1차: exact match on (type, name, sigungu)', async () => {

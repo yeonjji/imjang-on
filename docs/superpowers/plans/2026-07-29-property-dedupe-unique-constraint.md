@@ -393,6 +393,8 @@ SELECT count(*) AS 남은그룹 FROM (
 
 2026-07-29 운영 병합 직후 이 값은 0이었다(2,008그룹 전량 병합, 실패 0, 사후 검증 6종 통과).
 
+**이 재확인은 머지 직전 1회로 끝나지 않는다.** CI 통과 + 큐잉까지 대략 15분이 걸리고, 박스 ETL 타이머는 UTC `15:00`·`19:00`(KST 00시·04시, `deploy/systemd/install-timers.sh`)에 돈다. 그 창을 CI~배포 사이에 걸치면 그 사이 새 중복이 생길 수 있다. **CI가 그린이 된 뒤, 실제 배포 직전에 가능한 한 가깝게 다시 재고**, 배포가 KST 00시·04시 창에 걸치지 않게 한다.
+
 ## 배포 후
 
 인덱스 생성은 `Property` 27만 행 기준 수 초다. 그동안 `Property`에 쓰기 잠금이 걸리므로 ETL이 도는 시각(KST 00시·04시)을 피해 배포하는 편이 안전하다.
@@ -404,3 +406,15 @@ SELECT indexdef FROM pg_indexes WHERE indexname = 'Property_dedupe_key';
 ```
 
 이후 ETL 로그에서 `'P2002 — 형제가 만든 단지 재사용'`이 나오면 경합이 실제로 발생했고 정상 흡수된 것이다. 이 로그가 반복해서 대량으로 찍히면 A(태스크 순서 반전)가 못 막는 경로가 있다는 신호이므로 그때 조사한다.
+
+**`migrate deploy`가 실패하면(남은 중복 때문에) 그걸로 끝나지 않는다.** Prisma는 해당 마이그레이션을 `_prisma_migrations`에 **failed**로 기록하고, 그 뒤로는 `migrate deploy`를 실행할 때마다 아무것도 건드리지 않은 채 P3009(`found failed migrations`)로 즉시 중단한다. 이 마이그레이션과 무관한 핫픽스조차 배포가 막힌다.
+
+복구 절차:
+
+1. 박스에서 실패로 기록된 마이그레이션을 rolled-back으로 표시한다:
+   ```
+   docker compose -f deploy/docker-compose.yml --profile tools --env-file deploy/.env.production \
+     run --rm etl pnpm prisma migrate resolve --rolled-back 20260729000000_add_property_dedupe_unique
+   ```
+2. 근본 원인인 중복을 정리한다(박스에서 `pnpm ops:merge-properties --apply`).
+3. 배포를 다시 시도한다.
