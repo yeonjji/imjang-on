@@ -12,11 +12,16 @@ vi.mock('@/scripts/ingest/geocoder', async (importActual) => {
   };
 });
 
+// tests/lib, tests/ingest, tests/components, tests/ops는 파일 간 병렬로 하나의 공유 DB에
+// 붙는다(test:unit). 무필터 deleteMany는 동시에 도는 다른 스위트(briefing 등)의 픽스처를
+// 지워 플레이키를 만든다. 이 파일이 실제로 쓰는 regionCode 두 개로 좁힌다.
+const REGION_CODES = ['1165010100', '1168000000'];
+
 describe('property-matcher', () => {
   beforeEach(async () => {
     assertLocalDatabase();
-    await prisma.transaction.deleteMany();
-    await prisma.property.deleteMany();
+    await prisma.transaction.deleteMany({ where: { regionCode: { in: REGION_CODES } } });
+    await prisma.property.deleteMany({ where: { regionCode: { in: REGION_CODES } } });
   });
 
   it('1차: exact match on (type, name, sigungu)', async () => {
@@ -102,5 +107,52 @@ describe('property-matcher', () => {
     });
     expect(p.id).toBeDefined();
     expect(p.name).toBe('신규단지');
+  });
+
+  // 유니크 제약(Property_dedupe_key) 하에서 두 프로세스가 같은 단지를 동시에 만들면
+  // 한쪽 create가 P2002로 실패한다. 그건 형제가 방금 만들었다는 뜻이므로 그 행을 반환해야 한다.
+  // geocode는 조회가 모두 끝난 뒤 create 직전에 호출되므로, 여기서 경쟁 행을 넣으면
+  // 실제 경합과 같은 순서를 결정적으로 재현할 수 있다.
+  it('create가 P2002로 실패하면 형제가 만든 행을 재조회해 반환한다', async () => {
+    await prisma.region.upsert({
+      where: { code: '1168000000' },
+      create: {
+        code: '1168000000', sido: '서울특별시', sigungu: '강남구', level: 2,
+        isAbolished: false, fullName: '서울특별시 강남구', sourceVersion: 'test',
+      },
+      update: {},
+    });
+
+    const geocoder = await import('@/scripts/ingest/geocoder');
+    // 배열에 담는 이유: `let x: T | null = null`을 클로저 안에서만 대입하면
+    // 단언 시점에 타입 좁히기가 꼬인다. 홀더를 쓰면 그 문제가 없다.
+    const sibling: Array<{ id: bigint }> = [];
+    vi.mocked(geocoder.geocode).mockImplementationOnce(async () => {
+      // 형제 프로세스가 먼저 커밋한 상황
+      const row = await prisma.property.create({
+        data: {
+          propertyType: PropertyType.APARTMENT,
+          name: '경합단지', nameNorm: '경합단지',
+          regionCode: '1168000000', address: '역삼동 5',
+        },
+      });
+      sibling.push(row);
+      return { lat: 37.5, lng: 127.0, region1: null, region2: null };
+    });
+
+    const found = await findOrCreateProperty({
+      propertyType: PropertyType.APARTMENT,
+      name: '경합단지',
+      sigunguCode: '11680',
+      regionCode: '1168000000',
+      address: '역삼동 5',
+      buildYear: null,
+      roadName: null,
+    });
+
+    expect(sibling).toHaveLength(1);
+    expect(found.id).toBe(sibling[0].id);
+    // 두 행이 생기지 않았어야 한다
+    expect(await prisma.property.count({ where: { nameNorm: '경합단지' } })).toBe(1);
   });
 });

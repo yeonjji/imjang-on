@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { prisma } from '@/lib/db';
 import { PropertyType, DealType } from '@prisma/client';
 import { mergeDuplicateProperties } from '@/scripts/ops/merge-duplicate-properties';
@@ -47,6 +47,39 @@ function tx(propertyId: bigint, day: number, area: number, amount: number) {
 }
 
 describe('mergeDuplicateProperties', () => {
+  // 이 파일은 Property_dedupe_key 인덱스가 막는 바로 그 중복 상태(같은 type/nameNorm/
+  // regionCode/address에 redirectToId IS NULL 행이 여럿)를 시드해야 병합 로직을 검증할 수
+  // 있다. 그래서 파일 전체 동안 인덱스를 내렸다가 끝나면 정확히 원상복구한다. 복구문은
+  // prisma/migrations/20260729000000_add_property_dedupe_unique/migration.sql과
+  // byte-identical해야 한다 — 어긋나면 이후 이 스위트가 검증하는 건 운영과 다른 제약이 된다.
+  // integration 스위트는 --no-file-parallelism으로 직렬 실행되므로, 인덱스가 없는 동안
+  // 다른 파일이 끼어들어 중복을 만들 걱정은 없다.
+  //
+  // 복구: beforeAll의 DROP INDEX와 afterAll의 재생성 사이(Ctrl-C, OOM, 워커 크래시 등)에
+  // 프로세스가 죽으면 로컬 테스트 DB에 인덱스가 없는 채로 남는다. 이 마이그레이션은 이미
+  // applied로 기록돼 있어 `pnpm test:db:migrate`로는 복구되지 않는다 — 다음 test:unit에서
+  // 새 P2002 테스트가 "두 번째 create가 성공해버렸다"는 헷갈리는 증상으로 실패한다.
+  // 이 파일을 다시 돌리거나(afterAll이 인덱스를 재생성한다), 또는
+  // prisma/migrations/20260729000000_add_property_dedupe_unique/migration.sql의
+  // CREATE UNIQUE INDEX 문을 직접 실행해 복구한다.
+  beforeAll(async () => {
+    await prisma.$executeRaw`DROP INDEX IF EXISTS "Property_dedupe_key"`;
+  });
+
+  afterAll(async () => {
+    // 마지막 테스트("한 그룹이 실패해도 나머지 그룹을 계속 처리한다")는 실패 그룹을 일부러
+    // 병합하지 않은 채로 남긴다 — 그 자체가 검증 대상이다. 그 결과 이 파일이 만든 중복이
+    // 인덱스 재생성 시점까지 남아 있어, 정리하지 않으면 CREATE UNIQUE INDEX 자체가
+    // 23505로 실패한다. REGION으로 좁혀 이 파일의 픽스처만 지운다.
+    await prisma.transaction.deleteMany({ where: { regionCode: REGION } });
+    await prisma.property.deleteMany({ where: { regionCode: REGION } });
+    await prisma.$executeRaw`
+      CREATE UNIQUE INDEX "Property_dedupe_key"
+        ON "Property" ("propertyType", "nameNorm", "regionCode", "address")
+        WHERE "redirectToId" IS NULL
+    `;
+  });
+
   beforeEach(async () => {
     assertLocalDatabase();
     // tests/integration은 파일 간 병렬 실행되며 DB를 공유한다. 무필터 deleteMany는

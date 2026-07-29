@@ -213,7 +213,7 @@ CREATE UNIQUE INDEX "Property_dedupe_key"
 
 **`WHERE "redirectToId" IS NULL` 부분 인덱스로 둔다.** 병합된 패자와 2026-07-01 개편 때 리다이렉트된 구 레코드가 제약에 걸리지 않아야 하고, 의미상으로도 유일성이 필요한 것은 살아 있는 단지뿐이다.
 
-Prisma 스키마는 부분 유니크 인덱스를 표현하지 못하므로 raw SQL 마이그레이션으로 작성한다. `CONCURRENTLY`는 트랜잭션 밖에서만 동작하므로 마이그레이션 파일 상단에 이를 명시한다.
+Prisma 스키마는 부분 유니크 인덱스를 표현하지 못하므로 raw SQL 마이그레이션으로 작성한다.
 
 ---
 
