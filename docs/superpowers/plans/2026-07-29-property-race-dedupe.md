@@ -891,6 +891,7 @@ git commit -m "feat(ops): 중복 단지 병합 스크립트 (dry-run 기본, 해
 - **Task 1의 `buildIngestTaskKeys`에 `dedupeAdjacentSgg` 최빈값 우선 재배치가 추가됐다.** Step 3 코드 블록의 단순 3중 루프(월→시군구)만으로는 `doneKeys` 필터링이 (source, sgg, yyyymm) 조합별로 독립 적용되어 월·api 경계에서 살아남는 시군구 집합이 비대칭이 될 수 있고, 그 경계에서 우연히 같은 시군구가 인접하는 경우가 남았다. `dedupeAdjacentSgg`가 그 잔여 인접을 결정적으로 없앤다(`scripts/ingest/transactions/runner.ts`).
 - **Task 3의 `beforeEach`가 `regionCode: REGION`으로 스코프됐다.** Step 1 코드 블록의 무필터 `prisma.transaction.deleteMany()` / `prisma.property.deleteMany()`는 `tests/integration`이 파일 간 병렬로 도는 동안 `tests/integration/og-coord.test.ts`의 픽스처를 지워 그 파일을 플레이키하게 만드는 버그였다(확인됨: 전체 스위트 3회 중 매번 4~5개 실패, 스코프 후 3회 연속 38/38 통과). 이 계획을 참고해 유사한 통합 테스트를 새로 쓸 때 무필터 delete를 베끼면 안 된다.
 - **`runner.ts`가 `main()` 모듈 스코프 호출에 직접 실행 가드를 얻었다.** 계획 어디에도 안 나온다. Task 2에서 `computeHash`를 export하면서 이 모듈이 병합 스크립트에 라이브러리로 import되기 시작했는데, 가드 없는 최상위 `main()`은 그 import만으로 실제 ETL을 백그라운드에서 실행시킨다(운영에서 병합 스크립트를 실행할 때마다 별도 수집 job이 같이 뜨는 셈). `if (process.argv[1]?.includes('transactions/runner'))`로 직접 실행(tsx)에서만 돌게 막았다.
+- **`index.ts`의 `--apply` 경로에 그룹 완료 로그(`'group merged'`)가 추가됐다.** Step 3 코드 블록은 `!opts.apply`(DRY-RUN) 분기에만 그룹별 로그를 찍는다. 실제 `--apply` 실행은 전체 루프 종료 후 집계 하나만 찍혀 처리 중 진행 상황이 전혀 안 보였고, 운영 적용 절차 6번이 가리키는 "그룹별 로그"가 `--apply`에서는 애초에 존재하지 않는 참조였다. `$transaction` 커밋 + `updatePropertyAggregates` 완료 뒤 그룹마다 survivor·losers·move·del을 로그로 남기도록 고쳤다 — 아래 6번 절차는 이 로그를 전제로 쓰여 있다.
 
 ## 운영 적용 (머지·배포 후)
 
@@ -901,7 +902,10 @@ git commit -m "feat(ops): 중복 단지 병합 스크립트 (dry-run 기본, 해
 3. `--dry-run`으로 대상 확인 — 예상 2,012그룹 / 4,096행, 이관 대상 거래 약 48,264건
 4. `--limit=50`으로 소규모 선반영 후 결과 확인
 5. 전체 `--apply`
-6. **중간에 프로세스가 죽었다면**, 그 시점까지 커밋된 그룹은 거래 이관과 `redirectToId`까지는 끝났지만 생존자의 `updatePropertyAggregates`(집계 갱신)는 `$transaction` 커밋 **이후**에 별도로 돈다 — 중단 시점이 그 사이였다면 생존자의 `txCountTotal` 등 집계가 갱신되지 않은 채로 남는다. 그 그룹은 이미 `redirectToId`가 세워져 있어 재실행해도 다시 잡히지 않고, 6번(다음 daily ETL 후 재확인) 절차도 그 생존자가 새 거래를 안 받으면 잡아내지 못해 영영 stale로 남는다. 조치: 중단 직전 병합된 그룹들의 생존자 id를 스크립트 로그(그룹별 `survivor` 필드가 찍힌 마지막 로그 라인들, `apply: true` 실행 시 매 그룹 커밋 후 다음 그룹으로 넘어가므로 로그 순서가 곧 처리 순서다)에서 찾아, 그 id들에 대해 `updatePropertyAggregates([...])`를 수동으로 다시 돌린다.
+6. **중간에 프로세스가 죽었다면**, 그 시점까지 커밋된 그룹은 거래 이관과 `redirectToId`까지는 끝났지만 생존자의 `updatePropertyAggregates`(집계 갱신)는 `$transaction` 커밋 **이후**에 별도로 돈다 — 중단 시점이 그 사이였다면 생존자의 `txCountTotal` 등 집계가 갱신되지 않은 채로 남는다. 그 그룹은 이미 `redirectToId`가 세워져 있어 재실행해도 다시 잡히지 않고, 8번(다음 daily ETL 후 재확인) 절차도 그 생존자가 새 거래를 안 받으면 잡아내지 못해 영영 stale로 남는다.
+   - `--apply` 실행은 그룹마다 `$transaction` 커밋 + `updatePropertyAggregates`가 **모두** 끝난 뒤에만 `'group merged'` 로그 라인(survivor·losers·move·del)을 찍는다. 즉 죽은 시점에 처리 중이던 그룹 하나만 "커밋은 됐는데 로그가 없는" 상태로 남을 수 있고, 그 외 그룹은 로그가 있으면 완전히 끝난 것, 없으면(=`'merge targets'` 로그 이후 로그가 아예 없는 그룹) 아직 손도 안 댄 것이라 재실행하면 정상 처리된다.
+   - 식별: 로그에서 `'group merged'` 라인들의 survivor id 집합을 모은다. DB에서 `SELECT DISTINCT "redirectToId" FROM "Property" WHERE "redirectToId" IS NOT NULL`로 실제 세워진 생존자 id 집합을 뽑는다. 후자에서 전자를 뺀 차집합(=redirectToId는 섰는데 완료 로그가 없는 생존자)이 바로 집계가 stale한 대상이다. 그 id들에 대해 `updatePropertyAggregates([...])`를 수동으로 다시 돌린다.
+   - 그런 다음 스크립트를 그대로 다시 `--apply`로 돌려 나머지 그룹을 이어간다(`redirectToId IS NULL` 필터가 이미 커밋된 그룹을 자동 스킵한다).
 7. 생존자들의 거래 건수를 기록
 8. **다음 daily ETL이 한 바퀴 돈 뒤 같은 수치를 다시 잰다.** 늘었다면 `exclusiveArea` 정밀도 문제로 해시가 어긋나 중복이 재삽입된 것이므로, 재계산 로직을 고치고 늘어난 행을 정리한다
 

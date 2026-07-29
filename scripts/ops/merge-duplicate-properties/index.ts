@@ -120,6 +120,15 @@ export async function mergeDuplicateProperties(opts: { apply: boolean; limit?: n
     });
 
     await updatePropertyAggregates([plan.survivor.id]);
+
+    // $transaction 커밋 + 집계 갱신이 모두 끝난 뒤에만 찍는다. 이 줄이 로그에 있으면
+    // 그 그룹은 완전히 끝난 것 — 중단된 실행을 이어서 정리할 때 마지막 줄 다음부터
+    // 다시 봐야 한다는 뜻이다.
+    logger.info(
+      { name: g.nameNorm, address: g.address, survivor: String(plan.survivor.id),
+        losers: loserIds.map(String), move: toMove.length, del: toDelete.length },
+      'group merged',
+    );
   }
 
   logger.info(stats, opts.apply ? 'merge applied' : 'merge dry-run complete');
