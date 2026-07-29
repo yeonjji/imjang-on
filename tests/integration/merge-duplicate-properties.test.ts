@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { prisma } from '@/lib/db';
 import { PropertyType, DealType } from '@prisma/client';
 import { mergeDuplicateProperties } from '@/scripts/ops/merge-duplicate-properties';
@@ -200,5 +200,97 @@ describe('mergeDuplicateProperties', () => {
 
     const stats = await mergeDuplicateProperties({ apply: true });
     expect(stats.groups).toBe(0);
+  });
+
+  // I3(a): updatePropertyAggregates는 Transaction을 propertyId로 GROUP BY하는 CTE와
+  // 조인한다. 패자는 거래가 0건이 되므로 CTE에 행이 안 생겨 UPDATE...FROM이 매칭할 게
+  // 없는 조용한 no-op이 된다 — 명시적으로 리셋하지 않으면 병합 이전 집계값이 그대로 남는다.
+  it('패자의 집계를 병합 후 초기값으로 리셋한다', async () => {
+    const a = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    const b = await prisma.property.create({
+      data: {
+        propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1',
+        txCountTotal: 5, txCount12m: 3, lastTxAt: new Date(Date.UTC(2026, 0, 1)),
+        saleCount12m: 2, saleAvgPrice12m: 100000n, saleLastPrice: 100000n, saleLastAt: new Date(Date.UTC(2026, 0, 1)),
+        areaTypes: [24, 33],
+      },
+    });
+    await prisma.transaction.create({ data: tx(b.id, 5, 84.9, 120000) });
+
+    await mergeDuplicateProperties({ apply: true });
+
+    const loser = await prisma.property.findUnique({ where: { id: b.id } });
+    expect(loser!.txCountTotal).toBe(0);
+    expect(loser!.txCount12m).toBe(0);
+    expect(loser!.lastTxAt).toBeNull();
+    expect(loser!.saleCount12m).toBe(0);
+    expect(loser!.saleAvgPrice12m).toBeNull();
+    expect(loser!.saleLastPrice).toBeNull();
+    expect(loser!.saleLastAt).toBeNull();
+    expect(loser!.areaTypes).toEqual([]);
+  });
+
+  // M6: X → loser → survivor 체인을 두면 populate-url-redirects가 한 홉만 보고
+  // X의 목적지를 loser의 URL로 스냅샷해 잘못된 301을 굳힌다. 병합 시 체인을 즉시 collapse해야 한다.
+  it('기존에 패자를 가리키던 리다이렉트를 생존자로 재연결한다', async () => {
+    const a = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    const b = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    // 2026-07-01 개편 등으로 이미 b를 가리키던 구 property
+    const x = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '구래미안', nameNorm: '구래미안', regionCode: REGION, address: '구역삼동 1', redirectToId: b.id },
+    });
+
+    await mergeDuplicateProperties({ apply: true });
+
+    const xAfter = await prisma.property.findUnique({ where: { id: x.id } });
+    const bAfter = await prisma.property.findUnique({ where: { id: b.id } });
+    expect(xAfter!.redirectToId).toBe(a.id);
+    expect(bAfter!.redirectToId).toBe(a.id);
+  });
+
+  // I2: 운영 SSH 터널 위에서 한 그룹의 $transaction이 타임아웃 등으로 던지면(P2028),
+  // try/catch 없이는 프로세스 전체가 죽어 --limit에 offset이 없는 탓에 나머지 그룹이
+  // 영영 처리되지 않는다. 첫 그룹에서만 실패를 유도해 나머지가 이어지는지 확인한다.
+  it('한 그룹이 실패해도 나머지 그룹을 계속 처리한다', async () => {
+    // nameNorm 오름차순 정렬이라 '가나'가 '래미안'보다 먼저 처리된다.
+    const failA = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '가나', nameNorm: '가나', regionCode: REGION, address: '역삼동 1' },
+    });
+    const failB = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '가나', nameNorm: '가나', regionCode: REGION, address: '역삼동 1' },
+    });
+    const okA = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+    const okB = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
+    });
+
+    const spy = vi.spyOn(prisma, '$transaction').mockImplementationOnce(() => Promise.reject(new Error('boom (simulated P2028)')));
+
+    let stats;
+    try {
+      stats = await mergeDuplicateProperties({ apply: true });
+    } finally {
+      spy.mockRestore();
+    }
+
+    expect(stats.failed).toBe(1);
+    expect(stats.groups).toBe(1);
+    expect(stats.losers).toBe(1);
+
+    const failLoser = await prisma.property.findUnique({ where: { id: failB.id } });
+    expect(failLoser!.redirectToId).toBeNull();
+
+    const okLoser = await prisma.property.findUnique({ where: { id: okB.id } });
+    expect(okLoser!.redirectToId).toBe(okA.id);
+
+    expect(failA.id < failB.id).toBe(true);
   });
 });

@@ -15,7 +15,8 @@ export async function autocomplete(q: string): Promise<AutocompleteResult> {
     SELECT p.id, p.name, p.address, r."fullName" AS full_name, p."propertyType"::text AS type
     FROM "Property" p
     JOIN "Region" r ON r.code = p."regionCode"
-    WHERE p."nameNorm" % ${norm} OR p."nameNorm" ILIKE ${prefix}
+    WHERE (p."nameNorm" % ${norm} OR p."nameNorm" ILIKE ${prefix})
+      AND p."redirectToId" IS NULL
     ORDER BY
       (p."nameNorm" ILIKE ${prefix})::int DESC,
       similarity(p."nameNorm", ${norm}) DESC,

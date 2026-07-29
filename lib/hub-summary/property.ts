@@ -15,6 +15,7 @@ export async function getPropertyHubStats(
       WHERE "propertyType" IN (${typeList})
         AND "txCount12m" > 0
         AND "sigunguCode" IS NOT NULL
+        AND "redirectToId" IS NULL
       GROUP BY 1
       ORDER BY cnt DESC
     `;
@@ -27,7 +28,7 @@ export async function getPropertyHubStats(
     const top3 = top.reduce((s, r) => s + r.count, 0);
 
     const agg = await prisma.property.aggregate({
-      where: { propertyType: { in: types }, txCount12m: { gt: 0 } },
+      where: { propertyType: { in: types }, txCount12m: { gt: 0 }, redirectToId: null },
       _sum: { saleCount12m: true, jeonseCount12m: true, wolseCount12m: true },
     });
     const sale = agg._sum.saleCount12m ?? 0;

@@ -17,11 +17,15 @@ export interface MatcherInput {
 export async function findOrCreateProperty(input: MatcherInput) {
   const nameNorm = normalizeName(input.name);
 
+  // redirectToId: null — 병합으로 리다이렉트된 패자는 매칭 대상에서 뺀다. 패자는 생존자와
+  // (type, name, region)이 동일해 필터 없이는 그대로 다시 걸려, 병합 후 첫 재수집 때
+  // 새 거래가 301된 행에 붙어버린다(그 그룹은 redirectToId IS NULL 조건 때문에 재병합도 안 됨).
   const exact = await prisma.property.findFirst({
     where: {
       propertyType: input.propertyType,
       name: input.name,
       regionCode: { startsWith: input.sigunguCode },
+      redirectToId: null,
     },
   });
   if (exact) return exact;
@@ -31,6 +35,7 @@ export async function findOrCreateProperty(input: MatcherInput) {
       propertyType: input.propertyType,
       nameNorm,
       regionCode: { startsWith: input.sigunguCode },
+      redirectToId: null,
     },
     take: 5,
   });

@@ -53,6 +53,7 @@ export async function getNearbyProperties(opts: {
       AND c.location IS NOT NULL
       AND ST_DWithin(p.location, c.location, ${radiusMeters})
       AND p."txCount12m" > 0
+      AND p."redirectToId" IS NULL
     ORDER BY dist_km ASC, p."txCount12m" DESC
     LIMIT ${limit}
   `;

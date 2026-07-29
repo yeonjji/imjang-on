@@ -898,16 +898,28 @@ git commit -m "feat(ops): 중복 단지 병합 스크립트 (dry-run 기본, 해
 이 계획은 **코드만** 담는다. 실제 병합은 배포 후 사람이 실행한다.
 
 1. 운영 DB 백업 (`Property`, `Transaction`)
-2. **daily ETL이 지금 돌고 있지 않은지 확인한다.** (예: `IngestionRun`의 최근 상태나 GitHub Actions 스케줄 확인) 병합의 해시 충돌 체크(`transaction.findUnique`)는 `$transaction`이 열리기 전에 돌고 `update`는 그 안에서 도는 TOCTOU 구간이 있다 — 그 사이에 ETL이 같은 해시의 거래를 넣으면 `@@unique(rawHash)` 위반으로 그 그룹의 `$transaction`이 통째로 실패한다. 크래시일 뿐 데이터가 깨지지는 않고(커밋된 그룹은 그대로 유효), 재실행하면 이미 병합된 그룹은 `redirectToId IS NULL` 필터로 건너뛰고 나머지가 이어진다. 그래도 매번 재시도가 필요 없도록 미리 확인한다.
+2. **병합 도중 daily ETL이 돌지 않는지 확인한다.**
+   - `.github/workflows/ingest-transactions-daily.yml`은 `cron '0 15,19 * * *'`(KST 00·04시)로 6-way api matrix를 돌린다. `deploy/systemd/install-timers.sh`의 온박스 타이머도 같은 시각(`15,19:00:00`)에 걸려 있다 — 병합 작업 시간대가 이 두 스케줄과 겹치지 않는지 먼저 맞춘다.
+   - **이 GitHub Actions 워크플로우가 OCI 자가호스팅 마이그레이션 이후에도 실제로 운영 DB에 닿는지는 리포지토리만 보고는 판단할 수 없다.** 닿는다고도, 안 닿는다고도 가정하지 말고 실행 전에 직접 확인한다(예: 최근 워크플로우 run의 성공/실패, `IngestionRun`의 최근 상태). 여전히 닿는다면 온박스 타이머와 이중으로 도는 셈이니 그 경우도 함께 처리한다.
+   - 병합의 해시 충돌 체크(`transaction.findUnique`)는 `$transaction`이 열리기 전에 돌고 `update`는 그 안에서 도는 TOCTOU 구간이 있다 — 그 사이에 ETL이 같은 해시의 거래를 넣으면 `@@unique(rawHash)` 위반으로 그 그룹의 `$transaction`이 실패한다(그룹 단위 `try/catch`로 격리되어 있어 그 그룹만 `failed`로 집계되고 나머지는 계속 진행된다 — 데이터가 깨지지는 않는다). 그래도 매번 실패 그룹을 붙들 필요가 없도록 미리 확인한다.
 3. `--dry-run`으로 대상 확인 — 예상 2,012그룹 / 4,096행, 이관 대상 거래 약 48,264건
-4. `--limit=50`으로 소규모 선반영 후 결과 확인
-5. 전체 `--apply`
-6. **중간에 프로세스가 죽었다면**, 그 시점까지 커밋된 그룹은 거래 이관과 `redirectToId`까지는 끝났지만 생존자의 `updatePropertyAggregates`(집계 갱신)는 `$transaction` 커밋 **이후**에 별도로 돈다 — 중단 시점이 그 사이였다면 생존자의 `txCountTotal` 등 집계가 갱신되지 않은 채로 남는다. 그 그룹은 이미 `redirectToId`가 세워져 있어 재실행해도 다시 잡히지 않고, 8번(다음 daily ETL 후 재확인) 절차도 그 생존자가 새 거래를 안 받으면 잡아내지 못해 영영 stale로 남는다.
+4. **`--limit=200` 단위로 나눠 순차 적용한다(전체 `--apply` 한 번에 돌리지 않는다).** 전체는 약 48,264건의 충돌 조회 + 갱신을 운영 DB로의 SSH 터널 너머로 수행해야 해서, 수동 감독 하에 실측상 30~60분+ 걸리고 그동안 터널이 끊길 위험이 있다. 병합은 재실행해도 이미 처리된 그룹을 `redirectToId IS NULL` 필터로 건너뛰므로 재개 가능하다 — `--limit=200`씩 여러 번 도는 쪽이 전체 한 방보다 항상 낫다. 회차마다 3번의 dry-run 대상 총계가 줄어드는지 확인하며 진행한다.
+5. **중간에 프로세스가 죽었다면(또는 일부 그룹이 `failed`로 집계됐다면)**, 그 시점까지 커밋된 그룹은 거래 이관과 `redirectToId`까지는 끝났지만 생존자의 `updatePropertyAggregates`(집계 갱신)는 `$transaction` 커밋 **이후**에 별도로 돈다 — 중단 시점이 그 사이였다면 생존자의 `txCountTotal` 등 집계가 갱신되지 않은 채로 남는다. 그 그룹은 이미 `redirectToId`가 세워져 있어 재실행해도 다시 잡히지 않고, 7번(다음 daily ETL 후 재확인) 절차도 그 생존자가 새 거래를 안 받으면 잡아내지 못해 영영 stale로 남는다.
+   - **stdout을 반드시 `tee`로 파일에 남긴다** (예: `pnpm ops:merge-properties --apply --limit=200 2>&1 | tee merge-run-$(date +%s).log`). 아래 식별 절차는 이 로그가 있어야 가능하다 — 터미널 스크롤백만 믿으면 크래시 시점 이전 로그를 잃는다.
    - `--apply` 실행은 그룹마다 `$transaction` 커밋 + `updatePropertyAggregates`가 **모두** 끝난 뒤에만 `'group merged'` 로그 라인(survivor·losers·move·del)을 찍는다. 즉 죽은 시점에 처리 중이던 그룹 하나만 "커밋은 됐는데 로그가 없는" 상태로 남을 수 있고, 그 외 그룹은 로그가 있으면 완전히 끝난 것, 없으면(=`'merge targets'` 로그 이후 로그가 아예 없는 그룹) 아직 손도 안 댄 것이라 재실행하면 정상 처리된다.
-   - 식별: 로그에서 `'group merged'` 라인들의 survivor id 집합을 모은다. DB에서 `SELECT DISTINCT "redirectToId" FROM "Property" WHERE "redirectToId" IS NOT NULL`로 실제 세워진 생존자 id 집합을 뽑는다. 후자에서 전자를 뺀 차집합(=redirectToId는 섰는데 완료 로그가 없는 생존자)이 바로 집계가 stale한 대상이다. 그 id들에 대해 `updatePropertyAggregates([...])`를 수동으로 다시 돌린다.
-   - 그런 다음 스크립트를 그대로 다시 `--apply`로 돌려 나머지 그룹을 이어간다(`redirectToId IS NULL` 필터가 이미 커밋된 그룹을 자동 스킵한다).
-7. 생존자들의 거래 건수를 기록
-8. **다음 daily ETL이 한 바퀴 돈 뒤 같은 수치를 다시 잰다.** 늘었다면 `exclusiveArea` 정밀도 문제로 해시가 어긋나 중복이 재삽입된 것이므로, 재계산 로직을 고치고 늘어난 행을 정리한다
+   - 식별: `tee`로 저장한 로그에서 **이번 실행분의** `'group merged'` 라인들의 survivor id 집합을 모은다. `SELECT DISTINCT "redirectToId" FROM "Property" WHERE "redirectToId" IS NOT NULL` 전체와 단순 차집합을 뜨지 않는다 — 이 쿼리는 2026-07-01 행정구역 개편 리다이렉트 타깃까지 전부 포함해서 실제보다 훨씬 큰 집합이 나온다. 대신 로그의 `'merge targets'` 라인 이후 처리된 그룹들의 survivor id만 모아 그 안에서 완료 로그가 없는 것을 찾는다. 그 id들에 대해 `updatePropertyAggregates([...])`를 수동으로 다시 돌린다.
+   - 그런 다음 스크립트를 그대로 다시 `--apply --limit=200`으로 돌려 나머지 그룹을 이어간다(`redirectToId IS NULL` 필터가 이미 커밋된 그룹을 자동 스킵한다).
+6. 생존자들의 거래 건수를 기록
+7. **다음 daily ETL이 한 바퀴 돈 뒤 아래 두 가지를 확인한다.**
+   - 6번에서 기록한 생존자 거래 건수가 늘었다면 `exclusiveArea` 정밀도 문제로 해시가 어긋나 중복이 재삽입된 것이므로, 재계산 로직을 고치고 늘어난 행을 정리한다.
+   - **(필수) 아래 쿼리가 0행을 반환하는지 확인한다.**
+     ```sql
+     SELECT p.id, count(t.id)
+     FROM "Property" p JOIN "Transaction" t ON t."propertyId" = p.id
+     WHERE p."redirectToId" IS NOT NULL
+     GROUP BY 1;   -- must return zero rows
+     ```
+     생존자 거래 건수가 늘지 않는 첫 번째 체크만으로는 안전하지 않다 — 새 ETL이 리다이렉트된 패자에게 거래를 다시 붙이는 회귀(예: `findOrCreateProperty`/`propCache`가 `redirectToId`를 다시 필터링하지 않게 되는 경우)가 나면 생존자 건수는 그대로인 채 패자 쪽에서만 조용히 늘어나 첫 체크를 통과해버린다. 이 쿼리는 그 회귀와, 원래 이 체크가 잡으려던 `exclusiveArea` `Decimal(6,2)` 정밀도 문제(해시 불일치로 인한 중복 재삽입) 둘 다를 잡는다.
 
 이 스크립트는 운영 DB에 **쓰기**를 한다. 지금까지 쓰던 읽기전용 터널로는 실행할 수 없고, 실행 시점과 결과를 기록한다.
 

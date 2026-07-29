@@ -249,8 +249,11 @@ async function runOne(
     const rows = await fetchAll(adapter, sigungu, yyyymm);
 
     // 시군구 내 기존 매물 일괄 로드 → findOrCreateProperty의 findFirst N번 → 1번으로 축소
+    // redirectToId: null — 병합으로 리다이렉트된 패자는 캐시에서 제외한다. 안 그러면
+    // (type, name) 키가 생존자/패자 중 findMany가 마지막으로 돌려준 쪽으로 고정되어,
+    // 패자로 확정되면 그날 이후의 거래가 전부 301된 행에 쌓여 영영 복구 불가능해진다.
     const existingProps = await prisma.property.findMany({
-      where: { regionCode: { startsWith: sigungu } },
+      where: { regionCode: { startsWith: sigungu }, redirectToId: null },
     });
     const propCache = new Map<string, (typeof existingProps)[0]>();
     for (const p of existingProps) {
