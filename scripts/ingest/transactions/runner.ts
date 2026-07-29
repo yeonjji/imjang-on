@@ -369,7 +369,7 @@ export function buildAddress(row: NormalizedTransaction): string {
   return parts.join(' ').trim();
 }
 
-function computeHash(row: NormalizedTransaction, propertyId: bigint): string {
+export function computeHash(row: NormalizedTransaction, propertyId: bigint): string {
   const key = JSON.stringify({
     p: String(propertyId),
     t: row.dealType,
