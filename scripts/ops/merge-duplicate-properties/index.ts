@@ -199,6 +199,11 @@ async function main() {
     console.log('\n[DRY-RUN] 실제 반영하려면 --apply');
   }
   console.log(JSON.stringify(stats, null, 2));
+  // 그룹 단위 try/catch가 도입된 뒤로는 일부 그룹이 실패해도 프로세스는 그대로 exit 0으로
+  // 끝난다 — cron/운영 스크립트 래퍼가 이걸 성공으로 오인하지 않도록 실패가 있으면 알린다.
+  if (stats.failed > 0) {
+    process.exitCode = 1;
+  }
   await prisma.$disconnect();
 }
 
