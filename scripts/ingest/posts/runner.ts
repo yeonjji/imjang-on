@@ -9,6 +9,7 @@ import { naverNewsCount } from './detect-issues';
 import { dedupeKey, kstDateISO } from './keys';
 import { collectSubscriptionCandidates } from './sources/subscription';
 import { collectNaverNewsCandidates } from './sources/naver-news';
+import { dropStale } from './freshness';
 import type { BoardCandidate } from './candidate';
 import { generateDraft, createOpenAiClient } from '@/lib/board/generate';
 import { createDraft } from '@/lib/board/create-draft';
@@ -92,10 +93,12 @@ async function main() {
       logger.error({ err }, 'naver news collect failed');
     }
     const candidates = [...feedCands, ...fpCands, ...naverCands];
-    const fresh = await dropExisting(candidates);
+    // 발행일이 90일을 넘거나 없는 후보는 생성 전에 제외(옛날 기사로 글 생성 방지).
+    const { kept: recent, staleDropped } = dropStale(candidates, new Date());
+    const fresh = await dropExisting(recent);
     const ranked = await rank(fresh);
     logger.info(
-      { candidates: candidates.length, fresh: fresh.length, feedErrors, firstParty: fpCands.length },
+      { candidates: candidates.length, staleDropped, fresh: fresh.length, feedErrors, firstParty: fpCands.length },
       'board candidates collected',
     );
 
@@ -152,6 +155,7 @@ async function main() {
     const summary = {
       created: created?.slug ?? null,
       candidates: candidates.length,
+      staleDropped,
       fresh: fresh.length,
       rejected,
       duplicate,

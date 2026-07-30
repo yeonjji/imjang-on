@@ -36,8 +36,18 @@ describe('researchTopic', () => {
     expect(r.grounded).not.toBeNull();
     expect(r.grounded!.sourceUrl).toBe('https://www.korea.kr/news/a');
     expect(r.grounded!.sourceName).toBe('정책브리핑');
+    expect(r.grounded!.repDateKnown).toBe(true); // korea.kr 대표 → 발행일 신뢰
     // 뉴스 도메인은 후보에서 제외(추출 시도조차 안 함)
     expect(r.candidates.some((c) => c.domain.includes('naver.com'))).toBe(false);
+  });
+
+  it('대표 근거가 korea.kr이 아니면 repDateKnown=false(발행일 미확인 경고용)', async () => {
+    const search = { items: [{ title: 'go', link: 'https://www.molit.go.kr/p', description: 's' }] };
+    const pages = { 'https://www.molit.go.kr/p': `<p>${LONG}</p>공공누리 제1유형` };
+    const r = await researchTopic('x', TODAY, { ...CREDS, fetchImpl: routedFetch({ search, pages }) });
+    expect(r.grounded).not.toBeNull();
+    expect(r.grounded!.sourceUrl).toBe('https://www.molit.go.kr/p');
+    expect(r.grounded!.repDateKnown).toBe(false);
   });
 
   it('스니펫은 sourceText/근거에 들어가지 않는다', async () => {

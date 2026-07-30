@@ -77,7 +77,7 @@ export async function deletePostAction(fd: FormData) {
 }
 
 export type TopicGenResult =
-  | { status: 'created'; id: string }
+  | { status: 'created'; id: string; sourceDateKnown: boolean }
   | { status: 'insufficient'; sources: SourceMeta[] }
   | { status: 'rejected'; violations: string[] }
   | { status: 'duplicate' }
@@ -113,6 +113,7 @@ export async function generateFromTopicAction(
     let sourceDate: Date;
     let sourceText: string;
     let sourceExcerpt: string;
+    let sourceDateKnown: boolean;
 
     if (pasted) {
       if (!pastedName || !pastedUrl) {
@@ -123,6 +124,7 @@ export async function generateFromTopicAction(
       sourceDate = now;
       sourceText = pasted.slice(0, MAX_SOURCE_TEXT_CHARS);
       sourceExcerpt = `[출처: ${pastedName} · ${pastedUrl}]\n${pasted}`.slice(0, 4000);
+      sourceDateKnown = true; // 사람이 직접 넣은 출처 — 최신성 검토 완료로 간주
     } else {
       const r = await researchTopic(topic, now);
       if (!r.grounded) return { status: 'insufficient', sources: r.candidates };
@@ -131,6 +133,7 @@ export async function generateFromTopicAction(
       sourceDate = r.grounded.sourceDate;
       sourceText = r.grounded.sourceText;
       sourceExcerpt = r.grounded.sourceExcerpt;
+      sourceDateKnown = r.grounded.repDateKnown;
     }
 
     const client = createOpenAiClient(env.OPENAI_API_KEY);
@@ -149,7 +152,7 @@ export async function generateFromTopicAction(
 
     if (res.status === 'created') {
       revalidatePath('/admin/posts');
-      return { status: 'created', id: String(res.id) };
+      return { status: 'created', id: String(res.id), sourceDateKnown };
     }
     if (res.status === 'duplicate') return { status: 'duplicate' };
     return { status: 'rejected', violations: res.violations };
