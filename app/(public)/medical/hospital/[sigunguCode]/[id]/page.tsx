@@ -25,6 +25,7 @@ import { mapImageUrl } from '@/lib/seo/static-map';
 import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
 import { SITE_URL } from '@/lib/site';
 import { qualifiedTitle } from '@/lib/seo/title';
+import { hospitalDescriptor } from '@/lib/seo/facility-descriptor';
 import { resolveSigunguLabelFromAddress } from '@/lib/region/from-address';
 import type { Metadata } from 'next';
 
@@ -46,7 +47,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const docs = hospital.totalDoctors ? `, 의사 ${hospital.totalDoctors.toLocaleString('ko-KR')}명` : '';
   const locality = await resolveSigunguLabelFromAddress(hospital.address);
   return {
-    title: qualifiedTitle(hospital.name, locality, `— ${hospital.typeName} 정보·주변 아파트`),
+    title: qualifiedTitle(hospital.name, locality, `— ${hospitalDescriptor(hospital.depts, hospital.typeName)}`),
     description: narrative?.text.slice(0, 150) ?? `${hospital.name} ${hospital.typeName}${docs}. 진료·시설·교통 정보와 도보권 아파트 실거래가를 함께 확인하세요.`,
     robots: robotsFor(indexable),
     alternates: { canonical: `/medical/hospital/${hospital.sigunguCode}/${id}` },

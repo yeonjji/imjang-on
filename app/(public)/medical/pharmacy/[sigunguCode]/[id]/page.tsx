@@ -20,6 +20,7 @@ import { JsonLd, placeSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { mapImageUrl } from '@/lib/seo/static-map';
 import { SITE_URL } from '@/lib/site';
 import { qualifiedTitle } from '@/lib/seo/title';
+import { pharmacyDescriptor } from '@/lib/seo/facility-descriptor';
 import { resolveSigunguLabelFromAddress } from '@/lib/region/from-address';
 import type { Metadata } from 'next';
 
@@ -40,7 +41,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const regionPart = region ? `${region} ` : '';
   const locality = await resolveSigunguLabelFromAddress(pharmacy.address);
   return {
-    title: qualifiedTitle(pharmacy.name, locality, '— 약국 정보·주변 아파트'),
+    title: qualifiedTitle(pharmacy.name, locality, `— ${pharmacyDescriptor(pharmacy.eupmyeondong)}`),
     description: `${pharmacy.name} 위치·연락처와 도보권 아파트 실거래가. ${regionPart}주변 생활 인프라를 한눈에 확인하세요.`,
     // 약국 상세는 고유 콘텐츠(이름·주소·시간)가 얇고 나머지는 전 위치 공통 파생이라
     // near-duplicate 색인 부풀림 요인. 로컬 열람용으로 렌더는 유지하되 색인에서만 배제.
