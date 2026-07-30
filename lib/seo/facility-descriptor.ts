@@ -77,3 +77,53 @@ export function pharmacyDescriptor(eupmyeondong: string | null): string {
   const dong = eupmyeondong?.trim();
   return dong ? `${dong} 약국` : '약국';
 }
+
+export interface AmenityFields {
+  industryName?: string | null;
+  marketType?: string | null;
+}
+
+/**
+ * 상권·편의 4종. 호출 지점이 amenity/[category]/[id] 하나라 slug로 분기한다.
+ * - market: marketType에서 상설·정기를 뽑는다(classifyMarketSub와 같은 기준)
+ * - mart: industryName(슈퍼마켓·대형마트 등)이 '마트'를 흡수한다
+ * - convenience·cafe: industryName이 '체인화 편의점'·'커피전문점'처럼 라벨과
+ *   동어반복이라 키워드 없이 라벨만 낸다. 없는 변별력을 만들지 않는다.
+ */
+export function amenityDescriptor(slug: string, item: AmenityFields, label: string): string {
+  if (slug === 'market') {
+    const type = item.marketType ?? '';
+    if (type.includes('상설')) return `상설 ${label}`;
+    if (type.includes('정기') || type.includes('일장')) return `정기 ${label}`;
+    return label;
+  }
+  if (slug === 'mart') {
+    return item.industryName?.trim() || label;
+  }
+  return label;
+}
+
+/** 공원: parkType이 '근린공원'처럼 이미 '공원'으로 끝나 시설명을 흡수한다. */
+export function urbanParkDescriptor(parkType: string | null): string {
+  return parkType?.trim() || '공원';
+}
+
+/**
+ * 주차장: 무료/유료 + 공영/민영. "무료 주차장"이 가장 강한 검색 의도다.
+ * 무료/유료는 chargeInfo 컬럼이다(parkingchrgeInfo 매핑). feedingSe는
+ * 급지구분이라 쓰지 않는다.
+ */
+export function urbanParkingDescriptor(chargeInfo: string | null, prkplceSe: string | null): string {
+  const charge = chargeInfo?.trim();
+  const operator = prkplceSe?.trim();
+  if (charge && operator) return `${charge} ${operator}주차장`;
+  if (charge) return `${charge} 주차장`;
+  if (operator) return `${operator}주차장`;
+  return '주차장';
+}
+
+/** 충전소: 급속·완속. '전기차 충전소'가 실검색어라 시설명을 '충전소'로 줄이지 않는다. */
+export function urbanChargerDescriptor(chargeSpeed: string | null): string {
+  const speed = chargeSpeed?.trim();
+  return speed ? `${speed} 전기차충전소` : '전기차충전소';
+}

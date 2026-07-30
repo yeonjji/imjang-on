@@ -3,6 +3,10 @@ import {
   hospitalDescriptor,
   schoolDescriptor,
   pharmacyDescriptor,
+  amenityDescriptor,
+  urbanParkDescriptor,
+  urbanParkingDescriptor,
+  urbanChargerDescriptor,
 } from '@/lib/seo/facility-descriptor';
 
 const dept = (deptName: string, specialistCount: number | null = null) => ({
@@ -71,5 +75,69 @@ describe('pharmacyDescriptor', () => {
 
   it('읍면동이 없으면 약국만 낸다', () => {
     expect(pharmacyDescriptor(null)).toBe('약국');
+  });
+});
+
+describe('amenityDescriptor', () => {
+  it('전통시장은 상설·정기를 앞에 붙인다', () => {
+    expect(amenityDescriptor('market', { marketType: '상설시장' }, '전통시장')).toBe('상설 전통시장');
+    expect(amenityDescriptor('market', { marketType: '정기시장' }, '전통시장')).toBe('정기 전통시장');
+  });
+
+  it('전통시장 유형이 미분류면 라벨만 낸다', () => {
+    expect(amenityDescriptor('market', { marketType: null }, '전통시장')).toBe('전통시장');
+  });
+
+  it('마트는 업종명이 라벨을 대체한다', () => {
+    expect(amenityDescriptor('mart', { industryName: '슈퍼마켓' }, '마트')).toBe('슈퍼마켓');
+  });
+
+  it('마트 업종명이 없으면 라벨만 낸다', () => {
+    expect(amenityDescriptor('mart', { industryName: null }, '마트')).toBe('마트');
+  });
+
+  it('편의점·카페는 업종명을 쓰지 않는다 — 라벨과 동어반복이다', () => {
+    expect(amenityDescriptor('convenience', { industryName: '체인화 편의점' }, '편의점')).toBe('편의점');
+    expect(amenityDescriptor('cafe', { industryName: '커피전문점/카페/다방' }, '카페')).toBe('카페');
+  });
+});
+
+describe('urbanParkDescriptor', () => {
+  it('공원 유형이 시설명을 흡수한다', () => {
+    expect(urbanParkDescriptor('근린공원')).toBe('근린공원');
+    expect(urbanParkDescriptor('어린이공원')).toBe('어린이공원');
+  });
+
+  it('유형이 없으면 공원으로 폴백한다', () => {
+    expect(urbanParkDescriptor(null)).toBe('공원');
+  });
+});
+
+describe('urbanParkingDescriptor', () => {
+  it('요금과 운영주체를 함께 붙인다', () => {
+    expect(urbanParkingDescriptor('무료', '공영')).toBe('무료 공영주차장');
+  });
+
+  it('요금만 있으면 요금만 붙인다', () => {
+    expect(urbanParkingDescriptor('유료', null)).toBe('유료 주차장');
+  });
+
+  it('운영주체만 있으면 운영주체만 붙인다', () => {
+    expect(urbanParkingDescriptor(null, '민영')).toBe('민영주차장');
+  });
+
+  it('둘 다 없으면 주차장으로 폴백한다', () => {
+    expect(urbanParkingDescriptor(null, null)).toBe('주차장');
+  });
+});
+
+describe('urbanChargerDescriptor', () => {
+  it('충전 속도를 앞에 붙인다', () => {
+    expect(urbanChargerDescriptor('급속')).toBe('급속 전기차충전소');
+    expect(urbanChargerDescriptor('완속')).toBe('완속 전기차충전소');
+  });
+
+  it('속도가 없으면 전기차충전소만 낸다', () => {
+    expect(urbanChargerDescriptor(null)).toBe('전기차충전소');
   });
 });
