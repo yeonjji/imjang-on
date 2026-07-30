@@ -58,12 +58,12 @@ describe('시설 상세 generateMetadata title', () => {
   // 라벨이 나온다는 것은 주소 파싱 경로가 살아 있다는 뜻이다.
   it('병원 title은 주소에서 뽑은 시군구를 괄호로 단다', async () => {
     const meta = await hospitalMeta(params({ sigunguCode: '110019', id: String(HOSPITAL_ID) }));
-    expect(meta.title).toBe('서울치과의원 (강남구) — 치과의원 정보·주변 아파트');
+    expect(meta.title).toBe('서울치과의원 (강남구) — 치과의원');
   });
 
   it('편의점 title은 카테고리 라벨과 시군구를 함께 단다', async () => {
     const meta = await amenityMeta(params({ category: 'convenience', id: String(STORE_ID) }));
-    expect(meta.title).toBe('씨유 (강남구) — 편의점 정보·주변 아파트');
+    expect(meta.title).toBe('씨유 (강남구) — 편의점');
   });
 
   // 지역 해석 실패가 제목을 깨뜨리지 않는다는 계약
@@ -74,7 +74,7 @@ describe('시설 상세 generateMetadata title', () => {
     });
     try {
       const meta = await hospitalMeta(params({ sigunguCode: '110019', id: String(HOSPITAL_ID) }));
-      expect(meta.title).toBe('서울치과의원 — 치과의원 정보·주변 아파트');
+      expect(meta.title).toBe('서울치과의원 — 치과의원');
     } finally {
       // assert 실패 시에도 픽스처를 복원한다 — .env.test는 영속 로컬 DB라
       // 복원이 스킵되면 다음 실행까지 이 행이 오염된 채로 남는다.

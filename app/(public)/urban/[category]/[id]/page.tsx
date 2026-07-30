@@ -7,6 +7,7 @@ import { getUrbanById, getUrbanLatLng } from '@/lib/urban/detail';
 import { getUrbanList } from '@/lib/urban/list';
 import { resolveSigunguFromAddress, resolveSigunguLabelFromAddress } from '@/lib/region/from-address';
 import { qualifiedTitle } from '@/lib/seo/title';
+import { urbanParkDescriptor, urbanParkingDescriptor } from '@/lib/seo/facility-descriptor';
 import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
 import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { getSigunguByCode } from '@/lib/region';
@@ -61,7 +62,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     const { narrative } = await loadParkInsight(BigInt(id));
     const indexable = isNarrativeIndexable(narrative, 2);
     return {
-      title: qualifiedTitle(item.name, locality, '— 공원 정보·주변 아파트'),
+      title: qualifiedTitle(item.name, locality, `— ${urbanParkDescriptor((item.raw as ParkRaw).parkType)}`),
       description:
         narrative?.text.slice(0, 150) ??
         `${item.name} 공원 정보와 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
@@ -69,8 +70,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       alternates: { canonical: `/urban/park/${id}` },
     };
   }
+  const parkingRaw = def.slug === 'parking' ? (item.raw as ParkingRaw) : null;
   return {
-    title: qualifiedTitle(item.name, locality, `— ${def.label} 정보·주변 아파트`),
+    title: qualifiedTitle(
+      item.name,
+      locality,
+      `— ${parkingRaw ? urbanParkingDescriptor(parkingRaw.chargeInfo, parkingRaw.prkplceSe) : def.label}`,
+    ),
     description: `${item.name} ${def.label} 정보(운영시간·요금)와 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
     robots: robotsFor(false),
     alternates: { canonical: `/urban/${def.slug}/${id}` },

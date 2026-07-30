@@ -5,6 +5,7 @@ import { getUrbanById, getUrbanLatLng } from '@/lib/urban/detail';
 import { getUrbanList } from '@/lib/urban/list';
 import { resolveSigunguFromAddress, resolveSigunguLabelFromAddress } from '@/lib/region/from-address';
 import { qualifiedTitle } from '@/lib/seo/title';
+import { urbanChargerDescriptor } from '@/lib/seo/facility-descriptor';
 import { fetchChargerStatus } from '@/lib/urban/ev-status';
 import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
 import { getNearbySubwayStations } from '@/lib/subway/nearby';
@@ -50,7 +51,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!item) return {};
   const locality = await resolveSigunguLabelFromAddress(item.address).catch(() => null);
   return {
-    title: qualifiedTitle(item.name, locality, '— 전기차충전소 정보·주변 아파트'),
+    title: qualifiedTitle(item.name, locality, `— ${urbanChargerDescriptor((item.raw as ChargerRaw).chargeSpeed)}`),
     description: `${item.name} 전기차충전소 실시간 충전기 현황과 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
     robots: robotsFor(false),
     alternates: { canonical: `/urban/charger/${id}` },

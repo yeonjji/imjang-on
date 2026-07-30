@@ -25,6 +25,7 @@ import { InsightSection } from '@/components/ui/insight-section';
 import { mapImageUrl } from '@/lib/seo/static-map';
 import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
 import { qualifiedTitle } from '@/lib/seo/title';
+import { schoolDescriptor } from '@/lib/seo/facility-descriptor';
 import { resolveSigunguLabelFromAddress } from '@/lib/region/from-address';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
@@ -58,7 +59,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const regionPart = school.region ? `${school.region} ` : '';
   const locality = await resolveSigunguLabelFromAddress(school.address);
   return {
-    title: qualifiedTitle(school.name, locality, `— ${school.schoolKind ?? '학교'} 정보·주변 아파트`),
+    title: qualifiedTitle(school.name, locality, `— ${schoolDescriptor(school.foundType, school.coeduType, school.schoolKind)}`),
     description: narrative?.text.slice(0, 150) ?? `${school.name}${tagPart} ${school.schoolKind ?? '학교'} 정보와 도보권 아파트 실거래가. ${regionPart}통학 정보를 공공데이터로 확인하세요.`,
     robots: robotsFor(indexable),
     alternates: { canonical: `/school/${sigunguCode}/${id}` },
