@@ -53,7 +53,7 @@ thin-content 대응으로 의도적으로 막아둔 상태다. 즉 **당장 검�
 | 어린이집 | **현행 유지 — 변경 없음** | `○○어린이집 (광진구) — 국공립 어린이집 정원 99명` |
 | 공원 | `Park.parkType` (시설명 흡수) | `어린이대공원 (광진구) — 근린공원` |
 | 주차장 | `chargeInfo`(무료/유료) + `prkplceSe`(공영/민영) | `○○주차장 (광진구) — 무료 공영주차장` |
-| 충전소 | `EvCharger.chargeSpeed`(급속/완속) | `○○충전소 (광진구) — 급속 충전소` |
+| 충전소 | `EvCharger.chargeSpeed`(급속/완속) | `○○충전소 (광진구) — 급속 전기차충전소` |
 | 전통시장 | `TraditionalMarket.marketType` | `자양전통시장 (광진구) — 상설 전통시장` |
 | 마트 | `Store.industryName` (시설명 흡수) | `○○마트 (광진구) — 슈퍼마켓` |
 | 편의점·카페 | **없음 — 공통 문구만 제거** | `GS25 자양점 (광진구) — 편의점` |
@@ -82,12 +82,14 @@ pharmacyDescriptor(eupmyeondong)                     → '자양동 약국'
 amenityDescriptor(slug, item, label)                 → '상설 전통시장' | '슈퍼마켓' | '편의점'
 urbanParkDescriptor(parkType)                        → '근린공원'
 urbanParkingDescriptor(chargeInfo, prkplceSe)        → '무료 공영주차장'
-urbanChargerDescriptor(chargeSpeed)                  → '급속 충전소'
+urbanChargerDescriptor(chargeSpeed)                  → '급속 전기차충전소'
 ```
+
+충전소는 `전기차충전소`를 시설명으로 유지한다. `충전소`로 줄이면 3자를 아끼지만 "전기차 충전소"가 실제 검색어다.
 
 **모든 함수는 항상 문자열을 반환한다.** 데이터가 없으면 기존 라벨(`'병원'`, `'공원'`, `'주차장'`)로 폴백해 호출부에 null 분기를 만들지 않는다.
 
-`amenityDescriptor`는 호출 지점이 `app/(public)/amenity/[category]/[id]/page.tsx` 하나뿐이므로 4종을 `slug`로 분기하는 단일 함수로 둔다. urban은 `generateMetadata`의 park 분기와 일반 분기가 이미 갈라져 있고 `item.raw`가 카테고리마다 다른 타입이라 카테고리별로 나눈다.
+`amenityDescriptor`는 호출 지점이 `app/(public)/amenity/[category]/[id]/page.tsx` 하나뿐이므로 4종을 `slug`로 분기하는 단일 함수로 둔다. urban은 park·parking·charger의 호출 지점이 애초에 3곳으로 갈라져 있고 `item.raw`가 카테고리마다 다른 타입이라 카테고리별로 나눈다.
 
 `qualifiedTitle()`은 손대지 않는다. 제목 조립 단일 지점 규칙이 유지된다.
 
@@ -110,7 +112,10 @@ title: qualifiedTitle(hospital.name, locality, `— ${hospitalDescriptor(hospita
 | `app/(public)/medical/pharmacy/[sigunguCode]/[id]/page.tsx` | |
 | `app/(public)/school/[sigunguCode]/[id]/page.tsx` | |
 | `app/(public)/amenity/[category]/[id]/page.tsx` | 4종 공용 |
-| `app/(public)/urban/[category]/[id]/page.tsx` | park 분기 + 일반 분기 2곳. `item.raw`는 `unknown`이라 페이지 본문(`:90`)과 동일하게 `as ParkRaw` / `as ParkingRaw`로 좁힌다 |
+| `app/(public)/urban/[category]/[id]/page.tsx` | park 분기(`:64`) + 일반 분기(`:73`) 2곳. `item.raw`는 `unknown`이라 페이지 본문(`:90`)과 동일하게 `as ParkRaw` / `as ParkingRaw`로 좁힌다 |
+| `app/(public)/urban/charger/[id]/page.tsx` | **전용 라우트(`:53`).** 충전소 상세는 이 파일로만 들어온다 |
+
+**충전소 라우트 주의:** `charger`는 `/urban/[category]/[id]`가 아니라 전용 정적 라우트 `/urban/charger/[id]`가 처리한다(Next 라우트 우선순위상 정적 세그먼트가 `[category]`를 이긴다). 따라서 `/urban/[category]/[id]`의 일반 분기는 실질적으로 parking만 태운다. 다만 그 분기의 `def.label` 폴백은 그대로 남긴다 — 죽은 코드 정리는 이 작업 범위가 아니다.
 
 `app/(public)/childcare/[sigunguCode]/[id]/page.tsx`는 대상이 아니다.
 
@@ -118,6 +123,7 @@ title: qualifiedTitle(hospital.name, locality, `— ${hospitalDescriptor(hospita
 
 - **병원 진료과목**: `specialistCount > 0`인 과만 후보로 두고 내림차순 상위 2개. 전문의 배치 과가 없으면 전체 과목에서 2개. 과목이 0개면 `typeName`만. **두 과목 결합 길이가 10자를 넘으면 1개만** 쓴다(`소아청소년과·영상의학과` 같은 11자 조합 방어).
 - **학교**: `foundType`이 없으면 `schoolKind`만. `schoolKind`도 없으면 `'학교'`.
+- **학교 `coeduType` 판정은 화이트리스트로 한다.** `scripts/ingest/amenities/adapter-school.ts`가 NEIS `COEDU_SC_NM`을 정규화 없이 그대로 넣기 때문에 저장된 값의 정확한 형태를 코드에서 확정할 수 없다(`남녀공학`/`남여공학` 표기 차이 등). 따라서 `'남녀공학'`과의 부등호 비교로 걸러내지 **않는다.** `남`으로 시작하고 `공학`을 포함하지 않으면 `'남자'`, `여`로 시작하고 `공학`을 포함하지 않으면 `'여자'`, **그 외 모든 값은 키워드를 생략**한다. 이 규칙의 실패 모드는 "키워드가 안 붙는다"(= 현행에서 공통 문구만 빠진 상태)이지 잘못된 제목이 아니다.
 - **주차장**: `chargeInfo`만 있으면 `무료 주차장`, `prkplceSe`만 있으면 `공영주차장`, 둘 다 없으면 `주차장`.
 - **전통시장**: `marketType`에 `상설` 포함 → `상설 전통시장`, `정기` 또는 `일장` 포함 → `정기 전통시장`, 그 외 → `전통시장`.
 - **마트**: `industryName`이 있으면 그대로, 없으면 `마트`.
@@ -141,6 +147,37 @@ Next는 `openGraph.title`이 없으면 `title`을 물려준다. 카카오톡·�
 - 주차장 `chargeInfo`/`prkplceSe` 부분 결측 3케이스
 - 전통시장 상설/정기/미분류
 
+### 반드시 함께 고쳐야 하는 기존 테스트
+
+`tests/components/facility-title-metadata.test.ts`는 실제 `generateMetadata`를 호출해 완성된 제목을 정확히 단정한다. **손대지 않으면 `pnpm test`가 깨진다.** 기대값 3건을 함께 갱신한다.
+
+| 케이스 | 기존 기대값 | 변경 후 기대값 |
+|---|---|---|
+| 병원 (지역 매칭 성공) | `서울치과의원 (강남구) — 치과의원 정보·주변 아파트` | `서울치과의원 (강남구) — 치과의원` |
+| 편의점 | `씨유 (강남구) — 편의점 정보·주변 아파트` | `씨유 (강남구) — 편의점` |
+| 병원 (지역 매칭 실패) | `서울치과의원 — 치과의원 정보·주변 아파트` | `서울치과의원 — 치과의원` |
+
+병원 픽스처(`HOSPITAL_ID = 990001n`)는 `HospitalDept` 행을 만들지 않으므로 진료과목 0개 경로를 타고 `typeName`만 남는다. 편의점 픽스처의 `industryName`은 `'체인화 편의점'`이지만 편의점은 `industryName`을 쓰지 않으므로 라벨 `'편의점'`이 그대로 나온다. 두 케이스 모두 **폴백 경로를 검증하는 셈**이라 그대로 두는 것이 낫다 — 키워드가 붙는 경로는 신규 순수 테스트가 담당한다.
+
 기존 `tests/lib/seo-title.test.ts`는 `qualifiedTitle`이 tail을 임의 문자열로 받는다는 것이 요지이므로 기대 문자열에 `정보·주변 아파트`가 남아 있어도 **수정하지 않는다.**
 
-완료 게이트: `pnpm lint` + `pnpm test` 통과.
+완료 게이트: `pnpm typecheck` + `pnpm lint` + `pnpm test` 통과.
+
+## 구현 전 사전확인 결과 (2026-07-30 실측)
+
+키워드 소스 필드가 각 호출부에서 실제로 손에 들어오는지 코드로 확인했다.
+
+| 확인 항목 | 결과 |
+|---|---|
+| `pnpm typecheck` 현재 상태 | 통과 (에러 0) — 구현 후 발생하는 타입 에러는 이 작업 소관 |
+| `getHospitalById` (`lib/hospital/index.ts:4`) | `include: { depts: ... }` 있음. `deptName`·`specialistCount` 사용 가능. 단 `orderBy: { deptName: 'asc' }`이므로 전문의 수 정렬은 descriptor에서 메모리 정렬해야 한다 |
+| `getSchoolById` (`lib/school.ts`) | `findUnique` 무-select → `foundType`·`coeduType`·`schoolKind` 전부 사용 가능 |
+| `getPharmacyById` (`lib/pharmacy/index.ts`) | `findUnique` 무-select → `eupmyeondong` 사용 가능 |
+| mart `getById` (`lib/amenity/adapters/mart.ts:87`) | `industryName` select에 포함 |
+| market `getById` (`lib/amenity/adapters/market.ts:87`) | `marketType` select에 포함 |
+| `ParkRaw`·`ParkingRaw`·`ChargerRaw` | 모두 export됨. `item.raw`가 `unknown`이라 캐스팅 가능 |
+| `chargeSpeed` 실제 값 | `'급속'` / `'완속'` (`scripts/ingest/amenities/runner.ts`의 `CASE WHEN has_fast`로 확정) |
+| `prkplceSe` 실제 값 | `'공영'` / `'민영'` (parking subFilter 옵션과 일치) |
+| `parkType` 실제 값 | `근린공원`·`어린이공원`·`체육공원`·`소공원`·`역사공원`·`묘지공원`·`문화공원` — 전부 `공원`으로 끝나 시설명 흡수가 성립 |
+| `coeduType` 실제 값 | **확정 불가** — NEIS 원값 그대로 저장. 위 화이트리스트 규칙으로 방어 |
+| 옛 제목 문자열 단정 지점 | `tests/components/facility-title-metadata.test.ts` 3건 (갱신 필요), `tests/lib/seo-title.test.ts` 4건 (갱신 불필요) |
