@@ -63,7 +63,7 @@ describe('시설 상세 generateMetadata title', () => {
 
   it('편의점 title은 카테고리 라벨과 시군구를 함께 단다', async () => {
     const meta = await amenityMeta(params({ category: 'convenience', id: String(STORE_ID) }));
-    expect(meta.title).toBe('씨유 (강남구) — 편의점 정보·주변 아파트');
+    expect(meta.title).toBe('씨유 (강남구) — 편의점');
   });
 
   // 지역 해석 실패가 제목을 깨뜨리지 않는다는 계약
