@@ -59,6 +59,10 @@ describe('schoolDescriptor', () => {
     expect(schoolDescriptor('공립', '기타', '초등학교')).toBe('공립 초등학교');
   });
 
+  it('공학 접미사 없는 남녀/남여 표기는 남자로 오표기하지 않고 키워드를 생략한다', () => {
+    expect(schoolDescriptor('공립', '남녀', '중학교')).toBe('공립 중학교');
+  });
+
   it('설립구분이 없으면 학교 종류만 낸다', () => {
     expect(schoolDescriptor(null, null, '초등학교')).toBe('초등학교');
   });
