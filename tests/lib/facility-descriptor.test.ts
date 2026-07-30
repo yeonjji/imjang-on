@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { hospitalDescriptor } from '@/lib/seo/facility-descriptor';
+import {
+  hospitalDescriptor,
+  schoolDescriptor,
+  pharmacyDescriptor,
+} from '@/lib/seo/facility-descriptor';
 
 const dept = (deptName: string, specialistCount: number | null = null) => ({
   deptName,
@@ -29,5 +33,43 @@ describe('hospitalDescriptor', () => {
     // '소아청소년과·영상의학과' = 12자
     expect(hospitalDescriptor([dept('소아청소년과', 5), dept('영상의학과', 4)], '종합병원'))
       .toBe('소아청소년과 종합병원');
+  });
+});
+
+describe('schoolDescriptor', () => {
+  it('설립구분을 앞에 붙인다', () => {
+    expect(schoolDescriptor('공립', '남녀공학', '중학교')).toBe('공립 중학교');
+  });
+
+  it('공학은 표기 형태와 무관하게 생략한다', () => {
+    // NEIS 원값이 정규화 없이 저장돼 '남녀공학'/'남여공학' 둘 다 올 수 있다
+    expect(schoolDescriptor('사립', '남여공학', '고등학교')).toBe('사립 고등학교');
+  });
+
+  it('단성 학교는 남자·여자를 붙인다', () => {
+    expect(schoolDescriptor('사립', '여', '고등학교')).toBe('사립 여자 고등학교');
+    expect(schoolDescriptor('공립', '남', '중학교')).toBe('공립 남자 중학교');
+  });
+
+  it('예상 못한 coeduType은 키워드를 생략한다', () => {
+    expect(schoolDescriptor('공립', '기타', '초등학교')).toBe('공립 초등학교');
+  });
+
+  it('설립구분이 없으면 학교 종류만 낸다', () => {
+    expect(schoolDescriptor(null, null, '초등학교')).toBe('초등학교');
+  });
+
+  it('학교 종류도 없으면 학교로 폴백한다', () => {
+    expect(schoolDescriptor(null, null, null)).toBe('학교');
+  });
+});
+
+describe('pharmacyDescriptor', () => {
+  it('읍면동을 앞에 붙인다', () => {
+    expect(pharmacyDescriptor('역삼동')).toBe('역삼동 약국');
+  });
+
+  it('읍면동이 없으면 약국만 낸다', () => {
+    expect(pharmacyDescriptor(null)).toBe('약국');
   });
 });

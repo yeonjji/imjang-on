@@ -41,3 +41,39 @@ export function hospitalDescriptor(depts: DeptLike[], typeName: string): string 
   const keyword = combined.length > DEPT_COMBINED_MAX ? picked[0] : combined;
   return `${keyword} ${typeName}`;
 }
+
+/**
+ * 단성 학교 표기. coeduType은 NEIS COEDU_SC_NM 원값이 정규화 없이 저장돼
+ * 있어(scripts/ingest/amenities/adapter-school.ts) 값 형태를 코드에서 확정할 수
+ * 없다('남녀공학'/'남여공학' 표기 차이 등). 그래서 '공학이 아닌 것'을 부등호로
+ * 걸러내지 않고, 남·여로 시작하고 '공학'을 포함하지 않는 값만 통과시킨다.
+ * 예상 못한 값의 실패 모드는 '키워드가 빠진다'이지 오표기가 아니다.
+ */
+function singleGenderLabel(coeduType: string | null): string | null {
+  const v = coeduType?.trim();
+  if (!v || v.includes('공학')) return null;
+  if (v.startsWith('남')) return '남자';
+  if (v.startsWith('여')) return '여자';
+  return null;
+}
+
+/** 학교: 설립구분(공립/사립)과 단성 여부를 앞에 붙인다. 지금 description에만 있는 값을 제목으로 승격한다. */
+export function schoolDescriptor(
+  foundType: string | null,
+  coeduType: string | null,
+  schoolKind: string | null,
+): string {
+  const kind = schoolKind ?? '학교';
+  const keyword = [foundType?.trim(), singleGenderLabel(coeduType)].filter(Boolean).join(' ');
+  return keyword ? `${keyword} ${kind}` : kind;
+}
+
+/**
+ * 약국: 읍면동을 앞에 붙인다. Pharmacy 모델에 영업시간·심야·공휴일 컬럼이
+ * 없어 '심야약국' 같은 실검색어를 만들 소재가 없고, eupmyeondong이 유일한
+ * 변별 축이다.
+ */
+export function pharmacyDescriptor(eupmyeondong: string | null): string {
+  const dong = eupmyeondong?.trim();
+  return dong ? `${dong} 약국` : '약국';
+}
