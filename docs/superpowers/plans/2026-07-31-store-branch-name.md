@@ -336,21 +336,40 @@ Expected: 전부 PASS.
   branchName   String?                               @db.VarChar(60)
 ```
 
-- [ ] **Step 8: 마이그레이션 생성**
+- [ ] **Step 8: 마이그레이션 작성 (손으로)**
 
-```bash
-pnpm prisma:migrate --name store_branch_name
+> **정정 (2026-07-31, 실행 중 발견):** 이 단계는 원래 `pnpm prisma:migrate --name store_branch_name`
+> (= `prisma migrate dev`)이었는데 **틀린 지시였다.** 이 저장소는 마이그레이션을 손으로 쓴다 —
+> `prisma/migrations/20260729000000_add_property_dedupe_unique/migration.sql`을 보면 한글 근거
+> 주석이 달린 수작업 SQL이고 타임스탬프도 `...000000`처럼 수동으로 고른 값이다.
+> `migrate dev`를 돌리면 로컬 docker DB에 남은 롤백된 마이그레이션 기록 때문에 **전체 스키마
+> RESET을 요구하며 멈춘다.** 절대 확인하지 말 것 — 데이터가 날아간다.
+
+폴더와 파일을 직접 만든다. 타임스탬프는 작성일 기준으로 고른다.
+
+```
+prisma/migrations/20260731000000_add_store_branch_name/migration.sql
 ```
 
-**주의 (이 저장소의 알려진 함정):** `migrate dev`는 로컬 docker DB에 남아 있는 잔여 마이그레이션까지 쓸어담는 일이 있다. 생성 후 반드시 확인한다.
+```sql
+-- 공공데이터 상가업소 정보는 지점명을 bizesNm(상호명)과 brchNm(지점명)에 쪼개 내려준다.
+-- brchNm은 독립된 지점명이 아니라 bizesNm에서 잘려나간 꼬리라, 원본을 그대로 보관하고
+-- 결합·정리는 표시 시점(lib/amenity/store-name.ts)에서 한다.
+--
+-- nullable인 이유: 기존 약 31만 행은 재수집 전까지 NULL이며, 표시 함수가 NULL이면
+-- name만으로 동작하므로 코드가 먼저 배포돼도 화면이 깨지지 않는다.
+ALTER TABLE "Store" ADD COLUMN "branchName" VARCHAR(60);
+```
+
+적용한다. `migrate deploy`는 dev 모드의 드리프트 검사를 하지 않아 RESET을 요구하지 않는다.
 
 ```bash
+pnpm exec dotenv -e .env.local -- prisma migrate deploy
+pnpm exec dotenv -e .env.local -- prisma migrate status
 git status --short prisma/migrations/
 ```
 
-Expected: **이번에 만든 폴더 하나만** 새로 생겨야 한다. 다른 폴더가 같이 나오면 `git add`에 포함하지 말고 사용자에게 보고한다.
-
-생성된 `migration.sql`을 읽어 `ALTER TABLE "Store" ADD COLUMN "branchName" VARCHAR(60);` 한 줄인지 확인한다. 다른 테이블을 건드리면 중단하고 보고한다.
+Expected: `migrate status`가 up to date를 보고하고 마이그레이션 수가 하나 늘어난다. `git status`에는 **이번에 만든 폴더 하나만** 보여야 한다. 다른 폴더가 같이 나오면 `git add`에 포함하지 말고 사용자에게 보고한다.
 
 - [ ] **Step 9: 수집 upsert에 컬럼 반영**
 
