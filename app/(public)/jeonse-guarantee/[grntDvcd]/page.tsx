@@ -185,7 +185,6 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
             </Card>
           )}
 
-          {jeonseFaq && <Faq items={jeonseFaq} />}
           <SourceCaption ids={['hf-jeonse-guarantee']} />
         </main>
 
@@ -241,6 +240,7 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
 
         <BoardBriefingSection heading="임장ON 브리핑" className="mt-10" />
         <RelatedGuides pageKey="jeonse-guarantee" className="mt-10" />
+        {jeonseFaq && <Faq items={jeonseFaq} />}
       </div>
     </div>
   );
