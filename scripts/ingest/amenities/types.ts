@@ -36,6 +36,8 @@ export interface NormalizedStore {
   lng: number | null;
   industryCode: string | null;
   industryName: string | null;
+  /** 공공데이터 brchNm 원본. 가공은 표시 시점(lib/amenity/store-name.ts)에서 한다. */
+  branchName: string | null;
   sigunguCode: string;
 }
 

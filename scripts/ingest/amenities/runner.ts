@@ -334,16 +334,17 @@ async function ingestStores(): Promise<number> {
     for (let i = 0; i < rows.length; i += CHUNK) {
       const chunk = rows.slice(i, i + CHUNK);
       const values = chunk.map((r: NormalizedStore) =>
-        Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.industryCode ?? null}, ${r.industryName ?? null}, ${r.sigunguCode}, ${locationSql(r.lat, r.lng)}, NOW())`,
+        Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.industryCode ?? null}, ${r.industryName ?? null}, ${r.branchName ?? null}, ${r.sigunguCode}, ${locationSql(r.lat, r.lng)}, NOW())`,
       );
       await prisma.$executeRaw`
-        INSERT INTO "Store" ("sourceId", name, address, "industryCode", "industryName", "sigunguCode", location, "updatedAt")
+        INSERT INTO "Store" ("sourceId", name, address, "industryCode", "industryName", "branchName", "sigunguCode", location, "updatedAt")
         VALUES ${Prisma.join(values)}
         ON CONFLICT ("sourceId") DO UPDATE SET
           name = EXCLUDED.name,
           address = EXCLUDED.address,
           "industryCode" = EXCLUDED."industryCode",
           "industryName" = EXCLUDED."industryName",
+          "branchName" = EXCLUDED."branchName",
           "sigunguCode" = EXCLUDED."sigunguCode",
           location = EXCLUDED.location,
           "updatedAt" = NOW()

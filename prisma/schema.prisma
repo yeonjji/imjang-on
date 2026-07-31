@@ -310,6 +310,7 @@ model Store {
   location     Unsupported("geography(Point,4326)")?
   industryCode String?                               @db.VarChar(20)
   industryName String?                               @db.VarChar(60)
+  branchName   String?                               @db.VarChar(60)
   sigunguCode  String                                @db.VarChar(5)
   updatedAt    DateTime                              @updatedAt
 

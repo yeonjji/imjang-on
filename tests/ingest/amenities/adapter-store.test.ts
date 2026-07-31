@@ -49,4 +49,12 @@ describe('adapter-store', () => {
     const sb = rows.find((r) => r.sourceId === 'B001');
     expect(sb!.lat).toBeNull();
   });
+
+  it('brchNm을 branchName으로 파싱하고, 비면 null로 둔다', () => {
+    const { rows } = parseStoreXml(xml);
+    const sb = rows.find((r) => r.sourceId === 'B001');
+    const gs = rows.find((r) => r.sourceId === 'B002');
+    expect(sb!.branchName).toBe('강남점');
+    expect(gs!.branchName).toBeNull();
+  });
 });
