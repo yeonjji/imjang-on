@@ -26,4 +26,18 @@ describe('RelatedGuidesView SSR', () => {
     const html = renderToStaticMarkup(createElement(RelatedGuidesView, { items: [] }));
     expect(html).toBe('');
   });
+
+  it('섹션 전체를 Card(흰 배경 + shadow-soft)로 감싼다', () => {
+    const items: RelatedGuideItem[] = [{ id: 1n, slug: 'a', title: '가이드 A' }];
+    const html = renderToStaticMarkup(createElement(RelatedGuidesView, { items }));
+    expect(html).toMatch(/^<div class="[^"]*bg-\[var\(--color-card\)\]/);
+    expect(html).toMatch(/^<div class="[^"]*shadow-\[var\(--shadow-soft\)\]/);
+  });
+
+  it('안쪽 타일은 흰 카드가 아니라 연한 배경을 쓴다', () => {
+    const items: RelatedGuideItem[] = [{ id: 1n, slug: 'a', title: '가이드 A' }];
+    const html = renderToStaticMarkup(createElement(RelatedGuidesView, { items }));
+    expect(html).toContain('bg-[var(--color-soft)]');
+    expect(html).not.toContain('bg-white');
+  });
 });
