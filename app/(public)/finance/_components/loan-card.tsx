@@ -8,8 +8,8 @@ export function LoanCard({ item }: { item: LoanSummary }) {
   const regions = item.regionTags.filter((r) => r !== '전국');
   const hasSub = targets.length > 0 || regions.length > 0;
   return (
-    <Link href={`/finance/${item.seq}`} className="block">
-      <article className="rounded-[22px] border border-[var(--color-line)] bg-white px-6 py-5 shadow-[var(--shadow-soft)] transition hover:shadow-lg">
+    <Link href={`/finance/${item.seq}`} className="block h-full">
+      <article className="flex h-full flex-col rounded-[22px] border border-[var(--color-line)] bg-white px-6 py-5 shadow-[var(--shadow-soft)] transition hover:shadow-lg">
         <div className="mb-2 flex items-start justify-between gap-3">
           <h3 className="break-keep text-lg font-bold text-[var(--color-blue-dark)]">
             {item.finprdnm}
@@ -20,13 +20,13 @@ export function LoanCard({ item }: { item: LoanSummary }) {
             </span>
           )}
         </div>
-        <p className={`text-sm text-[var(--color-muted)] ${item.operPeriod || hasSub ? 'mb-1' : 'mb-3'}`}>
+        <p className="text-sm text-[var(--color-muted)]">
           {item.ofrinstnm ?? '—'}
           {item.instCtg ? ` · ${item.instCtg}` : ''}
           {item.irt ? ` · 금리 ${item.irt}` : ''}
         </p>
         {hasSub && (
-          <p className={`text-xs text-[var(--color-muted)] ${item.operPeriod ? 'mb-1' : 'mb-3'}`}>
+          <p className="mt-1 text-xs text-[var(--color-muted)]">
             {targets.length > 0 && (
               <>
                 <span className="font-semibold">대상</span> {targets.slice(0, 2).join('·')}
@@ -40,12 +40,12 @@ export function LoanCard({ item }: { item: LoanSummary }) {
           </p>
         )}
         {item.operPeriod && (
-          <p className="mb-3 text-xs text-[var(--color-muted)]">
+          <p className="mt-1 text-xs text-[var(--color-muted)]">
             <span className="font-semibold">운영기간</span> · {item.operPeriod}
           </p>
         )}
         {item.usageTags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="mt-auto flex flex-wrap gap-1.5 pt-3">
             {item.usageTags.map((t) => (
               <Badge key={t} tone="blue">
                 {t}
