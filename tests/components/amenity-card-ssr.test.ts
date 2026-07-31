@@ -39,6 +39,21 @@ describe('AmenityCard 이름 표기', () => {
     expect(html).toContain('컴포즈커피서산석림점');
   });
 
+  it('비편의점 카테고리에서는 브랜드 접두를 분리하지 않는다', () => {
+    // 'CU베이커리'는 CU 체인이 아니지만 브랜드 접두로 시작한다.
+    // 게이트가 열려 있으면 'CU 베이커리…'로 잘못 쪼개진다.
+    const item: AmenityItem = {
+      ...base,
+      name: 'CU베이커리',
+      branchName: '역삼점',
+      industryCode: 'I21201',
+      industryName: '카페',
+    };
+    const html = renderToStaticMarkup(createElement(AmenityCard, { item, def: cafeDef }));
+    expect(html).toContain('CU베이커리역삼점');
+    expect(html).not.toContain('CU 베이커리');
+  });
+
   it('branchName이 없으면 기존 이름 그대로다', () => {
     const item: AmenityItem = { ...base, name: '에이원', branchName: null };
     const html = renderToStaticMarkup(createElement(AmenityCard, { item, def: convenienceDef }));
