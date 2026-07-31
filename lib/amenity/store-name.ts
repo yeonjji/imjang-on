@@ -32,7 +32,8 @@ const BRANDS_LONGEST_FIRST = [...BRANDS].sort((a, b) => b.length - a.length);
 /**
  * 목록·상세에 노출할 상가 이름을 만든다.
  * splitBrand가 참이면 브랜드 접두 뒤에 공백을 넣어 '씨유 포이사거리점' 형태로 만든다.
- * 규칙이 어디서든 실패하면 원본 name으로 되돌아가며, 빈 문자열을 반환하지 않는다.
+ * 규칙이 어디서든 실패하면 원본 name으로 되돌아가며, 공백 제거 후 비어있지 않은 name에 대해서는
+ * 빈 문자열을 반환하지 않는다. name이 공백뿐이거나 비어있으면 빈 문자열을 반환한다 (표시할 이름이 없음).
  */
 export function displayStoreName(
   store: { name: string; branchName?: string | null },

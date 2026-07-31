@@ -38,6 +38,11 @@ describe('displayStoreName — 브랜드 분리(편의점)', () => {
     expect(displayStoreName({ name: '지에스노원하계점', branchName: null }, split))
       .toBe('지에스 노원하계점');
   });
+
+  it('브랜드 매칭은 대소문자를 가리지 않는다', () => {
+    expect(displayStoreName({ name: 'cu강남역점', branchName: null }, split)).toBe('cu 강남역점');
+    expect(displayStoreName({ name: 'GS25', branchName: '용산점' }, split)).toBe('GS25 용산점');
+  });
 });
 
 describe('displayStoreName — 폴백', () => {
@@ -57,6 +62,10 @@ describe('displayStoreName — 폴백', () => {
 
   it('빈 name은 그대로 반환한다', () => {
     expect(displayStoreName({ name: '', branchName: '서울역점' }, split)).toBe('');
+  });
+
+  it('공백뿐인 name은 빈 문자열을 반환한다 (표시할 이름이 없음)', () => {
+    expect(displayStoreName({ name: '   ', branchName: '서울역점' }, split)).toBe('');
   });
 });
 
