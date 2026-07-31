@@ -27,7 +27,7 @@ import { qualifiedTitle } from '@/lib/seo/title';
 import { amenityDescriptor } from '@/lib/seo/facility-descriptor';
 import { resolveSigunguLabelFromAddress } from '@/lib/region/from-address';
 import { SITE_URL } from '@/lib/site';
-import { displayStoreName } from '@/lib/amenity/store-name';
+import { displayAmenityName } from '@/lib/amenity/store-name';
 import type { Metadata } from 'next';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 
@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const item = await getAmenityById(def.slug, BigInt(id)).catch(() => null);
   if (!item) return {};
   const locality = await resolveSigunguLabelFromAddress(item.address).catch(() => null);
-  const displayName = displayStoreName(item, { splitBrand: def.slug === 'convenience' });
+  const displayName = displayAmenityName(item, def);
   return {
     title: qualifiedTitle(displayName, locality, `— ${amenityDescriptor(def.slug, item, def.label)}`),
     description: `${displayName} ${def.label} 정보와 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
@@ -71,7 +71,7 @@ export default async function AmenityDetailPage({ params }: Params) {
   const itemId = BigInt(id);
   const item = await getAmenityById(def.slug, itemId);
   if (!item) notFound();
-  const displayName = displayStoreName(item, { splitBrand: def.slug === 'convenience' });
+  const displayName = displayAmenityName(item, def);
 
   const region = item.sigunguCode
     ? await getSigunguByCode(item.sigunguCode).catch(() => null)

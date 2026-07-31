@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
+import { displayAmenityName } from '@/lib/amenity/store-name';
 import type { AmenityCategoryDef, AmenityItem } from '@/lib/amenity/category';
 
 const ANCHORS = [
@@ -36,7 +37,7 @@ export function AmenityDetailSidebar({
           <ul className="flex flex-col gap-2">
             {others.map((it) => (
               <li key={String(it.id)}>
-                <Link href={`/amenity/${def.slug}/${it.id}`} className="text-sm hover:text-[var(--color-blue)]">· {it.name}</Link>
+                <Link href={`/amenity/${def.slug}/${it.id}`} className="text-sm hover:text-[var(--color-blue)]">· {displayAmenityName(it, def)}</Link>
               </li>
             ))}
             <li>

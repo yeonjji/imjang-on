@@ -1,12 +1,11 @@
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
-import { displayStoreName } from '@/lib/amenity/store-name';
+import { displayAmenityName } from '@/lib/amenity/store-name';
 import type { AmenityCategoryDef, AmenityItem } from '@/lib/amenity/category';
 
 export function AmenityCard({ item, def }: { item: AmenityItem; def: AmenityCategoryDef }) {
   const summary = def.inferRowSummary(item);
-  // 브랜드 접두 분리는 소수 브랜드가 지배하는 편의점에서만 의미가 있다.
-  const displayName = displayStoreName(item, { splitBrand: def.slug === 'convenience' });
+  const displayName = displayAmenityName(item, def);
   return (
     <Link href={`/amenity/${def.slug}/${item.id}`}>
       <article className="flex items-center gap-4 rounded-[18px] border border-[var(--color-line)] bg-white px-5 py-4 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-sky)]">

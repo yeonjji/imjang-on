@@ -6,12 +6,18 @@
  * 원래 상호가 복원된다. (예: '씨유켄싱턴리조트' + '남원점' → '씨유켄싱턴리조트남원점')
  */
 
-/** brchNm에 지점명 대신 운영사 상호가 흘러든 값. 코리아세븐㈜(세븐일레븐 운영사). */
+/**
+ * brchNm에 지점명 대신 운영사 상호가 흘러든 값. 코리아세븐㈜(세븐일레븐 운영사).
+ * 5,000행 표본(전체의 약 90% 커버) 실측치로, 표본 밖 잔여 미검출 가능성이 있다.
+ * docs/superpowers/specs/2026-07-31-store-branch-name-design.md 참고.
+ */
 const OPERATOR_NOISE = new Set(['코리아']);
 
 /**
  * 편의점 브랜드 접두. 최장 일치로 매칭해야 '세븐일레븐'이 '세븐'보다,
  * '지에스25'가 '지에스'보다 먼저 잡힌다.
+ * 5,000행 표본(전체의 약 90% 커버) 실측치로, 표본 밖 잔여 미검출 가능성이 있다.
+ * docs/superpowers/specs/2026-07-31-store-branch-name-design.md 참고.
  */
 const BRANDS = [
   '세븐일레븐',
@@ -47,7 +53,6 @@ export function displayStoreName(
 
   // 공백 없이 결합한 뒤, 운영사 상호가 붙어 생긴 '…점주' 꼬리를 '…점'으로 되돌린다.
   const combined = (name + usableBranch).replace(/점주$/, '점');
-  if (!combined) return name;
   if (!opts?.splitBrand) return combined;
 
   for (const brand of BRANDS_LONGEST_FIRST) {
@@ -59,4 +64,17 @@ export function displayStoreName(
     }
   }
   return combined;
+}
+
+/**
+ * amenity 카테고리 게이트를 한 곳에 모은다.
+ * 브랜드 접두 분리는 소수 브랜드가 지배하는 편의점에서만 의미가 있고,
+ * 브랜드 매칭이 토큰 경계 없는 startsWith라 다른 카테고리에 열면
+ * 'CU베이커리'처럼 체인이 아닌 이름이 잘못 쪼개진다.
+ */
+export function displayAmenityName(
+  item: { name: string; branchName?: string | null },
+  def: { slug: string },
+): string {
+  return displayStoreName(item, { splitBrand: def.slug === 'convenience' });
 }

@@ -79,7 +79,7 @@ bizesNm='세븐일레븐포이중앙'  brchNm=''        → 세븐일레븐포�
 
 - **대상:** `Store` 테이블을 쓰는 `/amenity` 카테고리 — `convenience`, `cafe`, `mart`.
 - **브랜드 접두 분리:** `convenience`만.
-- **범위 밖:** 전통시장(`market`, 별도 테이블), 병원·학교·약국 라우트, meta title, 정렬·필터 로직.
+- **범위 밖:** 전통시장(`market`, 별도 테이블), 병원·학교·약국 라우트, 정렬·필터 로직.
 
 ## 설계
 
@@ -136,8 +136,8 @@ export function displayStoreName(
 
 컬럼이 nullable이라 기존 코드와 호환된다. 순서는:
 
-1. 마이그레이션 생성 → **머지 전 수동 `prisma:deploy`** (이 저장소는 배포가 마이그레이션을 적용하지 않는다)
-2. 코드 머지 — `branchName`이 전부 null이어도 표시 함수는 `name`만으로 동작한다
+1. 마이그레이션 생성 → 코드와 함께 머지 (`deploy/remote-deploy.sh:16`이 `web` 빌드·재시작 전에 `prisma migrate deploy`를 자동 실행하고, `set -euo pipefail`이라 마이그레이션 실패 시 배포가 여기서 중단돼 옛 `web`이 계속 서비스된다 — 수동 사전 적용 불필요)
+2. 코드 배포 — `branchName`이 전부 null이어도 표시 함수는 `name`만으로 동작한다
 3. 재수집 실행 → `branchName` 채워짐
 
 3번 전까지는 현재와 동일하게 보이고, 실행 후 이름이 완성된다. 중간 상태에서 깨지는 화면이 없다.
