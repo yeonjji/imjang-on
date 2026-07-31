@@ -27,6 +27,7 @@ import { qualifiedTitle } from '@/lib/seo/title';
 import { amenityDescriptor } from '@/lib/seo/facility-descriptor';
 import { resolveSigunguLabelFromAddress } from '@/lib/region/from-address';
 import { SITE_URL } from '@/lib/site';
+import { displayStoreName } from '@/lib/amenity/store-name';
 import type { Metadata } from 'next';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 
@@ -52,9 +53,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const item = await getAmenityById(def.slug, BigInt(id)).catch(() => null);
   if (!item) return {};
   const locality = await resolveSigunguLabelFromAddress(item.address).catch(() => null);
+  const displayName = displayStoreName(item, { splitBrand: def.slug === 'convenience' });
   return {
-    title: qualifiedTitle(item.name, locality, `— ${amenityDescriptor(def.slug, item, def.label)}`),
-    description: `${item.name} ${def.label} 정보와 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
+    title: qualifiedTitle(displayName, locality, `— ${amenityDescriptor(def.slug, item, def.label)}`),
+    description: `${displayName} ${def.label} 정보와 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
     robots: robotsFor(false),
     alternates: { canonical: `/amenity/${def.slug}/${id}` },
   };
@@ -69,6 +71,7 @@ export default async function AmenityDetailPage({ params }: Params) {
   const itemId = BigInt(id);
   const item = await getAmenityById(def.slug, itemId);
   if (!item) notFound();
+  const displayName = displayStoreName(item, { splitBrand: def.slug === 'convenience' });
 
   const region = item.sigunguCode
     ? await getSigunguByCode(item.sigunguCode).catch(() => null)
@@ -103,7 +106,7 @@ export default async function AmenityDetailPage({ params }: Params) {
         data={[
           placeSchema({
             type: AMENITY_PLACE_TYPE[def.slug] ?? 'Store',
-            name: item.name,
+            name: displayName,
             address: item.address,
             lat: coord?.lat,
             lng: coord?.lng,
@@ -112,7 +115,7 @@ export default async function AmenityDetailPage({ params }: Params) {
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
             { name: def.breadcrumbLabel, url: `${SITE_URL}/amenity/${def.slug}` },
-            { name: item.name, url: `${SITE_URL}/amenity/${def.slug}/${id}` },
+            { name: displayName, url: `${SITE_URL}/amenity/${def.slug}/${id}` },
           ]),
         ]}
       />
@@ -125,7 +128,7 @@ export default async function AmenityDetailPage({ params }: Params) {
             <Link href={regionListPath}>{region.fullName}</Link><span>›</span>
           </>
         )}
-        <span className="truncate font-semibold text-[var(--color-blue-dark)]">{item.name}</span>
+        <span className="truncate font-semibold text-[var(--color-blue-dark)]">{displayName}</span>
       </nav>
 
       <AmenityHero item={item} def={def} />
@@ -142,7 +145,7 @@ export default async function AmenityDetailPage({ params }: Params) {
                 lng={coord.lng}
                 mapKind={def.slug === 'market' ? 'market' : 'store'}
                 mapId={item.id}
-                name={item.name}
+                name={displayName}
               />
             </Card>
           )}

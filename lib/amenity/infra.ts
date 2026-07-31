@@ -2,6 +2,7 @@ import type {
   NearbyStore, NearbyHospital, NearbyPharmacy, NearbyPark,
   NearbyTraditionalMarket, NearbyEvCharger, NearbyParking, NearbyChildcare,
 } from '@/lib/amenity/nearby';
+import { displayStoreName } from '@/lib/amenity/store-name';
 
 /** 카테고리별 DB fetch 상한. 화면 cap(5)과 별개로, 이 수에 도달하면 개수 배지를 'N+'로 표기. */
 export const INFRA_FETCH_LIMIT = 12;
@@ -69,9 +70,9 @@ export function buildInfraCategories(raw: RawInfra): InfraCategory[] {
 
   const cats: Omit<InfraCategory, 'capped'>[] = [
     { key: 'store', label: '편의·마트', icon: '🛒', radiusLabel: '반경 500m 내',
-      items: mart.map((s) => ({ id: String(s.id), name: s.name, sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: infraHref('store', String(s.id)) })) },
+      items: mart.map((s) => ({ id: String(s.id), name: displayStoreName(s), sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: infraHref('store', String(s.id)) })) },
     { key: 'cafe', label: '카페', icon: '☕', radiusLabel: '반경 500m 내',
-      items: cafe.map((s) => ({ id: String(s.id), name: s.name, sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: infraHref('cafe', String(s.id)) })) },
+      items: cafe.map((s) => ({ id: String(s.id), name: displayStoreName(s), sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: infraHref('cafe', String(s.id)) })) },
     { key: 'hospital', label: '병원', icon: '🏥', radiusLabel: '반경 500m 내',
       items: raw.hospitals.map((h) => ({ id: String(h.id), name: h.name, sub: h.typeName ?? null, distanceMeters: h.distanceMeters, href: infraHref('hospital', String(h.id), h.sigunguCode) })) },
     { key: 'pharmacy', label: '약국', icon: '💊', radiusLabel: '반경 500m 내',
@@ -87,7 +88,7 @@ export function buildInfraCategories(raw: RawInfra): InfraCategory[] {
     { key: 'childcare', label: '어린이집', icon: '👶', radiusLabel: '반경 1km 내',
       items: (raw.childcare ?? []).map((c) => ({ id: String(c.id), name: c.name, sub: c.crType ?? null, distanceMeters: c.distanceMeters, href: infraHref('childcare', String(c.id), c.sigunguCode) })) },
     { key: 'etc', label: '기타 생활편의', icon: '🏪', radiusLabel: '반경 500m 내',
-      items: etc.map((s) => ({ id: String(s.id), name: s.name, sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: infraHref('etc', String(s.id)) })) },
+      items: etc.map((s) => ({ id: String(s.id), name: displayStoreName(s), sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: infraHref('etc', String(s.id)) })) },
   ];
 
   return cats
