@@ -7,7 +7,7 @@ import type {
   AmenityListResult,
 } from '@/lib/amenity/category';
 import { sidoPrefix } from '@/lib/region';
-import { AMENITY_PER_PAGE as PER_PAGE } from '@/lib/amenity/_shared';
+import { AMENITY_PER_PAGE as PER_PAGE, applyStoreNameSearch } from '@/lib/amenity/_shared';
 
 const PREFIX_SUPER = 'G20404';
 const PREFIX_HYPER = 'G20402';
@@ -34,7 +34,7 @@ export function buildMartWhere(f: AmenityListFilter): Prisma.StoreWhereInput {
       { industryCode: { startsWith: PREFIX_SUPER } },
       { industryCode: { startsWith: PREFIX_HYPER } },
     ];
-  if (f.q) where.name = { contains: f.q };
+  applyStoreNameSearch(where, f.q);
   return where;
 }
 
@@ -45,6 +45,7 @@ function toItem(s: {
   sigunguCode: string;
   industryCode: string | null;
   industryName: string | null;
+  branchName: string | null;
 }): AmenityItem {
   return {
     id: s.id,
@@ -53,6 +54,7 @@ function toItem(s: {
     sigunguCode: s.sigunguCode,
     industryCode: s.industryCode,
     industryName: s.industryName,
+    branchName: s.branchName,
   };
 }
 
@@ -71,6 +73,7 @@ async function getList(f: AmenityListFilter, page: number): Promise<AmenityListR
         sigunguCode: true,
         industryCode: true,
         industryName: true,
+        branchName: true,
       },
     }),
     prisma.store.count({ where }),
@@ -94,6 +97,7 @@ async function getById(id: bigint): Promise<AmenityItem | null> {
       sigunguCode: true,
       industryCode: true,
       industryName: true,
+      branchName: true,
     },
   });
   return s ? toItem(s) : null;

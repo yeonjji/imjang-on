@@ -15,11 +15,11 @@ describe('convenience adapter — buildStoreWhere', () => {
     });
   });
 
-  it('이름 검색은 contains', () => {
+  it('이름 검색은 name·branchName OR을 AND로 합성', () => {
     expect(buildStoreWhere({ sigunguCode: '11680', q: 'CU' })).toEqual({
       sigunguCode: '11680',
       industryCode: { startsWith: 'G20405' },
-      name: { contains: 'CU' },
+      AND: [{ OR: [{ name: { contains: 'CU' } }, { branchName: { contains: 'CU' } }] }],
     });
   });
 

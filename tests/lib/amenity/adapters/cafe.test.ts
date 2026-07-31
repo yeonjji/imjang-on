@@ -9,7 +9,7 @@ describe('cafe adapter — buildCafeWhere', () => {
     expect(buildCafeWhere({ sigunguCode: '11680', q: '스타벅스' })).toEqual({
       sigunguCode: '11680',
       industryCode: { startsWith: 'I21201' },
-      name: { contains: '스타벅스' },
+      AND: [{ OR: [{ name: { contains: '스타벅스' } }, { branchName: { contains: '스타벅스' } }] }],
     });
   });
 

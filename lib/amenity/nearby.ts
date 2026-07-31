@@ -26,6 +26,7 @@ export interface NearbyStore {
   address: string;
   industryCode: string | null;
   industryName: string | null;
+  branchName: string | null;
   distanceMeters: number;
 }
 
@@ -98,6 +99,7 @@ export async function getNearbyStores(
       address,
       "industryCode",
       "industryName",
+      "branchName",
       ROUND(ST_Distance(
         location::geography,
         ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography

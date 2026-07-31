@@ -37,9 +37,9 @@ describe('buildInfraCategories', () => {
     const cats = buildInfraCategories({
       ...empty,
       stores: [
-        { id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', distanceMeters: 80 },
-        { id: 2n, name: '스타벅스', address: '', industryCode: 'I21201', industryName: '카페', distanceMeters: 120 },
-        { id: 3n, name: '무인문구', address: '', industryCode: 'Z999', industryName: '기타', distanceMeters: 200 },
+        { id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', branchName: null, distanceMeters: 80 },
+        { id: 2n, name: '스타벅스', address: '', industryCode: 'I21201', industryName: '카페', branchName: null, distanceMeters: 120 },
+        { id: 3n, name: '무인문구', address: '', industryCode: 'Z999', industryName: '기타', branchName: null, distanceMeters: 200 },
       ],
     });
     const store = cats.find((c) => c.key === 'store');
@@ -55,9 +55,9 @@ describe('buildInfraCategories', () => {
     const cats = buildInfraCategories({
       ...empty,
       stores: [
-        { id: 1n, name: '커피빈', address: '', industryCode: 'I21201', industryName: '카페', distanceMeters: 100 },
-        { id: 2n, name: '수서가정의학과의원', address: '', industryCode: 'Q10209', industryName: '기타 의원', distanceMeters: 120 },
-        { id: 3n, name: '국송약국', address: '', industryCode: 'G21501', industryName: '약국', distanceMeters: 130 },
+        { id: 1n, name: '커피빈', address: '', industryCode: 'I21201', industryName: '카페', branchName: null, distanceMeters: 100 },
+        { id: 2n, name: '수서가정의학과의원', address: '', industryCode: 'Q10209', industryName: '기타 의원', branchName: null, distanceMeters: 120 },
+        { id: 3n, name: '국송약국', address: '', industryCode: 'G21501', industryName: '약국', branchName: null, distanceMeters: 130 },
       ],
     });
     expect(cats.find((c) => c.key === 'cafe')?.items.map((i) => i.name)).toEqual(['커피빈']);
@@ -68,8 +68,8 @@ describe('buildInfraCategories', () => {
     const cats = buildInfraCategories({
       ...empty,
       stores: [
-        { id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', distanceMeters: 80 },
-        { id: 2n, name: '스타벅스', address: '', industryCode: 'I21201', industryName: '카페', distanceMeters: 120 },
+        { id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', branchName: null, distanceMeters: 80 },
+        { id: 2n, name: '스타벅스', address: '', industryCode: 'I21201', industryName: '카페', branchName: null, distanceMeters: 120 },
       ],
       hospitals: [{ id: 9n, name: '내과', typeName: '의원', address: '', sigunguCode: null, distanceMeters: 100 }],
       parking: [{ id: 7n, name: '공영주차장', address: '', prkplceSe: '공영', prkcmprt: 120, distanceMeters: 150 }],
@@ -114,7 +114,7 @@ describe('buildInfraCategories', () => {
     const decimalLike = { valueOf: () => 80, toString: () => '80' } as unknown as number;
     const cats = buildInfraCategories({
       ...empty,
-      stores: [{ id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', distanceMeters: decimalLike }],
+      stores: [{ id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', branchName: null, distanceMeters: decimalLike }],
     });
     const item = cats.find((c) => c.key === 'store')?.items[0];
     expect(typeof item?.distanceMeters).toBe('number');
@@ -125,7 +125,7 @@ describe('buildInfraCategories', () => {
     const cats = buildInfraCategories({
       ...empty,
       hospitals: [{ id: 9n, name: '내과', typeName: '의원', address: '', sigunguCode: null, distanceMeters: 100 }],
-      stores: [{ id: 1n, name: '무인문구', address: '', industryCode: 'Z999', industryName: '기타', distanceMeters: 200 }],
+      stores: [{ id: 1n, name: '무인문구', address: '', industryCode: 'Z999', industryName: '기타', branchName: null, distanceMeters: 200 }],
       childcare: [{ id: 5n, name: '햇살어린이집', address: '', sigunguCode: null, crType: '국공립', capacity: 60, distanceMeters: 90 }],
     });
     expect(cats.map((c) => c.key)).toEqual(['hospital', 'childcare', 'etc']);
@@ -134,7 +134,7 @@ describe('buildInfraCategories', () => {
   it('각 항목에 시설 상세 href를 세팅한다', () => {
     const cats = buildInfraCategories({
       ...empty,
-      stores: [{ id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', distanceMeters: 80 }],
+      stores: [{ id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', branchName: null, distanceMeters: 80 }],
       hospitals: [{ id: 9n, name: '세브란스의원', typeName: '의원', address: '', sigunguCode: '11680', distanceMeters: 100 }],
     });
     expect(cats.find((c) => c.key === 'store')?.items[0].href).toBe('/amenity/mart/1');
