@@ -55,4 +55,10 @@ describe('BoardBriefingView SSR', () => {
     const html = renderToStaticMarkup(createElement(BoardBriefingView, { posts: [] }));
     expect(html).toBe('');
   });
+
+  it('타일 메타 라인은 연한 배경에서 AA를 만족하는 색을 쓴다', () => {
+    const html = renderToStaticMarkup(createElement(BoardBriefingView, { posts }));
+    expect(html).toContain('text-[var(--color-muted-on-soft)]');
+    expect(html).not.toContain('pt-3 text-xs text-[var(--color-muted)]');
+  });
 });

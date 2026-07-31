@@ -55,7 +55,7 @@ export function BoardBriefingView({
             <h3 className="mt-2.5 line-clamp-2 text-[15px] font-black leading-snug tracking-tight text-[var(--color-blue-dark)]">
               {p.title}
             </h3>
-            <span className="mt-auto flex items-center gap-1.5 pt-3 text-xs text-[var(--color-muted)]">
+            <span className="mt-auto flex items-center gap-1.5 pt-3 text-xs text-[var(--color-muted-on-soft)]">
               <span className="truncate">{canonicalizeSourceName(p.sourceName)}</span>
               <span>·</span>
               <span className="whitespace-nowrap">{shortDate(p.publishedAt)}</span>

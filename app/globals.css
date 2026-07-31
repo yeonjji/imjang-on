@@ -5,6 +5,8 @@
   --color-card: #ffffff;
   --color-text: #172033;
   --color-muted: #64748b;
+  /* 연한 배경(--color-soft, --color-sky-soft)에서 WCAG AA 4.5 대비를 만족하는 음영글씨 */
+  --color-muted-on-soft: #5b6a80;
   --color-line: #dbeafe;
   --color-blue: #2563eb;
   --color-blue-dark: #1e3a8a;
