@@ -34,11 +34,11 @@ describe('mart adapter — buildMartWhere', () => {
     });
   });
 
-  it('검색 q는 contains', () => {
+  it('검색 q는 name·branchName OR을 AND로 합성', () => {
     expect(buildMartWhere({ sigunguCode: '11680', sub: 'hyper', q: '이마트' })).toEqual({
       sigunguCode: '11680',
       industryCode: { startsWith: 'G20402' },
-      name: { contains: '이마트' },
+      AND: [{ OR: [{ name: { contains: '이마트' } }, { branchName: { contains: '이마트' } }] }],
     });
   });
 

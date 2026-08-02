@@ -23,6 +23,7 @@ export interface AmenityItem {
   sigunguCode: string | null;
   industryCode?: string | null;
   industryName?: string | null;
+  branchName?: string | null;
   marketType?: string | null;
 }
 

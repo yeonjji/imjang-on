@@ -6,6 +6,7 @@
       <item>
         <bizesId>B001</bizesId>
         <bizesNm>스타벅스 강남점</bizesNm>
+        <brchNm>강남점</brchNm>
         <rdnmAdr>서울특별시 강남구 테헤란로 101</rdnmAdr>
         <lon>127.027619</lon>
         <lat>37.498095</lat>
@@ -20,6 +21,7 @@
       <item>
         <bizesId>B002</bizesId>
         <bizesNm>GS25 역삼점</bizesNm>
+        <brchNm></brchNm>
         <rdnmAdr>서울특별시 강남구 역삼로 160</rdnmAdr>
         <lon>127.035432</lon>
         <lat>37.500217</lat>

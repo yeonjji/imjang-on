@@ -54,6 +54,7 @@ export function parseStoreXml(
       sourceId,
       // 공공데이터가 이름·주소를 HTML 엔티티로 인코딩해 내려주는 경우가 있어(예: '&lt;주&gt;세븐') 저장 전 디코딩.
       name: decodeEntities(String(item.bizesNm ?? '').trim()),
+      branchName: decodeEntities(String(item.brchNm ?? '').trim()) || null,
       address: decodeEntities(String(item.rdnmAdr ?? '').trim()),
       lat,
       lng,
