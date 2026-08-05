@@ -22,7 +22,9 @@ import { dedupeKey, kstDateISO } from '@/scripts/ingest/posts/keys';
 const SOURCE = {
   sourceName: '주택도시보증공사(HUG)',
   sourceUrl: 'https://www.khug.or.kr/jeonse/web/s07/s070102.jsp',
-  sourceDate: new Date('2026-07-24T00:00:00+09:00'),
+  // @db.Date 컬럼은 UTC 날짜로 잘리므로 KST 자정(=전날 15:00Z)을 넣으면 기준일이 하루 밀린다.
+  // 슬러그용 kstDateISO는 +9h를 되돌려 맞지만, 저장된 sourceDate는 어긋나므로 UTC 자정으로 넣는다.
+  sourceDate: new Date('2026-07-24T00:00:00Z'),
   detectedFrom: 'manual:hug-ddeundeun-jeonse-260724',
   sourceExcerpt: `HUG 든든전세주택 수시 입주자 모집 공고[2026.7.24] — 공고문 원문 정리
 [제도] HUG가 다세대·연립·오피스텔(주거용)·아파트를 매입하여 무주택세대주 및 구성원에게 시중 시세의 90% 이하 수준의 임대보증금으로 임대하는 주택. 매입유형은 경매 등 매입형과 협의매입형으로 분류(협의매입형은 임대의무기간 5년 이후 임대인 변경 가능).
