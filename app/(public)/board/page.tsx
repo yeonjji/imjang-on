@@ -4,7 +4,9 @@ import {
   listPublishedPosts,
   getBoardCategoryCounts,
   getBoardSourceOrgs,
+  PAGE_SIZE,
 } from '@/lib/board/post';
+import { BoardPagination } from './_components/board-pagination';
 import { canViewBoard } from '@/lib/board/visibility';
 import { boardPath } from '@/lib/board/slug';
 import { canonicalizeSourceName } from '@/lib/board/source-name';
@@ -27,12 +29,6 @@ interface Props {
 
 function isCategory(v: string | undefined): v is PostCategory {
   return !!v && BOARD_CATEGORIES.some((c) => c.value === v);
-}
-
-function pageNums(current: number, total: number): number[] {
-  const lo = Math.max(1, current - 2);
-  const hi = Math.min(total, current + 2);
-  return Array.from({ length: hi - lo + 1 }, (_, i) => lo + i);
 }
 
 /** 탭·레일·페이지네이션 링크. category·page·preview 토큰을 함께 보존한다. */
@@ -62,7 +58,7 @@ export default async function BoardListPage({ searchParams }: Props) {
   // 미리보기 모드에서는 상세 링크에도 토큰을 이어붙여 404 방지.
   const previewQs = sp.preview ? `?preview=${encodeURIComponent(sp.preview)}` : '';
 
-  const [{ rows, totalPages }, counts, orgs] = await Promise.all([
+  const [{ rows, total, totalPages }, counts, orgs] = await Promise.all([
     listPublishedPosts({ page, category }),
     getBoardCategoryCounts(),
     getBoardSourceOrgs(8),
@@ -142,23 +138,15 @@ export default async function BoardListPage({ searchParams }: Props) {
             </div>
           )}
 
-          {totalPages > 1 && (
-            <div className="mt-8 flex flex-wrap justify-center gap-2">
-              {pageNums(page, totalPages).map((p) => (
-                <Link
-                  key={p}
-                  href={buildHref({ category, page: p, preview: sp.preview })}
-                  className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold transition ${
-                    page === p
-                      ? 'bg-[var(--color-blue)] text-white'
-                      : 'border border-[var(--color-line)] text-[var(--color-muted)] hover:border-[var(--color-blue)]'
-                  }`}
-                >
-                  {p}
-                </Link>
-              ))}
-            </div>
-          )}
+          <div className="mt-8">
+            <BoardPagination
+              current={page}
+              totalPages={totalPages}
+              totalItems={total}
+              perPage={PAGE_SIZE}
+              hrefFor={(p) => buildHref({ category, page: p, preview: sp.preview })}
+            />
+          </div>
         </div>
 
         <aside className="mt-8 flex flex-col gap-3 lg:mt-0 lg:w-[230px] lg:shrink-0">
