@@ -2,6 +2,11 @@ name: generate-board-topic
 
 # 토픽 지정 1건 생성(수동). 피드에 안 잡히는 주제를 손으로 DRAFT로 올릴 때 사용.
 # 현재 주제는 scripts/board/generate-topic.ts의 SOURCE에 하드코딩(서울시 희망두배 청년통장).
+#
+# ⚠️ 이 브랜치(feat/board-hug-ddeundeun-jeonse)에서만 run 스텝을 insert-hug-ddeundeun-jeonse.ts로
+# 바꿔 둔다. workflow_dispatch는 워크플로 파일이 main에 있어야 호출 가능하고, --ref로 지정한
+# 브랜치의 파일이 실행되는 점을 이용해 배포 없이 수기 초안 1건만 운영 DB에 넣기 위한 것.
+# main에 머지하지 말 것 — 머지되면 토픽 생성 워크플로가 망가진다.
 on:
   workflow_dispatch:
     inputs:
@@ -30,5 +35,5 @@ jobs:
         with: { node-version: 20, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma generate
-      - run: pnpm tsx scripts/board/generate-topic.ts ${{ inputs.dry_run == 'true' && '--dry-run' || '' }}
+      - run: pnpm tsx scripts/board/insert-hug-ddeundeun-jeonse.ts ${{ inputs.dry_run == 'true' && '--dry-run' || '' }}
         timeout-minutes: 10
