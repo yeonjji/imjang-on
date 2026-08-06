@@ -53,7 +53,7 @@ function pPeer(d: AptInsightInput): Insight | null {
   const judge = diff >= 15 ? `${d.sigunguName} 평균보다 뚜렷하게 높은 상위 가격대`
     : diff >= 5 ? `${d.sigunguName} 평균을 웃도는 수준`
     : diff > -5 ? `${d.sigunguName} 평균과 비슷한 수준`
-    : `${d.sigunguName} 평균보다 낮아 상대적으로 진입 부담이 적은 편`;
+    : `${d.sigunguName} 평균을 밑도는 수준`;
   return { key: 'peer',
     text: `최근 실거래 ${josa(formatBillion(latest), '은', '는')} ${judge}입니다(${d.sigunguName} 평균 ${formatBillion(avg)}).` };
 }

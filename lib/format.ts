@@ -13,7 +13,8 @@ export function formatArea(sqm: number, unit: 'sqm' | 'pyeong' = 'sqm'): string 
 
 export function formatBillion(manwon: number | bigint | null | undefined): string {
   if (manwon === null || manwon === undefined) return '-';
-  const n = typeof manwon === 'bigint' ? Number(manwon) : manwon;
+  // 평균 차이(갭 등) 계산값이 float으로 들어오므로 만원 단위로 반올림한 뒤 분기한다.
+  const n = Math.round(typeof manwon === 'bigint' ? Number(manwon) : manwon);
   if (n < 10_000) return `${n.toLocaleString('ko-KR')}만원`;
   const billion = n / 10_000;
   const floored = Math.floor(billion * 100) / 100;

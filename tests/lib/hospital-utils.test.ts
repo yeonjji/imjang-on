@@ -17,4 +17,14 @@ describe('formatHospitalTime', () => {
   it('undefined를 휴진으로 변환', () => {
     expect(formatHospitalTime(undefined)).toBe('휴진');
   });
+
+  it('시·분 범위를 벗어난 원본값은 - 로 표기', () => {
+    expect(formatHospitalTime(2500)).toBe('-');
+    expect(formatHospitalTime(1270)).toBe('-');
+    expect(formatHospitalTime(-100)).toBe('-');
+  });
+
+  it('자정 종료 표기 2400은 유지', () => {
+    expect(formatHospitalTime(2400)).toBe('24:00');
+  });
 });

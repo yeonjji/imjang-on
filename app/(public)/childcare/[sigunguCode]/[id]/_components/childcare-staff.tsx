@@ -40,7 +40,8 @@ export function ChildcareStaff({ item }: { item: Childcare }) {
               {tenRows.map((r) => (
                 <li key={r.label} className="flex items-center justify-between rounded-xl border border-[var(--color-line)] bg-[var(--color-soft)] px-3 py-2">
                   <span className="text-[var(--color-muted)]">{r.label}</span>
-                  <span className="font-mono font-bold text-[var(--color-blue-dark)]">{r.v}명</span>
+                  {/* 원본(어린이집통합정보) em_cnt_*y는 인원이 아니라 비율(%)이다 — 합이 100. */}
+                  <span className="font-mono font-bold text-[var(--color-blue-dark)]">{r.v}%</span>
                 </li>
               ))}
             </ul>

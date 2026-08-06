@@ -12,6 +12,10 @@ describe('formatBillion (만원 → 한국식 표기)', () => {
   ])('formats %s → %s', (input, expected) => {
     expect(formatBillion(input as number | null)).toBe(expected);
   });
+
+  it('만원 단위 소수는 반올림한다 (매매-전세 갭 등 평균 차이 계산값)', () => {
+    expect(formatBillion(3766.667)).toBe('3,767만원');
+  });
 });
 
 describe('sqmToPyeong', () => {
