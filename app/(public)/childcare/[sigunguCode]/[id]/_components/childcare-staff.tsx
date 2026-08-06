@@ -7,6 +7,9 @@ const ROLES = [
   ['emRoleTherapy', '치료교사'], ['emRoleNutrition', '영양사'], ['emRoleNurse', '간호사'],
   ['emRoleNurseAssist', '간호조무사'], ['emRoleCook', '조리원'], ['emRoleOffice', '사무직원'],
 ] as const;
+// 근속 구간은 실인원이 아니라 **비율(%)**이다. 상류 필드명이 em_cnt_*라 수처럼 보이지만,
+// 운영 데이터 24,383건 실측 결과 구간 합이 98~102(평균 100.08)이고 총원과 일치하는 행은 0건이며,
+// 99.2%에서 한 구간 값이 총원을 넘는다(예: 교직원 7명에 80/0/0/0/20). 직역별(emRole*)은 실인원이 맞다.
 const TENURES = [
   ['emTenure0y', '1년 미만'], ['emTenure1y', '1~2년'], ['emTenure2y', '2~4년'],
   ['emTenure4y', '4~6년'], ['emTenure6y', '6년 이상'],
@@ -35,12 +38,12 @@ export function ChildcareStaff({ item }: { item: Childcare }) {
         )}
         {tenRows.length > 0 && (
           <section>
-            <h3 className="mb-2 text-sm font-semibold text-[var(--color-blue-dark)]">근속년수별</h3>
+            <h3 className="mb-2 text-sm font-semibold text-[var(--color-blue-dark)]">근속년수별 비율</h3>
             <ul className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
               {tenRows.map((r) => (
                 <li key={r.label} className="flex items-center justify-between rounded-xl border border-[var(--color-line)] bg-[var(--color-soft)] px-3 py-2">
                   <span className="text-[var(--color-muted)]">{r.label}</span>
-                  <span className="font-mono font-bold text-[var(--color-blue-dark)]">{r.v}명</span>
+                  <span className="font-mono font-bold text-[var(--color-blue-dark)]">{r.v}%</span>
                 </li>
               ))}
             </ul>

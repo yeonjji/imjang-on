@@ -81,6 +81,56 @@ export async function getMonthlyChartData(propertyId: bigint): Promise<ChartData
   return byType;
 }
 
+export interface LatestTransaction {
+  /** 매매는 거래금액, 전세·월세는 보증금(만원). */
+  amountManwon: number;
+  pyeong: number;
+  floor: number | null;
+  contractDate: string; // YYYY-MM-DD
+}
+
+/**
+ * 거래유형별 '가장 최근에 실제로 있었던 거래' 1건.
+ *
+ * 헤드라인 수치를 월평균(getMonthlyChartData)에서 이걸로 옮기기 위한 것이다. 월평균은 평형을
+ * 구분하지 않아 24평과 45평이 한 값에 섞이는데, 그 값을 '시세'로 제시하면 사실과 달라진다.
+ * 실거래 1건은 섞이지 않으므로, 평형·층·계약일을 함께 반환해 표시 지점이 맥락과 함께 적게 한다.
+ */
+export async function getLatestTransactionsByType(
+  propertyId: bigint,
+): Promise<Partial<Record<DealType, LatestTransaction>>> {
+  const rows = await prisma.$queryRaw<
+    Array<{
+      deal_type: DealType;
+      amount: number;
+      pyeong: number;
+      floor: number | null;
+      contract_date: Date;
+    }>
+  >`
+    SELECT DISTINCT ON ("dealType")
+      "dealType" AS deal_type,
+      (CASE WHEN "dealType" = 'SALE' THEN "dealAmount" ELSE "deposit" END)::float AS amount,
+      ROUND("exclusiveArea"::numeric / 3.3057851239669422)::int AS pyeong,
+      "floor",
+      "contractDate" AS contract_date
+    FROM "Transaction"
+    WHERE "propertyId" = ${propertyId}
+      AND (CASE WHEN "dealType" = 'SALE' THEN "dealAmount" ELSE "deposit" END) IS NOT NULL
+    ORDER BY "dealType", "contractDate" DESC, id DESC
+  `;
+  const out: Partial<Record<DealType, LatestTransaction>> = {};
+  for (const r of rows) {
+    out[r.deal_type] = {
+      amountManwon: r.amount,
+      pyeong: r.pyeong,
+      floor: r.floor,
+      contractDate: r.contract_date.toISOString().slice(0, 10),
+    };
+  }
+  return out;
+}
+
 export interface UnifiedTxRow {
   id: string;
   dealType: DealType;
@@ -232,7 +282,8 @@ export interface SameFloorPair {
 
 /**
  * 동일 평형·동일 층의 가장 최근 매매 두 건을 비교한다(회귀·기준선 불필요).
- * 평형·층이 같아 물건(향·라인) 차이로 설명되지 않는 순수 가격 변화 관측치.
+ * 평형은 전용면적을 평 단위로 반올림해 묶고(84A·84B가 한 묶음), 동·향·라인은 원자료에 없어
+ * 두 거래가 같은 물건인지는 판별할 수 없다 — 표시 문구가 이 한계를 넘어 단정하지 않도록 할 것.
  * 비교 가능한(직전 거래가 존재하는) 쌍이 없으면 null.
  */
 export async function getSameFloorComparison(propertyId: bigint): Promise<SameFloorPair | null> {

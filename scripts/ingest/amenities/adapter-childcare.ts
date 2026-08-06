@@ -126,7 +126,9 @@ export function parseChildcareXml(
       childCntM5: pickInt(lower, 'child_cnt_m5'),
       childCntSp: pickInt(lower, 'child_cnt_sp'),
       childCntTot: pickInt(lower, 'child_cnt_tot'),
-      // API has no em_cnt_3y band (2y → 4y)
+      // API has no em_cnt_3y band (2y → 4y).
+      // 주의: em_cnt_*y는 이름과 달리 실인원이 아니라 비율(%)이다(구간 합 ≈ 100, 총원과 불일치).
+      // em_cnt_a*(직역별)·em_cnt_tot은 실인원이 맞다. 표시 단위를 섞지 말 것.
       emTenure0y: pickInt(lower, 'em_cnt_0y'),
       emTenure1y: pickInt(lower, 'em_cnt_1y'),
       emTenure2y: pickInt(lower, 'em_cnt_2y'),

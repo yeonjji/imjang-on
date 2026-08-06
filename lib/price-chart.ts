@@ -13,57 +13,30 @@ export interface ChartRow {
   count: number;
 }
 
-export interface HeaderStats {
-  current: number;
-  changePct: number | null;
-  changeMonths: number;
+/**
+ * 월별 시계열의 범위 통계. 실제로 있었던 거래의 최고·최저·건수만 담는다.
+ *
+ * 여기에 '현재 시세'(마지막 달 평균)와 그 평균끼리 비교한 변동률을 두지 않는 것은 의도적이다 —
+ * getMonthlyChartData는 월·거래유형으로만 묶어(평형 미구분) 24평과 45평 거래가 한 평균에 섞인다.
+ * 평형이 맞는 시세·변동률은 getAreaSummary(표본 2건 가드, 평형 혼합 금지)를 쓸 것.
+ */
+export interface RangeStats {
   high: number;
   low: number;
   count: number;
-}
-
-/** 'YYYY-MM' 두 개의 개월 차이 (b - a). */
-export function monthDiff(a: string, b: string): number {
-  const [ay, am] = a.split('-').map(Number);
-  const [by, bm] = b.split('-').map(Number);
-  return (by - ay) * 12 + (bm - am);
-}
-
-function addMonths(ym: string, delta: number): string {
-  const [y, m] = ym.split('-').map(Number);
-  const total = y * 12 + (m - 1) + delta;
-  const ny = Math.floor(total / 12);
-  const nm = (total % 12) + 1;
-  return `${ny}-${String(nm).padStart(2, '0')}`;
 }
 
 function sortedByMonth(points: MonthPoint[]): MonthPoint[] {
   return [...points].sort((a, b) => a.month.localeCompare(b.month));
 }
 
-export function deriveHeaderStats(points: MonthPoint[]): HeaderStats | null {
+export function deriveRangeStats(points: MonthPoint[]): RangeStats | null {
   if (points.length === 0) return null;
-  const sorted = sortedByMonth(points);
-  const last = sorted[sorted.length - 1];
-  const high = Math.max(...sorted.map((p) => p.max));
-  const low = Math.min(...sorted.map((p) => p.min));
-  const count = sorted.reduce((s, p) => s + p.count, 0);
-
-  // 마지막 달로부터 ~12개월 전(target) 이하인 가장 최근 달을 기준점으로.
-  const target = addMonths(last.month, -12);
-  let baseIdx = -1;
-  for (let i = 0; i < sorted.length; i++) {
-    if (sorted[i].month <= target) baseIdx = i;
-  }
-  if (baseIdx < 0) baseIdx = 0; // 12개월 미만 → 가장 이른 달
-  const baseline = sorted[baseIdx];
-  const changeMonths = monthDiff(baseline.month, last.month);
-  const changePct =
-    baseline === last || baseline.avg === 0
-      ? null
-      : ((last.avg - baseline.avg) / baseline.avg) * 100;
-
-  return { current: last.avg, changePct, changeMonths, high, low, count };
+  return {
+    high: Math.max(...points.map((p) => p.max)),
+    low: Math.min(...points.map((p) => p.min)),
+    count: points.reduce((s, p) => s + p.count, 0),
+  };
 }
 
 /** 기준값(prior) 대비 변화율(%). prior가 0 이하면 null(0 나눗셈·무의미 기준 방지). */

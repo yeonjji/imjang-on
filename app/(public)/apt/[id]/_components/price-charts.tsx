@@ -13,8 +13,8 @@ import {
 import type { DealType } from '@prisma/client';
 import { Card } from '@/components/ui/card';
 import { formatBillion } from '@/lib/format';
-import { deriveHeaderStats, toChartRows } from '@/lib/price-chart';
-import type { ChartData } from '@/lib/transaction';
+import { deriveRangeStats, toChartRows } from '@/lib/price-chart';
+import type { AreaSummaryItem, ChartData, LatestTransaction } from '@/lib/transaction';
 
 const DEALS: { key: DealType; label: string; color: string }[] = [
   { key: 'SALE', label: '매매', color: '#2563eb' },
@@ -27,7 +27,15 @@ function fmtMonth(m: string): string {
   return `'${m.slice(2, 4)}.${m.slice(5, 7)}`;
 }
 
-export function PriceCharts({ data }: { data: ChartData }) {
+interface Props {
+  data: ChartData;
+  /** 거래유형별 최근 실거래 1건. 헤드라인 수치는 평형이 섞인 월평균이 아니라 이걸 쓴다. */
+  latest: Partial<Record<DealType, LatestTransaction>>;
+  /** 평형이 일치하는 변동률(표본 2건 가드)의 출처. 매매에만 존재한다. */
+  areaSummary: AreaSummaryItem[];
+}
+
+export function PriceCharts({ data, latest, areaSummary }: Props) {
   const [deal, setDeal] = useState<DealType>('SALE');
 
   if (DEALS.every((d) => (data[d.key]?.length ?? 0) === 0)) {
@@ -39,10 +47,15 @@ export function PriceCharts({ data }: { data: ChartData }) {
   }
 
   const points = data[deal] ?? [];
-  const stats = deriveHeaderStats(points);
+  const stats = deriveRangeStats(points);
   const rows = toChartRows(points);
   const color = DEALS.find((d) => d.key === deal)!.color;
   const lastIdx = rows.length - 1;
+  const last = latest[deal];
+  // 평형 보정 변동률은 매매 기준으로만 계산돼 있다(getAreaSummary). 최근 실거래와 같은 평형일 때만 쓴다.
+  const areaTrend =
+    deal === 'SALE' && last ? areaSummary.find((a) => a.area === last.pyeong) ?? null : null;
+  const trendPct = areaTrend?.changePct12m ?? null;
 
   return (
     <Card>
@@ -63,25 +76,41 @@ export function PriceCharts({ data }: { data: ChartData }) {
 
       {stats ? (
         <>
-          {/* 헤더 숫자 */}
+          {/* 헤더 숫자 — 평형이 섞인 월평균이 아니라 실제 거래 1건 */}
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="text-xs font-bold text-[var(--color-muted)]">현재 시세</span>
+            <span className="text-xs font-bold text-[var(--color-muted)]">최근 실거래</span>
             <span className="text-3xl font-black text-[var(--color-blue-dark)]">
-              {formatBillion(stats.current)}
+              {last ? formatBillion(last.amountManwon) : '-'}
             </span>
-            {stats.changePct === null ? (
-              <span className="text-xs text-[var(--color-muted)]">변동 정보 없음</span>
-            ) : (
+          </div>
+          {last && (
+            <p className="mt-1 text-xs text-[var(--color-muted)]">
+              {last.pyeong}평{last.floor != null && ` · ${last.floor}층`} · {last.contractDate.replace(/-/g, '.')}
+            </p>
+          )}
+
+          {/* 변동률은 평형이 일치하고 표본이 2건 이상일 때만 (getAreaSummary 기준) */}
+          {trendPct !== null && areaTrend ? (
+            <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <span className="text-xs font-bold text-[var(--color-muted)]">
+                {areaTrend.area}평 12개월 변동
+              </span>
               <span
                 className={`rounded-full px-2 py-0.5 text-xs font-extrabold ${
-                  stats.changePct >= 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                  trendPct >= 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
                 }`}
               >
-                {stats.changePct >= 0 ? '▲' : '▼'} {Math.abs(stats.changePct).toFixed(1)}%{' '}
-                <span className="font-semibold">최근 {stats.changeMonths}개월</span>
+                {trendPct >= 0 ? '▲' : '▼'} {Math.abs(trendPct).toFixed(1)}%
               </span>
-            )}
-          </div>
+              <span className="text-[11px] text-[var(--color-muted)]">
+                표본 {areaTrend.count12m}건 · 직전 12개월 평균 대비
+              </span>
+            </div>
+          ) : (
+            <p className="mt-2 text-[11px] text-[var(--color-muted)]">
+              같은 평형 표본이 부족해 변동률은 표시하지 않습니다.
+            </p>
+          )}
 
           <div className="mt-3 flex flex-wrap gap-2">
             <Stat k="최고가" v={formatBillion(stats.high)} />
@@ -145,7 +174,8 @@ export function PriceCharts({ data }: { data: ChartData }) {
               </ComposedChart>
             </ResponsiveContainer>
             <p className="mt-1.5 text-[11px] text-[var(--color-muted)]">
-              진한 선 = 월평균 · 옅은 음영 = 그 달의 최고~최저 거래 범위
+              진한 선 = 월평균(전 평형) · 옅은 음영 = 그 달의 최고~최저 거래 범위.
+              평형을 구분하지 않은 평균이라 평형 구성이 달라지면 선도 함께 움직입니다.
             </p>
           </div>
         </>
@@ -155,10 +185,10 @@ export function PriceCharts({ data }: { data: ChartData }) {
         </p>
       )}
 
-      {/* 비교 스트립 */}
+      {/* 비교 스트립 — 유형별 최근 실거래 1건(평형 병기). 여기서도 월평균을 쓰지 않는다. */}
       <div className="mt-4 grid grid-cols-3 gap-2 border-t border-dashed border-[var(--color-line)] pt-4">
         {DEALS.map((d) => {
-          const s = deriveHeaderStats(data[d.key] ?? []);
+          const l = latest[d.key];
           const on = d.key === deal;
           return (
             <button
@@ -170,17 +200,10 @@ export function PriceCharts({ data }: { data: ChartData }) {
             >
               <p className="text-xs font-semibold text-[var(--color-muted)]">{d.label}</p>
               <span className="text-sm font-black text-[var(--color-blue-dark)]">
-                {s ? formatBillion(s.current) : '-'}
-              </span>{' '}
-              {s?.changePct != null && (
-                <span
-                  className={`text-[11px] font-extrabold ${
-                    s.changePct >= 0 ? 'text-red-600' : 'text-green-600'
-                  }`}
-                >
-                  {s.changePct >= 0 ? '▲' : '▼'}
-                  {Math.abs(s.changePct).toFixed(1)}%
-                </span>
+                {l ? formatBillion(l.amountManwon) : '-'}
+              </span>
+              {l && (
+                <span className="ml-1 text-[11px] text-[var(--color-muted)]">{l.pyeong}평</span>
               )}
             </button>
           );

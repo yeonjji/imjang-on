@@ -12,6 +12,15 @@ describe('formatBillion (만원 → 한국식 표기)', () => {
   ])('formats %s → %s', (input, expected) => {
     expect(formatBillion(input as number | null)).toBe(expected);
   });
+
+  // 평균끼리의 뺄셈(매매−전세 갭 등)은 소수를 낳는다. 만원 단위로 반올림해 표기한다.
+  it.each([
+    [3_766.6666, '3,767만원'],
+    [-1_200.4, '-1,200만원'],
+    [9_999.7, '1억'], // 반올림 결과가 1억이면 억 표기로 넘어간다
+  ])('rounds %s → %s', (input, expected) => {
+    expect(formatBillion(input as number)).toBe(expected);
+  });
 });
 
 describe('sqmToPyeong', () => {

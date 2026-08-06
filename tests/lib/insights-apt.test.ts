@@ -11,8 +11,8 @@ const base: AptInsightInput = {
     { contractDate: '2026-03-10', amountManwon: 80000 },
     { contractDate: '2026-06-20', amountManwon: 90000 },
   ],
-  // saleDeals 원자료 first/last(=+13%)와 일부러 다른 값 → 산문이 saleTrend(그래프 기준)을 쓰는지 검증.
-  saleTrend: { changePct: 8, changeMonths: 12 },
+  // saleDeals 원자료 first/last(=+13%)와 일부러 다른 값 → 산문이 평형 일치 기준(saleTrend)을 쓰는지 검증.
+  saleTrend: { changePct: 8, pyeong: 34, sampleCount: 7 },
   regionAvgSaleManwon: 80000,
   regionSampleCount: 12,
   nearestStation: { name: '상현역', lines: ['신분당선'], distanceMeters: 400 },
@@ -29,23 +29,24 @@ describe('buildAptNarrative', () => {
     expect(n.sentences[0].startsWith('광교센트럴아파트는')).toBe(true); // 첫 문장에만 단지명
   });
 
-  it('tTrend: 변동률은 그래프와 동일 기준(saleTrend)을 쓰고, 잘린 건수는 단정하지 않는다', () => {
+  it('tTrend: 변동률은 평형이 일치하는 기준(saleTrend)을 쓰고 평형·표본을 함께 밝힌다', () => {
     const n = buildAptNarrative(base)!;
-    expect(n.text).toContain('최근 12개월 사이');
-    expect(n.text).toContain('8% 상승'); // saleTrend.changePct=8 (원자료 first/last +13%이 아님)
-    expect(n.text).not.toContain('13% 상승'); // 원자료 기준을 쓰지 않음을 확인
+    expect(n.text).toContain('34평 최근 12개월 평균 실거래가');
+    expect(n.text).toContain('표본 7건');
+    expect(n.text).toContain('8% 높습니다'); // saleTrend.changePct=8 (원자료 first/last +13%이 아님)
+    expect(n.text).not.toContain('13%'); // 원자료 기준을 쓰지 않음을 확인
     expect(n.text).not.toContain('최근 매매 2건'); // perPage=30 캡 위험 → 절대 건수 미서술
   });
 
-  it('tTrend: saleTrend가 하락이면 하락으로, 없으면 방향 단정 없이 최근가만', () => {
-    const down = buildAptNarrative({ ...base, saleTrend: { changePct: -10, changeMonths: 9 } })!;
-    expect(down.text).toContain('최근 9개월 사이');
-    expect(down.text).toContain('10% 하락');
+  it('tTrend: 하락이면 낮다고 쓰고, 같은 평형 표본이 없으면 방향 단정 없이 최근가만', () => {
+    const down = buildAptNarrative({ ...base, saleTrend: { changePct: -10, pyeong: 24, sampleCount: 3 } })!;
+    expect(down.text).toContain('24평 최근 12개월 평균 실거래가');
+    expect(down.text).toContain('10% 낮습니다');
 
     const none = buildAptNarrative({ ...base, saleTrend: null })!;
     expect(none.text).toContain(`최근 실거래가는 ${formatBillion(90000)}입니다`);
-    expect(none.text).not.toContain('상승');
-    expect(none.text).not.toContain('하락');
+    expect(none.text).not.toContain('높습니다');
+    expect(none.text).not.toContain('낮습니다');
   });
 
   it('pPeer 구간 분기: +5~+15%면 "웃도는 수준"', () => {
@@ -61,12 +62,14 @@ describe('buildAptNarrative', () => {
     expect(n.text).toContain('뚜렷하게 높은 상위 가격대');
   });
 
-  it('pPeer 구간 분기: -5%↓이면 "진입 부담이 적은 편"', () => {
+  // 가격 위치만 서술하고 '진입 부담' 같은 구매 판단은 단정하지 않는다(가격 외 변수는 데이터에 없다).
+  it('pPeer 구간 분기: -5%↓이면 "평균을 밑도는 수준"', () => {
     const n = buildAptNarrative({
       ...base,
       saleDeals: [{ contractDate: '2026-03-10', amountManwon: 72000 }, { contractDate: '2026-06-20', amountManwon: 70000 }],
     })!; // latest 70000 vs 80000 = -12.5%→-13
-    expect(n.text).toContain('진입 부담이 적은 편');
+    expect(n.text).toContain('평균을 밑도는 수준');
+    expect(n.text).not.toContain('진입 부담');
   });
 
   it('aAccess: 도보 분과 인프라 밀도를 표현', () => {

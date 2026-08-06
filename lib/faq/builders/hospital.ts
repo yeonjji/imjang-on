@@ -1,5 +1,5 @@
 import type { FaqItem } from '@/lib/faq/data';
-import { formatHospitalTime } from '@/lib/hospital/utils';
+import { formatHospitalHours } from '@/lib/hospital/utils';
 
 const HIRA = '건강보험심사평가원';
 
@@ -35,10 +35,12 @@ export function buildHospitalFaq(h: HospitalFaqInput): FaqItem[] {
     });
   }
 
-  if (h.detail?.openMon != null && h.detail?.closeMon != null) {
+  // 원자료에 종료<시작 같은 모순 값이 있어, 앞뒤가 맞는 구간일 때만 진료시간 FAQ를 낸다.
+  const monHours = formatHospitalHours(h.detail?.openMon, h.detail?.closeMon);
+  if (monHours) {
     items.push({
       q: `${name}의 진료시간은 어떻게 되나요?`,
-      a: `평일(월) 기준 ${formatHospitalTime(h.detail.openMon)}~${formatHospitalTime(h.detail.closeMon)}에 진료합니다. 요일별 진료시간·점심시간은 병원 사정으로 달라질 수 있어 방문 전 확인을 권장합니다.`,
+      a: `평일(월) 기준 ${monHours}에 진료합니다. 요일별 진료시간·점심시간은 병원 사정으로 달라질 수 있어 방문 전 확인을 권장합니다.`,
       source: HIRA,
     });
   }

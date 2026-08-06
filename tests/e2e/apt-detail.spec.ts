@@ -49,8 +49,9 @@ test('apt detail: 가격 흐름 그래프 — 헤더 숫자 + 유형 탭 전환'
   const chart = page.locator('#chart');
   await expect(chart.getByRole('heading', { name: '가격 흐름 그래프' })).toBeVisible();
 
-  // 헤더 풀세트 숫자
-  await expect(chart.getByText('현재 시세')).toBeVisible();
+  // 헤더 풀세트 숫자. 헤드라인은 평형이 섞인 월평균('현재 시세')이 아니라 실거래 1건이어야 한다.
+  await expect(chart.getByText('최근 실거래').first()).toBeVisible();
+  await expect(chart.getByText('현재 시세')).toHaveCount(0);
   await expect(chart.getByText('최고가')).toBeVisible();
   await expect(chart.getByText('최저가')).toBeVisible();
   await expect(chart.getByText('거래건수')).toBeVisible();
@@ -60,7 +61,7 @@ test('apt detail: 가격 흐름 그래프 — 헤더 숫자 + 유형 탭 전환'
 
   // 전세 탭 전환 → 클릭 후에도 헤더 영역 유지
   await chart.getByRole('button', { name: '전세', exact: true }).click();
-  await expect(chart.getByText('현재 시세')).toBeVisible();
+  await expect(chart.getByText('최근 실거래').first()).toBeVisible();
 });
 
 test('apt detail: 가격 그래프 모바일 폭 — 가로 오버플로우 없음', async ({ page }) => {
