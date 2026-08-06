@@ -1,4 +1,4 @@
-import { formatHospitalTime } from '@/lib/hospital/utils';
+import { formatHospitalHours } from '@/lib/hospital/utils';
 import type { HospitalWithRelations } from '@/lib/hospital';
 
 const DAYS = [
@@ -20,42 +20,45 @@ export function HospitalTabOperation({ detail, transits }: Props) {
   if (!detail && !transits.length) {
     return <p className="py-8 text-center text-sm text-[var(--color-muted)]">운영·교통 정보가 등록되어 있지 않습니다.</p>;
   }
+  // 신뢰할 수 있는 구간이 없는 요일은 생략한다(모순 값을 '휴진'으로 단정하지 않는다).
+  const dayHours = detail
+    ? DAYS.map(d => ({ label: d.label, hours: formatHospitalHours(detail[d.open], detail[d.close]) }))
+        .filter((d): d is typeof d & { hours: string } => d.hours != null)
+    : [];
+  const hasHourInfo =
+    dayHours.length > 0 ||
+    !!(detail?.lunchWeekday || detail?.lunchSaturday || detail?.closedSunday || detail?.closedHoliday);
   return (
     <div className="flex flex-col gap-6">
       {detail && (
         <>
-          <section>
-            <h3 className="mb-3 text-sm font-bold text-[var(--color-blue-dark)]">진료시간</h3>
-            <div className="divide-y divide-[var(--color-line)] rounded-xl border border-[var(--color-line)]">
-              {DAYS.map(d => {
-                const open = detail[d.open];
-                const close = detail[d.close];
-                if (open == null && close == null) return null;
-                return (
-                  <div key={d.label} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                    <span className="w-6 font-semibold text-[var(--color-blue-dark)]">{d.label}</span>
-                    <span className="text-[var(--color-muted)]">
-                      {open != null && close != null
-                        ? `${formatHospitalTime(open)} ~ ${formatHospitalTime(close)}`
-                        : '휴진'}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            {detail.lunchWeekday && (
-              <p className="mt-2 text-xs text-[var(--color-muted)]">점심(평일): {detail.lunchWeekday}</p>
-            )}
-            {detail.lunchSaturday && (
-              <p className="mt-1 text-xs text-[var(--color-muted)]">점심(토요일): {detail.lunchSaturday}</p>
-            )}
-            {detail.closedSunday && (
-              <p className="mt-1 text-xs text-[var(--color-muted)]">일요일: {detail.closedSunday}</p>
-            )}
-            {detail.closedHoliday && (
-              <p className="mt-1 text-xs text-[var(--color-muted)]">공휴일: {detail.closedHoliday}</p>
-            )}
-          </section>
+          {hasHourInfo && (
+            <section>
+              <h3 className="mb-3 text-sm font-bold text-[var(--color-blue-dark)]">진료시간</h3>
+              {dayHours.length > 0 && (
+                <div className="divide-y divide-[var(--color-line)] rounded-xl border border-[var(--color-line)]">
+                  {dayHours.map(d => (
+                    <div key={d.label} className="flex items-center justify-between px-4 py-2.5 text-sm">
+                      <span className="w-6 font-semibold text-[var(--color-blue-dark)]">{d.label}</span>
+                      <span className="text-[var(--color-muted)]">{d.hours}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {detail.lunchWeekday && (
+                <p className="mt-2 text-xs text-[var(--color-muted)]">점심(평일): {detail.lunchWeekday}</p>
+              )}
+              {detail.lunchSaturday && (
+                <p className="mt-1 text-xs text-[var(--color-muted)]">점심(토요일): {detail.lunchSaturday}</p>
+              )}
+              {detail.closedSunday && (
+                <p className="mt-1 text-xs text-[var(--color-muted)]">일요일: {detail.closedSunday}</p>
+              )}
+              {detail.closedHoliday && (
+                <p className="mt-1 text-xs text-[var(--color-muted)]">공휴일: {detail.closedHoliday}</p>
+              )}
+            </section>
+          )}
 
           {(detail.erDayOpen != null || detail.erNightOpen != null) && (
             <section>

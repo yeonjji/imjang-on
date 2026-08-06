@@ -1,7 +1,7 @@
 // app/(public)/medical/hospital/[sigunguCode]/[id]/_components/hospital-summary-cards.tsx
 'use client';
 import type { ComponentProps } from 'react';
-import { formatHospitalTime } from '@/lib/hospital/utils';
+import { formatHospitalHours } from '@/lib/hospital/utils';
 import type { HospitalFacility, HospitalDetail } from '@prisma/client';
 
 // getDay() 반환값(0=일,1=월,...,6=토)에 대응하는 open/close 키
@@ -63,12 +63,9 @@ export function HospitalSummaryCards({ totalDoctors, facility, detail }: Props) 
     }
     const dayIdx = new Date().getDay();
     const [openKey, closeKey] = DAY_KEYS[dayIdx];
-    const open = detail[openKey];
-    const close = detail[closeKey];
-    if (open != null || close != null) {
-      const timeStr = open != null && close != null
-        ? `${formatHospitalTime(open)} ~ ${formatHospitalTime(close)}`
-        : open != null ? formatHospitalTime(open) : formatHospitalTime(close);
+    // 시작·종료가 모두 유효하고 앞뒤가 맞을 때만 표기한다(모순 값으로 오늘 진료시간을 안내하지 않는다).
+    const timeStr = formatHospitalHours(detail[openKey], detail[closeKey]);
+    if (timeStr) {
       cards.push({
         icon: '🕐', label: '오늘 진료',
         value: timeStr,

@@ -15,7 +15,7 @@ import type { HospitalWithRelations } from '@/lib/hospital';
 const mockHospital = {
   depts: [], staff: [], specialties: [], specialTreatments: [], nursingGrades: [],
   facility: { generalBedNormal: 5 }, equipment: [], mealSurcharges: [],
-  detail: { openMon: '0900', closeMon: '1800' }, transits: [],
+  detail: { openMon: 900, closeMon: 1800 }, transits: [], // HHMM 정수(스키마 Int?)
 } as unknown as HospitalWithRelations;
 
 describe('HospitalTabs SSR', () => {
