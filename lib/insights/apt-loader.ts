@@ -1,7 +1,12 @@
 import { cache } from 'react';
 import { getPropertyById, getPropertyLatLng, getRegionStats, hasSingleJibun } from '@/lib/property';
-import { getUnifiedTransactions, getMonthlyChartData, getFloorPremium, getTransactionFlags } from '@/lib/transaction';
-import { deriveHeaderStats } from '@/lib/price-chart';
+import {
+  getUnifiedTransactions,
+  getAreaSummary,
+  getLatestTransactionsByType,
+  getFloorPremium,
+  getTransactionFlags,
+} from '@/lib/transaction';
 import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { getNearbyInfra } from '@/lib/amenity/nearby';
 import { buildAptNarrative, type AptNarrative } from '@/lib/insights/apt';
@@ -30,17 +35,24 @@ export const loadAptInsight = cache(
     if (!property) return { narrative: null };
 
     const coord = await cachedPropertyLatLng(propId);
-    const [salesResult, region, subway, infra, chart, floorPremium, flags] = await Promise.all([
+    const [salesResult, region, subway, infra, areaSummary, latestTx, floorPremium, flags] = await Promise.all([
       getUnifiedTransactions(propId, { page: 1, perPage: 30, dealType: 'SALE' }),
       getRegionStats(property.sigunguCode ?? '', property.propertyType),
       coord ? cachedNearbySubway(coord.lat, coord.lng) : Promise.resolve({ stations: [], fallback: false }),
       coord ? cachedNearbyInfra(coord.lat, coord.lng) : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
-      getMonthlyChartData(propId),
+      getAreaSummary(propId),
+      getLatestTransactionsByType(propId),
       cachedFloorPremium(propId),
       cachedTransactionFlags(propId),
     ]);
-    // 산문 변동률을 가격 흐름 그래프(deriveHeaderStats)와 동일 기준으로 맞춘다.
-    const saleStats = deriveHeaderStats(chart.SALE);
+    // 산문 변동률을 가격 흐름 카드와 동일 기준(최근 실거래의 평형, 표본 2건 가드)으로 맞춘다.
+    // 평형이 섞인 월평균은 근거로 쓰지 않는다.
+    const latestSale = latestTx.SALE;
+    const saleArea = latestSale ? areaSummary.find((a) => a.area === latestSale.pyeong) : undefined;
+    const saleTrend =
+      saleArea?.changePct12m != null
+        ? { changePct: saleArea.changePct12m, pyeong: saleArea.area, sampleCount: saleArea.count12m }
+        : null;
 
     const saleDeals = salesResult.rows
       .filter((r) => r.dealAmount != null)
@@ -52,7 +64,7 @@ export const loadAptInsight = cache(
       builtYear: property.builtYear,
       households: property.households,
       saleDeals,
-      saleTrend: saleStats ? { changePct: saleStats.changePct, changeMonths: saleStats.changeMonths } : null,
+      saleTrend,
       regionAvgSaleManwon: region.saleAvgPrice12m,
       regionSampleCount: region.complexCount,
       nearestStation: subway.stations[0]

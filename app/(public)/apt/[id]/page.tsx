@@ -3,6 +3,7 @@ import { getRedirectPath } from '@/lib/redirect';
 import {
   getMonthlyChartData,
   getAreaSummary,
+  getLatestTransactionsByType,
   getUnifiedTransactions,
   getTransactionCounts,
   getSameFloorComparison,
@@ -98,11 +99,12 @@ export default async function AptDetailPage({ params }: Params) {
   const coord = await cachedPropertyLatLng(propId);
   const shortSido = shortSidoFromRegionCode(property.region.code);
 
-  const [unified, counts, chart, areaSummary, nearby, sameFloor, floorPremium, flags, infra, nearbySubs, subway] = await Promise.all([
+  const [unified, counts, chart, areaSummary, latestTx, nearby, sameFloor, floorPremium, flags, infra, nearbySubs, subway] = await Promise.all([
     getUnifiedTransactions(propId, { page: 1, perPage: 15 }),
     getTransactionCounts(propId),
     getMonthlyChartData(propId),
     getAreaSummary(propId),
+    getLatestTransactionsByType(propId),
     getNearbyProperties({ propertyId: propId, propertyType: PropertyType.APARTMENT }),
     getSameFloorComparison(propId),
     cachedFloorPremium(propId),
@@ -189,7 +191,7 @@ export default async function AptDetailPage({ params }: Params) {
             <h2 className="mb-4 text-xl font-bold text-[var(--color-blue-dark)]">
               가격 흐름 그래프
             </h2>
-            <PriceCharts data={chart} />
+            <PriceCharts data={chart} latest={latestTx} areaSummary={areaSummary} />
           </section>
           <AreaComparison id="area" areas={areaSummary} />
           <SameFloorObservation id="same-floor" pair={sameFloor} />
