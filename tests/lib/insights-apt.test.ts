@@ -61,12 +61,14 @@ describe('buildAptNarrative', () => {
     expect(n.text).toContain('뚜렷하게 높은 상위 가격대');
   });
 
-  it('pPeer 구간 분기: -5%↓이면 "진입 부담이 적은 편"', () => {
+  // 가격 위치만 서술하고 '진입 부담' 같은 구매 판단은 단정하지 않는다(가격 외 변수는 데이터에 없다).
+  it('pPeer 구간 분기: -5%↓이면 "평균을 밑도는 수준"', () => {
     const n = buildAptNarrative({
       ...base,
       saleDeals: [{ contractDate: '2026-03-10', amountManwon: 72000 }, { contractDate: '2026-06-20', amountManwon: 70000 }],
     })!; // latest 70000 vs 80000 = -12.5%→-13
-    expect(n.text).toContain('진입 부담이 적은 편');
+    expect(n.text).toContain('평균을 밑도는 수준');
+    expect(n.text).not.toContain('진입 부담');
   });
 
   it('aAccess: 도보 분과 인프라 밀도를 표현', () => {

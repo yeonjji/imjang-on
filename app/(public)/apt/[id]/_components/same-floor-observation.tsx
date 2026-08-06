@@ -30,7 +30,8 @@ export function SameFloorObservation({ pair, id }: { pair: SameFloorPair | null;
         .
       </p>
       <p className="mt-2 text-xs text-[var(--color-muted)]">
-        평형과 층이 같아 물건(향·라인) 차이로 설명되지 않는 가격 변화입니다.
+        같은 평형·같은 층에서 이뤄진 가장 최근 두 건입니다. 실거래가 공개자료는 동·향·라인을 제공하지 않아
+        두 거래가 같은 물건인지는 확인할 수 없고, 평형은 전용면적을 평 단위로 반올림해 묶습니다.
       </p>
     </Card>
   );

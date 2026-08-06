@@ -232,7 +232,8 @@ export interface SameFloorPair {
 
 /**
  * 동일 평형·동일 층의 가장 최근 매매 두 건을 비교한다(회귀·기준선 불필요).
- * 평형·층이 같아 물건(향·라인) 차이로 설명되지 않는 순수 가격 변화 관측치.
+ * 평형은 전용면적을 평 단위로 반올림해 묶고(84A·84B가 한 묶음), 동·향·라인은 원자료에 없어
+ * 두 거래가 같은 물건인지는 판별할 수 없다 — 표시 문구가 이 한계를 넘어 단정하지 않도록 할 것.
  * 비교 가능한(직전 거래가 존재하는) 쌍이 없으면 null.
  */
 export async function getSameFloorComparison(propertyId: bigint): Promise<SameFloorPair | null> {
