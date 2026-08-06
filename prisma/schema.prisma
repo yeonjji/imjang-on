@@ -412,6 +412,8 @@ model Childcare {
   childCntSp  Int?
   childCntTot Int?
 
+  /// 근속연수 분포는 실인원이 아니라 **비율(%)**이다(상류 필드명 em_cnt_*는 오해를 부른다).
+  /// 운영 데이터 실측: 구간 합 98~102, 총원과 일치하는 행 0건. 표시 단위는 %여야 한다.
   emTenure0y Int?
   emTenure1y Int?
   emTenure2y Int?
