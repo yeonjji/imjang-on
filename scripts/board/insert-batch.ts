@@ -75,6 +75,7 @@ async function main() {
       sourceName: a.sourceName,
       sourceUrl: a.sourceUrl,
       sourceDate,
+      sourceDateIsPublication: true, // 사람이 원문 발행일을 확인해 JSON에 적었다
       sourceExcerpt: a.sourceExcerpt.slice(0, 4000),
       dedupeKey: dedupeKey(a.sourceUrl),
       dateISO: kstDateISO(sourceDate),

@@ -837,6 +837,10 @@ model Post {
   sourceUrl     String   @db.VarChar(500)
   sourceDate    DateTime @db.Date
   sourceExcerpt String   @db.Text
+  /// sourceDate가 원문의 실제 발행일인지. 사람이 발행일을 확인해 넣은 경우만 true.
+  /// 자동 리서치·붙여넣기 경로는 발행일을 취득하지 못해 수집일이 들어가므로 false(표시 라벨이 갈린다).
+  /// admin 액션의 지역 변수 sourceDateKnown('최신성 검토 완료' 신호)과는 다른 개념이다.
+  sourceDateIsPublication Boolean @default(false)
 
   // 중복 방지
   dedupeKey String @unique @db.VarChar(120)

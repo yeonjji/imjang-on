@@ -84,6 +84,7 @@ async function main() {
     sourceName: SOURCE.sourceName,
     sourceUrl: SOURCE.sourceUrl,
     sourceDate: SOURCE.sourceDate,
+    sourceDateIsPublication: true, // 사람이 원문 발행일을 확인해 넣었다
     sourceExcerpt: SOURCE.sourceText.slice(0, 4000),
     dedupeKey: dedupeKey(SOURCE.sourceUrl),
     dateISO: kstDateISO(SOURCE.sourceDate),

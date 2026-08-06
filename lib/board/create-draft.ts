@@ -9,6 +9,8 @@ export interface CreateDraftInput {
   sourceName: string;
   sourceUrl: string;
   sourceDate: Date;
+  /** sourceDate가 원문의 실제 발행일이면 true. 미지정 시 false(수집일로 간주해 라벨이 갈린다). */
+  sourceDateIsPublication?: boolean;
   sourceExcerpt: string;
   dedupeKey: string;
   dateISO: string;
@@ -45,6 +47,7 @@ export async function createDraft(input: CreateDraftInput): Promise<CreateDraftR
       sourceName,
       sourceUrl: input.sourceUrl,
       sourceDate: input.sourceDate,
+      sourceDateIsPublication: input.sourceDateIsPublication ?? false,
       sourceExcerpt: input.sourceExcerpt,
       dedupeKey: input.dedupeKey,
       detectedFrom: input.detectedFrom,

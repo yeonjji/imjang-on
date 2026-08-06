@@ -58,7 +58,8 @@ export function normalizeSlug(slug: string): string {
 
 const POST_DETAIL_SELECT = {
   id: true, slug: true, title: true, summary: true, body: true, type: true,
-  category: true, sourceName: true, sourceUrl: true, sourceDate: true, generatedAt: true, publishedAt: true,
+  category: true, sourceName: true, sourceUrl: true, sourceDate: true, sourceDateIsPublication: true,
+  generatedAt: true, publishedAt: true,
 } as const;
 
 /** 레거시 slug 조회용(옛 `/board/<slug>` URL → 새 canonical 리다이렉트에 사용). */

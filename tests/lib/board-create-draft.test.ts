@@ -37,4 +37,17 @@ describe('createDraft', () => {
     const r = await createDraft(input());
     expect(r.status).toBe('duplicate');
   });
+
+  // 자동 리서치 경로는 원문 발행일을 취득하지 못해 sourceDate에 수집일이 들어간다.
+  // 기본값을 false로 두어 표시 라벨이 '원문 발행일'로 단정되지 않게 한다.
+  it('sourceDateIsPublication 미지정이면 false로 저장', async () => {
+    await createDraft(input());
+    const row = await prisma.post.findUnique({ where: { dedupeKey: `${MARK}k1` } });
+    expect(row!.sourceDateIsPublication).toBe(false);
+  });
+  it('사람이 발행일을 확인한 경로(true)는 그대로 저장', async () => {
+    await createDraft(input({ sourceDateIsPublication: true }));
+    const row = await prisma.post.findUnique({ where: { dedupeKey: `${MARK}k1` } });
+    expect(row!.sourceDateIsPublication).toBe(true);
+  });
 });

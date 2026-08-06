@@ -110,7 +110,8 @@ export default async function BoardDetailPage({ params, searchParams }: Params) 
         sourceUrl={post.sourceUrl}
         sourceDate={post.sourceDate}
         summarizedAt={post.generatedAt}
-        dateLabel="원문 발행일"
+        /* 자동 리서치 경로는 원문 발행일을 취득하지 못해 수집일이 들어간다. 발행일로 단정하지 않는다. */
+        dateLabel={post.sourceDateIsPublication ? '원문 발행일' : '출처 확인일'}
       />
 
       <BoardDetailCta />
