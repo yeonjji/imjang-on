@@ -13,6 +13,14 @@ export function organizationSchema(): Json {
     name: '임장ON',
     url: SITE_URL,
     logo: `${SITE_URL}/icon-512.png`,
+    description: '공공데이터 기반 부동산 실거래가·생활 인프라 정보 서비스',
+    email: EDITORIAL.email,
+    contactPoint: {
+      '@type': 'ContactPoint',
+      email: EDITORIAL.email,
+      contactType: 'customer support',
+      availableLanguage: 'Korean',
+    },
   };
 }
 
