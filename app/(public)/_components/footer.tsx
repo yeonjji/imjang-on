@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { EDITORIAL } from '@/lib/editorial';
 
 export function Footer() {
   return (
@@ -50,9 +51,17 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-[var(--color-line)]">
-        <p className="mx-auto max-w-[1180px] px-6 py-4 text-xs text-[var(--color-muted)]">
-          © 2026 임장ON. 본 사이트는 공공데이터를 가공해 제공합니다. 실거래 신고 지연으로 최신성·정확성이 100% 보장되지 않습니다.
-        </p>
+        <div className="mx-auto max-w-[1180px] px-6 py-4 text-xs text-[var(--color-muted)]">
+          <p>
+            © 2026 임장ON. 본 사이트는 공공데이터를 가공해 제공합니다. 실거래 신고 지연으로 최신성·정확성이 100% 보장되지 않습니다.
+          </p>
+          <p className="mt-1">
+            문의:{' '}
+            <a href={`mailto:${EDITORIAL.email}`} className="underline">
+              {EDITORIAL.email}
+            </a>
+          </p>
+        </div>
       </div>
     </footer>
   );
