@@ -72,9 +72,17 @@ async function getList(f: AmenityListFilter, page: number): Promise<AmenityListR
   };
 }
 
+/**
+ * 상세 조회 where. 목록과 같은 업종 게이트를 적용한다.
+ * 게이트가 없으면 임의의 Store가 편의점·마트·카페 세 URL 모두에서 200을 내며 오라벨된다.
+ */
+export function buildByIdWhere(id: bigint): Prisma.StoreWhereInput {
+  return { id, industryCode: { startsWith: PREFIX } };
+}
+
 async function getById(id: bigint): Promise<AmenityItem | null> {
-  const s = await prisma.store.findUnique({
-    where: { id },
+  const s = await prisma.store.findFirst({
+    where: buildByIdWhere(id),
     select: {
       id: true,
       name: true,

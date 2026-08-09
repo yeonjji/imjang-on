@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildStoreWhere } from '@/lib/amenity/adapters/convenience';
+import { buildStoreWhere, buildByIdWhere } from '@/lib/amenity/adapters/convenience';
 
 describe('convenience adapter — buildStoreWhere', () => {
   it('시군구 없으면 prefix만', () => {
@@ -46,6 +46,15 @@ describe('convenience adapter — buildStoreWhere', () => {
 
   it('미존재 시도명은 무시 (전국 fallback)', () => {
     expect(buildStoreWhere({ sido: '존재하지않음' })).toEqual({
+      industryCode: { startsWith: 'G20405' },
+    });
+  });
+});
+
+describe('convenience adapter — buildByIdWhere', () => {
+  it('상세 조회에도 목록과 같은 업종 게이트를 건다', () => {
+    expect(buildByIdWhere(7n)).toEqual({
+      id: 7n,
       industryCode: { startsWith: 'G20405' },
     });
   });

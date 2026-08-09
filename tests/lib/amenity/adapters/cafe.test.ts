@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildCafeWhere } from '@/lib/amenity/adapters/cafe';
+import { buildCafeWhere, buildByIdWhere } from '@/lib/amenity/adapters/cafe';
 
 describe('cafe adapter — buildCafeWhere', () => {
   it('시군구 없으면 prefix만', () => {
@@ -29,6 +29,15 @@ describe('cafe adapter — buildCafeWhere', () => {
 
   it('미존재 시도명은 무시 (전국 fallback)', () => {
     expect(buildCafeWhere({ sido: '존재하지않음' })).toEqual({
+      industryCode: { startsWith: 'I21201' },
+    });
+  });
+});
+
+describe('cafe adapter — buildByIdWhere', () => {
+  it('상세 조회에도 목록과 같은 업종 게이트를 건다', () => {
+    expect(buildByIdWhere(7n)).toEqual({
+      id: 7n,
       industryCode: { startsWith: 'I21201' },
     });
   });

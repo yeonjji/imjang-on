@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { classifyStore, buildInfraCategories, infraHref, INFRA_FETCH_LIMIT, type RawInfra } from '@/lib/amenity/infra';
+import {
+  classifyStore, buildInfraCategories, infraHref, storeAmenitySlug, storeHref,
+  INFRA_FETCH_LIMIT, type RawInfra,
+} from '@/lib/amenity/infra';
 
 describe('classifyStore', () => {
   it('편의점·마트·슈퍼 prefix는 mart', () => {
@@ -137,8 +140,33 @@ describe('buildInfraCategories', () => {
       stores: [{ id: 1n, name: 'GS25', address: '', industryCode: 'G20405', industryName: '편의점', branchName: null, distanceMeters: 80 }],
       hospitals: [{ id: 9n, name: '세브란스의원', typeName: '의원', address: '', sigunguCode: '11680', distanceMeters: 100 }],
     });
-    expect(cats.find((c) => c.key === 'store')?.items[0].href).toBe('/amenity/mart/1');
+    // 화면 그룹은 '편의·마트'(store)로 묶지만, href는 그 업종을 실제로 서빙하는 슬러그여야 한다.
+    expect(cats.find((c) => c.key === 'store')?.items[0].href).toBe('/amenity/convenience/1');
     expect(cats.find((c) => c.key === 'hospital')?.items[0].href).toBe('/medical/hospital/11680/9');
+  });
+
+  it("'편의·마트' 그룹 안에서도 업종별로 서로 다른 슬러그로 링크한다", () => {
+    const cats = buildInfraCategories({
+      ...empty,
+      stores: [
+        { id: 1n, name: 'CU', address: '', industryCode: 'G20405', industryName: '편의점', branchName: null, distanceMeters: 80 },
+        { id: 2n, name: '이마트', address: '', industryCode: 'G20402', industryName: '대형마트', branchName: null, distanceMeters: 90 },
+        { id: 3n, name: '동네슈퍼', address: '', industryCode: 'G20404', industryName: '슈퍼마켓', branchName: null, distanceMeters: 95 },
+      ],
+    });
+    expect(cats.find((c) => c.key === 'store')?.items.map((i) => i.href)).toEqual([
+      '/amenity/convenience/1',
+      '/amenity/mart/2',
+      '/amenity/mart/3',
+    ]);
+  });
+
+  it('기타 생활편의는 서빙하는 상세 카테고리가 없으므로 href=null', () => {
+    const cats = buildInfraCategories({
+      ...empty,
+      stores: [{ id: 1n, name: '무인문구', address: '', industryCode: 'Z999', industryName: '기타', branchName: null, distanceMeters: 200 }],
+    });
+    expect(cats.find((c) => c.key === 'etc')?.items[0].href).toBeNull();
   });
 
   it('sigunguCode 없는 병원 항목은 href=null', () => {
@@ -173,11 +201,35 @@ describe('buildInfraCategories', () => {
   });
 });
 
+describe('storeAmenitySlug', () => {
+  it('업종 접두어를 그 업종을 서빙하는 슬러그로 매핑한다', () => {
+    expect(storeAmenitySlug('G20405')).toBe('convenience');
+    expect(storeAmenitySlug('G2040501')).toBe('convenience');
+    expect(storeAmenitySlug('G20404')).toBe('mart');
+    expect(storeAmenitySlug('G20402')).toBe('mart');
+    expect(storeAmenitySlug('I21201')).toBe('cafe');
+  });
+
+  it('어느 카테고리도 서빙하지 않는 업종·null은 null', () => {
+    // 기타 업소(음식점·미용실 등)와 의료 Store는 /amenity 상세가 존재하지 않는다.
+    for (const c of ['Z999', 'Q10209', 'G21501', null]) {
+      expect(storeAmenitySlug(c)).toBeNull();
+    }
+  });
+});
+
+describe('storeHref', () => {
+  it('서빙 슬러그가 있으면 경로, 없으면 null(비클릭)', () => {
+    expect(storeHref('G20405', '1')).toBe('/amenity/convenience/1');
+    expect(storeHref('G20402', '2')).toBe('/amenity/mart/2');
+    expect(storeHref('I21201', '3')).toBe('/amenity/cafe/3');
+    expect(storeHref('Z999', '4')).toBeNull();
+    expect(storeHref(null, '5')).toBeNull();
+  });
+});
+
 describe('infraHref', () => {
   it('id만으로 해석되는 카테고리는 올바른 경로를 만든다', () => {
-    expect(infraHref('store', '10')).toBe('/amenity/mart/10');
-    expect(infraHref('cafe', '11')).toBe('/amenity/cafe/11');
-    expect(infraHref('etc', '12')).toBe('/amenity/convenience/12');
     expect(infraHref('market', '13')).toBe('/amenity/market/13');
     expect(infraHref('park', '14')).toBe('/urban/park/14');
     expect(infraHref('parking', '15')).toBe('/urban/parking/15');
