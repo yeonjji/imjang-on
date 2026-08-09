@@ -1,8 +1,10 @@
 name: generate-board-posts
 
+# 자동 스케줄 제거(2026-08-09). 애드센스 3차 거절 사유가 scaled content abuse 계열이라,
+# 사람 검수 없는 주간 자동 양산은 재개하지 않는다. UI의 disabled_manually는 클릭 한 번으로
+# 풀리므로 cron 자체를 지운다. 필요하면 workflow_dispatch로 1건씩 수동 생성한다.
+# 배경: docs/adsense/2026-08-06-rediagnosis-replicated-content.md
 on:
-  schedule:
-    - cron: '0 2 * * 1' # 매주 월요일 11:00 KST (청약 집계가 주 1회 cadence)
   workflow_dispatch:
     inputs:
       dry_run:
