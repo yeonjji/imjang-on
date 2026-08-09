@@ -1,7 +1,7 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import { getCategoryDef, AMENITY_SOURCE } from '@/lib/amenity/category';
-import { getAmenityById, getAmenityLatLng } from '@/lib/amenity/detail';
+import { getAmenityById, getAmenityLatLng, resolveStoreSlugRedirect } from '@/lib/amenity/detail';
 import { getAmenityList } from '@/lib/amenity/list';
 import { getSigunguByCode } from '@/lib/region';
 import {
@@ -70,7 +70,12 @@ export default async function AmenityDetailPage({ params }: Params) {
 
   const itemId = BigInt(id);
   const item = await getAmenityById(def.slug, itemId);
-  if (!item) notFound();
+  if (!item) {
+    // 업종 게이트 이전에 200이던 교차 카테고리 URL은 404 대신 정본으로 영구 이동시킨다.
+    const canonicalPath = await resolveStoreSlugRedirect(def.slug, itemId).catch(() => null);
+    if (canonicalPath) permanentRedirect(canonicalPath);
+    notFound();
+  }
   const displayName = displayAmenityName(item, def);
 
   const region = item.sigunguCode

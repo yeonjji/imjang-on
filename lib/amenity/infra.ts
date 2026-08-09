@@ -39,7 +39,11 @@ export interface RawInfra {
   childcare?: NearbyChildcare[];
 }
 
-const MART_PREFIXES = ['G20405', 'G20404', 'G20402'];
+// 화면 그룹 '편의·마트'는 편의점과 마트를 함께 묶지만, 상세 페이지는 슬러그가 다르다
+// (/amenity/convenience vs /amenity/mart). 그룹핑용과 링크용 접두어를 분리해 둔다.
+const CONVENIENCE_PREFIXES = ['G20405'];
+const MART_ONLY_PREFIXES = ['G20404', 'G20402'];
+const MART_PREFIXES = [...CONVENIENCE_PREFIXES, ...MART_ONLY_PREFIXES];
 const CAFE_PREFIXES = ['I21201'];
 // 병원(Q101)·의원/한의원(Q102)·약국(G21501)은 전용 카테고리(병원/약국)로 노출되므로 기타에서 제외.
 const MEDICAL_PREFIXES = ['Q101', 'Q102', 'G21501'];
@@ -70,9 +74,9 @@ export function buildInfraCategories(raw: RawInfra): InfraCategory[] {
 
   const cats: Omit<InfraCategory, 'capped'>[] = [
     { key: 'store', label: '편의·마트', icon: '🛒', radiusLabel: '반경 500m 내',
-      items: mart.map((s) => ({ id: String(s.id), name: displayStoreName(s), sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: infraHref('store', String(s.id)) })) },
+      items: mart.map((s) => ({ id: String(s.id), name: displayStoreName(s), sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: storeHref(s.industryCode, String(s.id)) })) },
     { key: 'cafe', label: '카페', icon: '☕', radiusLabel: '반경 500m 내',
-      items: cafe.map((s) => ({ id: String(s.id), name: displayStoreName(s), sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: infraHref('cafe', String(s.id)) })) },
+      items: cafe.map((s) => ({ id: String(s.id), name: displayStoreName(s), sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: storeHref(s.industryCode, String(s.id)) })) },
     { key: 'hospital', label: '병원', icon: '🏥', radiusLabel: '반경 500m 내',
       items: raw.hospitals.map((h) => ({ id: String(h.id), name: h.name, sub: h.typeName ?? null, distanceMeters: h.distanceMeters, href: infraHref('hospital', String(h.id), h.sigunguCode) })) },
     { key: 'pharmacy', label: '약국', icon: '💊', radiusLabel: '반경 500m 내',
@@ -88,7 +92,7 @@ export function buildInfraCategories(raw: RawInfra): InfraCategory[] {
     { key: 'childcare', label: '어린이집', icon: '👶', radiusLabel: '반경 1km 내',
       items: (raw.childcare ?? []).map((c) => ({ id: String(c.id), name: c.name, sub: c.crType ?? null, distanceMeters: c.distanceMeters, href: infraHref('childcare', String(c.id), c.sigunguCode) })) },
     { key: 'etc', label: '기타 생활편의', icon: '🏪', radiusLabel: '반경 500m 내',
-      items: etc.map((s) => ({ id: String(s.id), name: displayStoreName(s), sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: infraHref('etc', String(s.id)) })) },
+      items: etc.map((s) => ({ id: String(s.id), name: displayStoreName(s), sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: storeHref(s.industryCode, String(s.id)) })) },
   ];
 
   return cats
@@ -102,16 +106,39 @@ export function buildInfraCategories(raw: RawInfra): InfraCategory[] {
     }));
 }
 
+/**
+ * Store.industryCode → 그 업종을 실제로 서빙하는 /amenity 슬러그.
+ * 각 어댑터의 목록·상세 게이트와 같은 접두어를 쓴다. 서빙하는 카테고리가 없으면 null.
+ */
+export function storeAmenitySlug(
+  industryCode: string | null,
+): 'convenience' | 'mart' | 'cafe' | null {
+  const c = industryCode ?? '';
+  if (CONVENIENCE_PREFIXES.some((p) => c.startsWith(p))) return 'convenience';
+  if (MART_ONLY_PREFIXES.some((p) => c.startsWith(p))) return 'mart';
+  if (CAFE_PREFIXES.some((p) => c.startsWith(p))) return 'cafe';
+  return null;
+}
+
+/**
+ * Store 항목의 상세 경로. 업종이 어느 카테고리에도 속하지 않으면(기타 업소·의료 Store)
+ * 상세 페이지가 존재하지 않으므로 null → 비클릭.
+ */
+export function storeHref(industryCode: string | null, id: string): string | null {
+  const slug = storeAmenitySlug(industryCode);
+  return slug ? `/amenity/${slug}/${id}` : null;
+}
+
+/** Store 기반 카테고리는 industryCode로 슬러그가 갈리므로 storeHref를 쓴다. */
+type NonStoreInfraKey = Exclude<InfraCategoryKey, 'store' | 'cafe' | 'etc'>;
+
 /** 인프라 항목 → 해당 시설 상세 페이지 경로. sigunguCode가 필요한데 없으면 null(비클릭). */
 export function infraHref(
-  key: InfraCategoryKey,
+  key: NonStoreInfraKey,
   id: string,
   sigunguCode?: string | null,
 ): string | null {
   switch (key) {
-    case 'store':     return `/amenity/mart/${id}`;
-    case 'cafe':      return `/amenity/cafe/${id}`;
-    case 'etc':       return `/amenity/convenience/${id}`;
     case 'market':    return `/amenity/market/${id}`;
     case 'park':      return `/urban/park/${id}`;
     case 'parking':   return `/urban/parking/${id}`;

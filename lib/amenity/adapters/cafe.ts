@@ -72,9 +72,14 @@ async function getList(f: AmenityListFilter, page: number): Promise<AmenityListR
   };
 }
 
+/** 상세 조회 where. 목록과 같은 업종 게이트를 적용한다(카테고리 불일치 id는 404). */
+export function buildByIdWhere(id: bigint): Prisma.StoreWhereInput {
+  return { id, industryCode: { startsWith: PREFIX } };
+}
+
 async function getById(id: bigint): Promise<AmenityItem | null> {
-  const s = await prisma.store.findUnique({
-    where: { id },
+  const s = await prisma.store.findFirst({
+    where: buildByIdWhere(id),
     select: {
       id: true,
       name: true,

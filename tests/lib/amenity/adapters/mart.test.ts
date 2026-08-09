@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildMartWhere } from '@/lib/amenity/adapters/mart';
+import { buildMartWhere, buildByIdWhere } from '@/lib/amenity/adapters/mart';
 
 describe('mart adapter — buildMartWhere', () => {
   it('sub=all (또는 미지정) — G20404 + G20402 OR', () => {
@@ -66,6 +66,18 @@ describe('mart adapter — buildMartWhere', () => {
     expect(buildMartWhere({ sido: '서울', sub: 'hyper' })).toEqual({
       sigunguCode: { startsWith: '11' },
       industryCode: { startsWith: 'G20402' },
+    });
+  });
+});
+
+describe('mart adapter — buildByIdWhere', () => {
+  it('상세 조회는 슈퍼·대형마트만 허용한다 (편의점 G20405 제외)', () => {
+    expect(buildByIdWhere(7n)).toEqual({
+      id: 7n,
+      OR: [
+        { industryCode: { startsWith: 'G20404' } },
+        { industryCode: { startsWith: 'G20402' } },
+      ],
     });
   });
 });
