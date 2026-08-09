@@ -31,7 +31,7 @@ const SECTIONS: { heading: string; body: string[] }[] = [
   {
     heading: '제3조의2 (자동 생성 콘텐츠의 고지)',
     body: [
-      '① 시황 브리핑과 게시판 글은 공공기관이 공개한 원문을 근거로 언어모델이 초안을 작성하고, 운영자가 검수한 뒤 게시합니다.',
+      '① 게시판 글과 가이드는 공공기관이 공개한 원문을 근거로 언어모델이 초안을 작성하고, 운영자가 검수한 뒤 게시합니다.',
       '② 각 글에는 근거가 된 원문의 출처를 표기합니다.',
       '③ 검수를 거치더라도 원문 해석에 오류가 있을 수 있으며, 중요한 사항은 원 출처를 확인하시기 바랍니다.',
     ],
@@ -92,6 +92,10 @@ const HISTORY_ROWS = [
     date: '2026년 8월 7일',
     note: '자동 생성 콘텐츠의 고지, 데이터 정정 요청의 처리, 서비스의 변경·중단 조항 신설.',
   },
+  {
+    date: '2026년 8월 9일',
+    note: '제3조의2의 대상 교정 — 언어모델이 초안을 작성하는 범위를 게시판 글과 가이드로 바로잡음.',
+  },
 ];
 
 export default function TermsPage() {
@@ -99,7 +103,7 @@ export default function TermsPage() {
     <article className="mx-auto max-w-2xl px-6 py-16">
       <h1 className="text-3xl font-black text-[var(--color-blue-dark)]">이용약관</h1>
       <p className="mt-3 text-sm text-[var(--color-muted)]">
-        시행일: 2026년 8월 7일 (제정: 2026년 6월 7일)
+        시행일: 2026년 8월 9일 (제정: 2026년 6월 7일)
       </p>
 
       <div className="mt-8 space-y-8">
