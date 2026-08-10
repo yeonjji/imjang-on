@@ -42,4 +42,37 @@ describe('splitGuideBody', () => {
     expect(parts).toHaveLength(1);
     expect(parts[0]).toEqual({ kind: 'markdown', text: body });
   });
+
+  // 회귀 테스트: 펜스 종류 혼용
+  it('펜스를 다른 문자로 닫으려고 하면 무시한다', () => {
+    const body = '설명\n\n```\ncode\n~~~\n[[data:charger-mix]]\n~~~\nend\n```\n\n끝';
+    const parts = splitGuideBody(body);
+    expect(parts).toHaveLength(1);
+    expect(parts[0]).toEqual({ kind: 'markdown', text: body });
+  });
+
+  // 회귀 테스트: 펜스 길이 추적
+  it('펜스는 같은 길이이거나 더 긴 같은 문자로만 닫힌다', () => {
+    const body = '설명\n\n````\ncode\n```\n[[data:charger-mix]]\n```\nend\n````\n\n끝';
+    const parts = splitGuideBody(body);
+    expect(parts).toHaveLength(1);
+    expect(parts[0]).toEqual({ kind: 'markdown', text: body });
+  });
+
+  // 회귀 테스트: 표식 앞 공백
+  it('표식 앞에 공백이 있어도 블록으로 치환한다', () => {
+    expect(splitGuideBody('앞\n  [[data:charger-mix]]\n뒤')).toEqual([
+      { kind: 'markdown', text: '앞' },
+      { kind: 'block', key: 'charger-mix' },
+      { kind: 'markdown', text: '뒤' },
+    ]);
+  });
+
+  // 회귀 테스트: 문장 중간의 표식
+  it('문장 중간의 표식은 치환하지 않는다', () => {
+    const body = '앞 [[data:charger-mix]] 뒤';
+    expect(splitGuideBody(body)).toEqual([
+      { kind: 'markdown', text: body },
+    ]);
+  });
 });
