@@ -66,6 +66,29 @@ export default function AboutPage() {
         <Link href="/data-source" className="underline">데이터 안내</Link>에서 확인할 수 있습니다.
       </p>
 
+      <h2 className="mt-10 text-xl font-bold text-[var(--color-text)]">글은 어떻게 만들어지나</h2>
+      <p className="mt-3 text-[var(--color-text)]">
+        임장ON의 화면은 만들어지는 방식이 두 가지로 나뉩니다. 어느 쪽인지 각 화면에서 알 수 있도록
+        표기하고 있습니다.
+      </p>
+      <ul className="mt-3 list-disc space-y-2 pl-5 text-[var(--color-text)]">
+        <li>
+          <strong className="font-semibold">시설·단지 상세와 통계·시황 브리핑</strong>은 언어모델을 쓰지
+          않습니다. 수집한 공공데이터를 정해진 규칙으로 집계·정렬해 수치와 표, 요약 문장을 산출합니다.
+          같은 데이터면 언제 열어도 같은 결과가 나옵니다.
+        </li>
+        <li>
+          <strong className="font-semibold">게시판 글과 가이드</strong>는 공공기관이 공개한 원문을 근거로
+          언어모델이 초안을 작성하고, 운영자가 사실관계와 출처를 검수한 뒤 게시합니다. 각 글 상단에 이
+          사실을 표기하고, 근거가 된 원문의 출처를 하단에 남깁니다. 검수를 거쳐도 원문 해석에 오류가 있을
+          수 있으므로 중요한 사항은 원 출처를 확인해 주세요.
+        </li>
+      </ul>
+      <p className="mt-3 text-[var(--color-text)]">
+        어느 경우에도 사람이 확인하지 않은 글을 자동으로 게시하지 않습니다. 관련 약관은{' '}
+        <Link href="/terms" className="underline">이용약관 제3조의2</Link>에 있습니다.
+      </p>
+
       <h2 className="mt-10 text-xl font-bold text-[var(--color-text)]">데이터 갱신 주기</h2>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full text-sm">

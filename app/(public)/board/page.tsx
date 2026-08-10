@@ -16,15 +16,29 @@ import type { Metadata } from 'next';
 
 export const revalidate = 3_600;
 
-export const metadata: Metadata = {
-  title: '임장ON 브리핑',
-  description:
-    '금융·대출·경제·청약·부동산 분야의 공공자료 기반 이슈 해설을 매일 업데이트합니다.',
-  alternates: { canonical: '/board' },
-};
-
 interface Props {
   searchParams: Promise<{ category?: string; page?: string; preview?: string }>;
+}
+
+/**
+ * canonical을 자기참조로 만든다. 종전에는 모든 조합이 `/board`로 접혀, 2페이지 이후의
+ * 글(원본 76편의 3/4)이 **어느 색인 가능한 URL에도 노출되지 않았다**. category·page는
+ * 서로 다른 글 목록이므로 각자 정본이어야 한다(preview는 운영 토큰이라 정본에서 제외).
+ */
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const sp = await searchParams;
+  const params = new URLSearchParams();
+  if (isCategory(sp.category)) params.set('category', sp.category);
+  const page = Number(sp.page);
+  if (Number.isFinite(page) && page > 1) params.set('page', String(page));
+  const qs = params.toString();
+  const label = isCategory(sp.category) ? `${categoryLabel(sp.category)} ` : '';
+  return {
+    title: page > 1 ? `임장ON ${label}브리핑 (${page}페이지)` : `임장ON ${label}브리핑`,
+    description:
+      '금융·대출·경제·청약·부동산 분야의 공공자료 기반 이슈 해설을 매일 업데이트합니다.',
+    alternates: { canonical: qs ? `/board?${qs}` : '/board' },
+  };
 }
 
 function isCategory(v: string | undefined): v is PostCategory {

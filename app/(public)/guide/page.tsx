@@ -7,13 +7,23 @@ import type { Metadata } from 'next';
 
 export const revalidate = 3_600;
 
-export const metadata: Metadata = {
-  title: '생활·부동산 가이드',
-  description: '부동산 실거래가·청약·금융·의료·보육·학교·생활 정보를 쉽게 풀어 설명하는 상록 가이드.',
-  alternates: { canonical: '/guide' },
-};
-
 interface Props { searchParams: Promise<{ category?: string; page?: string }>; }
+
+/** board와 같은 이유로 자기참조 canonical — 근거는 `board/page.tsx` 주석 참고. */
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const sp = await searchParams;
+  const params = new URLSearchParams();
+  if (isCategory(sp.category)) params.set('category', sp.category);
+  const page = Number(sp.page);
+  if (Number.isFinite(page) && page > 1) params.set('page', String(page));
+  const qs = params.toString();
+  const label = isCategory(sp.category) ? `${guideCategoryLabel(sp.category)} ` : '';
+  return {
+    title: page > 1 ? `${label}생활·부동산 가이드 (${page}페이지)` : `${label}생활·부동산 가이드`,
+    description: '부동산 실거래가·청약·금융·의료·보육·학교·생활 정보를 쉽게 풀어 설명하는 상록 가이드.',
+    alternates: { canonical: qs ? `/guide?${qs}` : '/guide' },
+  };
+}
 
 function isCategory(v: string | undefined): v is GuideCategory {
   return !!v && GUIDE_CATEGORIES.some((c) => c.value === v);

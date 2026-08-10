@@ -79,6 +79,13 @@ export function getUrbanCategoryDef(slug: string): UrbanCategoryDef | null {
   return null;
 }
 
+/** 목록의 정본 경로. amenity의 `amenityListPath`와 같은 규칙 — 근거는 그쪽 주석 참고. */
+export function urbanListPath(def: UrbanCategoryDef): string {
+  return def.requiresSidoScope === false
+    ? `/urban/${def.slug}`
+    : `/urban/${def.slug}?sido=${encodeURIComponent('서울')}`;
+}
+
 export interface UrbanCategoryView {
   slug: UrbanSlug;
   label: string;

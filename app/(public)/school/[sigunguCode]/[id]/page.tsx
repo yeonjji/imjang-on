@@ -138,6 +138,8 @@ export default async function SchoolDetailPage({ params }: Params) {
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
             { name: '학교찾기', url: `${SITE_URL}/school` },
+            // URL에 박혀 있는 시군구 세그먼트를 계층 선언에도 넣는다(3단 평면 → 4단).
+            { name: regionDisplay.fullName, url: `${SITE_URL}/school/${sigunguCode}` },
             { name: school.name, url: `${SITE_URL}/school/${sigunguCode}/${id}` },
           ]),
           ...provenanceNodes({
