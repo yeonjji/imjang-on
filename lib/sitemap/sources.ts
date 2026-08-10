@@ -3,7 +3,6 @@ import { prisma } from '@/lib/db';
 import type { Prisma } from '@prisma/client';
 import { SITE_URL } from '@/lib/site';
 import { getSigunguList } from '@/lib/region';
-import { AMENITY_CATEGORIES, AMENITY_SLUGS } from '@/lib/amenity/category';
 import { STATIC_ENTRIES } from './static-entries';
 import { isBoardPublic } from '@/lib/board/visibility';
 import { boardPath } from '@/lib/board/slug';
@@ -23,20 +22,10 @@ function propertyPrefix(type: string): string {
   return 'villa';
 }
 
-/** core: 정적 + region/school/amenity 허브 동적 엔트리. DB 오류 시 STATIC_ENTRIES로 폴백. */
+/** core: 정적 + school 시군구 허브 동적 엔트리. DB 오류 시 STATIC_ENTRIES로 폴백. */
 async function coreEntries(): Promise<MetadataRoute.Sitemap> {
   try {
-    const [schoolSigungus, amenityCountsBySlug] = await Promise.all([
-      getSigunguList().catch(() => []),
-      Promise.all(
-        AMENITY_SLUGS.map(async (slug) => ({
-          slug,
-          counts: await AMENITY_CATEGORIES[slug]
-            .getCountsBySigungu()
-            .catch(() => new Map<string, number>()),
-        })),
-      ),
-    ]);
+    const schoolSigungus = await getSigunguList().catch(() => []);
 
     const entries: MetadataRoute.Sitemap = [...STATIC_ENTRIES];
 
@@ -48,16 +37,12 @@ async function coreEntries(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7,
       });
     }
-    for (const { slug, counts } of amenityCountsBySlug) {
-      for (const [sigunguCode, count] of counts) {
-        if (count <= 0) continue;
-        entries.push({
-          url: `${SITE_URL}/amenity/${slug}?region=${sigunguCode}`,
-          changeFrequency: 'weekly',
-          priority: 0.6,
-        });
-      }
-    }
+
+    // `/amenity/{slug}?region={시군구}` 994건은 제거했다(2026-08-09). 카테고리당 시군구 250개가
+    // 같은 템플릿의 근접중복이라 doorway 신호였고, 이제 canonical이 전부 정본 허브 하나로
+    // 접히므로 사이트맵에 올리면 'canonical이 다른 URL' 경고만 생긴다.
+    // 허브 7개(amenity 4 + urban 3)는 STATIC_ENTRIES가 정본 경로로 담는다.
+
     return entries;
   } catch (err) {
     console.error('sitemap core: DB unavailable, static entries only', err);

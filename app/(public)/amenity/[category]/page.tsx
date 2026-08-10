@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { getSidoList, getSigunguByCode, sidoFromPrefix } from '@/lib/region';
-import { getCategoryDef, toAmenityCategoryView, AMENITY_SLUGS, AMENITY_SOURCE } from '@/lib/amenity/category';
+import { getCategoryDef, toAmenityCategoryView, amenityListPath, AMENITY_SLUGS, AMENITY_SOURCE } from '@/lib/amenity/category';
 import { getAmenityList, normalizePage } from '@/lib/amenity/list';
 import { AmenityFilterPanel } from './_components/amenity-filter-panel';
 import { AmenityMobileFilterSheet } from './_components/amenity-mobile-filter-sheet';
@@ -35,13 +35,9 @@ export async function generateMetadata({ params, searchParams }: Params): Promis
   return {
     title: `${scope} ${def.label}`,
     description: `${scope}에 등록된 ${def.label} 현황을 지역별 분포와 함께 정리했습니다. 주변 아파트 실거래가도 함께 확인하세요.`,
-    alternates: {
-      canonical: sp.region
-        ? `/amenity/${def.slug}?region=${sp.region}`
-        : sp.sido
-          ? `/amenity/${def.slug}?sido=${encodeURIComponent(sp.sido)}`
-          : `/amenity/${def.slug}`,
-    },
+    // 지역·페이지 파라미터 조합은 템플릿이 같은 근접중복이라 정본 하나로 접는다
+    // (시군구 250 × 카테고리 4 ≈ 1,000개 → 4개). 제목·설명은 스코프별로 유지한다.
+    alternates: { canonical: amenityListPath(def) },
   };
 }
 
@@ -53,7 +49,7 @@ export default async function AmenityListPage({ params, searchParams }: Params) 
 
   if (def.requiresSidoScope !== false && !sp.sido && !sp.region) {
     // 한글 sido는 location 헤더 인코딩 필수 (Node http 모듈이 non-ASCII 거부)
-    redirect(`/amenity/${category}?sido=${encodeURIComponent('서울')}`);
+    redirect(amenityListPath(def));
   }
 
   const effectiveSido = sp.sido ?? (sp.region ? sidoFromPrefix(sp.region.slice(0, 2)) : undefined);

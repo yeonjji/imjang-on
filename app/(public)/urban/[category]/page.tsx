@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { getSidoList, getSigunguByCode, sidoFromPrefix } from '@/lib/region';
-import { getUrbanCategoryDef, toUrbanCategoryView, URBAN_SLUGS, URBAN_SOURCE } from '@/lib/urban/category';
+import { getUrbanCategoryDef, toUrbanCategoryView, urbanListPath, URBAN_SLUGS, URBAN_SOURCE } from '@/lib/urban/category';
 import { getUrbanList, normalizePage } from '@/lib/urban/list';
 import { UrbanFilterPanel } from './_components/urban-filter-panel';
 import { UrbanMobileFilterSheet } from './_components/urban-mobile-filter-sheet';
@@ -35,13 +35,8 @@ export async function generateMetadata({ params, searchParams }: Params): Promis
   return {
     title: `${scope} ${def.label}`,
     description: `${scope}에 등록된 ${def.label} 현황을 지역별 분포와 함께 정리했습니다. 주변 아파트 실거래가도 함께 확인하세요.`,
-    alternates: {
-      canonical: sp.region
-        ? `/urban/${def.slug}?region=${sp.region}`
-        : sp.sido
-          ? `/urban/${def.slug}?sido=${encodeURIComponent(sp.sido)}`
-          : `/urban/${def.slug}`,
-    },
+    // amenity와 동일 — 지역 파라미터 조합을 정본 하나로 접는다.
+    alternates: { canonical: urbanListPath(def) },
   };
 }
 
@@ -52,7 +47,7 @@ export default async function UrbanListPage({ params, searchParams }: Params) {
   if (!def) notFound();
 
   if (def.requiresSidoScope !== false && !sp.sido && !sp.region) {
-    redirect(`/urban/${category}?sido=${encodeURIComponent('서울')}`);
+    redirect(urbanListPath(def));
   }
 
   const effectiveSido = sp.sido ?? (sp.region ? sidoFromPrefix(sp.region.slice(0, 2)) : undefined);

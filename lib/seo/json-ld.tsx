@@ -147,7 +147,9 @@ export function articleSchema(input: {
     url: input.url,
     datePublished: input.datePublished,
     image: input.image,
-    author: { '@type': 'Person', name: EDITORIAL.name, url: EDITORIAL.url },
+    // 본문은 언어모델 초안을 운영자가 검수해 게시한다(이용약관 제3조의2). 자연인이 집필했다고
+    // 단언하는 Person 대신 Organization으로 둔다 — 표시 바이라인(EDITORIAL.name)과 이름은 같게 유지.
+    author: { '@type': 'Organization', name: EDITORIAL.name, url: EDITORIAL.url },
     publisher: { '@type': 'Organization', name: '임장ON', url: SITE_URL },
   };
 }
@@ -168,7 +170,9 @@ export function guideArticleSchema(input: {
     description: input.description,
     url: input.url,
     datePublished: input.datePublished,
-    author: { '@type': 'Person', name: EDITORIAL.name, url: EDITORIAL.url },
+    // 본문은 언어모델 초안을 운영자가 검수해 게시한다(이용약관 제3조의2). 자연인이 집필했다고
+    // 단언하는 Person 대신 Organization으로 둔다 — 표시 바이라인(EDITORIAL.name)과 이름은 같게 유지.
+    author: { '@type': 'Organization', name: EDITORIAL.name, url: EDITORIAL.url },
     ...(input.dateModified ? { dateModified: input.dateModified } : {}),
     ...(input.image ? { image: input.image } : {}),
     publisher: { '@type': 'Organization', name: '임장ON', url: SITE_URL },

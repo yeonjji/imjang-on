@@ -139,6 +139,8 @@ export default async function ChildcareDetailPage({ params }: Params) {
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
             { name: '어린이집찾기', url: `${SITE_URL}/childcare` },
+            // URL에 박혀 있는 시군구 세그먼트를 계층 선언에도 넣는다(3단 평면 → 4단).
+            { name: regionDisplay.fullName, url: `${SITE_URL}/childcare/${sigunguCode}` },
             { name: item.name, url: `${SITE_URL}/childcare/${sigunguCode}/${id}` },
           ]),
           ...provenanceNodes({

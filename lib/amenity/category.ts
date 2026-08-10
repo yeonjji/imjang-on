@@ -105,6 +105,21 @@ export function getCategoryDef(slug: string): AmenityCategoryDef | null {
 }
 
 /**
+ * 목록의 **정본 경로**. `?region=`·`?sido=`·`?page=` 조합은 전부 이 하나로 접는다.
+ *
+ * 시도 스코프가 필요한 카테고리는 파라미터 없는 URL이 307 리다이렉트라 정본이 될 수 없다
+ * (정본은 200을 내는 URL이어야 한다) → 기본 랜딩인 `?sido=서울`이 정본이다.
+ * 스코프가 필요 없는 카테고리(전통시장)는 파라미터 없는 URL이 그대로 200이라 그것이 정본.
+ *
+ * canonical·사이트맵·리다이렉트 타깃이 같은 값을 쓰도록 여기 한 곳에서만 만든다.
+ */
+export function amenityListPath(def: AmenityCategoryDef): string {
+  return def.requiresSidoScope === false
+    ? `/amenity/${def.slug}`
+    : `/amenity/${def.slug}?sido=${encodeURIComponent('서울')}`;
+}
+
+/**
  * Client Component에 def를 넘길 때 사용하는 직렬화 가능한 뷰.
  * AmenityCategoryDef는 함수(getList 등)를 포함하므로 그대로 'use client' 경계를 넘길 수 없다.
  */

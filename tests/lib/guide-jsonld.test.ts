@@ -13,7 +13,8 @@ describe('guideArticleSchema', () => {
     expect(s['@type']).toBe('Article');
     expect(s.headline).toBe('실거래가 읽는 법');
     expect((s.publisher as { name: string }).name).toBe('임장ON');
-    expect((s.author as { '@type': string })['@type']).toBe('Person');
+    // 본문은 언어모델 초안을 운영자가 검수해 게시한다 → 자연인 집필을 단언하는 Person은 쓰지 않는다.
+    expect((s.author as { '@type': string })['@type']).toBe('Organization');
     expect((s.author as { name: string }).name).toBe(EDITORIAL.name);
   });
 });
