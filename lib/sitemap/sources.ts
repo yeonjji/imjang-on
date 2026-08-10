@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import type { Prisma } from '@prisma/client';
 import { SITE_URL } from '@/lib/site';
 import { getSigunguList } from '@/lib/region';
+import { PROPERTY_INDEXABLE_WHERE } from '@/lib/property';
 import { STATIC_ENTRIES } from './static-entries';
 import { isBoardPublic } from '@/lib/board/visibility';
 import { boardPath } from '@/lib/board/slug';
@@ -78,25 +79,19 @@ const core: SitemapSource = {
   page: async (offset, limit) => (await coreEntries()).slice(offset, offset + limit),
 };
 
-// 색인 위생: 상세는 narrative.fired≥3(SALE 기반 trend/peer 필수)일 때만 index되므로,
-// 매매 이력이 전혀 없는(전세·월세만) 매물은 항상 noindex다. saleLastAt not null(매매 ≥1건)을
-// 함께 요구해 그런 매물을 사이트맵에서 빼, 'Submitted URL marked noindex' 경고·크롤 예산 낭비를
-// 줄인다(제거 대상은 모두 noindex라 false-negative 없음). count·findMany 동일 조건으로 샤드 정합. (AdSense P2-A)
-const PROPERTY_INDEXABLE: Prisma.PropertyWhereInput = {
-  txCount12m: { gt: 0 },
-  saleLastAt: { not: null },
-};
-
-// property 상세 색인 게이트(fired≥3)는 nearby(입지)·지역통계(peer) 의존이라 Property 컬럼만으로
-// hard-0 부분집합을 만들 수 없다. 이번 마감은 noindex 0건 우선 → property 상세를 sitemap에서 제외한다
-// (허브는 core에 유지). SOURCE_ORDER 슬롯·findMany는 보존해, 향후 사전계산 indexable 플래그로
-// 복원 시 count를 prisma.property.count({ where: PROPERTY_INDEXABLE })로 되돌리면 된다.
+// 매물 사이트맵 복원(2026-08-10). 커밋 29e6fdb가 'Submitted URL marked noindex' 경고를 없애려
+// count를 0으로 만든 뒤로, 사이트맵에 부동산 상세가 한 건도 없었다 — 병원 58.5% + 어린이집 31.4%가
+// 90%를 차지해 사이트가 스스로 '의료·보육 디렉터리'라고 선언하는 상태였다.
+//
+// 조건을 페이지 robots와 **같은 함수**(PROPERTY_INDEXABLE_WHERE ↔ isPropertyIndexable)에서 읽어
+// 차집합을 원천 차단한다. 종전 게이트(fired≥3)가 nearby·지역통계 의존이라 Property 컬럼만으로
+// 재현할 수 없었던 것이 count 0의 실제 이유였고, 새 기준은 Property 컬럼만 쓴다.
 const property = dbSource({
   key: 'property',
-  count: async () => 0,
+  count: () => prisma.property.count({ where: PROPERTY_INDEXABLE_WHERE }),
   findMany: (skip, take) =>
     prisma.property.findMany({
-      where: PROPERTY_INDEXABLE,
+      where: PROPERTY_INDEXABLE_WHERE,
       select: { id: true, propertyType: true, updatedAt: true },
       orderBy: { id: 'asc' },
       skip,
@@ -168,9 +163,12 @@ const CHILDCARE_SITEMAP_INDEXABLE: Prisma.ChildcareWhereInput = {
   cctvCount: { gte: 1 },
 };
 
+// D1(2026-08-10): 어린이집 상세는 조회 기능으로 내려 공개 URL에서 제거한다. 라우트 삭제보다
+// 사이트맵 제외가 **먼저**여야 한다 — 순서를 뒤집으면 곧 308이 될 URL을 계속 제출하게 된다.
+// SOURCE_ORDER 슬롯·findMany·WHERE는 보존한다(pharmacy가 같은 형식의 선례).
 const childcare = dbSource({
   key: 'childcare',
-  count: () => prisma.childcare.count({ where: CHILDCARE_SITEMAP_INDEXABLE }),
+  count: async () => 0,
   findMany: (skip, take) =>
     prisma.childcare.findMany({
       where: CHILDCARE_SITEMAP_INDEXABLE,
@@ -219,9 +217,10 @@ const HOSPITAL_SITEMAP_INDEXABLE: Prisma.HospitalWhereInput = {
   depts: { some: { specialistCount: { gt: 0 } } },
 };
 
+// D1(2026-08-10): 병원 상세도 동일. 근거는 위 childcare 주석 참고.
 const hospital = dbSource({
   key: 'hospital',
-  count: () => prisma.hospital.count({ where: HOSPITAL_SITEMAP_INDEXABLE }),
+  count: async () => 0,
   findMany: (skip, take) =>
     prisma.hospital.findMany({
       where: HOSPITAL_SITEMAP_INDEXABLE,
@@ -315,7 +314,6 @@ const guide = dbSource({
 /** 샤드 id 부여 순서(고정). 변경 시 기존 인덱스 매핑이 바뀌므로 끝에만 추가할 것. */
 export const SOURCE_ORDER: SitemapSource[] = [
   core,
-  property,
   subscription,
   school,
   childcare,
@@ -326,6 +324,10 @@ export const SOURCE_ORDER: SitemapSource[] = [
   ...(isBoardPublic() ? [post] : []),
   jeonseGuarantee, // 끝에 추가 — 기존 샤드 인덱스(core..post) 불변
   guide,           // 끝에 추가 — 기존 샤드 인덱스 불변
+  // property는 앞이 아니라 **끝**이다(2026-08-10). count가 ETL로 매일 움직이는 유일한 소스라,
+  // 앞에 두면 그 변동마다 뒤 소스의 샤드 번호가 통째로 재배치돼 GSC 제출분이 매번 어긋난다.
+  // 이번에 병원·어린이집 제외로 어차피 전체 재번호가 일어나므로 함께 옮긴다.
+  property,
 ];
 
 export const SOURCE_MAP: Record<string, SitemapSource> = Object.fromEntries(
