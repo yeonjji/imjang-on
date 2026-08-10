@@ -9,7 +9,7 @@ import {
   getSameFloorComparison,
 } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
-import { propertyAddress, metaRegionName } from '@/lib/property';
+import { propertyAddress, metaRegionName, isPropertyIndexable } from '@/lib/property';
 import type { getNearbyInfra } from '@/lib/amenity/nearby';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
@@ -42,7 +42,7 @@ import {
   loadAptInsight,
 } from '@/lib/insights/apt-loader';
 import { mapImageUrl } from '@/lib/seo/static-map';
-import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
+import { robotsFor } from '@/lib/seo/indexable';
 import { detailTitleLocality } from '@/lib/region';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
@@ -68,7 +68,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // ID 공간 공유 → 유형 필터 필수. 없으면 /officetel/{id}가 타 유형 메타를 방출한다.
   if (!p || p.propertyType !== PropertyType.OFFICETEL) return {};
   const { narrative } = await loadAptInsight(BigInt(id));
-  const indexable = isNarrativeIndexable(narrative);
+  // 사이트맵 등재 조건과 **같은 판정**을 쓴다(lib/property.ts). 종전에는 서사 발화 수로
+  // 판정해 Property 컬럼만으로 재현할 수 없었고, 그래서 사이트맵이 매물을 통째로 뺐다.
+  const indexable = isPropertyIndexable(p);
   const addr = propertyAddress(p, p.region);
   const jibunConfirmed = addr.street !== null ? await cachedHasSingleJibun(BigInt(id)) : false;
   return {

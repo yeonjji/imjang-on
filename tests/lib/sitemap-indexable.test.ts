@@ -1,4 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import {
+  isPropertyIndexable, PROPERTY_INDEXABLE_WHERE,
+  PROPERTY_MIN_SALE_12M, PROPERTY_MIN_TX_TOTAL,
+} from '@/lib/property';
 import { buildChildcareNarrative } from '@/lib/insights/childcare';
 import { buildHospitalNarrative } from '@/lib/insights/hospital';
 
@@ -26,5 +30,36 @@ describe('sitemap 프록시 ⊆ 색인 게이트', () => {
     expect(n).not.toBeNull();
     expect(n!.fired.length).toBeGreaterThanOrEqual(3);
     expect(n!.fired).toEqual(expect.arrayContaining(['intro', 'depts', 'doctors']));
+  });
+});
+
+describe('매물 색인 게이트 — 사이트맵 WHERE ↔ 행 판정 정합 (D2)', () => {
+  // 사이트맵 등재 조건과 페이지 robots가 갈라지면 '제출됐지만 noindex' 경고가 난다.
+  // 그 경고를 없애려던 것이 29e6fdb에서 사이트맵의 매물을 0으로 만든 원인이었다.
+  const row = (o: Partial<Parameters<typeof isPropertyIndexable>[0]>) => ({
+    redirectToId: null, saleCount12m: 0, txCountTotal: 0, ...o,
+  });
+
+  it('12개월 매매가 임계 이상이면 색인', () => {
+    expect(isPropertyIndexable(row({ saleCount12m: PROPERTY_MIN_SALE_12M }))).toBe(true);
+    expect(isPropertyIndexable(row({ saleCount12m: PROPERTY_MIN_SALE_12M - 1 }))).toBe(false);
+  });
+
+  it('전체기간 거래가 임계 이상이면 12개월이 0이어도 색인 — 상세의 거래표·층프리미엄은 전체기간 기준', () => {
+    expect(isPropertyIndexable(row({ txCountTotal: PROPERTY_MIN_TX_TOTAL }))).toBe(true);
+    expect(isPropertyIndexable(row({ txCountTotal: PROPERTY_MIN_TX_TOTAL - 1 }))).toBe(false);
+  });
+
+  it('redirect된 매물은 자체가 301이므로 어떤 조건이어도 제외', () => {
+    expect(isPropertyIndexable(row({ redirectToId: 1n, saleCount12m: 999, txCountTotal: 999 }))).toBe(false);
+  });
+
+  it('WHERE와 행 판정이 같은 상수를 읽는다', () => {
+    // 두 표현이 갈라지지 않도록 상수 출처를 하나로 묶어 둔 것을 고정한다.
+    expect(PROPERTY_INDEXABLE_WHERE.redirectToId).toBeNull();
+    expect(PROPERTY_INDEXABLE_WHERE.OR).toEqual([
+      { saleCount12m: { gte: PROPERTY_MIN_SALE_12M } },
+      { txCountTotal: { gte: PROPERTY_MIN_TX_TOTAL } },
+    ]);
   });
 });

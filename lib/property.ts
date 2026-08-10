@@ -4,6 +4,43 @@ import type { Prisma, Property, Region } from '@prisma/client';
 import { normalizeName } from '@/lib/slug';
 import { sidoFullName } from '@/lib/region';
 
+/**
+ * 매물 상세를 공개·색인할 기준. **사이트맵 등재 조건과 페이지 robots가 이 하나만 읽는다** —
+ * 둘이 갈라지면 '제출됐지만 noindex' 경고가 나고, 그 경고를 없애려던 것이 커밋 29e6fdb에서
+ * 사이트맵의 매물을 0으로 만들어 "부동산 사이트인데 사이트맵에 부동산이 없는" 상태를 낳았다.
+ *
+ * 두 항의 뜻이 다르다.
+ * - `saleCount12m >= 5` — 최근 1년 시계열이 성립해 추세·또래 비교가 산출된다.
+ * - `txCountTotal >= 30` — 전체기간이 두껍다. 상세의 거래표·층프리미엄(하한 10건)·평형별
+ *   비교는 전부 전체기간 기준이라, 12개월이 조용해도 이 값이 크면 페이지는 실제로 두껍다.
+ *
+ * `txCountTotal`은 **단조 증가**라 한 번 넘으면 영구 생존이다. 2026-08-10 실측으로 생존
+ * 35,006 중 32,242(92%)가 이 항으로 살아, 롤링 값 경계를 넘나드는 플래핑 대상은 2,764개뿐이다.
+ * 게다가 `saleCount12m >= 5`면 `txCount12m >= 5 > 0`이므로 플래핑으로 빠져도 `/list`에서
+ * 보이는 쪽으로 떨어진다(사라지는 쪽이 아니다) → 사전계산 컬럼·히스테리시스가 필요 없다.
+ */
+export const PROPERTY_MIN_SALE_12M = 5;
+export const PROPERTY_MIN_TX_TOTAL = 30;
+
+/** 위 기준의 Prisma 조건. redirect된 매물은 자체가 301이라 제외한다. */
+export const PROPERTY_INDEXABLE_WHERE: Prisma.PropertyWhereInput = {
+  redirectToId: null,
+  OR: [
+    { saleCount12m: { gte: PROPERTY_MIN_SALE_12M } },
+    { txCountTotal: { gte: PROPERTY_MIN_TX_TOTAL } },
+  ],
+};
+
+/** 위 기준의 행 단위 판정. `PROPERTY_INDEXABLE_WHERE`와 반드시 같은 뜻이어야 한다. */
+export function isPropertyIndexable(p: {
+  redirectToId: bigint | null;
+  saleCount12m: number;
+  txCountTotal: number;
+}): boolean {
+  if (p.redirectToId !== null) return false;
+  return p.saleCount12m >= PROPERTY_MIN_SALE_12M || p.txCountTotal >= PROPERTY_MIN_TX_TOTAL;
+}
+
 export type PropertyTypeSlug = 'apt' | 'officetel' | 'villa';
 
 export function slugToType(slug: PropertyTypeSlug): PropertyType[] {
