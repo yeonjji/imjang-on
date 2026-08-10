@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { PropertyType, DealType } from '@prisma/client';
+import { PropertyType, DealType, GuideCategory, PostStatus } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { updatePropertyAggregates } from '@/scripts/ingest/aggregator';
 import { assertLocalDatabase } from './assert-local-db';
@@ -276,6 +276,8 @@ async function main() {
   await seedParking();
   await seedSubway();
   await seedLoans();
+  await seedEvCharger();
+  await seedGuides();
 
   console.log('e2e seed done. propertyId =', String(p.id), 'officetelId =', String(offi.id), 'villaId =', String(villa.id));
   await prisma.$disconnect();
@@ -310,6 +312,47 @@ async function seedParking() {
        NOW())
     ON CONFLICT ("sourceId") DO NOTHING;
   `;
+}
+
+// 가이드 데이터 블록 e2e용 — charger-mix 블록이 렌더되려면 EvCharger 행이 필요하다.
+async function seedEvCharger() {
+  await prisma.evCharger.deleteMany({ where: { sourceId: 'UT-E2E-CHG' } });
+  await prisma.evCharger.create({
+    data: { sourceId: 'UT-E2E-CHG', name: 'e2e 충전소', address: '서울특별시 마포구', chargeSpeed: '급속', chargerCount: 2 },
+  });
+}
+
+// 가이드 상세 e2e용 — 표식 있는 가이드(ut-guide-with-block)와 표식 없는 가이드(ut-guide-plain, 회귀 가드).
+async function seedGuides() {
+  await prisma.guide.deleteMany({ where: { slug: { in: ['ut-guide-with-block', 'ut-guide-plain'] } } });
+  await prisma.guide.createMany({
+    data: [
+      {
+        slug: 'ut-guide-with-block',
+        title: '유닛테스트 블록 가이드',
+        summary: '데이터 블록이 들어간 가이드',
+        body: '## 핵심 요약\n- 요약\n\n## 충전 방식\n설명 문장입니다.\n\n[[data:charger-mix]]\n\n## 마무리\n끝.',
+        category: GuideCategory.LIFE,
+        status: PostStatus.PUBLISHED,
+        sourceName: '유닛테스트', sourceUrl: 'https://example.com',
+        sourceDate: new Date('2026-01-01'), sourceExcerpt: '테스트',
+        dedupeKey: 'ut-guide-with-block',
+        publishedAt: new Date('2026-06-29'),
+      },
+      {
+        slug: 'ut-guide-plain',
+        title: '유닛테스트 일반 가이드',
+        summary: '표식이 없는 가이드',
+        body: '## 핵심 요약\n- 요약\n\n## 본문\n설명만 있습니다.',
+        category: GuideCategory.LIFE,
+        status: PostStatus.PUBLISHED,
+        sourceName: '유닛테스트', sourceUrl: 'https://example.com',
+        sourceDate: new Date('2026-01-01'), sourceExcerpt: '테스트',
+        dedupeKey: 'ut-guide-plain',
+        publishedAt: new Date('2026-06-29'),
+      },
+    ],
+  });
 }
 
 main().catch((e) => {
