@@ -41,23 +41,31 @@ afterAll(async () => {
 });
 
 describe('guide 데이터 블록 집계', () => {
-  it('병원 종별: 개수와 평균 의사수', async () => {
-    const row = (await getHospitalByType()).find((r) => r.typeName === '유닛테스트종합병원');
+  it('병원 종별: 개수와 평균 의사수 + 기준일', async () => {
+    const result = await getHospitalByType();
+    const row = result.rows.find((r) => r.typeName === '유닛테스트종합병원');
     expect(row).toMatchObject({ count: 2, avgDoctors: 75 });
+    expect(result.asOf).toBeInstanceOf(Date);
   });
 
-  it('어린이집 유형별: 개수와 평균 정원·현원', async () => {
-    const row = (await getChildcareByType()).find((r) => r.crType === '유닛테스트유형');
+  it('어린이집 유형별: 개수와 평균 정원·현원 + 기준일', async () => {
+    const result = await getChildcareByType();
+    const row = result.rows.find((r) => r.crType === '유닛테스트유형');
     expect(row).toMatchObject({ count: 2, avgCapacity: 75, avgCurrent: 50 });
+    expect(result.asOf).toBeInstanceOf(Date);
   });
 
-  it('어린이집 대기자: 지역별 합계와 시설 수', async () => {
-    const row = (await getChildcareWaitlist()).find((r) => r.sigungu === '유닛구');
+  it('어린이집 대기자: 지역별 합계와 시설 수 + 기준일', async () => {
+    const result = await getChildcareWaitlist();
+    const row = result.rows.find((r) => r.sigungu === '유닛구');
     expect(row).toMatchObject({ sido: '서울특별시', waitTotal: 80000, facilities: 2 });
+    expect(result.asOf).toBeInstanceOf(Date);
   });
 
-  it('충전소: 속도별 지점 수와 충전기 수', async () => {
-    const row = (await getChargerMix()).find((r) => r.chargeSpeed === '유닛급속');
+  it('충전소: 속도별 지점 수와 충전기 수 + 기준일', async () => {
+    const result = await getChargerMix();
+    const row = result.rows.find((r) => r.chargeSpeed === '유닛급속');
     expect(row).toMatchObject({ stations: 2, chargers: 5 });
+    expect(result.asOf).toBeInstanceOf(Date);
   });
 });
