@@ -18,6 +18,26 @@ async function sigunguCount(kind: MedicalKind, sigunguCode: string): Promise<num
   return prisma.pharmacy.count({ where: { sigunguCode } });
 }
 
+/**
+ * 시군구 지역명. **Region 조인은 실무상 항상 실패한다** — Hospital·Pharmacy의 sigunguCode는
+ * 심평원 자체 코드 6자리인데(2026-08-10 실측: 두 테이블 전량 length=6, 비숫자 0건)
+ * Region.sigunguCode는 법정동 기준 5자리다. 그래서 해당 테이블 자신의 sido/sigungu로 폴백한다.
+ *
+ * 폴백이 없으면 시군구 스코프 착지점이 전부 "해당 지역 병원·의원은 N곳입니다"로 렌더된다.
+ * 패턴 출처: `app/(public)/childcare/[sigunguCode]/page.tsx`의 `resolveRegionDisplay`.
+ */
+async function resolveScopeLabel(kind: MedicalKind, sigunguCode: string): Promise<string> {
+  const region = await prisma.region
+    .findFirst({ where: { sigunguCode, level: 2, isAbolished: false }, select: { fullName: true } })
+    .catch(() => null);
+  if (region?.fullName) return region.fullName;
+
+  const row = kind === 'hospital'
+    ? await prisma.hospital.findFirst({ where: { sigunguCode }, select: { sido: true, sigungu: true } })
+    : await prisma.pharmacy.findFirst({ where: { sigunguCode }, select: { sido: true, sigungu: true } });
+  return [row?.sido, row?.sigungu].filter(Boolean).join(' ') || '해당 지역';
+}
+
 export async function getMedicalRegionBreakdown(
   kind: MedicalKind,
   categoryLabel: string,
@@ -27,13 +47,9 @@ export async function getMedicalRegionBreakdown(
     if (region) {
       const total = await sigunguCount(kind, region);
       if (total <= 0) return null;
-      const reg = await prisma.region.findFirst({
-        where: { sigunguCode: region, level: 2, isAbolished: false },
-        select: { fullName: true },
-      });
       return {
         kind: 'medical', categoryLabel,
-        scopeLabel: reg?.fullName ?? '해당 지역',
+        scopeLabel: await resolveScopeLabel(kind, region),
         scopeLevel: 'sigungu', total, topRegions: [],
       };
     }

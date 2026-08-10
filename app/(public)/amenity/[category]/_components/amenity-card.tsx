@@ -16,6 +16,11 @@ export function AmenityCard({ item, def }: { item: AmenityItem; def: AmenityCate
             {summary && <Badge tone="blue">{summary}</Badge>}
           </div>
           <p className="mt-1.5 line-clamp-2 text-sm text-[var(--color-muted)]">{item.address}</p>
+          {/* 전통시장만 상세(detailFields)에 원문 marketType이 따로 있었다. 배지의 '분류'는
+              상설/정기로 접힌 값이라 "상설+5일장" 같은 병기가 사라진다 → 원문을 카드에 남긴다. */}
+          {def.slug === 'market' && item.marketType && item.marketType !== summary && (
+            <p className="mt-0.5 truncate text-xs text-[var(--color-muted)]">{item.marketType}</p>
+          )}
         </div>
         <span className="shrink-0 text-xs text-[var(--color-muted)]">상세 →</span>
       </article>

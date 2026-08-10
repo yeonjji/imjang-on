@@ -108,13 +108,20 @@ describe('parkingDef.getList filters', () => {
 });
 
 describe('parkingDef.inferRowSummary', () => {
-  it('returns 구획수 + 요금 for paid', async () => {
+  // 상세 라우트 제거 후 목록이 유일한 열람 지점이 되므로 기본요금·평일 운영시간을 요약에 편입했다.
+  it('returns 구획수 + 요금 + 기본요금 for paid', async () => {
     const r = await parkingDef.getList({ sido: '서울', sub: '공영', q: '유닛테스트' }, 1);
-    expect(parkingDef.inferRowSummary(r.rows[0])).toBe('120면 · 유료');
+    expect(parkingDef.inferRowSummary(r.rows[0])).toBe('120면 · 유료 · 30분 500원');
   });
-  it('returns 구획수 + 무료 for free', async () => {
+  it('returns 구획수 + 무료 for free (무료는 기본요금 항목이 없다)', async () => {
     const r = await parkingDef.getList({ sido: '서울', charge: '무료', q: '유닛테스트' }, 1);
     expect(parkingDef.inferRowSummary(r.rows[0])).toBe('20면 · 무료');
+  });
+  it('24시간이 아니면 평일 운영시간을 덧붙인다', async () => {
+    const r = await parkingDef.getList({ sido: '서울', sub: '공영', q: '유닛테스트' }, 1);
+    const base = r.rows[0];
+    const item = { ...base, raw: { ...base.raw, weekdayOpenHhmm: '09:00', weekdayCloseHhmm: '18:00' } };
+    expect(parkingDef.inferRowSummary(item)).toBe('120면 · 유료 · 30분 500원 · 평일 09:00~18:00');
   });
 });
 

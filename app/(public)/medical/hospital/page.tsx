@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/medical/hospital' },
 };
 
-interface Props { searchParams: Promise<{ region?: string; type?: string; page?: string }>; }
+interface Props { searchParams: Promise<{ region?: string; type?: string; q?: string; page?: string }>; }
 
 function pageNums(current: number, total: number): number[] {
   const lo = Math.max(1, current - 2);
@@ -34,7 +34,7 @@ export default async function HospitalListPage({ searchParams }: Props) {
   const typeCode = sp.type;
 
   const [{ rows, total, totalPages }, regions, typeCodes, summary] = await Promise.all([
-    getHospitalList({ sigunguCode, typeCode }, page),
+    getHospitalList({ sigunguCode, typeCode, q: sp.q }, page),
     getHospitalRegions(),
     getHospitalTypeCodes(),
     getMedicalRegionBreakdown('hospital', '병원·의원', sigunguCode).catch(() => null),

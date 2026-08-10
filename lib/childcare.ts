@@ -81,9 +81,12 @@ export async function getChildcareList(f: ChildcareFilter, page = 1) {
       orderBy: [{ name: 'asc' }],
       skip: (page - 1) * PER_PAGE,
       take: PER_PAGE,
+      // 상세 페이지가 사라지면 목록이 유일한 열람 지점이 되므로, 상세에서 판단에 쓰이던
+      // 필드를 함께 싣는다. 전부 Childcare 단일 테이블 컬럼이라 조인 없이 select만 넓힌다.
       select: {
         id: true, name: true, address: true, sigunguCode: true, sigungu: true,
         crType: true, status: true, capacity: true, currentCount: true,
+        waitCntTot: true, cctvCount: true, vehicleOp: true, emRoleTeacher: true, tel: true,
       },
     }),
     prisma.childcare.count({ where }),
