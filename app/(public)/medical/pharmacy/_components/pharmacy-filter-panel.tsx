@@ -49,6 +49,17 @@ export function PharmacyFilterPanel({
   return (
     <div className="flex flex-col gap-6">
       <section>
+        <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">약국 이름</h3>
+        <input
+          defaultValue={p.get('q') ?? ''}
+          onBlur={(e) => update({ q: e.target.value || null })}
+          onKeyDown={(e) => { if (e.key === 'Enter') update({ q: (e.target as HTMLInputElement).value || null }); }}
+          placeholder="예) 온누리"
+          className="mt-2 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-soft)] px-3 py-2 text-sm"
+        />
+      </section>
+
+      <section>
         <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">지역</h3>
         <div className="mt-2 flex flex-col gap-2">
           <FilterSelect

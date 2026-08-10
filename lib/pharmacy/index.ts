@@ -16,12 +16,16 @@ export async function getPharmacyLatLng(id: bigint): Promise<{ lat: number; lng:
 
 export interface PharmacyListFilter {
   sigunguCode?: string;
+  /** 시설명 부분일치. 근거는 `lib/hospital/index.ts`의 같은 필드 주석 참고. */
+  q?: string;
 }
 
 export async function getPharmacyList(filter: PharmacyListFilter, page: number, perPage = 20) {
+  const q = filter.q?.trim();
   const where = {
     sigunguCode: { not: null },
     ...(filter.sigunguCode && { sigunguCode: filter.sigunguCode }),
+    ...(q && { name: { contains: q } }),
   };
   const [rows, total] = await Promise.all([
     prisma.pharmacy.findMany({

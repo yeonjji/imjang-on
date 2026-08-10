@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/medical/pharmacy' },
 };
 
-interface Props { searchParams: Promise<{ region?: string; page?: string }>; }
+interface Props { searchParams: Promise<{ region?: string; q?: string; page?: string }>; }
 
 function pageNums(current: number, total: number): number[] {
   const lo = Math.max(1, current - 2);
@@ -33,7 +33,7 @@ export default async function PharmacyListPage({ searchParams }: Props) {
   const sigunguCode = sp.region;
 
   const [{ rows, total, totalPages }, regions, summary] = await Promise.all([
-    getPharmacyList({ sigunguCode }, page),
+    getPharmacyList({ sigunguCode, q: sp.q }, page),
     getPharmacyRegions(),
     getMedicalRegionBreakdown('pharmacy', '약국', sigunguCode).catch(() => null),
   ]);

@@ -7,6 +7,8 @@ import type {
   UrbanListResult,
 } from '@/lib/urban/category';
 import { fullSidoName, resolveAddrPrefix, URBAN_PER_PAGE as PER_PAGE } from '@/lib/urban/_shared';
+import { normalizeFees } from '@/lib/urban/parking-fees';
+import { isOpen24 } from '@/lib/urban/parking-hours';
 
 export type ParkingRaw = NonNullable<Awaited<ReturnType<typeof prisma.parking.findFirst>>>;
 
@@ -110,6 +112,13 @@ export const parkingDef: UrbanCategoryDef<ParkingRaw> = {
     const parts: string[] = [];
     if (r.prkcmprt != null) parts.push(`${r.prkcmprt}면`);
     if (r.chargeInfo) parts.push(r.chargeInfo);
+    // 상세가 사라지면 요금·운영시간을 볼 곳이 없어진다. 주차장 데이터의 효용이 사실상
+    // 이 두 값에 있으므로 목록 요약에 편입한다(나머지 요금 항목·요일별 시간은 손실 수용).
+    const basic = normalizeFees(r).items.find((f) => f.label === '기본요금');
+    if (basic) parts.push(basic.value);
+    if (r.weekdayOpenHhmm && r.weekdayCloseHhmm && !isOpen24(r.weekdayOpenHhmm, r.weekdayCloseHhmm)) {
+      parts.push(`평일 ${r.weekdayOpenHhmm}~${r.weekdayCloseHhmm}`);
+    }
     return parts.length > 0 ? parts.join(' · ') : null;
   },
   detailFields: (item) => {
