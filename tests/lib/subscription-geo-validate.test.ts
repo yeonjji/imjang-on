@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseAddressRegion, regionMatches, geocodeCandidates } from '@/lib/subscription/geo-validate';
+import { SIDO_NAMES, canonicalSido } from '@/lib/region';
 
 describe('parseAddressRegion', () => {
   it('시도·시군구를 접미사로 찾는다', () => {
@@ -109,6 +110,26 @@ describe('regionMatches', () => {
     expect(regionMatches({ sido: '서울특별시', sigungu: '중구' }, { region1: '서울', region2: '영종구' })).toBe(false);
     // 인천 중구 + 연수구는 거부 (연수구는 옛 서구, 중구 아님)
     expect(regionMatches({ sido: '인천광역시', sigungu: '중구' }, { region1: '인천', region2: '연수구' })).toBe(false);
+  });
+
+  it('인천 동구도 재편 예외 적용 — 동구 + 제물포구 통과', () => {
+    // Finding H: 동구도 재편 예외에 포함
+    expect(regionMatches({ sido: '인천광역시', sigungu: '동구' }, { region1: '인천', region2: '제물포구' })).toBe(true);
+    // 하지만 다른 신 구(검단구는 서구 그룹)는 거부
+    expect(regionMatches({ sido: '인천광역시', sigungu: '동구' }, { region1: '인천', region2: '검단구' })).toBe(false);
+  });
+
+  it('전남광주 통합(2026-07-01): 축약형 표기도 정규화된다', () => {
+    // Finding G: 전남광주 축약형도 정규화되어야 함
+    expect(regionMatches({ sido: '전남광주', sigungu: '남구' }, { region1: '전남광주', region2: '남구' })).toBe(true);
+    expect(regionMatches({ sido: '전남광주', sigungu: '남구' }, { region1: '전남광주통합특별시', region2: '남구' })).toBe(true);
+    expect(regionMatches({ sido: '전남광주통합특별시', sigungu: '남구' }, { region1: '전남광주', region2: '남구' })).toBe(true);
+  });
+
+  it('SIDO_NAMES의 모든 표기가 정규화된다 — regionMatches가 이 불변식에 기댄다', () => {
+    for (const n of SIDO_NAMES) {
+      expect(canonicalSido(n), `canonicalSido should normalize "${n}"`).not.toBeNull();
+    }
   });
 });
 
