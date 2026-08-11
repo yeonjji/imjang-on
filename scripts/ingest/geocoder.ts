@@ -1,5 +1,6 @@
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { parseAddressRegion } from '@/lib/subscription/geo-validate';
 
 export interface Coord {
   lat: number;
@@ -87,13 +88,14 @@ export async function geocodeKeyword(query: string): Promise<Coord | null> {
     };
     const doc = data.documents?.[0];
     if (!doc) { keywordCache.set(query, null); return null; }
-    // 키워드검색 응답에는 region_*depth_name이 없을 수 있어 address_name을 쪼개 채운다.
-    const parts = (doc.address_name ?? '').split(/\s+/);
+    // 키워드검색 응답에는 region_*depth_name이 없다. address_name을 위치로 쪼개면
+    // 일반구(수원시 영통구)의 구가 잘려 나가고, 그 좌표가 검증을 통과해 버린다.
+    const parsed = parseAddressRegion(doc.address_name ?? '');
     const coord: Coord = {
       lat: Number(doc.y),
       lng: Number(doc.x),
-      region1: doc.region_1depth_name ?? parts[0] ?? null,
-      region2: doc.region_2depth_name ?? (parts[1] ?? null),
+      region1: doc.region_1depth_name ?? (parsed.sido || null),
+      region2: doc.region_2depth_name ?? parsed.sigungu,
     };
     keywordCache.set(query, coord);
     return coord;
