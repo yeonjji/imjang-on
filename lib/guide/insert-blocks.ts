@@ -14,7 +14,10 @@ export interface GuideBlockPlacement {
 
 /**
  * 블록이 증명하는 주장이 실제로 어느 소제목 아래 있는지 운영 본문을 확인해 확정했다(2026-08-10).
- * 가벼운 블록 4종 중 3종만 여기 있다 — 무거운 블록 5종은 G-2에서 구현된 뒤에 추가한다.
+ *
+ * `floor-premium`은 구현돼 있지만 여기 없다. 들어갈 자리인 `realestate-read-transaction-price`에
+ * `price-trend-24m`이 이미 가고, 그 편 본문이 2,094자라 표 두 개를 받치지 못한다. 층을 다루는
+ * 가이드가 생기거나 그 편 본문이 늘어난 뒤에 넣는다.
  *
  * `childcare-waitlist`(→ `childcare-admission-waiting-process`)는 보류한다. 이 블록은 지역명을
  * 그대로 노출하는데 Childcare.sigungu가 2026-07-01 인천 구 재편을 반영하지 않아 상위 10곳에
@@ -36,6 +39,26 @@ export const GUIDE_BLOCK_PLACEMENTS: readonly GuideBlockPlacement[] = [
     dedupeKey: 'life-ev-charger-access',
     blockKey: 'charger-mix',
     anchorHeading: '## 완속·급속 충전 방식, 무엇이 다를까?',
+  },
+  {
+    dedupeKey: 'realestate-read-transaction-price',
+    blockKey: 'price-trend-24m',
+    anchorHeading: '## 실거래가를 제대로 읽는 방법',
+  },
+  {
+    dedupeKey: 'realestate-area-pyeong-explained',
+    blockKey: 'area-price',
+    anchorHeading: '## ㎡와 평, 어떻게 계산할까?',
+  },
+  {
+    dedupeKey: 'life-subway-access',
+    blockKey: 'subway-premium',
+    anchorHeading: '## 역세권 판단 기준: 도보 거리, 환승, 노선 다양성',
+  },
+  {
+    dedupeKey: 'finance-ltv-dsr-mortgage-regulation',
+    blockKey: 'ltv-by-region',
+    anchorHeading: '## 주택담보대출 한도는 어떻게 정해지나요?',
   },
 ];
 
