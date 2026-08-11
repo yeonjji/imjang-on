@@ -85,6 +85,31 @@ describe('regionMatches', () => {
   it('한 글자 접두사는 우연 일치라 인정하지 않는다', () => {
     expect(regionMatches({ sido: '서', sigungu: null }, { region1: '서울', region2: null })).toBe(false);
   });
+
+  it('축약형·풀네임 시도 조합도 통과 — 카카오는 축약형을 주고 공고는 풀네임을 쓸 수 있다', () => {
+    // Finding E: 충청·전라·경상 도의 축약형(충북·전북·경북·경남)은 prefix-startsWith 안 됨
+    expect(regionMatches({ sido: '충청북도', sigungu: '옥천군' }, { region1: '충북', region2: '옥천군' })).toBe(true);
+    expect(regionMatches({ sido: '충청남도', sigungu: '아산시' }, { region1: '충남', region2: '아산시' })).toBe(true);
+    expect(regionMatches({ sido: '전라북도', sigungu: '전주시' }, { region1: '전북', region2: '전주시' })).toBe(true);
+    expect(regionMatches({ sido: '전라남도', sigungu: '순천시' }, { region1: '전남', region2: '순천시' })).toBe(true);
+    expect(regionMatches({ sido: '경상북도', sigungu: '포항시' }, { region1: '경북', region2: '포항시' })).toBe(true);
+    expect(regionMatches({ sido: '경상남도', sigungu: '창원시' }, { region1: '경남', region2: '창원시' })).toBe(true);
+  });
+
+  it('인천 구 재편(2026-07-01): 옛 구명 주소 + 신 구명 좌표 통과', () => {
+    // Finding F: 인천의 중구·서구·동구는 신 구들로 나뉨. 공고는 옛 이름, 카카오는 신 이름.
+    expect(regionMatches({ sido: '인천광역시', sigungu: '중구' }, { region1: '인천', region2: '영종구' })).toBe(true);
+    expect(regionMatches({ sido: '인천광역시', sigungu: '중구' }, { region1: '인천', region2: '제물포구' })).toBe(true);
+    expect(regionMatches({ sido: '인천광역시', sigungu: '서구' }, { region1: '인천', region2: '검단구' })).toBe(true);
+    expect(regionMatches({ sido: '인천광역시', sigungu: '서구' }, { region1: '인천', region2: '서해구' })).toBe(true);
+  });
+
+  it('인천 재편은 인천에만 적용 — 다른 도시는 여전히 거부', () => {
+    // 서울 중구 + 영종구는 거부 (영종구는 인천에만 있음)
+    expect(regionMatches({ sido: '서울특별시', sigungu: '중구' }, { region1: '서울', region2: '영종구' })).toBe(false);
+    // 인천 중구 + 연수구는 거부 (연수구는 옛 서구, 중구 아님)
+    expect(regionMatches({ sido: '인천광역시', sigungu: '중구' }, { region1: '인천', region2: '연수구' })).toBe(false);
+  });
 });
 
 describe('geocodeCandidates', () => {

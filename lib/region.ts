@@ -83,6 +83,15 @@ export function sidoFullName(sido: string): string {
   return SIDO_LIST.find((s) => s.sido === sido)?.fullName ?? sido;
 }
 
+/** 어떤 표기든 시도 풀네임으로 정규화한다. 접두사 비교는 축약형(충북·전남)에서 깨진다. */
+export function canonicalSido(name: string): string | null {
+  if (!name) return null;
+  for (const [fullName, aliases] of Object.entries(SIDO_ALIASES)) {
+    if (aliases.includes(name) || fullName === name) return fullName;
+  }
+  return null;
+}
+
 export interface RegionRow {
   code: string;
   level: number;

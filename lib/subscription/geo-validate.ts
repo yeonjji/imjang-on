@@ -1,4 +1,4 @@
-import { SIDO_NAMES } from '@/lib/region';
+import { SIDO_NAMES, canonicalSido } from '@/lib/region';
 
 export interface AddressRegion { sido: string; sigungu: string | null }
 
@@ -10,6 +10,16 @@ const DONG = /^[가-힣0-9]+(동|리|가)$/;
 const JIBUN = /^\d+(-\d+)?(번지)?$/;
 /** 사업지구·단지 명칭. `구`로 끝나지만 행정구역이 아니다. */
 const NOT_SGG = /(지구|단지|블록|블럭)$/;
+/**
+ * 2026-07-01 인천 구 재편. 공고 주소는 개편 이전 이름을 쓰는데 카카오는 신 구명을 준다.
+ * 신 구는 옛 구의 일부이므로 좌표는 맞다 — 이 조합만 예외로 통과시킨다.
+ * 일반적인 구 불일치는 그대로 거부한다.
+ */
+const REORG_SIGUNGU: Record<string, readonly string[]> = {
+  중구: ['중구', '제물포구', '영종구'],
+  동구: ['동구', '제물포구'],
+  서구: ['서구', '서해구', '검단구'],
+};
 
 /** 괄호·쉼표를 공백으로 바꿔 전체를 토큰화한다. 진짜 주소가 괄호 안에 있는 공고가 많다. */
 function tokenize(address: string): string[] {
@@ -59,12 +69,23 @@ function prefixEq(a: string | null, b: string | null): boolean {
 /**
  * 시군구 비교. 양쪽 다 일반구까지 밝힌 경우에만 구를 정확히 대조한다.
  * 접두사 비교를 쓰면 `수원시`가 `수원시 팔달구`를 통과시켜, 틀린 구의 좌표가 들어온다.
+ * 인천 구 재편(2026-07-01)은 예외: 옛 구가 신 구 여러 개로 나뉘었고,
+ * 공고는 개편 이전 이름을 쓰지만 카카오 좌표는 신 구명을 준다. 두 조합이 모두 인천이면 허용한다.
  */
-function sigunguMatches(a: string, b: string): boolean {
+function sigunguMatches(a: string, b: string, sidoCanonical: string | null): boolean {
   const [aCity, aGu] = a.split(/\s+/);
   const [bCity, bGu] = b.split(/\s+/);
+  // 인천 구 재편 예외: 한쪽이 단일 토큰(구명만) 또는 양쪽 다 구명을 가진 경우 확인
+  if (sidoCanonical === '인천광역시' && (REORG_SIGUNGU[aCity] || REORG_SIGUNGU[aGu])) {
+    const addrGu = aGu || aCity; // 단일 토큰이면 aCity가 구명
+    const coordGu = bGu || bCity; // 단일 토큰이면 bCity가 구명
+    if (REORG_SIGUNGU[addrGu]?.includes(coordGu)) return true;
+  }
   if (!prefixEq(aCity, bCity)) return false;
-  if (aGu && bGu) return aGu === bGu;
+  if (aGu && bGu) {
+    if (aGu === bGu) return true;
+    return false;
+  }
   return true; // 한쪽이 구를 안 밝히면 시 단위까지만 확인 가능하다
 }
 
@@ -76,10 +97,12 @@ export function regionMatches(
   addr: AddressRegion,
   coord: { region1: string | null; region2: string | null },
 ): boolean {
-  if (!prefixEq(addr.sido, coord.region1)) return false;
+  const addrSidoCanonical = canonicalSido(addr.sido);
+  const coordSidoCanonical = coord.region1 ? canonicalSido(coord.region1) : null;
+  if (!addrSidoCanonical || !coordSidoCanonical || addrSidoCanonical !== coordSidoCanonical) return false;
   if (addr.sigungu === null) return true; // 세종처럼 시군구 계층이 없는 주소
   if (!coord.region2) return false;
-  return sigunguMatches(addr.sigungu, coord.region2);
+  return sigunguMatches(addr.sigungu, coord.region2 as string, addrSidoCanonical);
 }
 
 /**
