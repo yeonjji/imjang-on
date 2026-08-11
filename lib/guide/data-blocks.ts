@@ -14,6 +14,12 @@ export const GUIDE_DATA_BLOCK_KEYS = [
   'price-trend-24m',
   'subway-premium',
   'ltv-by-region',
+  'school-highschool-types',
+  'hospital-by-dept',
+  'public-health-centers',
+  'special-supply-mix',
+  'housing-loan-products',
+  'infra-inventory',
 ] as const;
 
 export type GuideDataBlockKey = (typeof GUIDE_DATA_BLOCK_KEYS)[number];

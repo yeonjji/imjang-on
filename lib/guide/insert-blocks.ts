@@ -60,6 +60,36 @@ export const GUIDE_BLOCK_PLACEMENTS: readonly GuideBlockPlacement[] = [
     blockKey: 'ltv-by-region',
     anchorHeading: '## 주택담보대출 한도는 어떻게 정해지나요?',
   },
+  {
+    dedupeKey: 'school-highschool-types',
+    blockKey: 'school-highschool-types',
+    anchorHeading: '## 고등학교 유형, 어떻게 다를까요?',
+  },
+  {
+    dedupeKey: 'medical-find-hospital-by-specialty',
+    blockKey: 'hospital-by-dept',
+    anchorHeading: '## 병원·진료과목 찾는 단계별 방법',
+  },
+  {
+    dedupeKey: 'medical-public-health-center',
+    blockKey: 'public-health-centers',
+    anchorHeading: '## 보건소·보건지소란?',
+  },
+  {
+    dedupeKey: 'subscription-special-supply-types',
+    blockKey: 'special-supply-mix',
+    anchorHeading: '## 특별공급이란? 주요 유형과 대상',
+  },
+  {
+    dedupeKey: 'finance-policy-housing-loans',
+    blockKey: 'housing-loan-products',
+    anchorHeading: '## 주요 상품별 자격과 이용 구조',
+  },
+  {
+    dedupeKey: 'life-infra-checklist',
+    blockKey: 'infra-inventory',
+    anchorHeading: '## 생활 인프라란 무엇일까?',
+  },
 ];
 
 function isHeading2(line: string): boolean {

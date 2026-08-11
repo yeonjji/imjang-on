@@ -13,6 +13,12 @@ import type { FloorPremiumResult } from '@/lib/guide/blocks/heavy/floor-premium'
 import type { PriceTrendResult } from '@/lib/guide/blocks/heavy/price-trend';
 import type { SubwayPremiumResult } from '@/lib/guide/blocks/heavy/subway-premium';
 import type { LtvByRegionResult } from '@/lib/guide/blocks/heavy/ltv-by-region';
+import { getSchoolHighschoolTypes } from '@/lib/guide/blocks/school-highschool-types';
+import { getHospitalByDept } from '@/lib/guide/blocks/hospital-by-dept';
+import { getPublicHealthCenters } from '@/lib/guide/blocks/public-health-centers';
+import { getSpecialSupplyMix } from '@/lib/guide/blocks/special-supply-mix';
+import { getHousingLoanProducts } from '@/lib/guide/blocks/housing-loan-products';
+import { getInfraInventory } from '@/lib/guide/blocks/infra-inventory';
 
 /**
  * 블록 공용 셸. 제목·표·기준일·출처 캡션을 한 형태로 묶는다.
@@ -231,6 +237,109 @@ async function LtvByRegion() {
   );
 }
 
+// ---- 레지스트리 확대(G-4): 실거래가 아닌 시설·상품 자료라 렌더 시 직접 조회한다. ----
+
+async function SchoolHighschoolTypes() {
+  const d = await getSchoolHighschoolTypes().catch(() => null);
+  if (!d || d.rows.length === 0) return null;
+  const total = d.rows.reduce((s, r) => s + r.count, 0);
+  return (
+    <BlockShell
+      title="고등학교 설립 유형과 남녀공학 구분"
+      note={`임장ON이 수집한 전국 고등학교 ${total.toLocaleString('ko-KR')}곳을 설립 유형과 남녀공학 구분으로 집계했습니다. 구분 이름은 교육부 원자료 표기를 그대로 썼습니다.`}
+      sources={['neis']}
+      headers={['설립 유형', '남녀 구분', '학교 수']}
+      rows={d.rows.map((r) => [r.foundType, r.coeduType, r.count])}
+      asOf={d.asOf}
+    />
+  );
+}
+
+async function HospitalByDept() {
+  const d = await getHospitalByDept().catch(() => null);
+  if (!d || d.rows.length === 0) return null;
+  return (
+    <BlockShell
+      title="진료과목별 개설 기관 수와 전문의 수"
+      note="전문의가 많은 순으로 상위 12개 과목입니다. 한 기관이 여러 과목을 함께 개설하므로 기관 수를 모두 더하면 전체 의료기관 수보다 커집니다."
+      sources={['hira']}
+      headers={['진료과목', '개설 기관', '전문의 수']}
+      rows={d.rows.map((r) => [r.deptName, r.facilities, r.specialists])}
+      asOf={d.asOf}
+    />
+  );
+}
+
+async function PublicHealthCenters() {
+  const d = await getPublicHealthCenters().catch(() => null);
+  if (!d || d.rows.length === 0) return null;
+  return (
+    <BlockShell
+      title="보건기관 종류별 개수"
+      note="보건소·보건지소·보건진료소·보건의료원은 설치 근거와 규모가 다릅니다. 오른쪽은 그 기관이 설치된 시도의 수입니다."
+      sources={['hira']}
+      headers={['기관 종류', '기관 수', '설치 시도']}
+      rows={d.rows.map((r) => [r.typeName, r.count, `${r.sidoCount}곳`])}
+      asOf={d.asOf}
+    />
+  );
+}
+
+async function SpecialSupplyMix() {
+  const d = await getSpecialSupplyMix().catch(() => null);
+  if (!d || d.rows.length === 0) return null;
+  const all = d.specialTotal + d.generalTotal;
+  const pct = all > 0 ? ((d.specialTotal / all) * 100).toFixed(1) : '0';
+  return (
+    <BlockShell
+      title="특별공급이 실제로 어떻게 나뉘었나"
+      note={`최근 12개월 안에 접수가 시작된 공고의 특별공급 ${d.specialTotal.toLocaleString('ko-KR')}세대를 유형별로 집계했습니다. 같은 기간 일반공급은 ${d.generalTotal.toLocaleString('ko-KR')}세대로, 특별공급이 전체 공급의 ${pct}%입니다.`}
+      sources={['applyhome']}
+      headers={['특별공급 유형', '세대', '특별공급 중 비중']}
+      rows={d.rows.map((r) => [
+        r.label,
+        r.households,
+        `${((r.households / d.specialTotal) * 100).toFixed(1)}%`,
+      ])}
+      asOf={d.asOf}
+    />
+  );
+}
+
+async function HousingLoanProducts() {
+  const d = await getHousingLoanProducts().catch(() => null);
+  if (!d || d.rows.length === 0) return null;
+  return (
+    <BlockShell
+      title="주거 자금 대출상품, 어디서 얼마까지"
+      note={`자금 용도에 '주거'가 표시된 상품 ${d.total}개를 제공기관 구분별로 집계했습니다. 한도는 상품에 정해진 상한이고, 실제 한도는 소득·담보·기존 대출을 따진 심사로 정해집니다.`}
+      sources={['kinfa-loan']}
+      headers={['제공기관 구분', '상품 수', '평균 한도', '최대 한도']}
+      rows={d.rows.map((r) => [
+        r.instCtg,
+        r.products,
+        r.avgLimitManwon == null ? '-' : `${r.avgLimitManwon.toLocaleString('ko-KR')}만원`,
+        r.maxLimitManwon == null ? '-' : `${r.maxLimitManwon.toLocaleString('ko-KR')}만원`,
+      ])}
+      asOf={d.asOf}
+    />
+  );
+}
+
+async function InfraInventory() {
+  const d = await getInfraInventory().catch(() => null);
+  if (!d || d.rows.length === 0) return null;
+  return (
+    <BlockShell
+      title="임장ON이 보관 중인 생활 인프라"
+      note={`공공데이터로 수집해 지도와 목록에 쓰고 있는 시설 수입니다. 합계 ${d.total.toLocaleString('ko-KR')}곳. 소스마다 갱신 주기가 달라 기준일은 각 시설 페이지에서 확인할 수 있습니다.`}
+      sources={['kepco-ev', 'hira', 'childcare', 'mois-parking', 'mois-park', 'neis', 'mois-market', 'subway']}
+      headers={['시설', '개수']}
+      rows={d.rows.map((r) => [r.label, r.count])}
+    />
+  );
+}
+
 /**
  * 블록 키 → 컴포넌트 매핑. `Record<GuideDataBlockKey, ...>`로 타입을 명시해
  * `lib/guide/data-blocks.ts`의 키 목록과 어긋나면 컴파일 에러가 나도록 한다.
@@ -245,4 +354,10 @@ export const GUIDE_DATA_BLOCK_COMPONENTS: Record<GuideDataBlockKey, () => Promis
   'price-trend-24m': PriceTrend24m,
   'subway-premium': SubwayPremium,
   'ltv-by-region': LtvByRegion,
+  'school-highschool-types': SchoolHighschoolTypes,
+  'hospital-by-dept': HospitalByDept,
+  'public-health-centers': PublicHealthCenters,
+  'special-supply-mix': SpecialSupplyMix,
+  'housing-loan-products': HousingLoanProducts,
+  'infra-inventory': InfraInventory,
 };
