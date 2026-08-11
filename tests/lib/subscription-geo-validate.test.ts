@@ -26,6 +26,12 @@ describe('parseAddressRegion', () => {
       .toEqual({ sido: '인천광역시', sigungu: '강화군' });
   });
 
+  it('구 시도 명칭도 인식한다 — 공고가 여러 해에 걸쳐 있다', () => {
+    expect(parseAddressRegion('강원도 원주시 무실동 100')).toEqual({ sido: '강원도', sigungu: '원주시' });
+    expect(parseAddressRegion('전라북도 전주시 완산구 효자동 100')).toEqual({ sido: '전라북도', sigungu: '전주시 완산구' });
+    expect(parseAddressRegion('제주도 서귀포시 중문동 100')).toEqual({ sido: '제주도', sigungu: '서귀포시' });
+  });
+
   it('시군구가 없으면 null', () => {
     expect(parseAddressRegion('세종특별자치시')).toEqual({ sido: '세종특별자치시', sigungu: null });
   });
