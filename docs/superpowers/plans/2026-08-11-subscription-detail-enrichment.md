@@ -40,7 +40,6 @@
 | `scripts/ingest/subscriptions/geocode-fill.ts` (신규) | 백필 스크립트 (`--dry-run` / `--apply` / `--limit`) | S-1 |
 | `scripts/ingest/subscriptions/adapter-applyhome.ts` (수정) | 적재 시 지오코딩 배선 | S-1 |
 | `scripts/ingest/subscriptions/adapter-lh-presub.ts` (수정) | 같음 | S-1 |
-| `lib/subscription/sigungu-from-address.ts` (신규) | 주소 → `sigunguCode` 조회 | S-2 |
 | `lib/subscription/median-snapshot.ts` (신규) | 시군구별 중위가 스냅샷 읽기/쓰기 | S-2 |
 | `scripts/subscription/refresh-median-snapshot.ts` (신규) | 스냅샷 갱신 | S-2 |
 | `deploy/run-etl.sh` (수정) | `transactions-daily`에 한 줄 | S-2 |
@@ -715,90 +714,21 @@ git commit -m "feat(subscription): 시군구별 실거래 중위가 스냅샷 + 
 
 ---
 
-## Task 5: 주소 → 시군구 조회
+## Task 5: (삭제됨 — 이미 구현돼 있다)
 
-**Files:**
-- Create: `lib/subscription/sigungu-from-address.ts`
-- Test: `tests/lib/subscription-sigungu-from-address.test.ts`
+`lib/region/from-address.ts`의 **`resolveSigunguFromAddress(addr): Promise<string | null>`**가
+이 태스크가 만들려던 것을 이미 한다. 그것도 더 낫다.
 
-**Interfaces:**
-- Consumes: Task 1의 `parseAddressRegion`
-- Produces: `sigunguCodeFromAddress(address: string | null): Promise<string | null>`
+- `SIDO_ALIASES`로 구 명칭(`강원도`·`전라북도`·`제주도`)과 2026 광주+전남 통합까지 흡수한다
+- 카탈로그를 **긴 시군구 이름 우선**으로 정렬해 `수원시 영통구`를 `수원시`보다 먼저 맞춘다 — 계획이 걱정하던 일반구 문제가 이미 풀려 있다
+- 결과를 모듈 캐시에 담아 페이지마다 다시 조회하지 않는다
+- 이미 7개 상세 페이지(`urban`·`amenity`·`childcare`·`hospital`·`pharmacy`·`school`·`charger`)가 쓰고 있다
 
-`regionCode`는 청약홈 자체 3자리 시도 코드라 `Region.code`와 매칭되지 않는다(실측 0건).
-Task 1의 `parseAddressRegion` 결과로 `Region`을 조회한다. 앞 두 토큰만 쓰던 방식의 실측 성공률은
-5,587/5,911 (94.5%)였고, 일반구를 합치면서 그 실패분(324건)의 상당수가 회복된다.
+**Task 6은 `resolveSigunguFromAddress`를 그대로 부른다.** 새 모듈을 만들지 않는다.
 
-- [ ] **Step 1: 구현**
-
-```ts
-import { prisma } from '@/lib/db';
-import { parseAddressRegion } from './geo-validate';
-
-/**
- * 청약 공고 주소에서 시군구 코드를 얻는다.
- * `SubscriptionNotice.regionCode`는 청약홈 자체 3자리 시도 코드(100=서울)라 쓸 수 없다.
- * Task 1의 `parseAddressRegion`이 일반구를 `수원시 영통구`로 합쳐 주므로 `Region.sigungu`와 같은 축이 된다.
- * 세종처럼 시군구 계층이 없는 주소는 매칭되지 않는다 — 그 경우 null을 돌려주고 호출부가 비교를 생략한다.
- */
-export async function sigunguCodeFromAddress(address: string | null): Promise<string | null> {
-  if (!address) return null;
-  const { sido, sigungu } = parseAddressRegion(address);
-  if (!sido || !sigungu) return null;
-
-  const row = await prisma.region.findFirst({
-    where: { sido, sigungu, sigunguCode: { not: null } },
-    select: { sigunguCode: true },
-  });
-  return row?.sigunguCode ?? null;
-}
-```
-
-- [ ] **Step 2: 테스트** — 통합 테스트(로컬 DB 시드 필요)
-
-```ts
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { prisma } from '@/lib/db';
-import { sigunguCodeFromAddress } from '@/lib/subscription/sigungu-from-address';
-
-const CODE = '1174010100';
-beforeAll(async () => {
-  await prisma.region.upsert({
-    where: { code: CODE },
-    create: { code: CODE, sido: '유닛서울시', sigungu: '유닛강동구', fullName: '유닛서울시 유닛강동구',
-              level: 3, sourceVersion: 'ut', sigunguCode: '99999' },
-    update: { sigunguCode: '99999' },
-  });
-});
-afterAll(async () => {
-  await prisma.region.deleteMany({ where: { code: CODE } });
-  await prisma.$disconnect();
-});
-
-describe('sigunguCodeFromAddress', () => {
-  it('주소 앞 두 토큰으로 시군구 코드를 찾는다', async () => {
-    expect(await sigunguCodeFromAddress('유닛서울시 유닛강동구 고덕로 399')).toBe('99999');
-  });
-  it('주소가 없으면 null', async () => {
-    expect(await sigunguCodeFromAddress(null)).toBeNull();
-  });
-  it('토큰이 하나뿐이면 null', async () => {
-    expect(await sigunguCodeFromAddress('유닛세종시')).toBeNull();
-  });
-  it('매칭되는 지역이 없으면 null', async () => {
-    expect(await sigunguCodeFromAddress('없는시도 없는구 어딘가로 1')).toBeNull();
-  });
-});
-```
-
-- [ ] **Step 3: 통과 확인 후 커밋**
-
-Run: `pnpm dlx dotenv-cli -e .env.test -- pnpm vitest run tests/lib/subscription-sigungu-from-address.test.ts`
-
-```bash
-git add lib/subscription/sigungu-from-address.ts tests/lib/subscription-sigungu-from-address.test.ts
-git commit -m "feat(subscription): 주소에서 시군구 코드 조회"
-```
+한계: `addr.startsWith(시도 + 시군구)` 방식이라 시도가 문자열 앞에 없는 주소
+(`파주메디컬클러스터 … (경기도 파주시 …)`)는 매칭되지 않는다. 그런 공고는 비교 줄이 빠지고
+분양가 표만 남는다 — 설계가 정한 폴백과 같다.
 
 ---
 
@@ -811,7 +741,7 @@ git commit -m "feat(subscription): 주소에서 시군구 코드 조회"
 - Test: `tests/lib/subscription-unit-area-basis.test.ts`
 
 **Interfaces:**
-- Consumes: Task 4의 `readSigunguMedianSnapshot`, Task 5의 `sigunguCodeFromAddress`
+- Consumes: Task 4의 `readSigunguMedianSnapshot`; 기존 `resolveSigunguFromAddress` from `@/lib/region/from-address` (Task 5는 중복이라 삭제됐다)
 - Produces: `unitAreaBasis(rawJson: unknown): 'supply' | 'exclusive' | null`
 
 - [ ] **Step 1: 면적 기준 판정 함수 + 테스트**
@@ -872,7 +802,7 @@ Run: `pnpm vitest run tests/lib/subscription-unit-area-basis.test.ts` → PASS (
 
 ```tsx
 import { readSigunguMedianSnapshot } from '@/lib/subscription/median-snapshot';
-import { sigunguCodeFromAddress } from '@/lib/subscription/sigungu-from-address';
+import { resolveSigunguFromAddress } from '@/lib/region/from-address';
 import { unitAreaBasis, areaBasisLabel } from '@/lib/subscription/unit-area-basis';
 import { formatBillion } from '@/lib/format';
 import { SourceCaption } from '@/components/ui/source-caption';
@@ -889,7 +819,7 @@ export async function PriceComparison({ units, address }: { units: UnitRow[]; ad
   const priced = units.filter((u) => u.topAmount != null);
   if (priced.length === 0) return null;
 
-  const sgg = await sigunguCodeFromAddress(address).catch(() => null);
+  const sgg = await resolveSigunguFromAddress(address).catch(() => null);
   const snapshot = sgg ? await readSigunguMedianSnapshot().catch(() => null) : null;
   const local = sgg && snapshot ? snapshot[sgg] : null;
 
