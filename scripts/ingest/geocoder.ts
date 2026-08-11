@@ -68,3 +68,38 @@ export async function geocode(query: string): Promise<Coord | null> {
     return null;
   }
 }
+
+const keywordCache = new Map<string, Coord | null>();
+
+/** 카카오 키워드(장소) 검색. 주소검색이 못 찾는 사업지구·단지명 질의를 보완한다. */
+export async function geocodeKeyword(query: string): Promise<Coord | null> {
+  if (!env.KAKAO_REST_KEY) return null;
+  if (keywordCache.has(query)) return keywordCache.get(query) ?? null;
+
+  const url = new URL('https://dapi.kakao.com/v2/local/search/keyword.json');
+  url.searchParams.set('query', query);
+  url.searchParams.set('size', '1');
+  try {
+    const res = await fetch(url.toString(), { headers: { Authorization: `KakaoAK ${env.KAKAO_REST_KEY}` } });
+    if (!res.ok) { keywordCache.set(query, null); return null; }
+    const data = (await res.json()) as {
+      documents?: { x: string; y: string; address_name?: string; region_1depth_name?: string; region_2depth_name?: string }[];
+    };
+    const doc = data.documents?.[0];
+    if (!doc) { keywordCache.set(query, null); return null; }
+    // 키워드검색 응답에는 region_*depth_name이 없을 수 있어 address_name을 쪼개 채운다.
+    const parts = (doc.address_name ?? '').split(/\s+/);
+    const coord: Coord = {
+      lat: Number(doc.y),
+      lng: Number(doc.x),
+      region1: doc.region_1depth_name ?? parts[0] ?? null,
+      region2: doc.region_2depth_name ?? (parts[1] ?? null),
+    };
+    keywordCache.set(query, coord);
+    return coord;
+  } catch (err) {
+    logger.warn({ err, query }, 'geocodeKeyword failed');
+    keywordCache.set(query, null);
+    return null;
+  }
+}
