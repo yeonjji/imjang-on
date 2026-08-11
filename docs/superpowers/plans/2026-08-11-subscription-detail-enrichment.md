@@ -50,58 +50,131 @@
 
 ---
 
-## Task 1: 좌표 검증 순수 함수
+## Task 1: 주소 파싱·검증 모듈
 
 **Files:**
-- Create: `lib/subscription/geo-validate.ts`
+- Modify: `lib/subscription/geo-validate.ts` (Task 1 1차 구현을 대체)
 - Test: `tests/lib/subscription-geo-validate.test.ts`
 
 **Interfaces:**
-- Produces: `parseAddressRegion(address: string): { sido: string; sigungu: string | null }`, `regionMatches(addr: {sido: string; sigungu: string | null}, coord: {region1: string | null; region2: string | null}): boolean`
+- Produces: `parseAddressRegion(address: string): { sido: string; sigungu: string | null }`, `regionMatches(addr, coord): boolean`, `geocodeCandidates(address: string): string[]`
 
-`regionName`은 시도명뿐이라(`서울`, `경기`) 검증축으로 약하다. **주소의 앞 두 토큰**을 쓴다.
-표기 차이(`서울` vs `서울특별시`)가 있으므로 **한쪽이 다른 쪽의 접두사면 일치**로 본다.
+### 왜 1차 구현을 갈아엎나 — 실측 근거
+
+1차 구현은 **주소 앞 두 토큰**을 시도·시군구로 봤다. 운영 데이터로 재보니 두 군데서 깨진다.
+
+**(가) 일반구 도시에서 구가 버려진다.** `경기도 수원시 영통구 …`가 `{sido:'경기도', sigungu:'수원시'}`가
+된다. 카카오 `region2`는 `수원시 영통구` 형식이라, 접두사 비교가 **엉뚱한 구(`수원시 팔달구`)도
+통과**시킨다. 틀린 좌표를 막으려고 만든 함수에 구멍이 뚫린다.
+
+**(나) 시도가 문자열 앞에 없는 주소가 있다.** `파주메디컬클러스터 도시개발구역 A2BL (경기도 파주시 서패동 432번지 일원)` —
+앞 두 토큰은 `파주메디컬클러스터`, `도시개발구역`이다.
+
+그리고 지오코딩 자체가 원문 주소로는 **0%다**(운영 주소 40건 표본, 카카오 주소검색·키워드검색 모두 0/40).
+청약 주소가 `경기도 김포시 고촌읍 신곡리 김포신곡6지구 도시개발사업구역 A3BL` 같은 사업지구 서술형이기 때문이다.
+**괄호 안까지 훑어 `동/리 + 지번`을 재조립하면 39/40 (97.5%)** 이 찾힌다.
+
+그래서 이 태스크는 세 함수를 한 모듈에 둔다 — 파싱 규칙이 하나여야 검증과 후보 생성이 어긋나지 않는다.
+
+참고 실측: 카카오 `region1`은 `서울특별시`가 아니라 **`서울`**로 온다. 시도 비교에 접두사 규칙이 필요한 이유다.
 
 - [ ] **Step 1: 실패하는 테스트를 쓴다**
 
 ```ts
 import { describe, it, expect } from 'vitest';
-import { parseAddressRegion, regionMatches } from '@/lib/subscription/geo-validate';
+import { parseAddressRegion, regionMatches, geocodeCandidates } from '@/lib/subscription/geo-validate';
 
 describe('parseAddressRegion', () => {
-  it('앞 두 토큰을 시도·시군구로 쪼갠다', () => {
+  it('시도·시군구를 접미사로 찾는다', () => {
     expect(parseAddressRegion('서울특별시 강동구 고덕로 399')).toEqual({ sido: '서울특별시', sigungu: '강동구' });
     expect(parseAddressRegion('경기도 양주시 옥정동 962-9')).toEqual({ sido: '경기도', sigungu: '양주시' });
   });
-  it('토큰이 하나면 시군구는 null', () => {
+
+  it('일반구를 시군구에 합친다 — 이게 1차 구현의 구멍이었다', () => {
+    expect(parseAddressRegion('경기도 수원시 영통구 매탄동 100')).toEqual({ sido: '경기도', sigungu: '수원시 영통구' });
+    expect(parseAddressRegion('경기도 성남시 분당구 판교로 1')).toEqual({ sido: '경기도', sigungu: '성남시 분당구' });
+  });
+
+  it('시도가 문자열 앞에 없어도 찾는다', () => {
+    expect(parseAddressRegion('파주메디컬클러스터 도시개발구역 A2BL (경기도 파주시 서패동 432번지 일원)'))
+      .toEqual({ sido: '경기도', sigungu: '파주시' });
+  });
+
+  it('시군구가 없으면 null', () => {
     expect(parseAddressRegion('세종특별자치시')).toEqual({ sido: '세종특별자치시', sigungu: null });
   });
-  it('앞뒤 공백과 중복 공백을 흡수한다', () => {
-    expect(parseAddressRegion('  인천광역시   연수구 동춘동 ')).toEqual({ sido: '인천광역시', sigungu: '연수구' });
+
+  it('시도를 못 찾으면 빈 문자열', () => {
+    expect(parseAddressRegion('알 수 없는 문자열')).toEqual({ sido: '', sigungu: null });
   });
 });
 
 describe('regionMatches', () => {
-  it('시도·시군구가 모두 맞으면 통과', () => {
-    expect(regionMatches({ sido: '서울특별시', sigungu: '강동구' }, { region1: '서울특별시', region2: '강동구' })).toBe(true);
+  it('시도·시군구가 맞으면 통과', () => {
+    expect(regionMatches({ sido: '서울특별시', sigungu: '강동구' }, { region1: '서울', region2: '강동구' })).toBe(true);
   });
-  it('시도 표기가 달라도 접두사면 통과', () => {
-    expect(regionMatches({ sido: '서울', sigungu: '강동구' }, { region1: '서울특별시', region2: '강동구' })).toBe(true);
+
+  it('카카오가 짧은 시도명을 줘도 통과 (실측: region1이 "서울")', () => {
+    expect(regionMatches({ sido: '서울특별시', sigungu: '강동구' }, { region1: '서울', region2: '강동구' })).toBe(true);
   });
+
+  it('일반구가 다르면 실패 — 접두사로 통과시키면 안 된다', () => {
+    expect(regionMatches({ sido: '경기도', sigungu: '수원시 영통구' }, { region1: '경기', region2: '수원시 팔달구' })).toBe(false);
+  });
+
+  it('일반구가 같으면 통과', () => {
+    expect(regionMatches({ sido: '경기도', sigungu: '수원시 영통구' }, { region1: '경기', region2: '수원시 영통구' })).toBe(true);
+  });
+
+  it('주소가 구를 안 밝히면 시 단위까지만 본다', () => {
+    expect(regionMatches({ sido: '경기도', sigungu: '수원시' }, { region1: '경기', region2: '수원시 팔달구' })).toBe(true);
+  });
+
   it('시군구가 다르면 실패', () => {
-    expect(regionMatches({ sido: '서울특별시', sigungu: '강동구' }, { region1: '서울특별시', region2: '강남구' })).toBe(false);
+    expect(regionMatches({ sido: '서울특별시', sigungu: '강동구' }, { region1: '서울', region2: '강남구' })).toBe(false);
   });
+
   it('시도가 다르면 실패', () => {
-    expect(regionMatches({ sido: '경기도', sigungu: '양주시' }, { region1: '서울특별시', region2: '강동구' })).toBe(false);
+    expect(regionMatches({ sido: '경기도', sigungu: '양주시' }, { region1: '서울', region2: '강동구' })).toBe(false);
   });
+
   it('주소에 시군구가 없으면 시도만 본다', () => {
     expect(regionMatches({ sido: '세종특별자치시', sigungu: null }, { region1: '세종특별자치시', region2: null })).toBe(true);
   });
+
   it('카카오가 지역을 안 주면 실패로 본다', () => {
     expect(regionMatches({ sido: '서울특별시', sigungu: '강동구' }, { region1: null, region2: null })).toBe(false);
   });
+
   it('한 글자 접두사는 우연 일치라 인정하지 않는다', () => {
-    expect(regionMatches({ sido: '서', sigungu: null }, { region1: '서울특별시', region2: null })).toBe(false);
+    expect(regionMatches({ sido: '서', sigungu: null }, { region1: '서울', region2: null })).toBe(false);
+  });
+});
+
+describe('geocodeCandidates', () => {
+  it('괄호 안의 지번을 끌어내 후보를 만든다 — 원문 그대로는 카카오가 못 찾는다', () => {
+    const c = geocodeCandidates('군포대야미 공공주택지구 B1블럭(경기도 군포시 속달동 90-3번지 일원)');
+    expect(c[0]).toBe('경기도 군포시 속달동 90-3');
+    expect(c).toContain('경기도 군포시 속달동');
+  });
+
+  it('지번이 없으면 동까지만', () => {
+    const c = geocodeCandidates('경기도 김포시 고촌읍 신곡리 김포신곡6지구 도시개발사업구역 A3BL');
+    expect(c[0]).toBe('경기도 김포시 신곡리');
+  });
+
+  it('동도 없으면 시군구까지만', () => {
+    expect(geocodeCandidates('경기도 군포시 군포대야미 공공주택지구 B1블럭')).toEqual(['경기도 군포시']);
+  });
+
+  it('후보는 최대 3개이고 중복이 없다', () => {
+    const c = geocodeCandidates('경기도 양주시 옥정동 962-9, 962-8번지(옥정지구 중상1, 복합1블럭)');
+    expect(c.length).toBeLessThanOrEqual(3);
+    expect(new Set(c).size).toBe(c.length);
+  });
+
+  it('시도를 못 찾으면 빈 배열', () => {
+    expect(geocodeCandidates('알 수 없는 문자열')).toEqual([]);
   });
 });
 ```
@@ -116,17 +189,64 @@ Expected: FAIL — 모듈 없음
 ```ts
 export interface AddressRegion { sido: string; sigungu: string | null }
 
-/** 주소 앞 두 토큰을 시도·시군구로 본다. 청약 공고의 시군구는 주소 문자열에만 있다. */
-export function parseAddressRegion(address: string): AddressRegion {
-  const tokens = address.trim().split(/\s+/).filter(Boolean);
-  return { sido: tokens[0] ?? '', sigungu: tokens[1] ?? null };
+/** 시군구 접미사. */
+const SGG_SUFFIX = /(시|군|구)$/;
+/** 동/리/가 토큰. */
+const DONG = /^[가-힣0-9]+(동|리|가)$/;
+/** 지번. `90-3`, `432번지` 형태. */
+const JIBUN = /^\d+(-\d+)?(번지)?$/;
+
+/** 괄호·쉼표를 공백으로 바꿔 전체를 토큰화한다. 진짜 주소가 괄호 안에 있는 공고가 많다. */
+function tokenize(address: string): string[] {
+  return address.replace(/[(),]/g, ' ').split(/\s+/).filter(Boolean);
 }
 
-/** `서울` vs `서울특별시`처럼 표기가 달라도 한쪽이 다른 쪽의 접두사면 같은 지역으로 본다. */
+/** 시도로 볼 수 있는 토큰인지. `수원시`가 시도로 잡히지 않도록 길이·접미사를 함께 본다. */
+function isSido(t: string): boolean {
+  if (/(특별자치도|특별자치시|특별시|광역시)$/.test(t)) return true;
+  return /도$/.test(t) && t.length <= 4; // 경기도·강원도. `신곡6지구`류는 걸러진다
+}
+
+/**
+ * 주소에서 시도·시군구를 뽑는다.
+ *
+ * 앞 두 토큰을 쓰지 않는다 — 시도가 문자열 앞에 없는 공고가 있고(`파주메디컬클러스터 … (경기도 파주시 …)`),
+ * 일반구 도시는 `수원시 영통구`처럼 두 토큰을 합쳐야 카카오 `region2`와 같은 축이 된다.
+ */
+export function parseAddressRegion(address: string): AddressRegion {
+  const toks = tokenize(address);
+  const si = toks.findIndex(isSido);
+  if (si === -1) return { sido: '', sigungu: null };
+
+  const sido = toks[si];
+  const rest = toks.slice(si + 1);
+  const gi = rest.findIndex((t) => SGG_SUFFIX.test(t));
+  if (gi === -1) return { sido, sigungu: null };
+
+  const first = rest[gi];
+  const next = rest[gi + 1];
+  // 일반구: `수원시` 다음이 `영통구`면 합친다.
+  if (/시$/.test(first) && next && /구$/.test(next)) return { sido, sigungu: `${first} ${next}` };
+  return { sido, sigungu: first };
+}
+
+/** `서울` vs `서울특별시`처럼 표기가 달라도 한쪽이 다른 쪽의 접두사면 같다고 본다. */
 function prefixEq(a: string | null, b: string | null): boolean {
   if (!a || !b) return false;
   if (a.length < 2 || b.length < 2) return false; // 한 글자 접두사는 우연 일치가 잦다
   return a.startsWith(b) || b.startsWith(a);
+}
+
+/**
+ * 시군구 비교. 양쪽 다 일반구까지 밝힌 경우에만 구를 정확히 대조한다.
+ * 접두사 비교를 쓰면 `수원시`가 `수원시 팔달구`를 통과시켜, 틀린 구의 좌표가 들어온다.
+ */
+function sigunguMatches(a: string, b: string): boolean {
+  const [aCity, aGu] = a.split(/\s+/);
+  const [bCity, bGu] = b.split(/\s+/);
+  if (!prefixEq(aCity, bCity)) return false;
+  if (aGu && bGu) return aGu === bGu;
+  return true; // 한쪽이 구를 안 밝히면 시 단위까지만 확인 가능하다
 }
 
 /**
@@ -139,7 +259,33 @@ export function regionMatches(
 ): boolean {
   if (!prefixEq(addr.sido, coord.region1)) return false;
   if (addr.sigungu === null) return true; // 세종처럼 시군구 계층이 없는 주소
-  return prefixEq(addr.sigungu, coord.region2);
+  if (!coord.region2) return false;
+  return sigunguMatches(addr.sigungu, coord.region2);
+}
+
+/**
+ * 지오코딩에 넣을 질의 후보. 넓은 것부터가 아니라 **좁은 것부터** 시도한다.
+ *
+ * 원문 주소를 그대로 넣으면 카카오가 못 찾는다(운영 40건 표본에서 0/40) — 청약 주소가
+ * `… 김포신곡6지구 도시개발사업구역 A3BL`처럼 사업지구 서술형이기 때문이다.
+ * 괄호 안까지 훑어 `동/리 + 지번`을 재조립하면 39/40이 찾힌다.
+ */
+export function geocodeCandidates(address: string): string[] {
+  const { sido, sigungu } = parseAddressRegion(address);
+  if (!sido) return [];
+  const head = [sido, sigungu?.split(/\s+/)[0]].filter(Boolean).join(' ');
+
+  const toks = tokenize(address);
+  const out: string[] = [];
+  for (let i = 0; i < toks.length; i++) {
+    if (!DONG.test(toks[i])) continue;
+    const jibun = toks[i + 1] && JIBUN.test(toks[i + 1]) ? toks[i + 1].replace('번지', '') : '';
+    if (jibun) out.push(`${head} ${toks[i]} ${jibun}`);
+    out.push(`${head} ${toks[i]}`);
+  }
+  if (out.length === 0) out.push(head);
+
+  return [...new Set(out)].slice(0, 3);
 }
 ```
 
@@ -163,12 +309,59 @@ git commit -m "feat(subscription): 지오코딩 좌표 지역 검증 순수 함�
 - Create: `scripts/ingest/subscriptions/geocode-fill.ts`
 
 **Interfaces:**
-- Consumes: Task 1의 `parseAddressRegion`, `regionMatches`; 기존 `geocode(query)` from `@/scripts/ingest/geocoder` (반환 `{ lat, lng, region1, region2 } | null`)
+- Consumes: Task 1의 `parseAddressRegion`, `regionMatches`, `geocodeCandidates`; 기존 `geocode(query)` from `@/scripts/ingest/geocoder` (반환 `{ lat, lng, region1, region2 } | null`)
+- Produces: `geocodeKeyword(query)` — `scripts/ingest/geocoder.ts`에 **새로 추가**하는 함수. 기존 `geocode`는 건드리지 않는다(병원·약국 적재가 쓰고 있다).
 
 좌표 저장은 `scripts/ingest/subscriptions/upsert.ts`와 같은 방식이다 —
 `ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography`.
 
 `contentHash`는 lat/lng를 포함하지 않으므로(`content-hash.ts` 주석) 백필이 해시를 흔들지 않는다.
+
+### `geocodeKeyword` 추가
+
+`geocode()`는 카카오 **주소검색**(`search/address.json`)만 쓴다. 사업지구명이 섞인 질의는
+**키워드검색**(`search/keyword.json`)이 더 잘 찾는다. `geocode`와 같은 형태를 반환하는 함수를 하나 더 둔다.
+
+```ts
+// scripts/ingest/geocoder.ts 에 추가. 기존 geocode()는 그대로 둔다.
+const keywordCache = new Map<string, Coord | null>();
+
+/** 카카오 키워드(장소) 검색. 주소검색이 못 찾는 사업지구·단지명 질의를 보완한다. */
+export async function geocodeKeyword(query: string): Promise<Coord | null> {
+  if (!env.KAKAO_REST_KEY) return null;
+  if (keywordCache.has(query)) return keywordCache.get(query) ?? null;
+
+  const url = new URL('https://dapi.kakao.com/v2/local/search/keyword.json');
+  url.searchParams.set('query', query);
+  url.searchParams.set('size', '1');
+  try {
+    const res = await fetch(url.toString(), { headers: { Authorization: `KakaoAK ${env.KAKAO_REST_KEY}` } });
+    if (!res.ok) { keywordCache.set(query, null); return null; }
+    const data = (await res.json()) as {
+      documents?: { x: string; y: string; address_name?: string; region_1depth_name?: string; region_2depth_name?: string }[];
+    };
+    const doc = data.documents?.[0];
+    if (!doc) { keywordCache.set(query, null); return null; }
+    // 키워드검색 응답에는 region_*depth_name이 없을 수 있어 address_name을 쪼개 채운다.
+    const parts = (doc.address_name ?? '').split(/\s+/);
+    const coord: Coord = {
+      lat: Number(doc.y),
+      lng: Number(doc.x),
+      region1: doc.region_1depth_name ?? parts[0] ?? null,
+      region2: doc.region_2depth_name ?? (parts[1] ?? null),
+    };
+    keywordCache.set(query, coord);
+    return coord;
+  } catch (err) {
+    logger.warn({ err, query }, 'geocodeKeyword failed');
+    keywordCache.set(query, null);
+    return null;
+  }
+}
+```
+
+> 키워드검색 결과는 주소검색보다 느슨하다. 그래서 `regionMatches` 검증이 더 중요하다 —
+> 검증을 통과하지 못하면 좌표를 버린다.
 
 - [ ] **Step 1: 스크립트 작성**
 
@@ -184,8 +377,8 @@ git commit -m "feat(subscription): 지오코딩 좌표 지역 검증 순수 함�
  */
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { geocode } from '@/scripts/ingest/geocoder';
-import { parseAddressRegion, regionMatches } from '@/lib/subscription/geo-validate';
+import { geocode, geocodeKeyword } from '@/scripts/ingest/geocoder';
+import { parseAddressRegion, regionMatches, geocodeCandidates } from '@/lib/subscription/geo-validate';
 
 function argNum(flag: string, def: number): number {
   const i = process.argv.indexOf(flag);
@@ -215,8 +408,15 @@ async function main() {
 
   for (const r of rows) {
     const addr = parseAddressRegion(r.address);
-    const coord = await geocode(r.address);
-    await sleep(100); // 카카오 로컬 API 호출 간격
+
+    // 원문 주소를 그대로 넣으면 카카오가 못 찾는다(운영 40건 표본 0/40).
+    // 좁은 후보부터 시도하고, 주소검색이 비면 키워드검색으로 폴백한다.
+    let coord: Awaited<ReturnType<typeof geocode>> = null;
+    for (const q of geocodeCandidates(r.address)) {
+      coord = (await geocode(q)) ?? (await geocodeKeyword(q));
+      await sleep(100); // 카카오 로컬 API 호출 간격
+      if (coord) break;
+    }
 
     if (!coord) {
       noResult++;
@@ -526,7 +726,8 @@ git commit -m "feat(subscription): 시군구별 실거래 중위가 스냅샷 + 
 - Produces: `sigunguCodeFromAddress(address: string | null): Promise<string | null>`
 
 `regionCode`는 청약홈 자체 3자리 시도 코드라 `Region.code`와 매칭되지 않는다(실측 0건).
-주소 앞 두 토큰으로 `Region`을 조회한다. 실측 성공률 5,587/5,911 (94.5%).
+Task 1의 `parseAddressRegion` 결과로 `Region`을 조회한다. 앞 두 토큰만 쓰던 방식의 실측 성공률은
+5,587/5,911 (94.5%)였고, 일반구를 합치면서 그 실패분(324건)의 상당수가 회복된다.
 
 - [ ] **Step 1: 구현**
 
@@ -537,8 +738,8 @@ import { parseAddressRegion } from './geo-validate';
 /**
  * 청약 공고 주소에서 시군구 코드를 얻는다.
  * `SubscriptionNotice.regionCode`는 청약홈 자체 3자리 시도 코드(100=서울)라 쓸 수 없다.
- * 세종처럼 시군구 계층이 없거나 일반구를 둔 시(주소는 `경기도 수원시 …`, Region은 `수원시 영통구`)는
- * 매칭되지 않는다 — 실측 324건. 그 경우 null을 돌려주고 호출부가 비교를 생략한다.
+ * Task 1의 `parseAddressRegion`이 일반구를 `수원시 영통구`로 합쳐 주므로 `Region.sigungu`와 같은 축이 된다.
+ * 세종처럼 시군구 계층이 없는 주소는 매칭되지 않는다 — 그 경우 null을 돌려주고 호출부가 비교를 생략한다.
  */
 export async function sigunguCodeFromAddress(address: string | null): Promise<string | null> {
   if (!address) return null;
