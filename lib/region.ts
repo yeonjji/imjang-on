@@ -22,6 +22,11 @@ const SIDO_LIST: { code: string; sido: string; fullName: string }[] = [
   { code: '4300000000', sido: '충북', fullName: '충청북도' },
 ];
 
+/** 시도 축약명과 풀네임 전부. 주소 토큰이 시도인지 정확히 판정할 때 쓴다(휴리스틱 금지). */
+export const SIDO_NAMES: ReadonlySet<string> = new Set(
+  SIDO_LIST.flatMap((s) => [s.sido, s.fullName]),
+);
+
 /**
  * 시도 풀네임 → 축약명. Region.sido에는 풀네임이 담기므로 표시용 축약이 필요하다.
  * sidoFullName()의 역방향이며, sidoPrefix()와 달리 코드가 아니라 이름을 낸다.

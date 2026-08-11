@@ -12,9 +12,18 @@ describe('parseAddressRegion', () => {
     expect(parseAddressRegion('경기도 성남시 분당구 판교로 1')).toEqual({ sido: '경기도', sigungu: '성남시 분당구' });
   });
 
+  it('사업지구 같은 비행정 `구`를 건너뛰고 진짜 행정구를 찾는다', () => {
+    expect(parseAddressRegion('경기도 수원시 광교지구 영통구 이의동 100')).toEqual({ sido: '경기도', sigungu: '수원시 영통구' });
+  });
+
   it('시도가 문자열 앞에 없어도 찾는다', () => {
     expect(parseAddressRegion('파주메디컬클러스터 도시개발구역 A2BL (경기도 파주시 서패동 432번지 일원)'))
       .toEqual({ sido: '경기도', sigungu: '파주시' });
+  });
+
+  it('강화도 같은 장소명이 시도로 오인되지 않는다', () => {
+    expect(parseAddressRegion('강화도 파크뷰 2단지(인천광역시 강화군 불은면 100)'))
+      .toEqual({ sido: '인천광역시', sigungu: '강화군' });
   });
 
   it('시군구가 없으면 null', () => {
@@ -28,11 +37,15 @@ describe('parseAddressRegion', () => {
 
 describe('regionMatches', () => {
   it('시도·시군구가 맞으면 통과', () => {
-    expect(regionMatches({ sido: '서울특별시', sigungu: '강동구' }, { region1: '서울', region2: '강동구' })).toBe(true);
+    expect(regionMatches({ sido: '서울특별시', sigungu: '강동구' }, { region1: '서울특별시', region2: '강동구' })).toBe(true);
   });
 
   it('카카오가 짧은 시도명을 줘도 통과 (실측: region1이 "서울")', () => {
     expect(regionMatches({ sido: '서울특별시', sigungu: '강동구' }, { region1: '서울', region2: '강동구' })).toBe(true);
+  });
+
+  it('카카오가 풀 시도명을 줘도 통과', () => {
+    expect(regionMatches({ sido: '서울', sigungu: '강동구' }, { region1: '서울특별시', region2: '강동구' })).toBe(true);
   });
 
   it('일반구가 다르면 실패 — 접두사로 통과시키면 안 된다', () => {

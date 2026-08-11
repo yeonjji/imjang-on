@@ -1,3 +1,5 @@
+import { SIDO_NAMES } from '@/lib/region';
+
 export interface AddressRegion { sido: string; sigungu: string | null }
 
 /** 시군구 접미사. */
@@ -6,16 +8,17 @@ const SGG_SUFFIX = /(시|군|구)$/;
 const DONG = /^[가-힣0-9]+(동|리|가)$/;
 /** 지번. `90-3`, `432번지` 형태. */
 const JIBUN = /^\d+(-\d+)?(번지)?$/;
+/** 사업지구·단지 명칭. `구`로 끝나지만 행정구역이 아니다. */
+const NOT_SGG = /(지구|단지|블록|블럭)$/;
 
 /** 괄호·쉼표를 공백으로 바꿔 전체를 토큰화한다. 진짜 주소가 괄호 안에 있는 공고가 많다. */
 function tokenize(address: string): string[] {
   return address.replace(/[(),]/g, ' ').split(/\s+/).filter(Boolean);
 }
 
-/** 시도로 볼 수 있는 토큰인지. `수원시`가 시도로 잡히지 않도록 길이·접미사를 함께 본다. */
+/** 시도 이름의 정확한 멤버십 확인. 강화도 같은 장소명이나 지구명과 혼동되지 않는다. */
 function isSido(t: string): boolean {
-  if (/(특별자치도|특별자치시|특별시|광역시)$/.test(t)) return true;
-  return /도$/.test(t) && t.length <= 4; // 경기도·강원도. `신곡6지구`류는 걸러진다
+  return SIDO_NAMES.has(t);
 }
 
 /**
@@ -31,13 +34,18 @@ export function parseAddressRegion(address: string): AddressRegion {
 
   const sido = toks[si];
   const rest = toks.slice(si + 1);
-  const gi = rest.findIndex((t) => SGG_SUFFIX.test(t));
+  const gi = rest.findIndex((t) => SGG_SUFFIX.test(t) && !NOT_SGG.test(t));
   if (gi === -1) return { sido, sigungu: null };
 
   const first = rest[gi];
   const next = rest[gi + 1];
+  const next2 = rest[gi + 2];
   // 일반구: `수원시` 다음이 `영통구`면 합친다.
-  if (/시$/.test(first) && next && /구$/.test(next)) return { sido, sigungu: `${first} ${next}` };
+  // 지구 같은 사업명이 끼어 있으면 그 다음을 본다 (`수원시 광교지구 영통구`).
+  if (/시$/.test(first)) {
+    if (next && /구$/.test(next) && !NOT_SGG.test(next)) return { sido, sigungu: `${first} ${next}` };
+    if (next2 && /구$/.test(next2) && !NOT_SGG.test(next2)) return { sido, sigungu: `${first} ${next2}` };
+  }
   return { sido, sigungu: first };
 }
 
