@@ -9,6 +9,7 @@ case "${1:?job key required}" in
   transactions-daily)
     $DC pnpm ingest:run
     $DC pnpm tsx scripts/dashboard/refresh-snapshot.ts
+    $DC pnpm tsx scripts/guide/refresh-data-snapshot.ts
     ;;
   subscriptions)
     for s in apt urbty remndr pblpvt opt lh; do
