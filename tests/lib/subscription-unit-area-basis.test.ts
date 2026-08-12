@@ -18,6 +18,23 @@ describe('unitAreaBasis', () => {
   it('빈 문자열은 값 없음으로 본다', () => {
     expect(unitAreaBasis({ SUPLY_AR: '', EXCLUSE_AR: '59.99' })).toBe('exclusive');
   });
+  it("SUPLY_AR이 '-'(결측 sentinel)이면 어댑터처럼 값 없음으로 보고 EXCLUSE_AR로 넘어간다", () => {
+    expect(unitAreaBasis({ SUPLY_AR: '-', EXCLUSE_AR: '59.9900' })).toBe('exclusive');
+  });
+  it('SUPLY_AR이 숫자로 파싱되지 않는 문자열(미정 등)이면 값 없음으로 보고 EXCLUSE_AR로 넘어간다', () => {
+    expect(unitAreaBasis({ SUPLY_AR: '미정', EXCLUSE_AR: '59.9900' })).toBe('exclusive');
+  });
+  it("둘 다 '-'면 null", () => {
+    expect(unitAreaBasis({ SUPLY_AR: '-', EXCLUSE_AR: '-' })).toBeNull();
+  });
+  it('콤마가 섞인 숫자 문자열도 값으로 인정한다', () => {
+    expect(unitAreaBasis({ SUPLY_AR: '1,234.56' })).toBe('supply');
+  });
+  it('rawJson이 object가 아니면(string/number/array) null', () => {
+    expect(unitAreaBasis('82.85')).toBeNull();
+    expect(unitAreaBasis(82.85)).toBeNull();
+    expect(unitAreaBasis([])).toBeNull();
+  });
   it('라벨', () => {
     expect(areaBasisLabel('supply')).toBe('공급');
     expect(areaBasisLabel('exclusive')).toBe('전용');
