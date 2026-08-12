@@ -304,6 +304,11 @@ describe('시군구 중위가 스냅샷', () => {
     it('거래가 있는 코드와 없는 코드가 같은 값(median, count)을 받는다', () => {
       expect(result[SIGUNGU_WITHOUT_TX]).toEqual(result[SIGUNGU_WITH_TX]);
     });
+
+    it('label은 그룹의 Region.sigungu 값으로 채워진다', () => {
+      expect(result[SIGUNGU_WITH_TX].label).toBe('테스트공유구');
+      expect(result[SIGUNGU_WITHOUT_TX].label).toBe('테스트공유구');
+    });
   });
 
   describe('computeSigunguMedians — region_map은 level을 가리지 않는다 (수원 회귀 재현)', () => {
@@ -385,6 +390,68 @@ describe('시군구 중위가 스냅샷', () => {
     it('거래를 담은 level 3 코드도 결과에 나타나고 값이 같다', () => {
       expect(result[SIGUNGU_LV3_CODE]).toBeDefined();
       expect(result[SIGUNGU_LV2_CODE]).toEqual(result[SIGUNGU_LV3_CODE]);
+    });
+  });
+
+  describe('computeSigunguMedians — 폐지된 행정구역(isAbolished)은 매핑에서 뺀다', () => {
+    // level 필터는 걷어냈지만 isAbolished=false는 그대로 남겨뒀다 — Region을 읽는 다른 모든
+    // 소비처와 같은 규칙이고, 폐지된 행정구역이 매핑에 섞일 이유가 없다. 이 필터가 실수로
+    // 같이 빠지면 폐지된 코드도 region_map에 들어와 거래가 그대로 집계돼버리는데, 이 테스트가
+    // 그걸 잡는다 — isAbolished 행에 거래를 30건 넣고 결과에서 빠지는지 본다.
+    const SIGUNGU_ABOLISHED = '88889'; // 거래 30건을 담지만 Region이 폐지 처리된 코드
+    const REGION_ABOLISHED = `${SIGUNGU_ABOLISHED}00000`; // Region.code, VarChar(10)
+    let propId: bigint;
+    let result: Record<string, SigunguMedian>;
+
+    const hash = (label: string) => createHash('sha256').update(`median-snapshot-abolished-${label}`).digest('hex');
+    const recentDate = (i: number) => new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+
+    beforeAll(async () => {
+      await prisma.region.upsert({
+        where: { code: REGION_ABOLISHED },
+        update: {},
+        create: {
+          code: REGION_ABOLISHED, sido: '테스트', sigungu: '테스트폐지구', fullName: '테스트 테스트폐지구',
+          level: 2, isAbolished: true, sourceVersion: 'test',
+        },
+      });
+      const prop = await prisma.property.create({
+        data: {
+          propertyType: PropertyType.APARTMENT,
+          name: '중위가폐지구테스트',
+          nameNorm: '중위가폐지구테스트',
+          regionCode: REGION_ABOLISHED,
+          address: '테스트 주소',
+        },
+      });
+      propId = prop.id;
+
+      const valid = Array.from({ length: 30 }, (_, i) => ({
+        propertyId: propId,
+        propertyType: PropertyType.APARTMENT,
+        regionCode: REGION_ABOLISHED,
+        sigunguCode: SIGUNGU_ABOLISHED,
+        dealType: DealType.SALE,
+        contractDate: recentDate(i),
+        exclusiveArea: 59.99,
+        floor: 5,
+        dealAmount: 5000 + i * 10,
+        source: 'test',
+        rawHash: hash(`valid-${i}`),
+      }));
+
+      await prisma.transaction.createMany({ data: valid });
+      result = await computeSigunguMedians();
+    });
+
+    afterAll(async () => {
+      await prisma.transaction.deleteMany({ where: { sigunguCode: SIGUNGU_ABOLISHED } });
+      if (propId) await prisma.property.delete({ where: { id: propId } });
+      await prisma.region.delete({ where: { code: REGION_ABOLISHED } });
+    });
+
+    it('MIN_SAMPLE을 채워도 폐지된 Region의 코드는 결과에서 빠진다', () => {
+      expect(result[SIGUNGU_ABOLISHED]).toBeUndefined();
     });
   });
 
