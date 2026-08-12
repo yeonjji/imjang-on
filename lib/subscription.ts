@@ -160,14 +160,21 @@ function mapListRow(r: ListRow): SubscriptionListItem {
 // 사람이 이 표면들에서 카드를 클릭해 레이아웃 없는 순수 텍스트 410을 받는다 — 크롤러용 신호를
 // 사람에게 응답으로 낸 셈이라 회귀다. 미들웨어·사이트맵과 같은 출처(GONE_SUBSCRIPTION_IDS)를 써서
 // "무엇이 gone인가"의 정의가 세 표면 모두 항상 일치한다(lib/sitemap/sources.ts와 같은 변환 방식).
-const GONE_SUBSCRIPTION_ID_LIST: bigint[] = [...GONE_SUBSCRIPTION_IDS].map((id) => BigInt(id));
-
-// Prisma.join은 빈 배열을 거부하므로 플레이스홀더(빈 목록) 상태에서는 조건 자체를 생략한다 —
-// notIn: []이 아니라 WHERE 절에 조건을 안 붙이는 것과 동치(no-op)다.
-const GONE_SUBSCRIPTION_WHERE: Prisma.Sql =
-  GONE_SUBSCRIPTION_ID_LIST.length > 0
-    ? Prisma.sql`AND n.id NOT IN (${Prisma.join(GONE_SUBSCRIPTION_ID_LIST)})`
-    : Prisma.empty;
+//
+// Prisma.join은 브라우저에서 실행되면 던진다. 이 모듈은 'use client' 컴포넌트가
+// SUBSCRIPTION_CATEGORIES를 가져가면서 브라우저 번들에도 들어가므로, 최상단에서
+// 만들지 않고 쿼리가 실제로 도는 시점(서버)에만 만든다.
+let goneWhereCache: Prisma.Sql | null = null;
+function goneSubscriptionWhere(): Prisma.Sql {
+  if (goneWhereCache === null) {
+    // Prisma.join은 빈 배열을 거부하므로 플레이스홀더(빈 목록) 상태에서는 조건 자체를 생략한다 —
+    // notIn: []이 아니라 WHERE 절에 조건을 안 붙이는 것과 동치(no-op)다.
+    const ids = [...GONE_SUBSCRIPTION_IDS].map((id) => BigInt(id));
+    goneWhereCache =
+      ids.length > 0 ? Prisma.sql`AND n.id NOT IN (${Prisma.join(ids)})` : Prisma.empty;
+  }
+  return goneWhereCache;
+}
 
 export async function getSubscriptionList(opts: {
   categories?: SubscriptionCategory[];
@@ -201,7 +208,7 @@ export async function getSubscriptionList(opts: {
         ? Prisma.sql`AND (n."receiptBegin" IS NULL OR n."receiptBegin" <= CURRENT_DATE) AND (n."receiptEnd" < CURRENT_DATE OR n."receiptEnd" IS NULL)`
         : Prisma.empty
     }
-    ${GONE_SUBSCRIPTION_WHERE}
+    ${goneSubscriptionWhere()}
   `;
 
   // 기본(마감임박순): 진행중·예정 공고를 마감일 가까운 순으로 먼저, 마감된 공고는 최근 마감순으로 뒤에.
@@ -510,7 +517,7 @@ export async function getWeeklySubscriptions(today: Date = new Date()): Promise<
       (n."receiptBegin" BETWEEN ${weekStart} AND ${weekEnd})
        OR (n."receiptEnd"   BETWEEN ${weekStart} AND ${weekEnd})
     )
-    ${GONE_SUBSCRIPTION_WHERE}
+    ${goneSubscriptionWhere()}
     ORDER BY n."receiptEnd" ASC NULLS LAST, n.id ASC
   `);
 
@@ -543,7 +550,7 @@ export async function getHomeWeekBoard(today: Date = new Date()): Promise<WeekMo
     FROM "SubscriptionNotice" n
     WHERE COALESCE(n."receiptBegin", n."receiptEnd") <= ${weekEnd}
       AND COALESCE(n."receiptEnd", n."receiptBegin") >= ${weekStart}
-    ${GONE_SUBSCRIPTION_WHERE}
+    ${goneSubscriptionWhere()}
     ORDER BY n."receiptEnd" ASC NULLS LAST, n.id ASC
   `);
 
@@ -611,7 +618,7 @@ export async function getNearbySubscriptions(opts: {
       LEFT JOIN "SubscriptionUnit" u ON u."noticeId" = n.id
       WHERE n."regionName" = ${sido}
       ${extraWhere}
-      ${GONE_SUBSCRIPTION_WHERE}
+      ${goneSubscriptionWhere()}
       GROUP BY n.id
       ORDER BY (CASE WHEN n."receiptBegin" > CURRENT_DATE OR n."receiptEnd" >= CURRENT_DATE THEN 0 ELSE 1 END),
                n."receiptEnd" DESC NULLS LAST,
