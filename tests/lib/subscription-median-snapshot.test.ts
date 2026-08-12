@@ -23,9 +23,16 @@ describe('시군구 중위가 스냅샷', () => {
   describe('computeSigunguMedians — 표본 하한과 제외 조건 (시드 데이터)', () => {
     // 실제 시군구 코드는 5자리 행정코드라 88881/88882와 겹칠 수 없고, 로컬 테스트 DB는 항상 비어
     // 있어(project memory: env별 DB 타깃) 운영 데이터와 섞일 걱정 없이 sentinel로 쓴다.
-    const REGION = '8888888888'; // VarChar(10)
+    const REGION = '8888888888'; // VarChar(10), Property.regionCode용 — level 3이라 그룹 조인 대상은 아님
     const SIGUNGU_A = '88881'; // MIN_SAMPLE(30) 충족 — 결과에 포함돼야 함
     const SIGUNGU_B = '88882'; // MIN_SAMPLE 미만(29) — 결과에서 빠져야 함
+    // computeSigunguMedians가 이제 Region의 (sido, sigungu) 그룹을 거쳐야 sigunguCode에 도달하므로,
+    // Region 행이 없으면 조인이 아무것도 못 찾아 결과가 통째로 비어버린다. A/B는 서로 다른 sigungu
+    // 이름을 줘서 롤업 없이 예전처럼 독립된 그룹으로 계산되게 한다(롤업 자체는 별도 describe에서 검증).
+    // Region.sigunguCode는 LEFT(code, 5)로 계산되는 생성 컬럼이라 직접 넣을 수 없다 — code 앞 5자리를
+    // 원하는 sigunguCode로 맞춰서 만든다.
+    const REGION_LV2_A = `${SIGUNGU_A}00000`; // Region.code, VarChar(10) → sigunguCode = SIGUNGU_A
+    const REGION_LV2_B = `${SIGUNGU_B}00000`;
     let propId: bigint;
     let result: Record<string, SigunguMedian>;
 
@@ -37,6 +44,22 @@ describe('시군구 중위가 스냅샷', () => {
         where: { code: REGION },
         update: {},
         create: { code: REGION, sido: '테스트', fullName: '테스트', level: 3, sourceVersion: 'test' },
+      });
+      await prisma.region.upsert({
+        where: { code: REGION_LV2_A },
+        update: {},
+        create: {
+          code: REGION_LV2_A, sido: '테스트', sigungu: '테스트A구', fullName: '테스트 테스트A구',
+          level: 2, sourceVersion: 'test',
+        },
+      });
+      await prisma.region.upsert({
+        where: { code: REGION_LV2_B },
+        update: {},
+        create: {
+          code: REGION_LV2_B, sido: '테스트', sigungu: '테스트B구', fullName: '테스트 테스트B구',
+          level: 2, sourceVersion: 'test',
+        },
       });
       const prop = await prisma.property.create({
         data: {
@@ -184,6 +207,8 @@ describe('시군구 중위가 스냅샷', () => {
       await prisma.transaction.deleteMany({ where: { sigunguCode: { in: [SIGUNGU_A, SIGUNGU_B] } } });
       if (propId) await prisma.property.delete({ where: { id: propId } });
       await prisma.region.delete({ where: { code: REGION } });
+      await prisma.region.delete({ where: { code: REGION_LV2_A } });
+      await prisma.region.delete({ where: { code: REGION_LV2_B } });
     });
 
     it('MIN_SAMPLE 이상(30건)인 시군구는 결과에 포함된다', () => {
@@ -200,6 +225,84 @@ describe('시군구 중위가 스냅샷', () => {
 
     it('중위값은 섞여 들어간 6건을 빼고 유효 30건만으로 계산된다', () => {
       expect(result[SIGUNGU_A].median).toBe(1145);
+    });
+  });
+
+  describe('computeSigunguMedians — 일반구 롤업 (같은 Region 그룹의 다른 sigunguCode로 값이 펼쳐진다)', () => {
+    // 수원시 같은 일반구 도시 버그의 최소 재현: Region에 (sido, sigungu)는 같고 sigunguCode만 다른
+    // 두 행을 만든다. 거래는 한쪽 코드(구 코드 역할)에만 넣고, 다른 쪽(시 코드 역할)은 거래가 전혀
+    // 없다 — resolveSigunguFromAddress가 실제로 city 코드를 돌려주는 상황과 같다. 롤업이 되면 거래가
+    // 없는 코드도 같은 그룹이라 결과에 나타나야 한다.
+    const SIGUNGU_WITH_TX = '88883'; // 거래를 넣는 쪽 — district 코드 역할
+    const SIGUNGU_WITHOUT_TX = '88884'; // 거래가 없는 쪽 — city 코드 역할, 롤업으로만 값을 받아야 함
+    // Region.sigunguCode는 LEFT(code, 5) 생성 컬럼이라 code 앞 5자리로 값을 맞춘다.
+    const REGION_WITH_TX = `${SIGUNGU_WITH_TX}00000`; // Region.code, VarChar(10)
+    const REGION_WITHOUT_TX = `${SIGUNGU_WITHOUT_TX}00000`;
+    let propId: bigint;
+    let result: Record<string, SigunguMedian>;
+
+    const hash = (label: string) => createHash('sha256').update(`median-snapshot-rollup-${label}`).digest('hex');
+    const recentDate = (i: number) => new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+
+    beforeAll(async () => {
+      await prisma.region.upsert({
+        where: { code: REGION_WITH_TX },
+        update: {},
+        create: {
+          code: REGION_WITH_TX, sido: '테스트', sigungu: '테스트공유구', fullName: '테스트 테스트공유구',
+          level: 2, sourceVersion: 'test',
+        },
+      });
+      await prisma.region.upsert({
+        where: { code: REGION_WITHOUT_TX },
+        update: {},
+        create: {
+          code: REGION_WITHOUT_TX, sido: '테스트', sigungu: '테스트공유구', fullName: '테스트 테스트공유구',
+          level: 2, sourceVersion: 'test',
+        },
+      });
+      const prop = await prisma.property.create({
+        data: {
+          propertyType: PropertyType.APARTMENT,
+          name: '중위가롤업테스트',
+          nameNorm: '중위가롤업테스트',
+          regionCode: REGION_WITH_TX,
+          address: '테스트 주소',
+        },
+      });
+      propId = prop.id;
+
+      const valid = Array.from({ length: 30 }, (_, i) => ({
+        propertyId: propId,
+        propertyType: PropertyType.APARTMENT,
+        regionCode: REGION_WITH_TX,
+        sigunguCode: SIGUNGU_WITH_TX,
+        dealType: DealType.SALE,
+        contractDate: recentDate(i),
+        exclusiveArea: 59.99,
+        floor: 5,
+        dealAmount: 3000 + i * 10,
+        source: 'test',
+        rawHash: hash(`valid-${i}`),
+      }));
+
+      await prisma.transaction.createMany({ data: valid });
+      result = await computeSigunguMedians();
+    });
+
+    afterAll(async () => {
+      await prisma.transaction.deleteMany({ where: { sigunguCode: { in: [SIGUNGU_WITH_TX, SIGUNGU_WITHOUT_TX] } } });
+      if (propId) await prisma.property.delete({ where: { id: propId } });
+      await prisma.region.delete({ where: { code: REGION_WITH_TX } });
+      await prisma.region.delete({ where: { code: REGION_WITHOUT_TX } });
+    });
+
+    it('거래가 없는 코드도 같은 Region 그룹이면 결과에 나타난다', () => {
+      expect(result[SIGUNGU_WITHOUT_TX]).toBeDefined();
+    });
+
+    it('거래가 있는 코드와 없는 코드가 같은 값(median, count)을 받는다', () => {
+      expect(result[SIGUNGU_WITHOUT_TX]).toEqual(result[SIGUNGU_WITH_TX]);
     });
   });
 
