@@ -22,6 +22,37 @@ const SIDO_LIST: { code: string; sido: string; fullName: string }[] = [
   { code: '4300000000', sido: '충북', fullName: '충청북도' },
 ];
 
+/** 시도 풀네임 → 짧은 alias 리스트 (주소 prefix 매칭용) */
+export const SIDO_ALIASES: Record<string, string[]> = {
+  서울특별시: ['서울특별시', '서울'],
+  부산광역시: ['부산광역시', '부산'],
+  대구광역시: ['대구광역시', '대구'],
+  인천광역시: ['인천광역시', '인천'],
+  // 2026-07-01 광주+전남 통합. 구 명칭 주소도 신 시도로 매칭시킨다.
+  전남광주통합특별시: ['전남광주통합특별시', '전남광주', '광주광역시', '광주', '전라남도', '전남'],
+  // 아래 두 항목은 Region에 해당 시도 행이 남아 있지 않아 현재 조회되지 않는다.
+  // 카탈로그가 Region.sido로 역인덱싱하므로 남겨둬도 동작에 영향이 없다.
+  광주광역시: ['광주광역시', '광주'],
+  대전광역시: ['대전광역시', '대전'],
+  울산광역시: ['울산광역시', '울산'],
+  세종특별자치시: ['세종특별자치시', '세종특별시', '세종'],
+  경기도: ['경기도', '경기'],
+  강원특별자치도: ['강원특별자치도', '강원도', '강원'],
+  충청북도: ['충청북도', '충북'],
+  충청남도: ['충청남도', '충남'],
+  전북특별자치도: ['전북특별자치도', '전라북도', '전북'],
+  전라남도: ['전라남도', '전남'],
+  경상북도: ['경상북도', '경북'],
+  경상남도: ['경상남도', '경남'],
+  제주특별자치도: ['제주특별자치도', '제주도', '제주'],
+};
+
+/** 주소 토큰이 시도인지 판정할 때 쓰는 모든 표기. 구 명칭(강원도·전라북도 등)까지 포함한다. */
+export const SIDO_NAMES: ReadonlySet<string> = new Set([
+  ...SIDO_LIST.flatMap((s) => [s.sido, s.fullName]),
+  ...Object.entries(SIDO_ALIASES).flatMap(([, aliases]) => aliases),
+]);
+
 /**
  * 시도 풀네임 → 축약명. Region.sido에는 풀네임이 담기므로 표시용 축약이 필요하다.
  * sidoFullName()의 역방향이며, sidoPrefix()와 달리 코드가 아니라 이름을 낸다.
@@ -50,6 +81,15 @@ export function getSidoList(): Promise<{ code: string; sido: string; fullName: s
  */
 export function sidoFullName(sido: string): string {
   return SIDO_LIST.find((s) => s.sido === sido)?.fullName ?? sido;
+}
+
+/** 어떤 표기든 시도 풀네임으로 정규화한다. 접두사 비교는 축약형(충북·전남)에서 깨진다. */
+export function canonicalSido(name: string): string | null {
+  if (!name) return null;
+  for (const [fullName, aliases] of Object.entries(SIDO_ALIASES)) {
+    if (aliases.includes(name) || fullName === name) return fullName;
+  }
+  return null;
 }
 
 export interface RegionRow {

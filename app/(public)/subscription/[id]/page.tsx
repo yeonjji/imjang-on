@@ -13,6 +13,7 @@ import { NearbySubway } from '@/components/ui/nearby-subway';
 import { SubscriptionHero } from './_components/subscription-hero';
 import { ScheduleTimeline } from './_components/schedule-timeline';
 import { UnitSupplyTable } from './_components/unit-supply-table';
+import { PriceComparison } from './_components/price-comparison';
 import { SubscriptionSidebar } from './_components/subscription-sidebar';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
@@ -129,6 +130,7 @@ export default async function SubscriptionDetailPage({ params }: Params) {
         <main className="flex min-w-0 flex-col gap-8">
           <ScheduleTimeline notice={notice} />
           <UnitSupplyTable units={notice.units} />
+          <PriceComparison address={notice.address} />
           <SourceCaption ids={['applyhome', 'lh-presub']} />
 
           {coord ? (

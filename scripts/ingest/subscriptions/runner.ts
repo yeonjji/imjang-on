@@ -2,7 +2,7 @@ import { SubscriptionCategory, SubscriptionSource } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { notify } from '@/scripts/ingest/notify';
-import { geocode } from '@/scripts/ingest/geocoder';
+import { enrichNoticesWithGeocode } from './geocode-enrich';
 import { APPLYHOME_CONFIG, fetchApplyhomeNotices, fetchUnits } from './adapter-applyhome';
 import { fetchLhPresub } from './adapter-lh-presub';
 import { computeContentHash } from './content-hash';
@@ -55,21 +55,12 @@ async function loadExisting(
   return map;
 }
 
-// 신규/주소변경일 때만 카카오 호출, 주소 동일하면 기존 좌표 재사용
-async function geocodeNotice(
-  notice: NoticeWithUnits['notice'],
-  prev: ExistingNotice | undefined,
-): Promise<void> {
-  if (!notice.address) return;
+// 주소가 안 바뀐 기존 공고는 저장된 좌표를 그대로 재사용한다 — 지오코딩 API를 다시 부르지 않는다.
+// 이렇게 채운 행은 lat/lng가 이미 차 있으므로 뒤이은 enrichNoticesWithGeocode가 자동으로 건너뛴다.
+function reusePreviousCoord(notice: NoticeWithUnits['notice'], prev: ExistingNotice | undefined): void {
   if (prev && prev.lat != null && prev.lng != null && prev.address === notice.address) {
     notice.lat = prev.lat;
     notice.lng = prev.lng;
-    return;
-  }
-  const coord = await geocode(notice.address);
-  if (coord) {
-    notice.lat = coord.lat;
-    notice.lng = coord.lng;
   }
 }
 
@@ -93,6 +84,12 @@ async function runOne(key: SubscriptionSourceKey): Promise<number> {
     const { changed, skipped } = diffByHash(items, existing);
     logger.info({ key, changed: changed.length, skipped }, 'change diff');
 
+    // upsert 전에 좌표를 배치로 채운다 — 그래야 같은 쓰기에 좌표가 들어가고, 보강 로그도 한 번만 찍힌다.
+    for (const item of changed) {
+      reusePreviousCoord(item.notice, existing.get(item.notice.sourceKey));
+    }
+    await enrichNoticesWithGeocode(changed.map((item) => item.notice));
+
     let upserted = 0;
     for (const item of changed) {
       if (!isLh) {
@@ -102,7 +99,6 @@ async function runOne(key: SubscriptionSourceKey): Promise<number> {
           item.notice.pblancNo,
         );
       }
-      await geocodeNotice(item.notice, existing.get(item.notice.sourceKey));
       await upsertNoticeWithUnits(item);
       upserted++;
       if (upserted % 50 === 0) {

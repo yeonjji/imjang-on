@@ -7,6 +7,7 @@ import { PROPERTY_INDEXABLE_WHERE } from '@/lib/property';
 import { STATIC_ENTRIES } from './static-entries';
 import { isBoardPublic } from '@/lib/board/visibility';
 import { boardPath } from '@/lib/board/slug';
+import { GONE_SUBSCRIPTION_IDS } from '@/lib/subscription/gone-ids';
 
 export const CHUNK_SIZE = 10_000;
 
@@ -105,10 +106,24 @@ const property = dbSource({
   }),
 });
 
+/** 마감 공고는 매일 크롤할 이유가 없다. 실측 5,890/5,914가 이미 마감이다. */
+export function subscriptionChangeFrequency(
+  receiptEnd: Date | null,
+  now: Date,
+): 'daily' | 'yearly' {
+  if (!receiptEnd) return 'daily';
+  return receiptEnd < now ? 'yearly' : 'daily';
+}
+
+// location(geography)은 Prisma where에 담기지 않아 GONE_SUBSCRIPTION_IDS(미들웨어와 같은 출처)를
+// notIn으로 넘긴다 — 사이트맵에 있는데 410이 나는 모순을 원천 차단한다. id는 BigInt column이라 변환.
+const GONE_SUBSCRIPTION_ID_LIST: bigint[] = [...GONE_SUBSCRIPTION_IDS].map((id) => BigInt(id));
+
 // 색인 게이트: 공급 정보(주택형별 units 또는 총공급)가 있는 공고만 사이트맵에 등재한다.
 // subscription/[id] page.tsx의 indexable 조건과 일치시켜 noindex ↔ sitemap 등재 모순을 방지. (AdSense P0-A)
 const SUBSCRIPTION_INDEXABLE: Prisma.SubscriptionNoticeWhereInput = {
   OR: [{ totalSupply: { not: null } }, { units: { some: {} } }],
+  id: { notIn: GONE_SUBSCRIPTION_ID_LIST },
 };
 
 const subscription = dbSource({
@@ -117,7 +132,7 @@ const subscription = dbSource({
   findMany: (skip, take) =>
     prisma.subscriptionNotice.findMany({
       where: SUBSCRIPTION_INDEXABLE,
-      select: { id: true, updatedAt: true } as Prisma.SubscriptionNoticeSelect,
+      select: { id: true, updatedAt: true, receiptEnd: true } as Prisma.SubscriptionNoticeSelect,
       orderBy: { id: 'asc' },
       skip,
       take,
@@ -125,7 +140,7 @@ const subscription = dbSource({
   toEntry: (s) => ({
     url: `${SITE_URL}/subscription/${s.id}`,
     lastModified: s.updatedAt,
-    changeFrequency: 'daily',
+    changeFrequency: subscriptionChangeFrequency(s.receiptEnd, new Date()),
     priority: 0.7,
   }),
 });
