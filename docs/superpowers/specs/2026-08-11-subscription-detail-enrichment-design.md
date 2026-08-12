@@ -44,9 +44,13 @@
 
 **즉 얇은 것은 위치 없는 2,367건이다.** 이들은 공급표 + 공용 FAQ + 공용 블록뿐이라 서로 near-duplicate다.
 
-그런데 이 2,367건 중 **2,364건이 주소를 갖고 있다.** 위치가 없는 이유는 데이터가 없어서가 아니라
-`scripts/ingest/subscriptions/adapter-applyhome.ts`와 `adapter-lh-presub.ts`가 `lat: null, lng: null`을
-하드코딩하고 지오코딩을 호출하지 않기 때문이다. `scripts/ingest/geocoder.ts`의 `geocode()`와
+그런데 이 2,367건 중 **2,364건이 주소를 갖고 있다.**
+
+⚠️ **2026-08-12 정정.** 처음에는 "어댑터가 `lat: null`을 하드코딩하고 지오코딩을 호출하지 않는다"고 적었으나
+실제로는 `scripts/ingest/subscriptions/runner.ts:69`가 이미 `geocode(notice.address)`를 부르고 있었다.
+어댑터의 `lat: null, lng: null`은 정규화 기본값이고, 좌표가 비는 진짜 이유는 **질의가 원문 주소라서**다.
+청약 주소가 `경기도 김포시 고촌읍 신곡리 김포신곡6지구 도시개발사업구역 A3BL` 같은 사업지구 서술형이면
+카카오 주소검색이 못 찾는다. 결과(좌표 없음)는 같지만 고칠 지점이 다르다 — 배선이 아니라 질의다. `scripts/ingest/geocoder.ts`의 `geocode()`와
 `scripts/ingest/amenities/geocode-fill.ts`의 `enrichWithGeocode()`는 이미 있고 병원·약국 적재가 쓴다.
 `KAKAO_REST_KEY`도 운영 박스에 설정돼 있다(실측).
 
