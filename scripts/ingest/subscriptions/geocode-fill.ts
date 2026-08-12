@@ -9,8 +9,7 @@
  */
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { geocode, geocodeKeyword } from '@/scripts/ingest/geocoder';
-import { parseAddressRegion, regionMatches, geocodeCandidates } from '@/lib/subscription/geo-validate';
+import { resolveGeocode } from '@/scripts/ingest/subscriptions/geocode-enrich';
 
 function argNum(flag: string, def: number): number {
   const i = process.argv.indexOf(flag);
@@ -18,8 +17,6 @@ function argNum(flag: string, def: number): number {
   const v = Number(process.argv[i + 1]);
   return Number.isFinite(v) ? v : def;
 }
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function main() {
   const apply = process.argv.includes('--apply');
@@ -39,33 +36,9 @@ async function main() {
   let mismatch = 0;
 
   for (const r of rows) {
-    const addr = parseAddressRegion(r.address);
-
-    // 원문 주소를 그대로 넣으면 카카오가 못 찾는다(운영 40건 표본 0/40).
-    // 좁은 후보부터 시도하고, 주소검색이 비면 키워드검색으로 폴백한다.
-    // 후보가 좌표를 찾아도 지역이 어긋나면 버리고 다음 후보를 마저 시도한다 —
-    // 첫 후보에서 바로 break하면, 뒤 후보라면 맞았을 좌표까지 놓친다.
-    let validCoord: Awaited<ReturnType<typeof geocode>> = null;
-    let sawInvalidCoord = false;
-    for (const q of geocodeCandidates(r.address)) {
-      let coord = await geocode(q);
-      if (!coord) {
-        await sleep(100); // 카카오 로컬 API 호출 간격 — 주소검색과 키워드검색 사이에도 간격을 둔다
-        coord = await geocodeKeyword(q);
-      }
-      await sleep(100); // 카카오 로컬 API 호출 간격
-
-      if (!coord) continue;
-      if (regionMatches(addr, coord)) {
-        validCoord = coord;
-        break;
-      }
-      sawInvalidCoord = true;
-      logger.warn(
-        { id: String(r.id), addr, got: { region1: coord.region1, region2: coord.region2 } },
-        '지역 불일치 — 다음 후보 시도',
-      );
-    }
+    // 후보 생성·순회·검증 로직은 geocode-enrich.ts와 공유한다 — 적재 시 인라인 보강(runner.ts)과
+    // 이 1회성 백필이 서로 다른 검증을 쓰면 한쪽만 고치고 다른 쪽을 잊는 사고가 난다.
+    const { coord: validCoord, sawInvalidCoord } = await resolveGeocode(r.address, { id: String(r.id) });
 
     if (!validCoord) {
       // 지역이 맞는 후보가 하나도 없었을 때, 애초에 좌표를 준 후보가 있었는지로
