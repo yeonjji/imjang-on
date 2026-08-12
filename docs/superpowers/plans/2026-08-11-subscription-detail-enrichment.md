@@ -933,7 +933,7 @@ Node 런타임 미들웨어는 `experimental.nodeMiddleware`를 켜야 한다. �
 /**
  * 좌표가 없어 비공개할 청약 공고 id 목록을 모듈로 생성한다.
  *
- *   pnpm exec dotenv -e .env.local -- tsx scripts/subscription/generate-gone-ids.ts
+ *   pnpm exec dotenv -e .env.qa.local -- tsx scripts/subscription/generate-gone-ids.ts
  *
  * ⚠️ 지오코딩 백필(scripts/ingest/subscriptions/geocode-fill.ts --apply)을 다시 돌렸다면
  *    반드시 이 스크립트도 다시 돌려라. 좌표를 얻은 공고가 목록에 남아 있으면 멀쩡한 페이지가 410이 된다.
