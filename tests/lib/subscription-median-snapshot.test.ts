@@ -65,10 +65,11 @@ describe('시군구 중위가 스냅샷', () => {
         rawHash: hash(`a-valid-${i}`),
       }));
 
-      // SIGUNGU_A에 섞어 넣는, 표본에 잡히면 안 되는 5건. dealAmount를 999999로 크게 잡아서 필터가
-      // 하나라도 새면 count(30→31)와 median(1145→다른 값)이 즉시 어긋나게 만든다. 각 행은 정확히
-      // 하나의 WHERE 절에만 걸리도록 설계했다 — JEONSE/WOLSE·오피스텔도 dealAmount를 채워
-      // "dealAmount>0" 필터를 우회시킴으로써 dealType/propertyType 필터 자체가 일하는지 검증한다.
+      // SIGUNGU_A에 섞어 넣는, 표본에 잡히면 안 되는 6건. dealAmount를 999999로 크게 잡아서(0원 건
+      // 제외) 필터가 하나라도 새면 count(30→31)와 median(1145→다른 값)이 즉시 어긋나게 만든다. 각
+      // 행은 정확히 하나의 WHERE 절에만 걸리도록 설계했다 — JEONSE/WOLSE·오피스텔도 dealAmount를
+      // 채워 "dealAmount>0" 필터를 우회시킴으로써 dealType/propertyType 필터 자체가 일하는지
+      // 검증하고, 기간외 건도 dealAmount를 채워 12개월 창 필터만으로 걸러지는지 검증한다.
       const distractorsA = [
         {
           propertyId: propId,
@@ -139,6 +140,19 @@ describe('시군구 중위가 스냅샷', () => {
           source: 'test',
           rawHash: hash('a-zero'),
         },
+        {
+          propertyId: propId,
+          propertyType: PropertyType.APARTMENT,
+          regionCode: REGION,
+          sigunguCode: SIGUNGU_A,
+          dealType: DealType.SALE,
+          contractDate: recentDate(550), // 약 18개월 전 — 12개월 창(365일) 밖
+          exclusiveArea: 59.99,
+          floor: 5,
+          dealAmount: 999_999,
+          source: 'test',
+          rawHash: hash('a-outside-window'),
+        },
       ];
 
       // SIGUNGU_B: 유효 SALE·APARTMENT 29건 — MIN_SAMPLE 미달로 통째로 빠져야 한다.
@@ -161,8 +175,14 @@ describe('시군구 중위가 스냅샷', () => {
     });
 
     afterAll(async () => {
-      await prisma.transaction.deleteMany({ where: { propertyId: propId } });
-      await prisma.property.delete({ where: { id: propId } });
+      // propId는 beforeAll 중간(Region upsert 이후, Property create 이후)에 할당된다. beforeAll이
+      // 그 사이 어디서든 던지면 propId는 undefined로 남는데, Prisma는 deleteMany의 where 필드가
+      // undefined면 "그 조건을 생략"으로 취급한다 — { propertyId: undefined }는 조건 없는
+      // deleteMany({})로 무너져 Transaction 테이블 전체(다른 테스트 파일이 병렬로 쓰고 있는 행까지)를
+      // 지울 수 있다. 그래서 beforeAll에서만 할당되는 propId 대신, 이 describe 스코프에 상수로 있는
+      // sentinel sigunguCode로 지운다 — beforeAll이 어디까지 진행됐든 안전하다.
+      await prisma.transaction.deleteMany({ where: { sigunguCode: { in: [SIGUNGU_A, SIGUNGU_B] } } });
+      if (propId) await prisma.property.delete({ where: { id: propId } });
       await prisma.region.delete({ where: { code: REGION } });
     });
 
@@ -174,11 +194,11 @@ describe('시군구 중위가 스냅샷', () => {
       expect(result[SIGUNGU_B]).toBeUndefined();
     });
 
-    it('JEONSE/WOLSE/오피스텔·취소·0원 거래는 표본 수에 잡히지 않는다', () => {
+    it('JEONSE/WOLSE/오피스텔·취소·0원·12개월 창외 거래는 표본 수에 잡히지 않는다', () => {
       expect(result[SIGUNGU_A].count).toBe(30);
     });
 
-    it('중위값은 섞여 들어간 5건을 빼고 유효 30건만으로 계산된다', () => {
+    it('중위값은 섞여 들어간 6건을 빼고 유효 30건만으로 계산된다', () => {
       expect(result[SIGUNGU_A].median).toBe(1145);
     });
   });
