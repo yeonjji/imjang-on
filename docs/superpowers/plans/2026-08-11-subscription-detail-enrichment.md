@@ -889,93 +889,164 @@ git commit -m "feat(subscription): 분양가 × 지역 실거래 중위가 비�
 ## Task 7: changefreq 교정 + 410 게이트
 
 **Files:**
-- Modify: `lib/sitemap/sources.ts:110-130` (subscription 소스)
-- Modify: `app/(public)/subscription/[id]/page.tsx` (410 반환)
-- Test: `tests/lib/sitemap-subscription.test.ts`
+- Create: `scripts/subscription/generate-gone-ids.ts`
+- Create: `lib/subscription/gone-ids.ts` (생성물 — 스크립트가 덮어쓴다)
+- Modify: `middleware.ts`
+- Modify: `lib/sitemap/sources.ts`
+- Test: `tests/lib/subscription-gone-ids.test.ts`, `tests/lib/sitemap-subscription.test.ts`
 
 **Interfaces:**
-- Consumes: 없음
-- Produces: `SUBSCRIPTION_PUBLIC: Prisma.SubscriptionNoticeWhereInput` — 사이트맵과 페이지가 공유하는 단일 게이트
+- Produces: `GONE_SUBSCRIPTION_IDS: ReadonlySet<string>`, `GONE_IDS_GENERATED_AT: string`, `subscriptionChangeFrequency(receiptEnd: Date | null, now: Date): 'daily' | 'yearly'`
 
-**사전 조건:** Task 2의 `--apply`가 끝나 `location IS NULL` 잔여가 확정돼야 한다.
-410 대상 목록을 사람이 검토한 뒤 적용한다.
+### 방식이 바뀐 이유
 
-- [ ] **Step 1: 공개 게이트와 changefreq 분기**
+계획 초안은 Prisma `where`에 `location: { not: null }`을 넣으려 했으나 `Unsupported("geography")`
+컬럼은 Prisma `where`에 담기지 않는다. 그리고 **Next 15의 페이지는 임의 상태 코드를 낼 수 없다** —
+`notFound()`는 404다.
+
+미들웨어는 410을 낼 수 있지만 `middleware.ts`는 Edge 런타임이라 Prisma를 쓸 수 없고,
+Node 런타임 미들웨어는 `experimental.nodeMiddleware`를 켜야 한다. 운영 중인 self-host 앱에
+실험 기능을 켜는 비용이 이득보다 크다.
+
+**그래서 id 목록을 스크립트로 생성해 모듈로 박고, Edge 미들웨어가 그 집합만 조회한다.**
+대상이 82건이라 집합이 작다. DB도 실험 플래그도 필요 없다.
+
+**낡음의 방향이 중요하다.** 목록 생성 이후에
+- 새 공고가 지오코딩에 실패하면 → 재생성 전까지 200으로 남는다. **무해하다.**
+- 목록에 있는 공고가 좌표를 얻으면 → 멀쩡한 페이지가 410이 된다. **해롭다.**
+
+두 번째는 백필을 다시 돌릴 때만 생긴다. 그때 목록을 반드시 재생성한다 — 스크립트 헤더에 적는다.
+
+- [ ] **Step 1: 생성 스크립트**
 
 ```ts
 /**
- * 공개 게이트. 좌표가 없는 공고는 지도·주변 실거래·인프라가 통째로 빠져
- * 공급표와 공용 블록만 남는 near-duplicate가 된다. 지오코딩 백필 후에도 좌표가 없으면 비공개한다.
- * noindex를 쓰지 않는 이유: 애드센스 심사는 자체 크롤러라 noindex가 보이지 않는다.
+ * 좌표가 없어 비공개할 청약 공고 id 목록을 모듈로 생성한다.
+ *
+ *   pnpm exec dotenv -e .env.local -- tsx scripts/subscription/generate-gone-ids.ts
+ *
+ * ⚠️ 지오코딩 백필(scripts/ingest/subscriptions/geocode-fill.ts --apply)을 다시 돌렸다면
+ *    반드시 이 스크립트도 다시 돌려라. 좌표를 얻은 공고가 목록에 남아 있으면 멀쩡한 페이지가 410이 된다.
  */
-export const SUBSCRIPTION_PUBLIC: Prisma.SubscriptionNoticeWhereInput = {
-  location: { not: null },
-  OR: [{ totalSupply: { not: null } }, { units: { some: {} } }],
-};
+import { writeFileSync } from 'node:fs';
+import { prisma } from '@/lib/db';
+
+const OUT = 'lib/subscription/gone-ids.ts';
+
+async function main() {
+  const rows = await prisma.$queryRaw<Array<{ id: bigint }>>`
+    SELECT id FROM "SubscriptionNotice" WHERE location IS NULL ORDER BY id
+  `;
+  const ids = rows.map((r) => String(r.id));
+  const today = new Date().toISOString().slice(0, 10);
+
+  const body = `/**
+ * 생성된 파일 — scripts/subscription/generate-gone-ids.ts가 덮어쓴다. 손으로 고치지 마라.
+ *
+ * 좌표가 없는 청약 공고. 지도·주변 실거래·인프라가 통째로 빠져 공급표와 공용 블록만 남는
+ * near-duplicate라 비공개한다. noindex가 아니라 410인 이유: 애드센스 심사는 자체 크롤러라
+ * noindex가 보이지 않는다.
+ */
+export const GONE_IDS_GENERATED_AT = '${today}';
+
+export const GONE_SUBSCRIPTION_IDS: ReadonlySet<string> = new Set([
+${ids.map((id) => `  '${id}',`).join('\n')}
+]);
+`;
+  writeFileSync(OUT, body);
+  console.log(`${OUT}: ${ids.length}건 (${today})`);
+}
+
+main()
+  .catch((err) => { console.error(err); process.exit(1); })
+  .finally(() => { void prisma.$disconnect(); });
 ```
 
-> Prisma는 `Unsupported("geography")` 컬럼을 `where`에 담지 못한다. 구현 시
-> `location IS NOT NULL` 조건은 `$queryRaw`로 id 목록을 얻거나 `prisma.$queryRaw`
-> 기반 소스로 바꾼다. 어느 쪽이든 **사이트맵과 페이지가 같은 판정을 쓰도록** 한 곳에 둔다.
-
-changefreq는 `toEntry`에서 `receiptEnd`로 나눈다. `findMany`의 select에 `receiptEnd`를 추가한다.
+- [ ] **Step 2: 미들웨어** — 기존 `/admin` 인증 로직을 그대로 두고 청약 경로를 더한다
 
 ```ts
-  toEntry: (s) => ({
-    url: `${SITE_URL}/subscription/${s.id}`,
-    lastModified: s.updatedAt,
-    // 99.6%가 마감된 공고다. 전부 daily로 신고하면 크롤 예산을 낭비한다.
-    changeFrequency: s.receiptEnd && s.receiptEnd < new Date() ? 'yearly' : 'daily',
-    priority: 0.7,
-  }),
+import { GONE_SUBSCRIPTION_IDS } from '@/lib/subscription/gone-ids';
+
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // 좌표 없는 청약 공고는 410. 페이지는 임의 상태 코드를 낼 수 없어 여기서 처리한다.
+  const m = /^\/subscription\/(\d+)$/.exec(pathname);
+  if (m && GONE_SUBSCRIPTION_IDS.has(m[1])) {
+    return new NextResponse('Gone', { status: 410 });
+  }
+
+  if (!pathname.startsWith('/admin')) return NextResponse.next();
+  // … 기존 인증 로직 그대로 …
+}
+
+export const config = { matcher: ['/admin/:path*', '/subscription/:id'] };
 ```
 
-- [ ] **Step 2: 테스트**
+정규식이 `\d+`만 받는 것이 중요하다 — 페이지도 `/^\d+$/`가 아니면 `notFound()`한다.
+
+- [ ] **Step 3: changefreq 분기** — `lib/sitemap/sources.ts`
 
 ```ts
+/** 마감 공고는 매일 크롤할 이유가 없다. 실측 5,890/5,914가 이미 마감이다. */
+export function subscriptionChangeFrequency(
+  receiptEnd: Date | null,
+  now: Date,
+): 'daily' | 'yearly' {
+  if (!receiptEnd) return 'daily';
+  return receiptEnd < now ? 'yearly' : 'daily';
+}
+```
+
+`findMany`의 select에 `receiptEnd`를 추가하고 `toEntry`에서 부른다.
+
+- [ ] **Step 4: 사이트맵에서 좌표 없는 공고 제외**
+
+Prisma `where`로는 geography를 거를 수 없으므로 `count`·`findMany` 둘 다 `$queryRaw`로 바꾸거나,
+`GONE_SUBSCRIPTION_IDS`를 `id: { notIn: [...] }`로 넘긴다. **후자를 쓴다** — 미들웨어와 같은 출처라
+사이트맵에 있는데 410이 나는 모순이 생기지 않는다. 82건이라 `notIn` 크기도 문제없다.
+
+- [ ] **Step 5: 테스트**
+
+```ts
+// tests/lib/subscription-gone-ids.test.ts
 import { describe, it, expect } from 'vitest';
-import { subscriptionChangeFrequency } from '@/lib/sitemap/sources';
+import { GONE_SUBSCRIPTION_IDS, GONE_IDS_GENERATED_AT } from '@/lib/subscription/gone-ids';
 
-describe('청약 사이트맵 changefreq', () => {
-  it('마감된 공고는 yearly', () => {
-    expect(subscriptionChangeFrequency(new Date('2020-01-01'), new Date('2026-08-11'))).toBe('yearly');
+describe('gone-ids 생성물', () => {
+  it('id는 전부 숫자 문자열이다 — 미들웨어 정규식이 숫자만 받는다', () => {
+    for (const id of GONE_SUBSCRIPTION_IDS) expect(id).toMatch(/^\d+$/);
   });
-  it('진행중·예정은 daily', () => {
-    expect(subscriptionChangeFrequency(new Date('2026-12-31'), new Date('2026-08-11'))).toBe('daily');
-  });
-  it('마감일이 없으면 daily', () => {
-    expect(subscriptionChangeFrequency(null, new Date('2026-08-11'))).toBe('daily');
+  it('생성일이 YYYY-MM-DD 형식이다', () => {
+    expect(GONE_IDS_GENERATED_AT).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });
 ```
 
-판정을 `subscriptionChangeFrequency(receiptEnd: Date | null, now: Date)`로 뽑아 테스트 가능하게 한다.
+```ts
+// tests/lib/sitemap-subscription.test.ts
+import { describe, it, expect } from 'vitest';
+import { subscriptionChangeFrequency } from '@/lib/sitemap/sources';
 
-- [ ] **Step 3: 페이지 410**
+const NOW = new Date('2026-08-12');
 
-```tsx
-// getSubscriptionById 이후, notFound() 자리 근처
-const coord = await getSubscriptionLatLng(noticeId);
-if (!coord) {
-  // 좌표가 없으면 공급표와 공용 블록만 남는 near-duplicate다. 색인이 아니라 비공개다.
-  const { notFound } = await import('next/navigation');
-  notFound(); // 410은 Next 15에서 라우트 세그먼트 설정으로 처리한다 — 구현 시 아래 주 참조
-}
+describe('청약 사이트맵 changefreq', () => {
+  it('마감된 공고는 yearly', () => {
+    expect(subscriptionChangeFrequency(new Date('2020-01-01'), NOW)).toBe('yearly');
+  });
+  it('진행중·예정은 daily', () => {
+    expect(subscriptionChangeFrequency(new Date('2026-12-31'), NOW)).toBe('daily');
+  });
+  it('마감일이 없으면 daily', () => {
+    expect(subscriptionChangeFrequency(null, NOW)).toBe('daily');
+  });
+  it('오늘 마감이면 아직 daily', () => {
+    expect(subscriptionChangeFrequency(NOW, NOW)).toBe('daily');
+  });
+});
 ```
 
-> **구현 주의:** Next.js App Router는 `notFound()`가 404를 낸다. 410을 내려면 상세 라우트에
-> `route.ts`를 두거나 미들웨어에서 처리해야 한다. `docs/superpowers/plans/2026-08-10-d1-d2b-route-removal.md`가
-> 같은 문제를 다뤘으므로 그 방식을 따른다. 저장소에 410 사용처가 아직 없으므로(실측) 이 태스크가 첫 도입이다.
-> 방식이 확정되지 않으면 **이 단계에서 멈추고 사람에게 확인한다.**
-
-- [ ] **Step 4: 검증 후 커밋**
-
-Run: `pnpm test:unit` → `pnpm build` → `pnpm seed:e2e` → `pnpm test:e2e`
-
-```bash
-git add lib/sitemap/sources.ts "app/(public)/subscription/[id]/page.tsx" tests/lib/sitemap-subscription.test.ts
-git commit -m "feat(subscription): 마감 공고 changefreq 교정 + 좌표 없는 공고 비공개"
-```
+- [ ] **Step 6: `pnpm lint` → `typecheck` → `test:unit` → `build` → e2e 후 커밋**
 
 ---
 
