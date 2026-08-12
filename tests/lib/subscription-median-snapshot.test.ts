@@ -306,6 +306,88 @@ describe('시군구 중위가 스냅샷', () => {
     });
   });
 
+  describe('computeSigunguMedians — region_map은 level을 가리지 않는다 (수원 회귀 재현)', () => {
+    // 1차 수정에서 region_map을 level=2로 좁혔다가 운영에서 회귀를 냈다(스냅샷 249→210). 원인:
+    // resolveSigunguFromAddress가 돌려주는 코드는 시 단위(level 2)인데, 일반구 도시의 구 코드
+    // (장안·권선·팔달·영통 등)는 level 3에만 존재한다. Transaction.sigunguCode는 그 구 코드를
+    // 담으므로, level=2로 좁히면 그 구 코드 자체가 region_map에서 빠져 조인이 아무 것도 못 찾는다.
+    // 이 테스트는 그 정확한 모양을 재현한다 — 같은 (sido, sigungu) 아래 level 2 행(거래 없음, 해석기가
+    // 돌려주는 시 코드 역할)과 level 3 행(거래 30건, Transaction이 실제로 담는 구 코드 역할)을 만든다.
+    // level=2 필터가 살아있으면 level 3 행이 region_map에서 빠져 그룹 자체가 사라지고, 둘 다
+    // undefined가 되어 이 테스트가 실패한다.
+    const SIGUNGU_LV2_CODE = '88887'; // 해석기가 돌려줄 시 코드 역할 — 거래 없음
+    const SIGUNGU_LV3_CODE = '88888'; // Transaction이 담는 구 코드 역할 — 거래 30건
+    const REGION_LV2 = `${SIGUNGU_LV2_CODE}00000`; // Region.code, VarChar(10)
+    const REGION_LV3 = `${SIGUNGU_LV3_CODE}00000`;
+    let propId: bigint;
+    let result: Record<string, SigunguMedian>;
+
+    const hash = (label: string) => createHash('sha256').update(`median-snapshot-levelmix-${label}`).digest('hex');
+    const recentDate = (i: number) => new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+
+    beforeAll(async () => {
+      await prisma.region.upsert({
+        where: { code: REGION_LV2 },
+        update: {},
+        create: {
+          code: REGION_LV2, sido: '테스트', sigungu: '테스트레벨구', fullName: '테스트 테스트레벨구',
+          level: 2, sourceVersion: 'test',
+        },
+      });
+      await prisma.region.upsert({
+        where: { code: REGION_LV3 },
+        update: {},
+        create: {
+          code: REGION_LV3, sido: '테스트', sigungu: '테스트레벨구', fullName: '테스트 테스트레벨구',
+          level: 3, sourceVersion: 'test',
+        },
+      });
+      const prop = await prisma.property.create({
+        data: {
+          propertyType: PropertyType.APARTMENT,
+          name: '중위가레벨혼합테스트',
+          nameNorm: '중위가레벨혼합테스트',
+          regionCode: REGION_LV3,
+          address: '테스트 주소',
+        },
+      });
+      propId = prop.id;
+
+      const valid = Array.from({ length: 30 }, (_, i) => ({
+        propertyId: propId,
+        propertyType: PropertyType.APARTMENT,
+        regionCode: REGION_LV3,
+        sigunguCode: SIGUNGU_LV3_CODE,
+        dealType: DealType.SALE,
+        contractDate: recentDate(i),
+        exclusiveArea: 59.99,
+        floor: 5,
+        dealAmount: 4000 + i * 10,
+        source: 'test',
+        rawHash: hash(`valid-${i}`),
+      }));
+
+      await prisma.transaction.createMany({ data: valid });
+      result = await computeSigunguMedians();
+    });
+
+    afterAll(async () => {
+      await prisma.transaction.deleteMany({ where: { sigunguCode: { in: [SIGUNGU_LV2_CODE, SIGUNGU_LV3_CODE] } } });
+      if (propId) await prisma.property.delete({ where: { id: propId } });
+      await prisma.region.delete({ where: { code: REGION_LV2 } });
+      await prisma.region.delete({ where: { code: REGION_LV3 } });
+    });
+
+    it('level 3 행에만 거래가 있어도 같은 그룹의 level 2 코드가 결과에 나타난다', () => {
+      expect(result[SIGUNGU_LV2_CODE]).toBeDefined();
+    });
+
+    it('거래를 담은 level 3 코드도 결과에 나타나고 값이 같다', () => {
+      expect(result[SIGUNGU_LV3_CODE]).toBeDefined();
+      expect(result[SIGUNGU_LV2_CODE]).toEqual(result[SIGUNGU_LV3_CODE]);
+    });
+  });
+
   describe('writeSigunguMedianSnapshot — 빈 집계 결과는 기존 스냅샷을 덮어쓰지 않는다', () => {
     // 위 describe의 afterAll이 이미 시드 행을 지웠고, 로컬 테스트 DB는 원래 Transaction이 비어
     // 있다(project memory: env별 DB 타깃). test:unit 안의 다른 파일이 만드는 표본은 전부

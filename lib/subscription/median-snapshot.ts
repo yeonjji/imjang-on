@@ -28,13 +28,15 @@ export const MIN_SAMPLE = 30;
 export async function computeSigunguMedians(): Promise<Record<string, SigunguMedian>> {
   const rows = await prisma.$queryRaw<Array<{ sgg: string; med: number; n: bigint }>>`
     WITH region_map AS (
-      -- resolveSigunguFromAddress가 참조하는 것과 같은 카탈로그(lib/region.ts:getAllSigungus의
-      -- level=2·isAbolished=false·sigunguCode not null 조건)를 (sido, sigungu, sigunguCode)
-      -- 조합으로 좁힌다. 세종처럼 한 sigunguCode를 여러 읍면동 이름이 공유하는 경우가 섞여도,
-      -- 최종 SELECT가 sigunguCode로 다시 접으므로 결과에는 영향이 없다.
+      -- 일부러 resolveSigunguFromAddress의 카탈로그(lib/region.ts:getAllSigungus, level=2·
+      -- isAbolished=false)를 그대로 따르지 않는다. 이 맵은 양쪽을 다 이어야 한다 — 해석기가
+      -- 돌려주는 코드(시 단위, level 2)와 Transaction.sigunguCode가 실제로 담는 코드(구 단위,
+      -- 일반구 도시는 level 3에만 존재)다. level=2로 좁히면 장안·권선·팔달·영통 같은 구 코드
+      -- 자체가 지도에서 빠져 그 시의 거래가 통째로 조인에서 떨어져 나간다(수원 249→210 회귀로
+      -- 실측). 그래서 sigunguCode/sigungu가 있는 모든 level의 Region 행을 다 쓴다.
       SELECT DISTINCT sido, sigungu, "sigunguCode"
       FROM "Region"
-      WHERE level = 2 AND "isAbolished" = false AND "sigunguCode" IS NOT NULL
+      WHERE "sigunguCode" IS NOT NULL AND sigungu IS NOT NULL
     ),
     group_medians AS (
       SELECT rm.sido, rm.sigungu,
