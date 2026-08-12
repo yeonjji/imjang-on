@@ -15,9 +15,16 @@ async function main() {
 
   await prisma.$executeRawUnsafe('SET statement_timeout = 0');
   const t = Date.now();
-  await writeSigunguMedianSnapshot();
-  console.log(`[subscription-median] refreshed in ${Date.now() - t}ms`);
+  const count = await writeSigunguMedianSnapshot();
   await prisma.$disconnect();
+
+  // count=0은 정상 상태가 아니다(운영 실측 249곳) — 로그만 남기면 ETL 잡이 초록으로 지나가
+  // 사람이 못 알아채므로, 여기서 실패로 끝내 기존 스냅샷이 그대로 유지됐음을 알린다.
+  if (count === 0) {
+    console.error(`[subscription-median] empty result — snapshot left unchanged (${Date.now() - t}ms)`);
+    process.exit(1);
+  }
+  console.log(`[subscription-median] refreshed ${count} sigungus in ${Date.now() - t}ms`);
 }
 
 main().catch((err) => {
