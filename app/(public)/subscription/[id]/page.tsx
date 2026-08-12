@@ -130,7 +130,7 @@ export default async function SubscriptionDetailPage({ params }: Params) {
         <main className="flex min-w-0 flex-col gap-8">
           <ScheduleTimeline notice={notice} />
           <UnitSupplyTable units={notice.units} />
-          <PriceComparison units={notice.units} address={notice.address} />
+          <PriceComparison address={notice.address} />
           <SourceCaption ids={['applyhome', 'lh-presub']} />
 
           {coord ? (

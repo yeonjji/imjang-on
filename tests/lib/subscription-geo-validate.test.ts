@@ -131,6 +131,15 @@ describe('regionMatches', () => {
       expect(canonicalSido(n), `canonicalSido should normalize "${n}"`).not.toBeNull();
     }
   });
+
+  // SIDO_ALIASES는 '광주'·'광주광역시'·'전남'·'전라남도'를 두 canonical 항목(전남광주통합특별시,
+  // 광주광역시/전라남도) 아래에 중복으로 갖고 있어, canonicalSido()의 결과가 객체 리터럴 선언
+  // 순서에 의존한다. 지금은 '전남광주통합특별시'가 먼저 선언돼 맞지만, 순서가 바뀌면 조용히
+  // 달라진다 — 여기서 못박아 둔다.
+  it("'광주'·'전남'은 전남광주통합특별시로 정규화된다 — 선언 순서 의존을 못박는다", () => {
+    expect(canonicalSido('광주')).toBe('전남광주통합특별시');
+    expect(canonicalSido('전남')).toBe('전남광주통합특별시');
+  });
 });
 
 describe('geocodeCandidates', () => {

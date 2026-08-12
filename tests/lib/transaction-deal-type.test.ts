@@ -54,7 +54,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await prisma.transaction.deleteMany({ where: { propertyId: propId } });
+  // propId 대신 sentinel sigunguCode로 지운다 — beforeAll이 propId 대입 전에 던지면
+  // propertyId: undefined가 조건 없는 deleteMany가 되어 Transaction 테이블 전체가 날아간다.
+  await prisma.transaction.deleteMany({ where: { sigunguCode: SIGUNGU } });
   await prisma.property.delete({ where: { id: propId } });
   await prisma.region.delete({ where: { code: REGION } });
   await prisma.$disconnect();

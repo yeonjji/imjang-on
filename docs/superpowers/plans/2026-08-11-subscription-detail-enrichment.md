@@ -38,14 +38,18 @@
 |---|---|---|
 | `lib/subscription/geo-validate.ts` (신규) | 주소 토큰 ↔ 카카오 응답 지역 일치 판정(순수 함수) | S-1 |
 | `scripts/ingest/subscriptions/geocode-fill.ts` (신규) | 백필 스크립트 (`--dry-run` / `--apply` / `--limit`) | S-1 |
-| `scripts/ingest/subscriptions/adapter-applyhome.ts` (수정) | 적재 시 지오코딩 배선 | S-1 |
-| `scripts/ingest/subscriptions/adapter-lh-presub.ts` (수정) | 같음 | S-1 |
+| `scripts/ingest/subscriptions/geocode-enrich.ts` (신규) | 지오코딩 배선(러너·백필 공용) — `resolveGeocode()` / `enrichNoticesWithGeocode()` | S-1 |
+| `scripts/ingest/subscriptions/runner.ts` (수정) | upsert 직전 `enrichNoticesWithGeocode()` 호출 | S-1 |
 | `lib/subscription/median-snapshot.ts` (신규) | 시군구별 중위가 스냅샷 읽기/쓰기 | S-2 |
 | `scripts/subscription/refresh-median-snapshot.ts` (신규) | 스냅샷 갱신 | S-2 |
 | `deploy/run-etl.sh` (수정) | `transactions-daily`에 한 줄 | S-2 |
 | `app/(public)/subscription/[id]/_components/price-comparison.tsx` (신규) | 분양가 표 + 지역 중위가 비교 | S-2 |
 | `app/(public)/subscription/[id]/page.tsx` (수정) | 비교 블록 배선 · 410 | S-2·S-3 |
 | `lib/sitemap/sources.ts` (수정) | changefreq 분기 · 410 대상 제외 | S-3 |
+
+> ⚠️ 2026-08-12 정정: 이 표는 원래 `adapter-applyhome.ts`·`adapter-lh-presub.ts`를 "(수정)"으로
+> 적었으나, 실제 배선은 두 어댑터를 건드리지 않고 `geocode-enrich.ts`(신규)와 `runner.ts`(수정)로
+> 이뤄졌다. 어댑터의 `lat: null, lng: null`은 지금도 그대로다.
 
 ---
 
@@ -915,7 +919,13 @@ Node 런타임 미들웨어는 `experimental.nodeMiddleware`를 켜야 한다. �
 - 새 공고가 지오코딩에 실패하면 → 재생성 전까지 200으로 남는다. **무해하다.**
 - 목록에 있는 공고가 좌표를 얻으면 → 멀쩡한 페이지가 410이 된다. **해롭다.**
 
-두 번째는 백필을 다시 돌릴 때만 생긴다. 그때 목록을 반드시 재생성한다 — 스크립트 헤더에 적는다.
+두 번째는 백필을 다시 돌릴 때만 생기는 게 아니다. `scripts/ingest/subscriptions/runner.ts`(Task 3)가
+**매일 도는 적재에서도** 지오코딩을 하므로, 청약홈이 주소를 정정해 좌표를 새로 얻으면 매일 적재만으로도
+같은 드리프트가 난다. 백필이든 일간 적재든 목록을 반드시 재생성한다 — 스크립트 헤더에 적는다.
+
+> ⚠️ 2026-08-12 정정: 초안은 이 드리프트가 "백필을 다시 돌릴 때만" 생긴다고 적었으나,
+> Task 3에서 `runner.ts`가 일간 적재 경로에도 지오코딩을 배선했으므로 트리거는 백필이 아니라
+> 일간 적재다.
 
 - [ ] **Step 1: 생성 스크립트**
 

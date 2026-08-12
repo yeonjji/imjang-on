@@ -108,6 +108,12 @@ DB의 `location`만 채우면 지도·주변 단지·지하철·인프라가 그
 - `--dry-run` 기본, 성공률과 검증 실패 사유를 집계해 출력. `--apply`로 반영
 - 카카오 API 호출 간 간격을 둔다(기존 `geocode-fill.ts`의 방식을 따른다)
 
+⚠️ **2026-08-12 정정.** 실제 구현은 `buildGeocodeQuery(regionName, address)`를 쓰지 않는다.
+청약 주소는 사업지구 서술형이 섞여 있어 단일 질의로는 부족했다. 대신 `lib/subscription/geo-validate.ts`의
+`geocodeCandidates(address)`가 좁은 순서(지번 → 동 → 시군구)로 후보를 여러 개 내고,
+`geocode-enrich.ts`의 `resolveGeocode()`가 후보를 순서대로 시도하며 `regionMatches()`로 검증한다.
+운영 dry-run 실측 성공률 96.7%(2,285/2,364)는 이 후보 루프로 얻은 값이다.
+
 ### 4.2 좌표 검증 — 이 설계의 핵심 안전장치
 
 카카오 응답의 `region1`(시도)·`region2`(시군구)가 공고의 `regionName`과 어긋나면 **버린다.**
@@ -126,6 +132,12 @@ DB의 `location`만 채우면 지도·주변 단지·지하철·인프라가 그
 
 `adapter-applyhome.ts`·`adapter-lh-presub.ts`의 `lat: null, lng: null` 하드코딩을 걷어내고
 적재 시 지오코딩한다. 이걸 하지 않으면 앞으로 들어오는 공고가 같은 문제를 반복한다.
+
+⚠️ **2026-08-12 정정.** §1.2와 같은 이유로 이 문단도 틀렸다. Task 3에서 실제로 확인한 배선은
+어댑터의 `lat: null, lng: null` 제거가 아니라, **적재 러너(`runner.ts`)가 upsert 직전에
+`enrichNoticesWithGeocode()`(`geocode-enrich.ts`, 신규)를 호출해 배열을 제자리에서 채우는 방식**이다.
+어댑터의 `lat: null, lng: null`은 지금도 그대로 남아 있다 — 정규화 기본값일 뿐이고 좌표는 러너가
+나중에 채운다. 정규화 함수가 네트워크를 타면 단위 테스트가 불가능해지므로 어댑터 자체는 바꾸지 않았다.
 
 ---
 

@@ -40,7 +40,10 @@ describe('geocodeKeyword', () => {
     expect(coord?.region2).toBe('수원시 팔달구');
   });
 
-  it('구가 없는 시(군)는 시 단위까지만 채운다', async () => {
+  it('일반구가 있는 시는 시+구까지 채운다', async () => {
+    // TODO: 이름이 원래 주장한 "구가 없는 시(군)는 시 단위까지만" 케이스는 아직 없다 —
+    // 이 테스트는 청주시 흥덕구(일반구 있음)라 region2가 '청주시 흥덕구'까지 채워진다.
+    // 진짜 "구 없는 시" 분기(예: 강릉시 단독)는 아직 커버되지 않았다.
     fetchSpy.mockResolvedValue(
       keywordResponse({ x: '127.4200', y: '36.4800', address_name: '충북 청주시 흥덕구 봉명동 100' }),
     );
