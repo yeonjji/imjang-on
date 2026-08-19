@@ -15,12 +15,25 @@ export function findForbiddenPhrases(text: string): string[] {
 
 // 하한 800: 레버리지 ETF 등 사실 빈약 공공공시는 충실하게 써도 ~800자가 한계(gpt-4.1 실측 803).
 // 패딩으로 1,000자를 억지로 채우는 건 과장 금지 원칙에 어긋나, 정직한 길이에 기준을 맞춘다.
-export function checkLength(body: string, min = 800, max = 2200): { ok: boolean; length: number } {
+export const MAX_BODY_CHARS = 2200;
+
+// 손수 쓴 글 전용 상한. 조문번호·시행일·검산을 함께 적는 글은 2200에서 사실이 아니라 근거 표기부터
+// 잘려나가 '모든 수치에 출처 표기' 원칙과 충돌한다. 자동 생성 글은 종전 2200을 그대로 쓴다.
+// 실측: 근저당·전세 권리분석 글(insert-jeonse-mortgage-priority)이 압축 없이 2,617자.
+export const MAX_BODY_CHARS_MANUAL = 3000;
+
+export function checkLength(body: string, min = 800, max = MAX_BODY_CHARS): { ok: boolean; length: number } {
   const length = body.replace(/\s/g, '').length;
   return { ok: length >= min && length <= max, length };
 }
 
-export interface GuardrailInput { body: string; sourceName: string; sourceUrl: string; }
+export interface GuardrailInput {
+  body: string;
+  sourceName: string;
+  sourceUrl: string;
+  /** 손수 쓴 글만 MAX_BODY_CHARS_MANUAL을 넘긴다. 미지정 시 자동 생성 글 상한(2200)이 적용된다. */
+  maxLength?: number;
+}
 export interface GuardrailResult { ok: boolean; violations: string[]; }
 
 export function runGuardrails(input: GuardrailInput): GuardrailResult {
@@ -28,7 +41,7 @@ export function runGuardrails(input: GuardrailInput): GuardrailResult {
   if (!input.sourceName.trim() || !input.sourceUrl.trim()) violations.push('출처(sourceName/sourceUrl) 누락');
   const forbidden = findForbiddenPhrases(input.body);
   if (forbidden.length) violations.push(`금지표현: ${forbidden.join(', ')}`);
-  const len = checkLength(input.body);
+  const len = checkLength(input.body, undefined, input.maxLength);
   if (!len.ok) violations.push(`분량 범위 벗어남(${len.length}자)`);
   return { ok: violations.length === 0, violations };
 }

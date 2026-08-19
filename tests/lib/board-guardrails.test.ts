@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { findForbiddenPhrases, checkLength, runGuardrails } from '@/lib/board/guardrails';
+import { findForbiddenPhrases, checkLength, runGuardrails, MAX_BODY_CHARS_MANUAL } from '@/lib/board/guardrails';
 
 describe('findForbiddenPhrases', () => {
   it('의견·전망성 표현을 잡아낸다', () => {
@@ -29,5 +29,18 @@ describe('runGuardrails', () => {
   it('정상 글은 통과', () => {
     const r = runGuardrails({ body: '국토교통부는 한도를 상향했다고 발표했다. '.repeat(80), sourceName: '국토부', sourceUrl: 'https://x' });
     expect(r.ok).toBe(true);
+  });
+  it('maxLength 미지정이면 자동 생성 글 상한(2200)이 적용된다', () => {
+    const r = runGuardrails({ body: '가'.repeat(2500), sourceName: '국토부', sourceUrl: 'https://x' });
+    expect(r.ok).toBe(false);
+    expect(r.violations.some((v) => v.includes('분량'))).toBe(true);
+  });
+  it('손수 쓴 글은 maxLength로 상한을 올려 통과시킨다', () => {
+    const r = runGuardrails({ body: '가'.repeat(2500), sourceName: '국토부', sourceUrl: 'https://x', maxLength: MAX_BODY_CHARS_MANUAL });
+    expect(r.ok).toBe(true);
+  });
+  it('maxLength를 올려도 그 상한은 넘지 못한다', () => {
+    const r = runGuardrails({ body: '가'.repeat(3100), sourceName: '국토부', sourceUrl: 'https://x', maxLength: MAX_BODY_CHARS_MANUAL });
+    expect(r.ok).toBe(false);
   });
 });

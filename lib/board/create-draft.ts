@@ -15,6 +15,8 @@ export interface CreateDraftInput {
   dedupeKey: string;
   dateISO: string;
   detectedFrom?: string;
+  /** 손수 쓴 글만 지정한다. 미지정 시 자동 생성 글 상한(MAX_BODY_CHARS)이 적용된다. */
+  maxLength?: number;
 }
 export type CreateDraftResult =
   | { status: 'created'; slug: string; id: bigint }
@@ -27,7 +29,12 @@ export async function createDraft(input: CreateDraftInput): Promise<CreateDraftR
 
   // 크롤 네비 찌꺼기('…부처별 뉴스 이동' 등)를 저장 전에 걷어낸다. 축약(정규화)은 표시 지점에서.
   const sourceName = sanitizeSourceName(input.sourceName);
-  const guard = runGuardrails({ body: input.gen.body, sourceName, sourceUrl: input.sourceUrl });
+  const guard = runGuardrails({
+    body: input.gen.body,
+    sourceName,
+    sourceUrl: input.sourceUrl,
+    maxLength: input.maxLength,
+  });
   if (!guard.ok) return { status: 'rejected', violations: guard.violations };
 
   let slug = buildBoardSlug(input.gen.title, input.dateISO);
