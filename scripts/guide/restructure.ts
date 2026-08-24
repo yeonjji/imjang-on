@@ -1,11 +1,20 @@
 /**
- * 1회성: 게시된(PUBLISHED) guide 글을 핵심요약+섹션 구조로 재구조화한다.
- * 기본은 status=DRAFT로 되돌려 어드민 검수 큐로 보낸다.
- * --in-place 면 게시 상태·게시일(publishedAt)을 그대로 두고 본문만 수정한다(재게시 날짜 리셋 방지).
+ * ⚠️ 2026-08-24 실행 중지. 공유 함수 `restructureBody`가 board 쪽 요구로 방향이 반전됐다
+ * (핵심요약 골격 '부여' → '제거'). 이 스크립트는 그 변경에 맞춰 정비되지 않았고,
+ * 지금 돌리면 가이드 본문을 조용히 손상시킨다:
  *
- * 실행(OPENAI_API_KEY 필요):
+ *   1. 선택 조건이 아직 `NOT contains '## 핵심 요약'`이라, 골격이 없는 가이드를 골라
+ *      골격을 제거하는 프롬프트에 태운다(무의미한 재작성 + 과금).
+ *   2. 새 프롬프트 6번이 라벨형 소제목을 서술구로 바꾸는데, `lib/guide/insert-blocks.ts`가
+ *      `## 완속·급속 충전 방식, 무엇이 다를까?` 등 **정확한 소제목 문자열 13개**에
+ *      `[[data:<키>]]` 블록을 앵커링한다. 소제목이 바뀌면 앵커가 끊긴다.
+ *   3. `runGuideGuardrails`는 출처·금지표현·길이만 본다 — 끊긴 앵커를 잡지 못한다.
+ *
+ * 가이드 쪽을 진행하려면 먼저 앵커 소제목 보존을 프롬프트/후처리로 보장해야 한다.
+ * 그때까지 이 스크립트는 실행되지 않는다.
+ *
+ * 실행(정비 후):
  *   pnpm dlx dotenv -e .env.local -- tsx scripts/guide/restructure.ts --limit 5 --dry-run
- *   pnpm dlx dotenv -e .env.local -- tsx scripts/guide/restructure.ts --limit 5 --in-place
  */
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
@@ -22,6 +31,17 @@ function argNum(flag: string, def: number): number {
 }
 
 async function main() {
+  // 위 헤더 주석 참고. 공유 프롬프트 반전 이후 정비 전까지 실행 금지 — data 블록 앵커가 끊긴다.
+  // 정비를 마치면 이 가드 블록을 지운다(환경변수로 우회하라는 뜻이 아니다).
+  if (!process.env.GUIDE_RESTRUCTURE_ANCHORS_VERIFIED) {
+    logger.error(
+      'scripts/guide/restructure.ts는 실행 중지 상태다(헤더 주석 참고). ' +
+        'lib/guide/insert-blocks.ts의 앵커 소제목 13개가 보존되는지 확인·정비한 뒤 이 가드를 제거하라.',
+    );
+    process.exitCode = 1;
+    return;
+  }
+
   const dryRun = process.argv.includes('--dry-run');
   const inPlace = process.argv.includes('--in-place');
   const limit = argNum('--limit', 5);
