@@ -21,6 +21,12 @@ describe('생성 프롬프트 섹션 골격', () => {
     expect(BOARD_PROMPT).not.toContain('최소 1,000자');
   });
 
+  // 골격 제거가 '전부 산문화'로 넘어가면 일정·목록형 글이 오히려 읽기 어려워진다(dry-run 실측).
+  it('board 프롬프트는 열거형 정보를 목록·표로 두라고 지시한다', () => {
+    expect(BOARD_PROMPT).toContain('열거가 본질이라');
+    expect(BOARD_PROMPT).toContain('목록이나 표로 둔다');
+  });
+
   // guide는 lib/guide/insert-blocks.ts가 앵커 소제목에 의존해 아직 골격을 유지한다.
   it('guide 프롬프트는 핵심 요약·참고 자료 섹션을 강제한다', () => {
     expect(GUIDE_PROMPT).toContain('## 핵심 요약');

@@ -32,7 +32,15 @@ describe('restructureBody', () => {
     const p = buildRestructureSystemPrompt(2200);
     expect(p).toContain("'## 핵심 요약' 섹션을 없앤다");
     expect(p).toContain("'## 참고 자료' 섹션을 없앤다");
-    expect(p).toContain('서술구로 바꾼다');
+    expect(p).toContain('구체적 내용을 가리키는 문구로 바꾼다');
+  });
+
+  // dry-run 실측(#1 청약 12건 현황)에서 단지별 접수일 목록이 통째로 산문화돼 오히려
+  // 읽기 어려워졌다. 산문화는 해설 대목에만 적용되어야 한다.
+  it('프롬프트는 열거형 내용의 목록·표를 보존하라고 지시한다', () => {
+    const p = buildRestructureSystemPrompt(2200);
+    expect(p).toContain('목록·표를 그대로 둔다');
+    expect(p).toContain('원문이 목록이면 목록으로 남긴다');
   });
 
   it('원본 본문을 user 메시지로 전달한다', async () => {

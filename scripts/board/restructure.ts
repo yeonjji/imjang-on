@@ -21,6 +21,34 @@ import { createOpenAiClient } from '@/lib/board/generate';
 import { restructureBody } from '@/lib/board/restructure';
 import { runGuardrails } from '@/lib/board/guardrails';
 
+/**
+ * 서식 틀 제거가 구조까지 훼손했는지 본다. runGuardrails는 출처·금지표현·길이만 보므로 여기서 건진다.
+ *
+ * blocking — 자동 판정이 확실한 것만. 실측(dry-run 3편)에서 모델이 '## 핵심 요약'을 지우면서
+ *   남은 소제목을 '###'로 강등한 사례가 1편 있었다. 비결정적이라 프롬프트 문구만으로는 안 막힌다.
+ * warnings — 사람이 봐야 판정되는 것. 목록 소멸은 글에 따라 옳기도 하다: 청약 일정표(#1)에서는
+ *   손실이지만, 제도 해설(#2)에서는 불릿 24개를 산문으로 푸는 것이 바로 의도한 결과였다.
+ *   그래서 차단하지 않고 표시만 한다.
+ */
+function checkStructure(oldBody: string, newBody: string): { blocking: string[]; warnings: string[] } {
+  const blocking: string[] = [];
+  const warnings: string[] = [];
+  const h2 = (t: string) => (t.match(/^## /gm) ?? []).length;
+  const bullets = (t: string) => (t.match(/^[ \t]*[-*] /gm) ?? []).length;
+
+  // '## 핵심 요약' 1개는 사라지는 게 정상 — 그 외 소제목은 h2로 남아야 한다.
+  if (h2(oldBody) - 1 > 0 && h2(newBody) === 0) {
+    blocking.push(`소제목이 h2로 남지 않음(원문 h2 ${h2(oldBody)}개 → 0개, ### 강등 의심)`);
+  }
+  if (/^## 핵심 요약/m.test(newBody)) blocking.push("'## 핵심 요약'이 그대로 남음");
+  if (/^## 참고 자료/m.test(newBody)) blocking.push("'## 참고 자료'가 그대로 남음");
+
+  if (bullets(oldBody) >= 10 && bullets(newBody) === 0) {
+    warnings.push(`목록 전멸(원문 ${bullets(oldBody)}개 → 0개) — 열거형 글이면 손실이다`);
+  }
+  return { blocking, warnings };
+}
+
 function argNum(flag: string, def: number): number {
   const i = process.argv.indexOf(flag);
   if (i === -1) return def;
@@ -55,13 +83,21 @@ async function main() {
   for (const post of posts) {
     const newBody = await restructureBody(client, post.body, env.OPENAI_MODEL, 2200);
     const guard = runGuardrails({ body: newBody, sourceName: post.sourceName, sourceUrl: post.sourceUrl });
+    const struct = checkStructure(post.body, newBody);
+    const ok = guard.ok && struct.blocking.length === 0;
     const charCount = newBody.replace(/\s/g, '').length;
-    logger.info({ id: String(post.id), title: post.title, charCount, guardOk: guard.ok }, 'restructured');
-    console.log(`\n[#${post.id}] ${post.title}\n${'-'.repeat(60)}\n${newBody}\n${'-'.repeat(60)}\n가드레일: ${guard.ok ? 'PASS ✅' : 'FAIL ❌ → ' + guard.violations.join(', ')} (공백제외 ${charCount}자)\n`);
+    logger.info({ id: String(post.id), title: post.title, charCount, guardOk: ok }, 'restructured');
+    const problems = [...guard.violations, ...struct.blocking];
+    console.log(
+      `\n[#${post.id}] ${post.title}\n${'-'.repeat(60)}\n${newBody}\n${'-'.repeat(60)}\n` +
+        `검사: ${ok ? 'PASS ✅' : 'FAIL ❌ → ' + problems.join(', ')} (공백제외 ${charCount}자)` +
+        (struct.warnings.length ? `\n⚠️ 사람이 볼 것: ${struct.warnings.join(', ')}` : '') +
+        '\n',
+    );
 
     if (dryRun) continue;
-    if (!guard.ok) {
-      logger.warn({ id: String(post.id), violations: guard.violations }, '가드레일 실패 — 건너뜀(원본 유지)');
+    if (!ok) {
+      logger.warn({ id: String(post.id), violations: problems }, '검사 실패 — 건너뜀(원본 유지)');
       continue;
     }
     if (inPlace) {
