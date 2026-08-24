@@ -9,6 +9,7 @@
  *
  * 기본은 status=DRAFT로 되돌려 /admin/posts 검수 큐로 보낸다(어드민이 재게시).
  * --in-place 면 게시 상태·게시일(publishedAt)을 그대로 두고 본문만 수정한다(재게시 날짜 리셋 방지).
+ * --drafts  면 게시글 대신 **검수 대기 초안**을 대상으로 삼는다(본문 갱신 + reviewedAt 초기화).
  *
  * 실행(OPENAI_API_KEY 필요):
  *   pnpm dlx dotenv -e .env.local -- tsx scripts/board/restructure.ts --limit 5 --dry-run
@@ -86,6 +87,10 @@ function argNum(flag: string, def: number): number {
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
   const inPlace = process.argv.includes('--in-place');
+  // 검수 대기 초안도 옛 프롬프트 산물이라 골격을 그대로 갖고 있다(2026-08-25 실측 28편 중 27편).
+  // 이대로 어드민에서 게시하면 방금 치운 골격이 라이브로 되돌아온다. 초안은 게시 전이라
+  // 라이브 노출이 없고 검수 단계가 한 번 더 남아 있어, 게시글보다 되돌리기 쉬운 대상이다.
+  const draftsMode = process.argv.includes('--drafts');
   const limit = argNum('--limit', 5);
   const client = createOpenAiClient(env.OPENAI_API_KEY);
 
@@ -98,14 +103,15 @@ async function main() {
   //    detectedFrom은 nullable이라 null을 명시적으로 포함시킨다(NOT LIKE는 null 행을 떨어뜨린다).
   const posts = await prisma.post.findMany({
     where: {
-      status: 'PUBLISHED',
+      status: draftsMode ? 'DRAFT' : 'PUBLISHED',
       body: { contains: '## 핵심 요약' },
       OR: [{ detectedFrom: null }, { detectedFrom: { not: { startsWith: 'manual:' } } }],
     },
-    orderBy: { publishedAt: 'asc' },
+    // 초안은 publishedAt이 null이라 정렬 기준이 되지 못한다.
+    orderBy: draftsMode ? { generatedAt: 'asc' } : { publishedAt: 'asc' },
     take: limit,
   });
-  logger.info({ count: posts.length, dryRun }, 'board restructure 대상');
+  logger.info({ count: posts.length, dryRun, draftsMode }, 'board restructure 대상');
 
   for (const post of posts) {
     const newBody = await restructureBody(client, post.body, env.OPENAI_MODEL, 2200);
@@ -132,7 +138,11 @@ async function main() {
       logger.warn({ id: String(post.id), violations: problems }, '검사 실패 — 건너뜀(원본 유지)');
       continue;
     }
-    if (inPlace) {
+    if (draftsMode) {
+      // 초안은 게시 전이라 상태를 바꿀 것이 없다. 본문이 바뀌었으므로 이전 검수만 무효화한다.
+      await prisma.post.update({ where: { id: post.id }, data: { body: newBody, reviewedAt: null } });
+      logger.info({ id: String(post.id) }, '초안 본문 갱신(검수 상태 초기화)');
+    } else if (inPlace) {
       // 게시 유지: 본문만 교체. status·publishedAt 손대지 않음(게시일 보존).
       await prisma.post.update({ where: { id: post.id }, data: { body: newBody } });
       logger.info({ id: String(post.id) }, 'in-place 수정(게시·게시일 유지)');
