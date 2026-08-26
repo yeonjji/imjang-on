@@ -4,6 +4,8 @@ import { findForbiddenPhrases, checkLength, runGuardrails } from '@/lib/board/gu
 describe('findForbiddenPhrases', () => {
   it('의견·전망성 표현을 잡아낸다', () => {
     expect(findForbiddenPhrases('상승할 것으로 보입니다.')).toContain('보입니다');
+    expect(findForbiddenPhrases('그렇게 보인다.')).toContain('보입니다');
+    expect(findForbiddenPhrases('한결 좋아 보입니다.')).toContain('보입니다');
     expect(findForbiddenPhrases('하락 가능성이 있습니다.').length).toBeGreaterThan(0);
     expect(findForbiddenPhrases('오를 것으로 예상됩니다.').length).toBeGreaterThan(0);
     expect(findForbiddenPhrases('전문가 추천합니다.').length).toBeGreaterThan(0);
