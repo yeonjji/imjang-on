@@ -149,7 +149,10 @@ function parseArgs(argv) {
 // 직접 실행될 때만 CLI로 동작한다(테스트에서 import할 때는 실행되지 않는다).
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
   const args = parseArgs(process.argv.slice(2));
-  if (!args.dir || !Number.isFinite(args.baselineMs) || !Number.isFinite(args.maxBytes)) {
+  // Number('') === 0이고 Number.isFinite(0) === true라 빈 문자열이 유한성 검사를 통과했다.
+  // 그러면 baselineMs = 0 → mtimeMs <= 0인 파일이 없어 빌드 산출물까지 전부 삭제 후보가 된다.
+  // > 0 비교는 NaN·빈 문자열·음수·0을 한 번에 거른다(NaN > 0은 false).
+  if (!args.dir || !(args.baselineMs > 0) || !(args.maxBytes > 0)) {
     console.error('usage: node prune.mjs --dir <path> --baseline-ms <int> --max-bytes <int> [--dry-run]');
     process.exit(2);
   }
