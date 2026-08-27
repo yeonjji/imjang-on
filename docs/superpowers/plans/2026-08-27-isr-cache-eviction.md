@@ -13,7 +13,7 @@
 - 설계 문서: `docs/superpowers/specs/2026-08-27-isr-cache-eviction-design.md`
 - 컨테이너(`imjang-web-1`) 런타임은 **node v20.20.2, 의존성 설치 불가**. 실행 스크립트는 외부 패키지를 import하지 않는다
 - `tsconfig.json`의 `allowJs`는 **false**다. `.mjs`를 테스트에서 import하려면 인접 `.d.mts` 선언이 필요하다
-- 빌드 산출물 **325개**(컨테이너 StartedAt 이전 mtime)는 절대 삭제하지 않는다. 기준선을 얻지 못하면 아무것도 지우지 않는다
+- 빌드 산출물(이미지 Created 이전 mtime)은 절대 삭제하지 않는다. 기준선을 얻지 못하면 아무것도 지우지 않는다. (참고: 325개는 2026-08-27 컨테이너 StartedAt 기준 실측치다 — 기준선이 이미지 Created로 바뀌면서(재시작 무력화 대응) 정확한 수는 달라질 수 있고, Task 5에서 다시 잰다)
 - 페이지 캐시는 `.html`·`.rsc`·`.meta` 3종이 한 벌이다. 반드시 함께 지운다(부분 삭제 금지)
 - 그 3종 외 확장자는 mtime이 기준선 이후여도 건드리지 않는다
 - 로그 접두사는 기존과 동일하게 `[maint] `를 쓴다
@@ -649,7 +649,8 @@ maintenance.sh:5의 '실행 컨테이너에서 안전삭제 불가' 주석도 �
 ```bash
 ssh -i "$OCI_KEY" ubuntu@161.33.160.159 '
   cd /opt/imjang
-  S=$(docker inspect --format "{{.State.StartedAt}}" imjang-web-1)
+  IMG=$(docker inspect --format "{{.Image}}" imjang-web-1)
+  S=$(docker inspect --format "{{.Created}}" "$IMG")
   B=$(date -d "$S" +%s%3N)
   docker cp scripts/ops/isr-prune/prune.mjs imjang-web-1:/tmp/isr-prune.mjs
   docker exec imjang-web-1 node /tmp/isr-prune.mjs \
@@ -658,18 +659,25 @@ ssh -i "$OCI_KEY" ubuntu@161.33.160.159 '
 '
 ```
 
-Expected: `baselineProtectedFiles`가 **325 부근**(기준선 이전 mtime = 빌드 산출물 불변식. 대상 외 확장자는 `nonPageFiles`로 별도 집계되므로 여기 섞이지 않는다), `deletedPages`가 수만, `dryRun:true`. **`baselineProtectedFiles`가 0이거나 수만이면 중단하고 기준선 계산을 다시 본다**
+`$S`는 이미지 생성 시각이다(2026-08-27 재시작 무력화 수정 이후 `maintenance.sh`의 `prune_isr()`와 동일한 기준선 계산 — 컨테이너 기동 시각이 아니다).
+
+Expected: `deletedPages`가 수만, `dryRun:true`. **수용 기준은 절대값이 아니라 Step 2와의 일치다** — 이 dry-run의 `baselineProtectedFiles`가 Step 2의 `find ! -newermt` 결과와 같아야 한다(둘 다 같은 `$S`를 기준선으로 쓰므로 일치해야 정상). **`baselineProtectedFiles`가 0이면 중단하고 기준선 계산을 다시 본다**(기준선이 무의미하다는 뜻). 대상 외 확장자는 `nonPageFiles`로 별도 집계되므로 여기 섞이지 않는다.
+
+(참고: 이전엔 `{{.State.StartedAt}}` 기준으로 **325개 부근**을 기대했다. 기준선이 이미지 Created로 바뀌면서 — 이미지 생성과 컨테이너 최초 기동 사이에 쓰인 파일이 있다면 — 이 수는 325와 달라질 수 있다. 새 절대값을 미리 지어내지 않고 이 Step에서 처음 실측한다.)
 
 - [ ] **Step 2: V1 — 빌드 산출물 수를 기록한다**
 
 ```bash
 ssh -i "$OCI_KEY" ubuntu@161.33.160.159 '
-  S=$(docker inspect --format "{{.State.StartedAt}}" imjang-web-1)
+  IMG=$(docker inspect --format "{{.Image}}" imjang-web-1)
+  S=$(docker inspect --format "{{.Created}}" "$IMG")
   docker exec imjang-web-1 sh -c "find /app/.next/server/app ! -newermt \"$(date -d "$S" -u "+%Y-%m-%d %H:%M:%S")\" -type f | wc -l"
 '
 ```
 
-Expected: `325`. 이 값을 적어둔다
+`$S`는 이미지 생성 시각이다(Step 1과 동일한 기준선 계산).
+
+Expected: Step 1의 `baselineProtectedFiles`와 같은 값. 이 값을 적어둔다(이하 V1 기준치로 사용). 절대값은 이미지 Created 기준으로 이 Step에서 처음 재는 것이라 미리 단정하지 않는다(2026-08-27 StartedAt 기준 실측 325와는 다를 수 있다)
 
 - [ ] **Step 3: 실제 축출을 1회 실행한다**
 
@@ -683,7 +691,8 @@ Expected: `[maint] isr prune: {...}` 한 줄이 찍히고, `recreating web` 로�
 
 ```bash
 ssh -i "$OCI_KEY" ubuntu@161.33.160.159 '
-  S=$(docker inspect --format "{{.State.StartedAt}}" imjang-web-1)
+  IMG=$(docker inspect --format "{{.Image}}" imjang-web-1)
+  S=$(docker inspect --format "{{.Created}}" "$IMG")
   docker exec imjang-web-1 sh -c "
     echo \"보호(V1): \$(find /app/.next/server/app ! -newermt \"$(date -d "$S" -u "+%Y-%m-%d %H:%M:%S")\" -type f | wc -l)\"
     echo \"html: \$(find /app/.next/server/app -name \"*.html\" | wc -l)\"
@@ -693,7 +702,9 @@ ssh -i "$OCI_KEY" ubuntu@161.33.160.159 '
 '
 ```
 
-Expected: 보호(V1) = **325**(Step 2와 동일 — prune.mjs 결과의 `baselineProtectedFiles`에 대응하는 독립 측정치. 대상 외 확장자는 `nonPageFiles`로 분리 집계되므로 이 find 조건엔 안 섞인다) · html 수 == rsc 수(V2) · 총량 ≤ **8192MB**(V4)
+`$S`는 이미지 생성 시각이다(Step 1·2와 동일한 기준선 계산 — 컨테이너 기동 시각이 아니다).
+
+Expected: 보호(V1) = **Step 2에서 적어둔 값과 동일**(같은 `$S`를 쓰므로 일치해야 한다. prune.mjs 결과의 `baselineProtectedFiles`에 대응하는 독립 측정치. 대상 외 확장자는 `nonPageFiles`로 분리 집계되므로 이 find 조건엔 안 섞인다) · html 수 == rsc 수(V2) · 총량 ≤ **8192MB**(V4)
 
 - [ ] **Step 5: V3 — 사이트가 정상인지 확인한다**
 
