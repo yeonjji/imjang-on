@@ -22,7 +22,7 @@ export function planEviction(input: {
 export interface PruneResult {
   totalBytes: number;
   maxBytes: number;
-  /** 기준선(baselineMs) 이전 mtime — 빌드 시 이미지에 구워진 산출물(불변식, 실측 325개). */
+  /** 기준선(baselineMs = 이미지 생성 시각) 이전 mtime — 빌드 시 이미지에 구워진 산출물. */
   baselineProtectedFiles: number;
   baselineProtectedBytes: number;
   /** 대상 확장자(PAGE_EXTS)가 아닌 파일 — mtime과 무관하게 총량에만 반영한다. */

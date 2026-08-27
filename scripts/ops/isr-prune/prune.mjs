@@ -54,16 +54,22 @@ async function walk(dir, out) {
 /**
  * dir을 훑어 기준선 이후 생성된 ISR 페이지를 상한까지 지운다.
  *
- * baselineMs = 컨테이너 StartedAt. 그 이전 mtime은 이미지에 구워진 빌드 산출물이라
- * 절대 지우면 안 된다(실측 325개). 동적 상세는 generateStaticParams가 빈 배열이라
- * 빌드 시 프리렌더되지 않으므로, 상세 캐시는 전부 기준선 이후에 있다.
+ * baselineMs = **이미지 생성 시각**(docker inspect의 `{{.Image}}` → `{{.Created}}`).
+ * 컨테이너 StartedAt이 아니다 — compose가 `restart: unless-stopped`라 재부팅·OOM에서
+ * 컨테이너는 재생성이 아니라 재시작되고, 그때 쓰기 레이어는 남은 채 StartedAt만 갱신된다.
+ * StartedAt을 쓰면 그 순간 기존 런타임 캐시 전체가 보호 대상으로 재분류돼 영영 회수되지
+ * 않는다(조용히 일어난다). 이미지 생성 시각은 재시작에 불변이다.
+ *
+ * 그 이전 mtime은 이미지에 구워진 빌드 산출물이라 절대 지우면 안 된다. 동적 상세는
+ * generateStaticParams가 빈 배열이라 빌드 시 프리렌더되지 않으므로, 상세 캐시는 전부
+ * 기준선 이후에 있다.
  */
 export async function prune({ dir, baselineMs, maxBytes, dryRun = false }) {
   const startedAt = Date.now();
   const files = await walk(dir, []);
 
-  // 두 모집단을 분리해 센다 — 섞으면 운영 모니터링에서 '325 불변식'을 확인할 수 없다.
-  let baselineProtectedFiles = 0; // 기준선 이전 mtime = 빌드 산출물(불변식, 실측 325개)
+  // 두 모집단을 분리해 센다 — 섞으면 운영 모니터링에서 빌드 산출물 수를 확인할 수 없다.
+  let baselineProtectedFiles = 0; // 기준선 이전 mtime = 빌드 산출물
   let baselineProtectedBytes = 0;
   let nonPageFiles = 0; // 대상 확장자가 아님(mtime 무관) — 예: .js, .nft.json
   let nonPageBytes = 0;
