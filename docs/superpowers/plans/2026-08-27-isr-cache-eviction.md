@@ -658,7 +658,7 @@ ssh -i "$OCI_KEY" ubuntu@161.33.160.159 '
 '
 ```
 
-Expected: `protectedFiles`가 **325 부근**, `deletedPages`가 수만, `dryRun:true`. **`protectedFiles`가 0이거나 수만이면 중단하고 기준선 계산을 다시 본다**
+Expected: `baselineProtectedFiles`가 **325 부근**(기준선 이전 mtime = 빌드 산출물 불변식. 대상 외 확장자는 `nonPageFiles`로 별도 집계되므로 여기 섞이지 않는다), `deletedPages`가 수만, `dryRun:true`. **`baselineProtectedFiles`가 0이거나 수만이면 중단하고 기준선 계산을 다시 본다**
 
 - [ ] **Step 2: V1 — 빌드 산출물 수를 기록한다**
 
@@ -693,7 +693,7 @@ ssh -i "$OCI_KEY" ubuntu@161.33.160.159 '
 '
 ```
 
-Expected: 보호 = **325**(Step 2와 동일) · html 수 == rsc 수(V2) · 총량 ≤ **8192MB**(V4)
+Expected: 보호(V1) = **325**(Step 2와 동일 — prune.mjs 결과의 `baselineProtectedFiles`에 대응하는 독립 측정치. 대상 외 확장자는 `nonPageFiles`로 분리 집계되므로 이 find 조건엔 안 섞인다) · html 수 == rsc 수(V2) · 총량 ≤ **8192MB**(V4)
 
 - [ ] **Step 5: V3 — 사이트가 정상인지 확인한다**
 

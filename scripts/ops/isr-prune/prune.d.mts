@@ -22,8 +22,12 @@ export function planEviction(input: {
 export interface PruneResult {
   totalBytes: number;
   maxBytes: number;
-  protectedFiles: number;
-  protectedBytes: number;
+  /** 기준선(baselineMs) 이전 mtime — 빌드 시 이미지에 구워진 산출물(불변식, 실측 325개). */
+  baselineProtectedFiles: number;
+  baselineProtectedBytes: number;
+  /** 대상 확장자(PAGE_EXTS)가 아닌 파일 — mtime과 무관하게 총량에만 반영한다. */
+  nonPageFiles: number;
+  nonPageBytes: number;
   candidatePages: number;
   deletedPages: number;
   freedBytes: number;

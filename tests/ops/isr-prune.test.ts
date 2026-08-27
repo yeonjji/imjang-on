@@ -69,11 +69,11 @@ describe('planEviction', () => {
   });
 });
 
-/** 페이지 한 벌(.html·.rsc·.meta)을 만들고 mtime·atime을 지정한다. */
-function makePage(dir: string, name: string, bytes: number, epochSec: number) {
-  for (const ext of ['html', 'rsc', 'meta']) {
+/** 파일 한 벌을 만들고 mtime·atime을 지정한다. exts 기본값은 일반 페이지(.html·.rsc·.meta). */
+function makePage(dir: string, name: string, bytes: number, epochSec: number, exts = ['html', 'rsc', 'meta']) {
+  for (const ext of exts) {
     const p = join(dir, `${name}.${ext}`);
-    writeFileSync(p, 'x'.repeat(Math.max(1, Math.floor(bytes / 3))));
+    writeFileSync(p, 'x'.repeat(Math.max(1, Math.floor(bytes / exts.length))));
     utimesSync(p, epochSec, epochSec); // atime, mtime
   }
 }
@@ -88,7 +88,7 @@ describe('prune', () => {
 
     expect(existsSync(join(dir, 'build-artifact.html'))).toBe(true);
     expect(existsSync(join(dir, 'runtime-page.html'))).toBe(false);
-    expect(r.protectedFiles).toBe(3);
+    expect(r.baselineProtectedFiles).toBe(3);
     expect(r.deletedPages).toBe(1);
   });
 
@@ -101,16 +101,42 @@ describe('prune', () => {
     expect(readdirSync(dir)).toEqual([]);
   });
 
-  it('.html/.rsc/.meta 외 확장자는 건드리지 않는다', async () => {
+  it('.html/.rsc/.meta/.body 외 확장자는 건드리지 않는다', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'isr-'));
     makePage(dir, 'p', 300, 3000);
     const other = join(dir, 'route.js');
     writeFileSync(other, 'x');
     utimesSync(other, 3000, 3000); // 기준선 이후지만 대상 확장자가 아니다
 
-    await prune({ dir, baselineMs: 2000 * 1000, maxBytes: 1, dryRun: false });
+    const r = await prune({ dir, baselineMs: 2000 * 1000, maxBytes: 1, dryRun: false });
 
     expect(existsSync(other)).toBe(true);
+    expect(r.nonPageFiles).toBe(1);
+  });
+
+  // Next 15의 라우트 핸들러(APP_ROUTE — OG 이미지·sitemap 등) 캐시는 .html/.rsc 없이
+  // .body+.meta 한 벌만 쓴다. .body가 축출 대상에서 빠지면 이 바이트가 영구 회수 불가능해지고
+  // (protectedBytes로 잘못 계상), 짝인 .meta만 지워져 고아가 남는다.
+  it('.body 확장자(라우트 핸들러 캐시)를 짝인 .meta와 함께 지운다', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'isr-'));
+    makePage(dir, 'opengraph-image', 300, 3000, ['body', 'meta']);
+
+    const r = await prune({ dir, baselineMs: 2000 * 1000, maxBytes: 1, dryRun: false });
+
+    expect(r.deletedPages).toBe(1);
+    expect(readdirSync(dir)).toEqual([]);
+  });
+
+  it('기준선 이전 .body/.meta 한 벌은 지우지 않는다', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'isr-'));
+    makePage(dir, 'opengraph-image', 300, 1000, ['body', 'meta']); // 기준선 이전
+
+    const r = await prune({ dir, baselineMs: 2000 * 1000, maxBytes: 1, dryRun: false });
+
+    expect(existsSync(join(dir, 'opengraph-image.body'))).toBe(true);
+    expect(existsSync(join(dir, 'opengraph-image.meta'))).toBe(true);
+    expect(r.baselineProtectedFiles).toBe(2);
+    expect(r.deletedPages).toBe(0);
   });
 
   it('하위 디렉터리를 재귀 탐색한다', async () => {
