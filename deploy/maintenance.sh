@@ -36,14 +36,14 @@ cleanup_safe() {
   docker builder prune -f --max-used-space="$BUILD_CACHE_MAX" >/dev/null 2>&1 \
     || log "WARN: builder prune 실패 — build cache 미회수"
   docker exec "$WEB" sh -c 'find /app/.next/cache -type f -delete' 2>/dev/null || true
-  prune_isr
+  prune_isr || rc=1
   log "safe-cleanup done (disk now $(disk_pct)%)"
 }
 
 # ISR 캐시 축출 — 컨테이너를 죽이지 않고 오래된 페이지 캐시만 지운다.
 # 기준선을 얻지 못하면 아무것도 지우지 않는다(빌드 산출물 325개를 보호할 수 없기 때문).
 prune_isr() {
-  local started baseline_ms max_bytes out
+  local started baseline_ms max_bytes out ec err errfile
   started=$(docker inspect --format '{{.State.StartedAt}}' "$WEB" 2>/dev/null)
   if [ -z "$started" ]; then
     log "WARN: web StartedAt 확인 실패 — ISR 축출 건너뜀"
@@ -54,17 +54,28 @@ prune_isr() {
     log "WARN: StartedAt 파싱 실패($started) — ISR 축출 건너뜀"
     return 0
   fi
+  # 한 번도 시작 안 한 컨테이너는 StartedAt이 "0001-01-01T00:00:00Z"이고, 이게 음수 epoch로
+  # 변환된다(예: -62135596800000). 음수 기준선은 모든 파일의 mtime보다 작아 prune.mjs의
+  # 보호 조건(mtime <= baseline)을 전부 무력화해 빌드 산출물까지 삭제 후보가 된다 — 양수만 유효한 기준선으로 인정한다.
+  if ! [ "$baseline_ms" -gt 0 ] 2>/dev/null; then
+    log "WARN: 기준선이 비정상($started → $baseline_ms) — ISR 축출 건너뜀"
+    return 0
+  fi
   max_bytes=$((ISR_MAX_GB * 1024 * 1024 * 1024))
 
   docker cp scripts/ops/isr-prune/prune.mjs "$WEB":/tmp/isr-prune.mjs >/dev/null 2>&1 || {
     log "WARN: prune 스크립트 복사 실패 — ISR 축출 건너뜀"
     return 0
   }
+  errfile=$(mktemp)
   out=$(docker exec "$WEB" node /tmp/isr-prune.mjs \
-        --dir /app/.next/server/app --baseline-ms "$baseline_ms" --max-bytes "$max_bytes" 2>&1)
-  if [ $? -ne 0 ]; then
-    log "WARN: ISR 축출 실패 — $out"
-    return 0
+        --dir /app/.next/server/app --baseline-ms "$baseline_ms" --max-bytes "$max_bytes" 2>"$errfile")
+  ec=$?
+  err=$(tr '\n' ' ' < "$errfile" 2>/dev/null)
+  rm -f "$errfile"
+  if [ "$ec" -ne 0 ]; then
+    log "WARN: ISR 축출 실패(exit $ec) — $err"
+    return 1
   fi
   log "isr prune: $out"
 }
