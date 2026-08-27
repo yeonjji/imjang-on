@@ -661,9 +661,22 @@ ssh -i "$OCI_KEY" ubuntu@161.33.160.159 '
 
 `$S`는 이미지 생성 시각이다(2026-08-27 재시작 무력화 수정 이후 `maintenance.sh`의 `prune_isr()`와 동일한 기준선 계산 — 컨테이너 기동 시각이 아니다).
 
-Expected: `deletedPages`가 수만, `dryRun:true`. **수용 기준은 절대값이 아니라 Step 2와의 일치다** — 이 dry-run의 `baselineProtectedFiles`가 Step 2의 `find ! -newermt` 결과와 같아야 한다(둘 다 같은 `$S`를 기준선으로 쓰므로 일치해야 정상). **`baselineProtectedFiles`가 0이면 중단하고 기준선 계산을 다시 본다**(기준선이 무의미하다는 뜻). 대상 외 확장자는 `nonPageFiles`로 별도 집계되므로 여기 섞이지 않는다.
+**수용 기준 — 절대값이 아니라 Step 2와의 합산 일치다:**
 
-(참고: 이전엔 `{{.State.StartedAt}}` 기준으로 **325개 부근**을 기대했다. 기준선이 이미지 Created로 바뀌면서 — 이미지 생성과 컨테이너 최초 기동 사이에 쓰인 파일이 있다면 — 이 수는 325와 달라질 수 있다. 새 절대값을 미리 지어내지 않고 이 Step에서 처음 실측한다.)
+```
+baselineProtectedFiles + nonPageFiles  ==  Step 2의 find ! -newermt 결과
+```
+
+`find`는 **확장자를 가리지 않고** mtime만 본다. 반면 `prune.mjs`는 `!ext`(대상 외 확장자)를 **먼저** 걸러내므로, 기준선 이전 mtime의 `.js`·`.nft.json`은 `baselineProtectedFiles`가 아니라 `nonPageFiles`로 간다. 따라서 `baselineProtectedFiles` **단독**은 `find` 결과와 일치하지 않는다 — 두 카운터의 **합**이 일치해야 정상이다.
+
+> **2026-08-27 배포 직후 실측:** `find` 348 · `baselineProtectedFiles` 59 · `nonPageFiles` 289 → 59 + 289 = 348 ✅
+> 이 산식을 확인하지 않고 `baselineProtectedFiles` 단독(59)을 `find`(348)와 비교하면 멀쩡한 시스템에서 중단하게 된다.
+
+**중단 조건:** 합이 `find` 결과와 다르거나, `baselineProtectedFiles + nonPageFiles`가 0이면 멈추고 기준선 계산을 다시 본다(기준선이 무의미하다는 뜻).
+
+`deletedPages`는 캐시가 상한(8GB) 아래면 0이 정상이다. 배포 직후에는 컨테이너 재생성으로 캐시가 비어 있어 항상 0이 나온다 — 의미 있는 축출 검증은 캐시가 상한 근처까지 찬 뒤에 해야 한다(측정 증가율 1.24GB/시간 기준 6~8시간).
+
+(참고: 이전엔 `{{.State.StartedAt}}` 기준으로 **325개 부근**을 기대했다. 기준선이 이미지 Created로 바뀌었고 배포마다 이미지가 새로 만들어지므로 이 수는 고정값이 아니다. 절대값을 게이트로 쓰지 않는 이유다.)
 
 - [ ] **Step 2: V1 — 빌드 산출물 수를 기록한다**
 
@@ -677,7 +690,9 @@ ssh -i "$OCI_KEY" ubuntu@161.33.160.159 '
 
 `$S`는 이미지 생성 시각이다(Step 1과 동일한 기준선 계산).
 
-Expected: Step 1의 `baselineProtectedFiles`와 같은 값. 이 값을 적어둔다(이하 V1 기준치로 사용). 절대값은 이미지 Created 기준으로 이 Step에서 처음 재는 것이라 미리 단정하지 않는다(2026-08-27 StartedAt 기준 실측 325와는 다를 수 있다)
+Expected: Step 1의 `baselineProtectedFiles + nonPageFiles`와 같은 값(`find`는 확장자를 안 가리므로 두 카운터의 합에 대응한다). 이 값을 적어둔다 — 이하 **V1 기준치**로 쓴다.
+
+절대값은 배포마다 달라지므로 미리 단정하지 않는다. 2026-08-27 배포 직후 실측은 **348**이었다.
 
 - [ ] **Step 3: 실제 축출을 1회 실행한다**
 
@@ -704,7 +719,10 @@ ssh -i "$OCI_KEY" ubuntu@161.33.160.159 '
 
 `$S`는 이미지 생성 시각이다(Step 1·2와 동일한 기준선 계산 — 컨테이너 기동 시각이 아니다).
 
-Expected: 보호(V1) = **Step 2에서 적어둔 값과 동일**(같은 `$S`를 쓰므로 일치해야 한다. prune.mjs 결과의 `baselineProtectedFiles`에 대응하는 독립 측정치. 대상 외 확장자는 `nonPageFiles`로 분리 집계되므로 이 find 조건엔 안 섞인다) · html 수 == rsc 수(V2) · 총량 ≤ **8192MB**(V4)
+Expected:
+- **V1** 보호 = Step 2에서 적어둔 값과 동일(같은 `$S`를 쓰므로 일치해야 한다). 도구 출력과 대조할 때는 `baselineProtectedFiles + nonPageFiles`와 비교한다 — `find`는 확장자를 안 가린다
+- **V2** `.html` 수 == `.rsc` 수. 여기에 더해 **`.meta` − `.html` ≈ `.body`**여야 한다 — 라우트 핸들러 캐시(`.body`+`.meta`)의 짝이 맞는지 보는 검사다. `.meta`가 그보다 많으면 고아가 생긴 것이다(2026-08-27 이전 코드의 결함이었다)
+- **V4** 총량 ≤ **8192MB**. 단 `du -sm`은 블록 사용량, 도구의 `remainingBytes`는 apparent size라 수백 MB 차이가 정상이다 — 판정은 **`remainingBytes`**로 하고 `du`는 참고치로 본다
 
 - [ ] **Step 5: V3 — 사이트가 정상인지 확인한다**
 
