@@ -3,7 +3,7 @@
 # 두 원인: (1) docker build cache 누적, (2) 웹 .next 런타임 캐시가 컨테이너 임시 레이어에 무한 축적
 #   - .next/cache/fetch-cache: 서버컴포넌트 fetch() 캐시(크롤러×공공API로 폭증). 무중단 삭제 가능(미스 시 재생성).
 #   - .next/server/app: ISR 전체경로 캐시(.html/.rsc/.meta). 축출이 없어 무한 증가한다(revalidate는 신선도 기준이지 보존 정책이 아니다).
-#     2026-08-27 실측으로 '실행 중 안전삭제 불가'는 반증됐다 — 컨테이너 StartedAt 이전 mtime(빌드 산출물 325개)만 피하면 무중단 삭제가 가능하고,
+#     2026-08-27 실측으로 '실행 중 안전삭제 불가'는 반증됐다 — 이미지 Created 이전 mtime(빌드 산출물 325개)만 피하면 무중단 삭제가 가능하고,
 #     삭제 직후 요청도 200/53ms였다. prune_isr()가 이를 수행한다. 설계: docs/superpowers/specs/2026-08-27-isr-cache-eviction-design.md
 # 배포(remote-deploy.sh)가 배포시점 정리 + web recreate를 하지만, 배포 공백(예: 26h)엔 런타임 캐시가 무방비 → 시간기반 안전망.
 # systemd: imjang-maintenance@guard(1h 폴링), imjang-maintenance@weekly(저트래픽 주간).
@@ -43,20 +43,28 @@ cleanup_safe() {
 # ISR 캐시 축출 — 컨테이너를 죽이지 않고 오래된 페이지 캐시만 지운다.
 # 기준선을 얻지 못하면 아무것도 지우지 않는다(빌드 산출물 325개를 보호할 수 없기 때문).
 prune_isr() {
-  local started baseline_ms max_bytes out ec err errfile
-  started=$(docker inspect --format '{{.State.StartedAt}}' "$WEB" 2>/dev/null)
+  local img started baseline_ms max_bytes out ec err errfile
+  # 기준선은 컨테이너 State.StartedAt이 아니라 이미지 Created(빌드 시각)에서 뽑는다.
+  # docker-compose.yml이 restart: unless-stopped라 재부팅·OOM·docker 데몬 재시작에서
+  # 컨테이너는 재생성이 아니라 재시작된다 — 쓰기 레이어는 남고 StartedAt만 갱신된다.
+  # StartedAt을 기준선으로 쓰면 그 순간 재시작 이전의 런타임 ISR 전체(실측 14GB/20만 파일)가
+  # mtime <= baseline으로 재분류돼 protectedBytes(14GB) > maxBytes(8GB)가 되고, 이후 후보를
+  # 전부 지워도 상한을 못 맞춘다 — 세 검증(-z, date 파싱, -gt 0)이 전부 통과하므로 조용히
+  # 무력화된다. 이미지 Created는 재시작에 불변이고 정의상 이미지 내 모든 파일의 mtime보다 이르다.
+  img=$(docker inspect --format '{{.Image}}' "$WEB" 2>/dev/null)
+  started=$(docker inspect --format '{{.Created}}' "$img" 2>/dev/null)
   if [ -z "$started" ]; then
-    log "WARN: web StartedAt 확인 실패 — ISR 축출 건너뜀"
+    log "WARN: web 이미지 Created 확인 실패 — ISR 축출 건너뜀"
     return 0
   fi
   baseline_ms=$(date -d "$started" +%s%3N 2>/dev/null)
   if [ -z "$baseline_ms" ]; then
-    log "WARN: StartedAt 파싱 실패($started) — ISR 축출 건너뜀"
+    log "WARN: 이미지 Created 파싱 실패($started) — ISR 축출 건너뜀"
     return 0
   fi
-  # 한 번도 시작 안 한 컨테이너는 StartedAt이 "0001-01-01T00:00:00Z"이고, 이게 음수 epoch로
-  # 변환된다(예: -62135596800000). 음수 기준선은 모든 파일의 mtime보다 작아 prune.mjs의
-  # 보호 조건(mtime <= baseline)을 전부 무력화해 빌드 산출물까지 삭제 후보가 된다 — 양수만 유효한 기준선으로 인정한다.
+  # 기준선이 비정상 값으로 파싱되는 경우를 방어한다. 음수/0 기준선은 모든 파일의 mtime보다
+  # 작거나 같아 prune.mjs의 보호 조건(mtime <= baseline)을 전부 무력화해 빌드 산출물까지
+  # 삭제 후보가 된다 — 양수만 유효한 기준선으로 인정한다.
   if ! [ "$baseline_ms" -gt 0 ] 2>/dev/null; then
     log "WARN: 기준선이 비정상($started → $baseline_ms) — ISR 축출 건너뜀"
     return 0
