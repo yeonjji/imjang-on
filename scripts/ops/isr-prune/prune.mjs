@@ -114,3 +114,33 @@ export async function prune({ dir, baselineMs, maxBytes, dryRun = false }) {
     dryRun,
   };
 }
+
+/** `--flag value` 형식만 받는다. 컨테이너 안에서 maintenance.sh가 호출하는 전용 진입점이다. */
+function parseArgs(argv) {
+  const get = (name) => {
+    const i = argv.indexOf(`--${name}`);
+    return i === -1 ? undefined : argv[i + 1];
+  };
+  return {
+    dir: get('dir'),
+    baselineMs: Number(get('baseline-ms')),
+    maxBytes: Number(get('max-bytes')),
+    dryRun: argv.includes('--dry-run'),
+  };
+}
+
+// 직접 실행될 때만 CLI로 동작한다(테스트에서 import할 때는 실행되지 않는다).
+if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+  const args = parseArgs(process.argv.slice(2));
+  if (!args.dir || !Number.isFinite(args.baselineMs) || !Number.isFinite(args.maxBytes)) {
+    console.error('usage: node prune.mjs --dir <path> --baseline-ms <int> --max-bytes <int> [--dry-run]');
+    process.exit(2);
+  }
+  prune(args).then(
+    (r) => console.log(JSON.stringify(r)),
+    (err) => {
+      console.error(String(err?.message ?? err));
+      process.exit(1);
+    },
+  );
+}
