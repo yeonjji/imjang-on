@@ -2,7 +2,9 @@
 # 온박스 디스크 유지보수 — 루트디스크(45G) 100% 포화 재발 방지(2026-07-24/25 사고).
 # 두 원인: (1) docker build cache 누적, (2) 웹 .next 런타임 캐시가 컨테이너 임시 레이어에 무한 축적
 #   - .next/cache/fetch-cache: 서버컴포넌트 fetch() 캐시(크롤러×공공API로 폭증). 무중단 삭제 가능(미스 시 재생성).
-#   - .next/server/app: ISR 전체경로 캐시(.html/.rsc/.meta). 실행 컨테이너에서 안전삭제 불가 → 이미지에서 재생성(recreate).
+#   - .next/server/app: ISR 전체경로 캐시(.html/.rsc/.meta). 축출이 없어 무한 증가한다(revalidate는 신선도 기준이지 보존 정책이 아니다).
+#     2026-08-27 실측으로 '실행 중 안전삭제 불가'는 반증됐다 — 컨테이너 StartedAt 이전 mtime(빌드 산출물 325개)만 피하면 무중단 삭제가 가능하고,
+#     삭제 직후 요청도 200/53ms였다. prune_isr()가 이를 수행한다. 설계: docs/superpowers/specs/2026-08-27-isr-cache-eviction-design.md
 # 배포(remote-deploy.sh)가 배포시점 정리 + web recreate를 하지만, 배포 공백(예: 26h)엔 런타임 캐시가 무방비 → 시간기반 안전망.
 # systemd: imjang-maintenance@guard(1h 폴링), imjang-maintenance@weekly(저트래픽 주간).
 set -uo pipefail
@@ -13,7 +15,7 @@ DC="docker compose -f deploy/docker-compose.yml --env-file deploy/.env.productio
 # 임계치(테스트 시 env로 오버라이드 가능)
 GUARD_WARN=${GUARD_WARN:-80}      # guard: 이 이상이면 무중단 정리
 GUARD_CRIT=${GUARD_CRIT:-90}      # guard: 정리 후에도 이 이상이면 web recreate(최후수단)
-WEEKLY_RECREATE=${WEEKLY_RECREATE:-60}  # weekly: 이 이상이면 ISR 레이어 리셋
+ISR_MAX_GB=${ISR_MAX_GB:-8}       # ISR 캐시 상한(GB). 기타 사용 ≈14.4GB + 8GB ≈ 디스크 50%
 BUILD_CACHE_MAX=${BUILD_CACHE_MAX:-3GB} # build cache 보관 상한(초과분은 LRU로 회수)
 
 disk_pct() { df --output=pcent / | tail -1 | tr -dc '0-9'; }
@@ -34,7 +36,37 @@ cleanup_safe() {
   docker builder prune -f --max-used-space="$BUILD_CACHE_MAX" >/dev/null 2>&1 \
     || log "WARN: builder prune 실패 — build cache 미회수"
   docker exec "$WEB" sh -c 'find /app/.next/cache -type f -delete' 2>/dev/null || true
+  prune_isr
   log "safe-cleanup done (disk now $(disk_pct)%)"
+}
+
+# ISR 캐시 축출 — 컨테이너를 죽이지 않고 오래된 페이지 캐시만 지운다.
+# 기준선을 얻지 못하면 아무것도 지우지 않는다(빌드 산출물 325개를 보호할 수 없기 때문).
+prune_isr() {
+  local started baseline_ms max_bytes out
+  started=$(docker inspect --format '{{.State.StartedAt}}' "$WEB" 2>/dev/null)
+  if [ -z "$started" ]; then
+    log "WARN: web StartedAt 확인 실패 — ISR 축출 건너뜀"
+    return 0
+  fi
+  baseline_ms=$(date -d "$started" +%s%3N 2>/dev/null)
+  if [ -z "$baseline_ms" ]; then
+    log "WARN: StartedAt 파싱 실패($started) — ISR 축출 건너뜀"
+    return 0
+  fi
+  max_bytes=$((ISR_MAX_GB * 1024 * 1024 * 1024))
+
+  docker cp scripts/ops/isr-prune/prune.mjs "$WEB":/tmp/isr-prune.mjs >/dev/null 2>&1 || {
+    log "WARN: prune 스크립트 복사 실패 — ISR 축출 건너뜀"
+    return 0
+  }
+  out=$(docker exec "$WEB" node /tmp/isr-prune.mjs \
+        --dir /app/.next/server/app --baseline-ms "$baseline_ms" --max-bytes "$max_bytes" 2>&1)
+  if [ $? -ne 0 ]; then
+    log "WARN: ISR 축출 실패 — $out"
+    return 0
+  fi
+  log "isr prune: $out"
 }
 
 # ISR 전체경로 캐시 리셋: 현재 이미지로 web 컨테이너 재생성(=배포와 동일 메커니즘, --no-build). 새 컨테이너 부팅 동안 수초 502 가능.
@@ -52,9 +84,8 @@ case "${1:?mode required: weekly|guard}" in
   weekly)
     log "weekly start (disk $(disk_pct)%)"
     cleanup_safe
-    if [ "$(disk_pct)" -ge "$WEEKLY_RECREATE" ]; then
-      recreate_web || rc=1
-    fi
+    # 종전에는 60% 이상이면 무조건 recreate_web을 불렀고, 그게 매주 502의 출처였다.
+    # 이제 cleanup_safe 안의 prune_isr이 같은 공간을 무중단으로 회수한다.
     log "weekly done (disk $(disk_pct)%)"
     ;;
   guard)
