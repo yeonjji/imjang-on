@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { planEviction } from '@/scripts/ops/isr-prune/prune.mjs';
+import { planEviction, prune } from '@/scripts/ops/isr-prune/prune.mjs';
+import { mkdtempSync, mkdirSync, writeFileSync, utimesSync, existsSync, readdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 describe('planEviction', () => {
   it('상한 아래면 아무것도 지우지 않는다', () => {
@@ -63,5 +66,83 @@ describe('planEviction', () => {
       maxBytes: 100,
     });
     expect(r.deleteKeys).toEqual(['a']);
+  });
+});
+
+/** 페이지 한 벌(.html·.rsc·.meta)을 만들고 mtime·atime을 지정한다. */
+function makePage(dir: string, name: string, bytes: number, epochSec: number) {
+  for (const ext of ['html', 'rsc', 'meta']) {
+    const p = join(dir, `${name}.${ext}`);
+    writeFileSync(p, 'x'.repeat(Math.max(1, Math.floor(bytes / 3))));
+    utimesSync(p, epochSec, epochSec); // atime, mtime
+  }
+}
+
+describe('prune', () => {
+  it('기준선 이전 파일은 지우지 않는다', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'isr-'));
+    makePage(dir, 'build-artifact', 300, 1000); // 기준선 이전
+    makePage(dir, 'runtime-page', 300, 3000); // 기준선 이후
+
+    const r = await prune({ dir, baselineMs: 2000 * 1000, maxBytes: 1, dryRun: false });
+
+    expect(existsSync(join(dir, 'build-artifact.html'))).toBe(true);
+    expect(existsSync(join(dir, 'runtime-page.html'))).toBe(false);
+    expect(r.protectedFiles).toBe(3);
+    expect(r.deletedPages).toBe(1);
+  });
+
+  it('페이지 3종을 함께 지운다 — 부분 삭제가 남으면 안 된다', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'isr-'));
+    makePage(dir, 'p', 300, 3000);
+
+    await prune({ dir, baselineMs: 2000 * 1000, maxBytes: 1, dryRun: false });
+
+    expect(readdirSync(dir)).toEqual([]);
+  });
+
+  it('.html/.rsc/.meta 외 확장자는 건드리지 않는다', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'isr-'));
+    makePage(dir, 'p', 300, 3000);
+    const other = join(dir, 'route.js');
+    writeFileSync(other, 'x');
+    utimesSync(other, 3000, 3000); // 기준선 이후지만 대상 확장자가 아니다
+
+    await prune({ dir, baselineMs: 2000 * 1000, maxBytes: 1, dryRun: false });
+
+    expect(existsSync(other)).toBe(true);
+  });
+
+  it('하위 디렉터리를 재귀 탐색한다', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'isr-'));
+    const sub = join(dir, 'amenity', 'cafe');
+    mkdirSync(sub, { recursive: true });
+    makePage(sub, '172547', 300, 3000);
+
+    const r = await prune({ dir, baselineMs: 2000 * 1000, maxBytes: 1, dryRun: false });
+
+    expect(r.deletedPages).toBe(1);
+    expect(existsSync(join(sub, '172547.html'))).toBe(false);
+  });
+
+  it('dryRun이면 계산만 하고 지우지 않는다', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'isr-'));
+    makePage(dir, 'p', 300, 3000);
+
+    const r = await prune({ dir, baselineMs: 2000 * 1000, maxBytes: 1, dryRun: true });
+
+    expect(r.deletedPages).toBe(1);
+    expect(r.dryRun).toBe(true);
+    expect(existsSync(join(dir, 'p.html'))).toBe(true);
+  });
+
+  it('상한 아래면 아무것도 지우지 않는다', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'isr-'));
+    makePage(dir, 'p', 300, 3000);
+
+    const r = await prune({ dir, baselineMs: 2000 * 1000, maxBytes: 10_000_000, dryRun: false });
+
+    expect(r.deletedPages).toBe(0);
+    expect(existsSync(join(dir, 'p.html'))).toBe(true);
   });
 });

@@ -25,3 +25,92 @@ export function planEviction({ pages, protectedBytes, maxBytes }) {
 
   return { deleteKeys, freedBytes: freed, remainingBytes: remaining };
 }
+
+import { readdir, stat, unlink } from 'node:fs/promises';
+import { join } from 'node:path';
+
+/** 런타임 ISR이 만드는 확장자. 이 셋만 축출 대상이다. */
+const PAGE_EXTS = ['.html', '.rsc', '.meta'];
+
+async function walk(dir, out) {
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch {
+    return out; // 스캔 중 사라진 디렉터리는 무시한다
+  }
+  for (const e of entries) {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) await walk(p, out);
+    else if (e.isFile()) out.push(p);
+  }
+  return out;
+}
+
+/**
+ * dir을 훑어 기준선 이후 생성된 ISR 페이지를 상한까지 지운다.
+ *
+ * baselineMs = 컨테이너 StartedAt. 그 이전 mtime은 이미지에 구워진 빌드 산출물이라
+ * 절대 지우면 안 된다(실측 325개). 동적 상세는 generateStaticParams가 빈 배열이라
+ * 빌드 시 프리렌더되지 않으므로, 상세 캐시는 전부 기준선 이후에 있다.
+ */
+export async function prune({ dir, baselineMs, maxBytes, dryRun = false }) {
+  const startedAt = Date.now();
+  const files = await walk(dir, []);
+
+  let protectedFiles = 0;
+  let protectedBytes = 0;
+  /** key(확장자 제거 경로) → { bytes, atimeMs } */
+  const pageMap = new Map();
+
+  for (const file of files) {
+    const ext = PAGE_EXTS.find((x) => file.endsWith(x));
+    let st;
+    try {
+      st = await stat(file);
+    } catch {
+      continue; // 스캔과 삭제 사이에 사라진 파일
+    }
+    // 대상 확장자가 아니면 크기만 총량에 반영하고 후보로 삼지 않는다.
+    if (!ext || st.mtimeMs <= baselineMs) {
+      protectedFiles += 1;
+      protectedBytes += st.size;
+      continue;
+    }
+    const key = file.slice(0, -ext.length);
+    const prev = pageMap.get(key);
+    if (prev) {
+      prev.bytes += st.size;
+      prev.atimeMs = Math.min(prev.atimeMs, st.atimeMs);
+    } else {
+      pageMap.set(key, { bytes: st.size, atimeMs: st.atimeMs });
+    }
+  }
+
+  const pages = [...pageMap].map(([key, v]) => ({ key, bytes: v.bytes, atimeMs: v.atimeMs }));
+  const plan = planEviction({ pages, protectedBytes, maxBytes });
+
+  if (!dryRun) {
+    for (const key of plan.deleteKeys) {
+      // 3종을 함께 지운다. 하나만 남으면 Next가 불완전한 캐시를 읽는다.
+      // 실패는 삼킨다: 크롤러가 계속 쓰는 디렉터리라 계획 수립 이후 파일이 이미
+      // 지워졌거나 애초에 3종 중 일부가 없을 수 있다 — 그래도 나머지는 마저 지운다.
+      for (const ext of PAGE_EXTS) {
+        await unlink(key + ext).catch(() => {});
+      }
+    }
+  }
+
+  return {
+    totalBytes: protectedBytes + pages.reduce((s, p) => s + p.bytes, 0),
+    maxBytes,
+    protectedFiles,
+    protectedBytes,
+    candidatePages: pages.length,
+    deletedPages: plan.deleteKeys.length,
+    freedBytes: plan.freedBytes,
+    remainingBytes: plan.remainingBytes,
+    durationMs: Date.now() - startedAt,
+    dryRun,
+  };
+}
