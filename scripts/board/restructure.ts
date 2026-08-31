@@ -1,8 +1,15 @@
 /**
- * 1회성: 게시된(PUBLISHED) board 글을 핵심요약+섹션 구조로 재구조화한다.
+ * 1회성: 게시된(PUBLISHED) board 글에서 자동 생성 서식 틀을 걷어낸다.
+ * '## 핵심 요약' 불릿·'## 참고 자료' 섹션·라벨형 소제목·불필요한 굵게 강조를 제거하고
+ * 사람이 쓴 글처럼 읽히게 다듬는다. 사실은 보존한다(추가·삭제 금지).
+ *
+ * (2026-08-24 방향 반전: 종전에는 이 스크립트가 핵심요약 골격을 '부여'했다. 같은 골격이
+ *  모든 글에 반복되는 것이 애드센스 'Low value content' 판정의 신호로 지목돼 반대로 돌린다.
+ *  출처·기준일은 board 상세 페이지가 DB 필드로 따로 표기하므로 본문 '## 참고 자료'는 중복이었다.)
+ *
  * 기본은 status=DRAFT로 되돌려 /admin/posts 검수 큐로 보낸다(어드민이 재게시).
  * --in-place 면 게시 상태·게시일(publishedAt)을 그대로 두고 본문만 수정한다(재게시 날짜 리셋 방지).
- * 사실은 보존하고 구조만 바꾼다(추가·삭제 금지).
+ * --drafts  면 게시글 대신 **검수 대기 초안**을 대상으로 삼는다(본문 갱신 + reviewedAt 초기화).
  *
  * 실행(OPENAI_API_KEY 필요):
  *   pnpm dlx dotenv -e .env.local -- tsx scripts/board/restructure.ts --limit 5 --dry-run
@@ -12,8 +19,63 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { env } from '@/lib/env';
 import { createOpenAiClient } from '@/lib/board/generate';
-import { restructureBody } from '@/lib/board/restructure';
+import { restructureBody, stripSkeletonSections } from '@/lib/board/restructure';
 import { runGuardrails } from '@/lib/board/guardrails';
+
+/**
+ * 서식 틀을 걷어내면 중복이던 '## 핵심 요약'·'## 참고 자료' 약 150자가 정당하게 빠진다.
+ * 생성용 하한 800을 그대로 쓰면 원문이 856자(운영 36편 최소)인 글이 결과만 보고 반려된다.
+ * 여기서는 파국적 절단만 잡고, 실제 유실 판정은 checkStructure가 원문과 대조해서 한다.
+ */
+const RESTRUCTURE_MIN_CHARS = 500;
+
+/**
+ * 서식 틀 제거가 구조까지 훼손했는지 본다. runGuardrails는 출처·금지표현·길이만 보므로 여기서 건진다.
+ *
+ * blocking — 자동 판정이 확실한 것만. 실측(dry-run 3편)에서 모델이 '## 핵심 요약'을 지우면서
+ *   남은 소제목을 '###'로 강등한 사례가 1편 있었다. 비결정적이라 프롬프트 문구만으로는 안 막힌다.
+ * warnings — 사람이 봐야 판정되는 것. 목록 소멸은 글에 따라 옳기도 하다: 청약 일정표(#1)에서는
+ *   손실이지만, 제도 해설(#2)에서는 불릿 24개를 산문으로 푸는 것이 바로 의도한 결과였다.
+ *   그래서 차단하지 않고 표시만 한다.
+ */
+function checkStructure(oldBody: string, newBody: string): { blocking: string[]; warnings: string[] } {
+  const blocking: string[] = [];
+  const warnings: string[] = [];
+  const h2 = (t: string) => (t.match(/^## /gm) ?? []).length;
+  const bullets = (t: string) => (t.match(/^[ \t]*[-*] /gm) ?? []).length;
+  const chars = (t: string) => t.replace(/\s/g, '').length;
+
+  // 골격을 뗀 원문과 대조한다. 절대 분량 하한은 '새 글이 얇은가'를 보는 기준이라 여기엔 맞지 않는다 —
+  // 필요한 판정은 '다듬는 과정에서 내용이 날아갔는가'다. 실측(#23)에서 소제목과 함께 본문이
+  // 1,000자대에서 620자로 잘려나간 사고가 있었고, 그때 절대 하한은 우연히 걸렸을 뿐이다.
+  const base = chars(stripSkeletonSections(oldBody));
+  const kept = base > 0 ? chars(newBody) / base : 1;
+  if (kept < 0.85) {
+    blocking.push(`내용 유실 의심(골격 제거 후 ${base}자 → ${chars(newBody)}자, ${Math.round(kept * 100)}%)`);
+  }
+
+  // 소제목은 하나도 사라지면 안 된다(골격 섹션은 이미 코드가 뗀 상태로 비교한다).
+  const baseH2 = h2(stripSkeletonSections(oldBody));
+  if (baseH2 > 0 && h2(newBody) < baseH2) {
+    blocking.push(`소제목 유실(${baseH2}개 → ${h2(newBody)}개)`);
+  }
+  if (/^## 핵심 요약/m.test(newBody)) blocking.push("'## 핵심 요약'이 그대로 남음");
+  if (/^## 참고 자료/m.test(newBody)) blocking.push("'## 참고 자료'가 그대로 남음");
+
+  // 원문에 없던 숫자가 생기면 무조건 막는다. 실측(#84): 모델이 단지별 세대수를 스스로 더해
+  // "총 세대 수를 합산하면 2,866세대"를 만들어 넣었고, 원문이 명시한 2,748과 어긋났다.
+  // 콤마·단위 표기만 바뀐 경우(245,000,000원 → 2억 4,500만 원)도 함께 걸리지만, 라이브 본문에는
+  // 보수적인 편이 옳다 — 막힌 글은 사람이 보거나 다시 돌리면 된다.
+  const tokens = (t: string) => new Set((t.match(/\d[\d,]*/g) ?? []).map((n) => n.replace(/,/g, '')));
+  const before = tokens(oldBody);
+  const invented = [...tokens(newBody)].filter((n) => !before.has(n));
+  if (invented.length) blocking.push(`원문에 없는 숫자 생성(${invented.slice(0, 6).join(', ')})`);
+
+  if (bullets(oldBody) >= 10 && bullets(newBody) === 0) {
+    warnings.push(`목록 전멸(원문 ${bullets(oldBody)}개 → 0개) — 열거형 글이면 손실이다`);
+  }
+  return { blocking, warnings };
+}
 
 function argNum(flag: string, def: number): number {
   const i = process.argv.indexOf(flag);
@@ -25,30 +87,62 @@ function argNum(flag: string, def: number): number {
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
   const inPlace = process.argv.includes('--in-place');
+  // 검수 대기 초안도 옛 프롬프트 산물이라 골격을 그대로 갖고 있다(2026-08-25 실측 28편 중 27편).
+  // 이대로 어드민에서 게시하면 방금 치운 골격이 라이브로 되돌아온다. 초안은 게시 전이라
+  // 라이브 노출이 없고 검수 단계가 한 번 더 남아 있어, 게시글보다 되돌리기 쉬운 대상이다.
+  const draftsMode = process.argv.includes('--drafts');
   const limit = argNum('--limit', 5);
   const client = createOpenAiClient(env.OPENAI_API_KEY);
 
-  // 아직 핵심요약이 없는 게시글만(재실행 안전). 오래된 글부터.
+  // 아직 서식 틀이 남아 있는 게시글만(재실행 안전 — 걷어낸 글은 다음 회차에 다시 잡히지 않는다).
+  //
+  // ⚠️ 손수 쓴 글(detectedFrom='manual:*')은 제외한다. 조건 반전 전에는 '골격 없는 글'을 골랐으므로
+  //    수기 글이 LLM 재작성 대상이 될 일이 없었지만, 반전 후에는 골격이 붙은 수기 글이 걸린다.
+  //    수기 글에는 조문번호·판례번호·검산한 실측치가 들어 있고 runGuardrails는 그것들을 검사하지
+  //    않는다(출처·금지표현·길이만). 사실 유실을 자동 판정할 수단이 없으므로 아예 대상에서 뺀다.
+  //    detectedFrom은 nullable이라 null을 명시적으로 포함시킨다(NOT LIKE는 null 행을 떨어뜨린다).
   const posts = await prisma.post.findMany({
-    where: { status: 'PUBLISHED', NOT: { body: { contains: '## 핵심 요약' } } },
-    orderBy: { publishedAt: 'asc' },
+    where: {
+      status: draftsMode ? 'DRAFT' : 'PUBLISHED',
+      body: { contains: '## 핵심 요약' },
+      OR: [{ detectedFrom: null }, { detectedFrom: { not: { startsWith: 'manual:' } } }],
+    },
+    // 초안은 publishedAt이 null이라 정렬 기준이 되지 못한다.
+    orderBy: draftsMode ? { generatedAt: 'asc' } : { publishedAt: 'asc' },
     take: limit,
   });
-  logger.info({ count: posts.length, dryRun }, 'board restructure 대상');
+  logger.info({ count: posts.length, dryRun, draftsMode }, 'board restructure 대상');
 
   for (const post of posts) {
     const newBody = await restructureBody(client, post.body, env.OPENAI_MODEL, 2200);
-    const guard = runGuardrails({ body: newBody, sourceName: post.sourceName, sourceUrl: post.sourceUrl });
+    const guard = runGuardrails({
+      body: newBody,
+      sourceName: post.sourceName,
+      sourceUrl: post.sourceUrl,
+      minLength: RESTRUCTURE_MIN_CHARS,
+    });
+    const struct = checkStructure(post.body, newBody);
+    const ok = guard.ok && struct.blocking.length === 0;
     const charCount = newBody.replace(/\s/g, '').length;
-    logger.info({ id: String(post.id), title: post.title, charCount, guardOk: guard.ok }, 'restructured');
-    console.log(`\n[#${post.id}] ${post.title}\n${'-'.repeat(60)}\n${newBody}\n${'-'.repeat(60)}\n가드레일: ${guard.ok ? 'PASS ✅' : 'FAIL ❌ → ' + guard.violations.join(', ')} (공백제외 ${charCount}자)\n`);
+    logger.info({ id: String(post.id), title: post.title, charCount, guardOk: ok }, 'restructured');
+    const problems = [...guard.violations, ...struct.blocking];
+    console.log(
+      `\n[#${post.id}] ${post.title}\n${'-'.repeat(60)}\n${newBody}\n${'-'.repeat(60)}\n` +
+        `검사: ${ok ? 'PASS ✅' : 'FAIL ❌ → ' + problems.join(', ')} (공백제외 ${charCount}자)` +
+        (struct.warnings.length ? `\n⚠️ 사람이 볼 것: ${struct.warnings.join(', ')}` : '') +
+        '\n',
+    );
 
     if (dryRun) continue;
-    if (!guard.ok) {
-      logger.warn({ id: String(post.id), violations: guard.violations }, '가드레일 실패 — 건너뜀(원본 유지)');
+    if (!ok) {
+      logger.warn({ id: String(post.id), violations: problems }, '검사 실패 — 건너뜀(원본 유지)');
       continue;
     }
-    if (inPlace) {
+    if (draftsMode) {
+      // 초안은 게시 전이라 상태를 바꿀 것이 없다. 본문이 바뀌었으므로 이전 검수만 무효화한다.
+      await prisma.post.update({ where: { id: post.id }, data: { body: newBody, reviewedAt: null } });
+      logger.info({ id: String(post.id) }, '초안 본문 갱신(검수 상태 초기화)');
+    } else if (inPlace) {
       // 게시 유지: 본문만 교체. status·publishedAt 손대지 않음(게시일 보존).
       await prisma.post.update({ where: { id: post.id }, data: { body: newBody } });
       logger.info({ id: String(post.id) }, 'in-place 수정(게시·게시일 유지)');

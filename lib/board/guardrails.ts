@@ -1,6 +1,9 @@
 // 의견·전망·추천성 표현 금지(프로젝트 원칙 3·4). 사실/중립 서술만 허용.
 const FORBIDDEN_PATTERNS: { label: string; re: RegExp }[] = [
-  { label: '보입니다', re: /보입니다|보인다/ },
+  // 보조용언 '보이다'(추측)는 본용언 뒤에 띄어 쓴다 — "상승할 것으로 보입니다", "좋아 보입니다".
+  // 경계 없이 잡으면 받침 없는 명사 + '입니다'와 겹쳐 '정보입니다·예보입니다·홍보입니다'까지
+  // 금지표현으로 반려된다. 자동 생성 경로에서는 그 글이 조용히 버려지므로 앞의 공백을 요구한다.
+  { label: '보입니다', re: /(?:^|\s)보(?:입니다|인다)/ },
   { label: '가능성이 있', re: /가능성이\s*(높|있|크)/ },
   { label: '예상됩니다', re: /예상(됩니다|된다|되며)/ },
   { label: '전망', re: /전망(이다|입니다|된다|이며|성)/ },
@@ -34,6 +37,13 @@ export interface GuardrailInput {
   body: string;
   sourceName: string;
   sourceUrl: string;
+  /**
+   * 하한 재지정. 기본 800은 **새 글 생성** 기준이다 — 그 아래는 패딩 없이 못 채운다는 뜻이었다.
+   * 이미 게시된 글의 서식 틀을 걷어내는 작업에는 맞지 않는다: 중복이던 '## 핵심 요약'·'## 참고 자료'
+   * 약 150자가 정당하게 빠지므로, 원문이 856자(운영 36편 최소)면 결과가 800을 밑돈다.
+   * 그 작업에서 필요한 판정은 '짧은가'가 아니라 '내용이 유실됐는가'이고, 그건 호출부가 원문과 대조한다.
+   */
+  minLength?: number;
   /** 손수 쓴 글만 MAX_BODY_CHARS_MANUAL을 넘긴다. 미지정 시 자동 생성 글 상한(2200)이 적용된다. */
   maxLength?: number;
 }
@@ -44,7 +54,8 @@ export function runGuardrails(input: GuardrailInput): GuardrailResult {
   if (!input.sourceName.trim() || !input.sourceUrl.trim()) violations.push('출처(sourceName/sourceUrl) 누락');
   const forbidden = findForbiddenPhrases(input.body);
   if (forbidden.length) violations.push(`금지표현: ${forbidden.join(', ')}`);
-  const len = checkLength(input.body, undefined, input.maxLength);
+  // 두 옵션은 독립적이다 — minLength는 재작성(축출) 경로가, maxLength는 손수 쓴 글이 쓴다.
+  const len = checkLength(input.body, input.minLength, input.maxLength);
   if (!len.ok) violations.push(`분량 범위 벗어남(${len.length}자)`);
   return { ok: violations.length === 0, violations };
 }
