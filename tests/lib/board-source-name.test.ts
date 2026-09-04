@@ -51,6 +51,12 @@ describe('canonicalizeSourceName', () => {
   it('임장ON 자체 집계는 청약홈보다 우선해 자체 라벨로', () => {
     expect(canonicalizeSourceName('임장ON 청약 집계(원자료: 청약홈·LH)')).toBe('임장ON 청약 집계');
   });
+  it('임장ON 자체 집계라도 청약이 아니면 원자료 기관명으로 — /board/90 출처 오표기 방지', () => {
+    // sourceUrl이 rt.molit.go.kr인 실거래 분석 글에 '임장ON 청약 집계'가 붙던 사고.
+    expect(canonicalizeSourceName('임장ON 실거래 집계 · 국토교통부 실거래가 공개시스템')).toBe(
+      '국토교통부',
+    );
+  });
   it('크롤 찌꺼기는 제거 후 매핑 없으면 정제값 유지', () => {
     expect(canonicalizeSourceName('기후에너지환경부부처별 뉴스 이동')).toBe('기후에너지환경부');
   });
