@@ -66,6 +66,34 @@ const FIXES: Fix[] = [
       },
     ],
   },
+  {
+    dedupeKey: 'manual:청년미래적금:2026-06-24',
+    expectTitleIncludes: '청년미래적금',
+    // 링크가 두 겹으로 깨져 있었다. 자동 링크가 `)에서`를 삼킨 데다, 대상 경로 `/yfs/`
+    // 자체가 404다(실측 2026-09-04). 호스트 루트는 200이고 「서민금융진흥원 | 청년미래적금
+    // 상품 안내」로 확인돼 그 주소로 바꾼다. 꺾쇠(<url>)는 조사를 삼키지 않는다.
+    why: '자동 링크 깨짐 + 대상 경로 /yfs/ 가 404 → 검증된 호스트 루트로 교정',
+    replacements: [
+      {
+        field: 'body',
+        from: '누리집(https://fill4young.kinfa.or.kr/yfs/)에서',
+        to: '누리집(<https://fill4young.kinfa.or.kr/>)에서',
+      },
+    ],
+  },
+  {
+    dedupeKey: 'manual:맞춤형재무상담:2026-07-07',
+    expectTitleIncludes: '맞춤형 재무상담',
+    // 단축 URL 자체는 살아 있다(200 → form.naver.com). 자동 링크만 깨져 있어 그것만 고친다.
+    why: 'GFM 자동 링크가 조사를 삼켜 https://naver.me/5ssJwaLv)에서 로 깨짐',
+    replacements: [
+      {
+        field: 'body',
+        from: '네이버 폼(https://naver.me/5ssJwaLv)에서',
+        to: '네이버 폼(<https://naver.me/5ssJwaLv>)에서',
+      },
+    ],
+  },
 ];
 
 function apply(text: string, from: string, to: string): { text: string; count: number } {

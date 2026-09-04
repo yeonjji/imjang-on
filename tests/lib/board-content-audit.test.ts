@@ -53,6 +53,15 @@ describe('GFM 자동 링크 실제 동작', () => {
     ]);
   });
 
+  it('꺾쇠 자동 링크(<url>)는 조사를 삼키지 않는다 — 화면에 주소를 그대로 남길 때 쓰는 형태', () => {
+    expect(extractHrefs('누리집(<https://fill4young.kinfa.or.kr/>)에서 확인할 수 있다.')).toEqual([
+      'https://fill4young.kinfa.or.kr/',
+    ]);
+    expect(extractHrefs('네이버 폼(<https://naver.me/5ssJwaLv>)에서 접수한다.')).toEqual([
+      'https://naver.me/5ssJwaLv',
+    ]);
+  });
+
   it('쿼리스트링과 fragment는 그대로 유지된다', () => {
     expect(extractHrefs('https://example.go.kr/a?b=1&c=2#sec3 참고')).toEqual([
       'https://example.go.kr/a?b=1&c=2#sec3',
