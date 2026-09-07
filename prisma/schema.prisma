@@ -84,6 +84,7 @@ model Property {
   location    Unsupported("geography(Point,4326)")?
 
   transactions Transaction[]
+  aptComplex   AptComplex?
 
   // 2026-07-01 행정구역 개편: 폐지지역 구 property → 신 property 301 리다이렉트(삭제 없음).
   redirectToId   BigInt?
@@ -107,6 +108,69 @@ model Property {
   @@index([propertyType, saleAvgPrice12m])
   @@index([propertyType, jeonseAvgDeposit12m])
   @@index([propertyType, wolseAvgDeposit12m])
+}
+
+/// 공동주택 단지정보(국토교통부 AptBasisInfoServiceV5). 의무관리대상 공동주택만 대상이라
+/// 우리 Property 아파트의 약 절반만 대응된다. 미매칭 행도 그대로 보관한다 —
+/// 매칭 규칙을 개선하면 API 재호출 없이 커버리지가 올라간다.
+model AptComplex {
+  kaptCode    String  @id @db.VarChar(20)
+  kaptName    String  @db.VarChar(120)
+  nameNorm    String  @db.VarChar(120)
+  bjdCode     String  @db.VarChar(10)
+  sigunguCode String  @db.VarChar(5)
+  as3         String? @db.VarChar(40)
+
+  // 1군 · 가격 해석에 직접 쓰이는 값
+  households    Int?
+  buildingCount Int?
+  usedate       DateTime? @db.Date
+  hallType      String?   @db.VarChar(20)
+  heatType      String?   @db.VarChar(20)
+  aptKind       String?   @db.VarChar(20)
+  topFloor      Int?
+  baseFloor     Int?
+  area60        Int?
+  area85        Int?
+  area135       Int?
+  area136       Int?
+
+  // 2군 · 임장 체크리스트
+  parkingGround      Int?
+  parkingUnder       Int?
+  subwayLine         String? @db.VarChar(60)
+  subwayStation      String? @db.VarChar(60)
+  walkSubway         String? @db.VarChar(40)
+  walkBus            String? @db.VarChar(40)
+  evGround           Int?
+  evUnder            Int?
+  elevator           Int?
+  cctv               Int?
+  builder            String? @db.VarChar(200)
+  welfareFacility    String? @db.Text
+  convenientFacility String? @db.Text
+  educationFacility  String? @db.Text
+
+  /// useYn. 사용중이 아닌 단지는 적재하되 매칭 대상에서 제외한다.
+  /// rawJson에서 꺼내 쓰지 않고 컬럼으로 둔다 — 매칭 쿼리의 WHERE 조건이기 때문이다.
+  inUse Boolean @default(true)
+
+  /// 두 엔드포인트 응답 원본(관리 운영 정보 포함). 정규화 컬럼은 여기서 파생된다.
+  /// 목록만 적재된 중간 상태에서는 null이다.
+  rawJson Json?
+
+  propertyId BigInt?   @unique
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  matchTier  Int?
+  matchedAt  DateTime?
+
+  /// 상세 수집 시각. NULL이면 목록만 적재된 상태 — 상세 수집의 재개 기준이다.
+  fetchedAt DateTime?
+  updatedAt DateTime  @updatedAt
+
+  @@index([sigunguCode, nameNorm])
+  @@index([propertyId])
+  @@index([matchTier])
 }
 
 enum DealType {
