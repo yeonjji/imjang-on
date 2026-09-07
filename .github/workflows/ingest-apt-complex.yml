@@ -1,0 +1,42 @@
+name: ingest-apt-complex
+
+# cron을 걸지 않는다. 세대수·동수·준공일은 거의 변하지 않고
+# 44,600회를 정기적으로 태울 이유가 없다. 갱신은 분기 1회 수동으로 충분하다.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'list | detail'
+        required: true
+        default: 'list'
+        type: choice
+        options: [list, detail]
+      limit:
+        description: 'detail 모드 1회 처리 건수 (비우면 전량)'
+        required: false
+        type: string
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      PUBLIC_DATA_KEY: ${{ secrets.PUBLIC_DATA_KEY }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      LOG_LEVEL: info
+      PRISMA_INGEST: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma generate
+      # REVALIDATE_TOKEN을 주지 않는다 — 이 단계는 화면에 아무것도 노출하지 않는다.
+      - name: run
+        run: |
+          ARGS="--mode=${{ inputs.mode }}"
+          if [ -n "${{ inputs.limit }}" ]; then ARGS="$ARGS --limit=${{ inputs.limit }}"; fi
+          pnpm tsx scripts/ingest/apt-complex/runner.ts $ARGS
+        timeout-minutes: 180
