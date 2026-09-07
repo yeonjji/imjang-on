@@ -132,6 +132,40 @@ describe('parseAptDetail', () => {
     expect(r.subwayLine).toBeNull();
   });
 
+  // 실측 A10019936(디마크당산): kaptdaCnt=0, kaptTarea=0, ktownFlrNo=0에
+  // 나머지가 빈 문자열인 사실상 빈 레코드. 0을 그대로 두면 "0세대 단지"가 된다.
+  it('세대수·동수·최고층·승강기·CCTV의 0은 결측으로 본다', () => {
+    const zeros = {
+      response: {
+        body: {
+          item: { kaptCode: 'A1', kaptdaCnt: 0, kaptDongCnt: 0, kaptTopFloor: 0, kaptBaseFloor: 0 },
+        },
+      },
+    };
+    const zerosDtl = { response: { body: { item: { kaptdEcnt: 0, kaptdCccnt: 0 } } } };
+    const r = parseAptDetail('A1', zeros, zerosDtl);
+    expect(r.households).toBeNull();
+    expect(r.buildingCount).toBeNull();
+    expect(r.topFloor).toBeNull();
+    expect(r.baseFloor).toBeNull();
+    expect(r.elevator).toBeNull();
+    expect(r.cctv).toBeNull();
+  });
+
+  it('주차·EV·면적대의 0은 실제 값으로 살린다', () => {
+    const empty = { response: { body: { item: {} } } };
+    const z = {
+      response: {
+        body: { item: { kaptdPcnt: 0, kaptdPcntu: 0, groundElChargerCnt: 0, undergroundElChargerCnt: 0 } },
+      },
+    };
+    const r = parseAptDetail('A1', empty, z);
+    expect(r.parkingGround).toBe(0);
+    expect(r.parkingUnder).toBe(0);
+    expect(r.evGround).toBe(0);
+    expect(r.evUnder).toBe(0);
+  });
+
   it('useYn이 N이면 inUse=false', () => {
     const off = { response: { body: { item: { kaptCode: 'A1', useYn: 'N' } } } };
     const empty = { response: { body: { item: {} } } };

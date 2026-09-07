@@ -32,6 +32,20 @@ function int(v: unknown): number | null {
   return Number.isFinite(n) ? Math.trunc(n) : null;
 }
 
+/**
+ * 0을 결측으로 보는 정수. 이 API는 숫자 결측을 null과 0으로 뒤섞어 표현한다 —
+ * 예: 디마크당산(A10019936)은 kaptdaCnt=0, kaptTarea=0, ktownFlrNo=0에
+ * 나머지가 전부 빈 문자열인 사실상 빈 레코드다.
+ *
+ * 세대수·동수·최고층이 진짜 0인 의무관리대상 공동주택은 없다. 0을 그대로 두면
+ * "0세대 단지입니다"가 렌더된다. 반대로 주차·EV·면적대의 0은 실제 값이므로
+ * {@link int}를 쓴다(헬리오시티 지상주차 0 = 전면 지하주차).
+ */
+function posInt(v: unknown): number | null {
+  const n = int(v);
+  return n === null || n === 0 ? null : n;
+}
+
 /** "20181228" → Date. 형식이 아니면 null. */
 function ymd(v: unknown): Date | null {
   const s = str(v);
@@ -75,14 +89,14 @@ export function parseAptDetail(kaptCode: string, basis: unknown, dtl: unknown): 
 
   return {
     kaptCode,
-    households: int(b.kaptdaCnt),
-    buildingCount: int(b.kaptDongCnt),
+    households: posInt(b.kaptdaCnt),
+    buildingCount: posInt(b.kaptDongCnt),
     usedate: ymd(b.kaptUsedate),
     hallType: str(b.codeHallNm),
     heatType: str(b.codeHeatNm),
     aptKind: str(b.codeAptNm),
-    topFloor: int(b.kaptTopFloor),
-    baseFloor: int(b.kaptBaseFloor),
+    topFloor: posInt(b.kaptTopFloor),
+    baseFloor: posInt(b.kaptBaseFloor),
     area60: int(b.kaptMparea60),
     area85: int(b.kaptMparea85),
     area135: int(b.kaptMparea135),
@@ -97,8 +111,9 @@ export function parseAptDetail(kaptCode: string, basis: unknown, dtl: unknown): 
     // 승강기 계열 값이라 EV가 아니다 — 설계 단계에서 이걸 EV로 착각했었다.
     evGround: int(d.groundElChargerCnt),
     evUnder: int(d.undergroundElChargerCnt),
-    elevator: int(d.kaptdEcnt),
-    cctv: int(d.kaptdCccnt),
+    // 승강기·CCTV의 0은 빈 레코드에서만 나온다(의무관리대상은 사실상 다 있다) → 결측으로 본다.
+    elevator: posInt(d.kaptdEcnt),
+    cctv: posInt(d.kaptdCccnt),
     builder: str(b.kaptBcompany),
     welfareFacility: str(d.welfareFacility),
     convenientFacility: str(d.convenientFacility),
