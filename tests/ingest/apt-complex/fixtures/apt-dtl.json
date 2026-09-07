@@ -1,0 +1,48 @@
+{
+    "response": {
+        "body": {
+            "item": {
+                "kaptCode": "A10025850",
+                "kaptName": "\ud5ec\ub9ac\uc624\uc2dc\ud2f0\uc544\ud30c\ud2b8",
+                "codeMgr": "\uc704\ud0c1\uad00\ub9ac",
+                "kaptMgrCnt": "71",
+                "kaptCcompany": "\uc728\uc0b0\uac1c\ubc1c \uc720\ud55c\ud68c\uc0ac",
+                "codeSec": "\uc704\ud0c1\uad00\ub9ac",
+                "kaptdScnt": "70",
+                "kaptdSecCom": "\uc5d0\uc2a4\uc6d0",
+                "codeClean": "\uc704\ud0c1\uad00\ub9ac",
+                "kaptdClcnt": "109",
+                "codeGarbage": "\uc74c\uc2dd\ubb3c\uc4f0\ub808\uae30\uc885\ub7c9\uc81c",
+                "codeDisinf": "\uc704\ud0c1\uad00\ub9ac",
+                "kaptdDcnt": "6",
+                "disposalType": "\ub3c4\ud3ec\uc2dd,\ubd84\ubb34\uc2dd",
+                "codeStr": "\ucca0\uadfc\ucf58\ud06c\ub9ac\ud2b8\uad6c\uc870",
+                "kaptdEcapa": "48750",
+                "codeEcon": "\ub2e8\uc77c\uacc4\uc57d",
+                "codeEmgr": "\uc0c1\uc8fc\uc120\uc784",
+                "codeFalarm": "R\ud615",
+                "codeWsupply": "\ubd80\uc2a4\ud0c0\ubc29\uc2dd",
+                "codeElev": "\uc704\ud0c1\uad00\ub9ac",
+                "kaptdEcnt": 384,
+                "kaptdPcnt": "0",
+                "kaptdPcntu": "12096",
+                "codeNet": "\uc720",
+                "kaptdCccnt": "2685",
+                "welfareFacility": "\uad00\ub9ac\uc0ac\ubb34\uc18c, \ub178\uc778\uc815, \ubb38\uace0, \uc8fc\ubbfc\uacf5\ub3d9\uc2dc\uc124, \uc5b4\ub9b0\uc774\ub180\uc774\ud130, \ud734\uac8c\uc2dc\uc124, \uc720\uce58\uc6d0, \ucee4\ubba4\ub2c8\ud2f0\uacf5\uac04, \uc790\uc804\uac70\ubcf4\uad00\uc18c, \uae30\ud0c0",
+                "kaptdWtimebus": "5\ubd84\uc774\ub0b4",
+                "subwayLine": "3\ud638\uc120, 8\ud638\uc120, 9\ud638\uc120",
+                "subwayStation": "\uc1a1\ud30c\uc5ed",
+                "kaptdWtimesub": "5\ubd84\uc774\ub0b4",
+                "convenientFacility": "\uad00\uacf5\uc11c() \ubcd1\uc6d0() \ubc31\ud654\uc810() \ub300\ud615\uc0c1\uac00() \uacf5\uc6d0() \uae30\ud0c0()",
+                "educationFacility": "\ucd08\ub4f1\ud559\uad50() \uc911\ud559\uad50() \uace0\ub4f1\ud559\uad50()",
+                "groundElChargerCnt": 0,
+                "undergroundElChargerCnt": 256,
+                "useYn": "Y"
+            }
+        },
+        "header": {
+            "resultCode": "00",
+            "resultMsg": "NORMAL SERVICE."
+        }
+    }
+}

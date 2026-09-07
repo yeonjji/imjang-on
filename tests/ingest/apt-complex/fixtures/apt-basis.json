@@ -1,0 +1,43 @@
+{
+    "response": {
+        "body": {
+            "item": {
+                "kaptCode": "A10025850",
+                "kaptName": "\ud5ec\ub9ac\uc624\uc2dc\ud2f0\uc544\ud30c\ud2b8",
+                "kaptAddr": "\uc11c\uc6b8\ud2b9\ubcc4\uc2dc \uc1a1\ud30c\uad6c \uac00\ub77d\ub3d9 479 \ud5ec\ub9ac\uc624\uc2dc\ud2f0\uc544\ud30c\ud2b8",
+                "codeSaleNm": "\ud63c\ud569",
+                "codeHeatNm": "\uc9c0\uc5ed\ub09c\ubc29",
+                "kaptTarea": 971190.4,
+                "kaptDongCnt": "84",
+                "kaptdaCnt": 9510.0,
+                "kaptBcompany": "\ud604\ub300\uac74\uc124,\uc0bc\uc131\ubb3c\uc0b0,\ud604\ub300\uc0b0\uc5c5\uac1c\ubc1c",
+                "kaptAcompany": "\uac00\ub77d\uc2dc\uc601\uc544\ud30c\ud2b8\uc8fc\ud0dd\uc7ac\uac74\ucd95\uc815\ube44\uc0ac\uc5c5\uc870\ud569",
+                "kaptTel": "024038330",
+                "kaptUrl": "heliocity.com",
+                "codeAptNm": "\uc544\ud30c\ud2b8",
+                "doroJuso": "\uc11c\uc6b8\ud2b9\ubcc4\uc2dc \uc1a1\ud30c\uad6c \uc1a1\ud30c\ub300\ub85c 345",
+                "codeMgrNm": "\uc704\ud0c1\uad00\ub9ac",
+                "codeHallNm": "\ud63c\ud569\uc2dd",
+                "kaptUsedate": "20181228",
+                "kaptFax": "024088736",
+                "hoCnt": 9510,
+                "kaptMarea": 969877.0,
+                "kaptMparea60": 2854.0,
+                "kaptMparea85": 5132.0,
+                "kaptMparea135": 1500.0,
+                "kaptMparea136": 24.0,
+                "privArea": "734780.75",
+                "bjdCode": "1171010700",
+                "kaptTopFloor": 35,
+                "ktownFlrNo": 35,
+                "kaptBaseFloor": 3,
+                "kaptdEcntp": 183,
+                "zipcode": "05698"
+            }
+        },
+        "header": {
+            "resultCode": "00",
+            "resultMsg": "NORMAL SERVICE."
+        }
+    }
+}

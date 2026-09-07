@@ -1,0 +1,42 @@
+{
+    "response": {
+        "body": {
+            "items": [
+                {
+                    "kaptCode": "A10021295",
+                    "kaptName": "\uacbd\ud76c\uad81\uc758\uc544\uce684\ub2e8\uc9c0",
+                    "bjdCode": "1111011800",
+                    "as1": "\uc11c\uc6b8\ud2b9\ubcc4\uc2dc",
+                    "as2": "\uc885\ub85c\uad6c",
+                    "as3": "\ub0b4\uc218\ub3d9",
+                    "as4": null
+                },
+                {
+                    "kaptCode": "A10021652",
+                    "kaptName": "\uacbd\ud76c\uad81\ud30c\ud06c\ud330\ub9ac\uc2a4",
+                    "bjdCode": "1111011800",
+                    "as1": "\uc11c\uc6b8\ud2b9\ubcc4\uc2dc",
+                    "as2": "\uc885\ub85c\uad6c",
+                    "as3": "\ub0b4\uc218\ub3d9",
+                    "as4": null
+                },
+                {
+                    "kaptCode": "A11007001",
+                    "kaptName": "\uacbd\ud76c\uad81\uc758\uc544\uce683\ub2e8\uc9c0",
+                    "bjdCode": "1111011800",
+                    "as1": "\uc11c\uc6b8\ud2b9\ubcc4\uc2dc",
+                    "as2": "\uc885\ub85c\uad6c",
+                    "as3": "\ub0b4\uc218\ub3d9",
+                    "as4": null
+                }
+            ],
+            "numOfRows": 3,
+            "pageNo": 1,
+            "totalCount": 22301
+        },
+        "header": {
+            "resultCode": "00",
+            "resultMsg": "NORMAL SERVICE."
+        }
+    }
+}
