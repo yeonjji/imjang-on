@@ -21,6 +21,21 @@
 - 테스트는 공유 로컬 DB에 병렬로 붙는다. **무필터 `deleteMany` 금지** — 이 계획이 쓰는 코드로 좁힌다.
 - 스펙: `docs/superpowers/specs/2026-09-07-apt-complex-ingest-design.md`
 
+## 실행 순서 — 수집 먼저, 매칭은 실데이터로
+
+수집과 매칭은 독립이다. **수집을 먼저 끝내 데이터를 확보한 뒤 매칭을 개발한다.**
+
+지금 계획에 적힌 매칭률 55%·임계값 0.85는 **시군구 6개·단지 1,128건 표본 추정치**다. 수집이 끝나면 22,298건 전수로 다시 재고 임계값을 확정할 수 있다. 표본 위에서 규칙을 굳히지 않는다.
+
+| 단계 | 태스크 | 끝나면 |
+|---|---|---|
+| **1단계 수집** | 1 · 3 · 4 · 5 · 6 · 10 → 11 | `AptComplex` 22,298행에 `rawJson` 채워짐. **`Property` 무변경, 화면 영향 0** |
+| **2단계 매칭** | 2 · 7 · 8 · 9 → 12 | 매칭 확정 + `households` 역채움 + 색인 무변화 확인 |
+
+1단계가 끝나도 사이트는 아무것도 달라지지 않는다. 새 테이블에 데이터만 있고 아무도 읽지 않는다. 그래서 1단계는 되돌릴 것이 사실상 없다 — 최악의 경우 테이블을 비우면 된다.
+
+2단계 시작 전에 1단계 데이터로 매칭 규칙을 다시 재고, 그 숫자를 보고 임계값을 확정한다.
+
 ## File Structure
 
 | 파일 | 책임 |
@@ -1868,9 +1883,11 @@ REVALIDATE_TOKEN을 주지 않는다 — 이 단계는 화면에 아무것도 �
 
 ---
 
-## Task 11: 운영 실행과 검증
+## Task 11: 운영 수집 (1단계)
 
-코드가 아니라 **운영 절차**다. 각 단계마다 사람이 결과를 보고 다음으로 넘어간다.
+코드가 아니라 **운영 절차**다. Task 1·3·4·5·6·10을 마친 뒤 실행한다. **매칭 코드(Task 2·7·8)는 아직 없어도 된다.**
+
+이 태스크가 끝나도 `Property`와 화면은 그대로다. 새 테이블에 데이터만 쌓인다.
 
 - [ ] **Step 1: 마이그레이션을 운영에 적용**
 
@@ -1883,14 +1900,7 @@ pnpm exec dotenv -e .env.prod.local -- prisma migrate status
 pnpm exec dotenv -e .env.prod.local -- prisma migrate deploy
 ```
 
-- [ ] **Step 2: 측정 게이트 — 사전값**
-
-```bash
-pnpm exec dotenv -e .env.prod.local -- tsx scripts/ops/measure-narrative-index.ts | tee before.txt
-```
-`builtYear가 없는 아파트: 0`이어야 한다. **0이 아니면 여기서 멈추고 스펙을 재검토한다.**
-
-- [ ] **Step 3: 목록 수집**
+- [ ] **Step 2: 목록 수집**
 
 Actions에서 `mode=list` 실행. 약 23회 호출.
 
@@ -1898,7 +1908,7 @@ Actions에서 `mode=list` 실행. 약 23회 호출.
 SELECT count(*) FROM "AptComplex";  -- 기대: 약 22,298
 ```
 
-- [ ] **Step 4: 상세 수집**
+- [ ] **Step 3: 상세 수집**
 
 Actions에서 `mode=detail` (limit 비움). 약 90분.
 
@@ -1907,18 +1917,47 @@ SELECT count(*) FILTER (WHERE "fetchedAt" IS NOT NULL) AS fetched, count(*) AS t
 ```
 한도 초과로 중단됐으면 Discord 알림이 온다. 그때는 같은 명령을 다시 돌린다.
 
-- [ ] **Step 5: audit — 사람이 눈으로 보는 관문**
+- [ ] **Step 4: 수집 결과 확인 — 1단계 완료 판정**
+
+```sql
+-- Property는 손대지 않았어야 한다
+SELECT count(households) AS must_be_zero FROM "Property" WHERE "propertyType"='APARTMENT';
+-- 매칭도 아직 없어야 한다
+SELECT count(*) FILTER (WHERE "propertyId" IS NOT NULL) AS must_be_zero FROM "AptComplex";
+```
+둘 다 0이어야 한다. 여기까지가 1단계다. **사이트는 아무것도 달라지지 않았다.**
+
+- [ ] **Step 5: 매칭 규칙 재측정 — 2단계 착수 전 필수**
+
+이제 표본이 아니라 전수가 있다. 2단계 코드를 쓰기 전에 실제 22,298건으로 다시 잰다.
+
+운영 데이터를 로컬로 복사해 임계값별 매칭률과 Tier2 정확도를 다시 계산한다. 계획의 `55%`·`0.85`는 시군구 6개 표본 추정치이므로, 전수 결과가 다르면 **Task 2의 `SIMILARITY_THRESHOLD`를 확정값으로 고치고 테스트 픽스처도 실제 사례로 교체한다.**
+
+---
+
+## Task 12: 운영 매칭과 검증 (2단계)
+
+Task 2·7·8·9를 마친 뒤 실행한다.
+
+- [ ] **Step 1: 측정 게이트 — 사전값**
+
+```bash
+pnpm exec dotenv -e .env.prod.local -- tsx scripts/ops/measure-narrative-index.ts | tee before.txt
+```
+`builtYear가 없는 아파트: 0`이어야 한다. **0이 아니면 여기서 멈추고 스펙을 재검토한다.**
+
+- [ ] **Step 2: audit — 사람이 눈으로 보는 관문**
 
 Actions에서 `mode=audit`. 로그에서 확인할 것:
 
-- 확정 매칭률이 **50% 안팎**인가 (표본 실측 55%)
+- 확정 매칭률이 Task 11 Step 5에서 전수로 잰 값과 일치하는가
 - **Tier2 표본 40건에 오매칭이 있는가** — 동명이 어긋난 쌍이 하나라도 보이면 중단하고 `match.ts`를 고친다
 - 미매칭 표본이 납득되는가 (소규모 단지·표기 차이)
-- 면적 4칸 완비율이 60% 안팎인가
+- 필드 채움률 전수 집계가 화면 스펙을 세울 만한가
 
 **여기가 되돌릴 수 없는 지점 직전이다.** 이상하면 진행하지 않는다.
 
-- [ ] **Step 6: 매칭 실행 + 역채움**
+- [ ] **Step 3: 매칭 실행 + 역채움**
 
 Actions에서 `mode=match`.
 
@@ -1927,7 +1966,7 @@ SELECT "matchTier", count(*) FROM "AptComplex" GROUP BY 1 ORDER BY 1;
 SELECT count(households) AS filled FROM "Property" WHERE "propertyType"='APARTMENT' AND "redirectToId" IS NULL;
 ```
 
-- [ ] **Step 7: 측정 게이트 — 사후값**
+- [ ] **Step 4: 측정 게이트 — 사후값**
 
 ```bash
 pnpm exec dotenv -e .env.prod.local -- tsx scripts/ops/measure-narrative-index.ts | tee after.txt
@@ -1936,7 +1975,7 @@ diff before.txt after.txt
 
 **(2)의 `현재 색인 대상` 숫자가 before와 같아야 한다.** 늘었으면 스펙의 전제가 깨진 것이므로 후속 스펙을 짜기 전에 원인을 찾는다.
 
-- [ ] **Step 8: 정리**
+- [ ] **Step 5: 정리**
 
 터널을 닫고 `.env.prod.local`을 지운다. 결과(매칭률·tier 분포·색인 변화)를 스펙 문서 하단에 실측 기록으로 추가한다.
 
