@@ -29,13 +29,14 @@ async function main() {
       : `→ ⚠️ ${noBuiltYear}건은 역채움으로 새로 발화할 수 있다. 스펙의 전제가 깨졌으므로 중단하고 재검토할 것.`,
   );
 
-  // (2) 화이트리스트 전환 시뮬레이션 — 표본.
-  const sample = await prisma.property.findMany({
-    where: { propertyType: 'APARTMENT', redirectToId: null },
-    select: { id: true },
-    orderBy: { id: 'asc' },
-    take: SAMPLE_SIZE,
-  });
+  // (2) 화이트리스트 전환 시뮬레이션 — 무작위 표본.
+  //     id 오름차순으로 뽑으면 오래된 매물에 편향된다(먼저 적재된 지역·단지가 몰린다).
+  const sample = await prisma.$queryRaw<{ id: bigint }[]>`
+    SELECT id FROM "Property"
+    WHERE "propertyType" = 'APARTMENT' AND "redirectToId" IS NULL
+    ORDER BY random()
+    LIMIT ${SAMPLE_SIZE}
+  `;
 
   let nowIndexable = 0;
   let stillIndexable = 0;
