@@ -130,8 +130,13 @@ export function decideMatch(
   const cKeys = complexKeys(complex.kaptName, complex.as3);
   if (cKeys.length === 0) return null;
 
-  const exact = candidates.filter((c) =>
-    propertyKeys(c.nameNorm, c.address).some((pk) => cKeys.includes(pk)),
+  // 동명 게이트는 Tier1에도 건다. 동명 접두를 벗기면("풍납동신동아" → "신동아")
+  // 다른 동의 흔한 이름과 완전일치해 버린다. 전수 실측에서 Tier1 11,296건 중
+  // 342건(3%)이 이 경로로 잘못 붙었다 — "숭의현대"(숭의동) → "현대"(주안동) 식이다.
+  const sameDong = (c: MatchCandidate) => dongMatches(complex.as3, dongOfAddress(c.address));
+
+  const exact = candidates.filter(
+    (c) => sameDong(c) && propertyKeys(c.nameNorm, c.address).some((pk) => cKeys.includes(pk)),
   );
   if (exact.length === 1) return { propertyId: exact[0].id, tier: 1 };
   if (exact.length > 1) return null;
@@ -158,6 +163,6 @@ export function decideMatch(
     }
   }
   if (!best || tied || bestScore < threshold) return null;
-  if (!dongMatches(complex.as3, dongOfAddress(best.address))) return null;
+  if (!sameDong(best)) return null;
   return { propertyId: best.id, tier: 2 };
 }

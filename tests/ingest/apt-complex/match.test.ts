@@ -161,6 +161,48 @@ describe('decideMatch — 실측 사례', () => {
 });
 
 // 2026-09-08 전수 측정(단지 22,301 × Property 44,479)에서 나온 실제 사례.
+// 2026-09-08 전수 실측: Tier1 11,296건 중 342건(3%)이 동명 불일치로 잘못 붙어 있었다.
+// 원인은 동명 접두 제거 자체다 — "풍납동신동아" → "신동아"로 벗기면 다른 동의 흔한
+// 이름과 완전일치한다. 그래서 동명 게이트를 Tier1에도 건다.
+describe('Tier1 동명 게이트 — 접두 제거가 만든 오매칭', () => {
+  const P = (id: number, nameNorm: string, address: string) => ({
+    id: BigInt(id),
+    nameNorm,
+    address,
+  });
+
+  it('접두를 벗겨 완전일치해도 동이 다르면 차단한다', () => {
+    expect(
+      decideMatch({ kaptName: '풍납동신동아아파트', as3: '풍납동' }, [
+        P(1, '신동아', '마천동 20'),
+      ]),
+    ).toBeNull();
+    expect(
+      decideMatch({ kaptName: '숭의현대아파트', as3: '숭의동' }, [P(2, '현대', '주안동 80')]),
+    ).toBeNull();
+    expect(
+      decideMatch({ kaptName: '삼전현대아파트', as3: '삼전동' }, [P(3, '현대', '잠실동 331')]),
+    ).toBeNull();
+  });
+
+  it('같은 동이면 접두를 벗겨 완전일치로 붙는다', () => {
+    expect(
+      decideMatch({ kaptName: '풍납동신동아아파트', as3: '풍납동' }, [
+        P(4, '신동아', '풍납동 20'),
+      ]),
+    ).toEqual({ propertyId: BigInt(4), tier: 1 });
+  });
+
+  it('완전일치 후보가 여럿이어도 동으로 갈리면 확정한다', () => {
+    expect(
+      decideMatch({ kaptName: '숭의현대아파트', as3: '숭의동' }, [
+        P(5, '현대', '주안동 80'),
+        P(6, '현대', '숭의동 12'),
+      ]),
+    ).toEqual({ propertyId: BigInt(6), tier: 1 });
+  });
+});
+
 describe('phaseOf — 차수 추출', () => {
   it('숫자·차·단지·동 표기를 뽑는다', () => {
     expect(phaseOf('이구로얄2차')).toBe('2');
