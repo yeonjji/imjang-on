@@ -113,6 +113,76 @@ describe('parseAptDetail', () => {
     expect(row.builder).toBe('현대건설,삼성물산,현대산업개발');
   });
 
+  // 실측 A10023296(송파파인타운12단지): subwayLine이 "1호선, 1호선, … 부산-김해경전철"
+  // 200자로 오는데 subwayStation은 ", , , , "다. 컬럼 길이(60)를 넘겨 적재가 통째로 실패했다.
+  it('지하철 노선의 중복을 제거한다', () => {
+    const empty = { response: { body: { item: {} } } };
+    const dup = {
+      response: {
+        body: { item: { subwayLine: '1호선, 1호선, 2호선, 2호선, 3호선', subwayStation: '서울역, 서울역' } },
+      },
+    };
+    const r = parseAptDetail('A1', empty, dup);
+    expect(r.subwayLine).toBe('1호선, 2호선, 3호선');
+    expect(r.subwayStation).toBe('서울역');
+  });
+
+  it('역명이 쉼표뿐이면 노선까지 결측으로 본다', () => {
+    const empty = { response: { body: { item: {} } } };
+    const junk = {
+      response: {
+        body: {
+          item: {
+            subwayLine: '1호선, 1호선, 2호선, 부산-김해경전철, 동해선',
+            subwayStation: ', , , , ',
+          },
+        },
+      },
+    };
+    const r = parseAptDetail('A1', empty, junk);
+    expect(r.subwayStation).toBeNull();
+    expect(r.subwayLine).toBeNull();
+  });
+
+  // 실측 A41072713(산들마을1단지): 역명은 '일산역'으로 정상인데 노선에 전국 목록이 온다.
+  it('역명이 정상이어도 노선이 5개를 넘으면 노선만 버린다', () => {
+    const empty = { response: { body: { item: {} } } };
+    const junk = {
+      response: {
+        body: {
+          item: {
+            subwayLine: '1호선, 2호선, 3호선, 4호선, 부산-김해경전철, 동해선, 5호선, 6호선',
+            subwayStation: '일산역, 일산역, 일산역',
+          },
+        },
+      },
+    };
+    const r = parseAptDetail('A1', empty, junk);
+    expect(r.subwayStation).toBe('일산역'); // 역명은 살린다
+    expect(r.subwayLine).toBeNull();
+  });
+
+  it('환승역 5개까지는 통과시킨다 (김포공항역 기준)', () => {
+    const empty = { response: { body: { item: {} } } };
+    const ok = {
+      response: {
+        body: {
+          item: {
+            subwayLine: '5호선, 9호선, 공항철도, 김포골드라인, 대곡소사선',
+            subwayStation: '김포공항역',
+          },
+        },
+      },
+    };
+    expect(parseAptDetail('A1', empty, ok).subwayLine).toBe(
+      '5호선, 9호선, 공항철도, 김포골드라인, 대곡소사선',
+    );
+  });
+
+  it('정상 노선은 그대로 둔다', () => {
+    expect(parseAptDetail('A10025850', basis, dtl).subwayLine).toBe('3호선, 8호선, 9호선');
+  });
+
   it('useYn=Y면 inUse=true', () => {
     expect(row.inUse).toBe(true);
   });

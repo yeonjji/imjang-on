@@ -46,6 +46,20 @@ function posInt(v: unknown): number | null {
   return n === null || n === 0 ? null : n;
 }
 
+/** 한 단지에 붙을 수 있는 지하철 노선 수의 상한. 넘으면 원본이 깨진 것으로 본다. */
+const MAX_SUBWAY_LINES = 5;
+
+/**
+ * 쉼표 나열값의 중복·빈 항목 제거. "1호선, 1호선, 2호선" → "1호선, 2호선".
+ * 전부 빈 항목이면(", , , , ") null.
+ */
+function dedupeCsv(v: unknown): string | null {
+  const s = str(v);
+  if (!s) return null;
+  const parts = [...new Set(s.split(',').map((x) => x.trim()).filter(Boolean))];
+  return parts.length > 0 ? parts.join(', ') : null;
+}
+
 /** "20181228" → Date. 형식이 아니면 null. */
 function ymd(v: unknown): Date | null {
   const s = str(v);
@@ -87,6 +101,16 @@ export function parseAptDetail(kaptCode: string, basis: unknown, dtl: unknown): 
   const d = (body(dtl).item as Rec) ?? {};
   const merged: Rec = { ...b, ...d };
 
+  // 지하철은 원본이 자주 깨져 있다. 일부 단지의 subwayLine에 전국 노선 목록이
+  // 200자로 들어온다 — 일산역(A41072713)에 부산-김해경전철이 붙는 식이다.
+  // 두 가지로 거른다.
+  //  · 역명이 쉼표뿐이면(", , , , ") 노선도 버린다. 어느 역인지 모르는 노선은 정보가 아니다.
+  //  · 노선이 5개를 넘으면 전국 목록이 흘러든 것으로 본다. 실제 최다 환승역도
+  //    김포공항역 5개(5·9호선·공항철도·김포골드라인·대곡소사)를 넘지 않는다.
+  const station = dedupeCsv(d.subwayStation);
+  const lineList = station ? dedupeCsv(d.subwayLine) : null;
+  const line = lineList && lineList.split(',').length <= MAX_SUBWAY_LINES ? lineList : null;
+
   return {
     kaptCode,
     households: posInt(b.kaptdaCnt),
@@ -103,8 +127,8 @@ export function parseAptDetail(kaptCode: string, basis: unknown, dtl: unknown): 
     area136: int(b.kaptMparea136),
     parkingGround: int(d.kaptdPcnt),
     parkingUnder: int(d.kaptdPcntu),
-    subwayLine: str(d.subwayLine),
-    subwayStation: str(d.subwayStation),
+    subwayLine: line,
+    subwayStation: station,
     walkSubway: str(d.kaptdWtimesub),
     walkBus: str(d.kaptdWtimebus),
     // EV는 상세정보의 지상/지하 분리 필드다. 기본정보의 kaptdEcntp(헬리오시티 183)는
