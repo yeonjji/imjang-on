@@ -56,45 +56,64 @@ export async function runList(): Promise<number> {
   return upserted;
 }
 
+const DETAIL_CONCURRENCY = 4;
+
 /**
  * 상세 수집. 대상은 `fetchedAt IS NULL`(미수집분)이라 며칠에 걸쳐 나눠 돌려도 수렴한다.
- * 한도 초과를 만나면 즉시 중단한다 — 계속 두드리면 차단당한다.
+ * 한도 초과를 만나면 모든 워커를 즉시 세운다 — 계속 두드리면 차단당한다.
+ *
+ * 단건당 API 2회라 순차로는 4시간이 넘는다(22,301 × 2 × ~330ms, 실측). 소규모 워커로
+ * 나눈다. 동시성을 크게 잡지 않는 건 이 API가 부하에 약하기 때문이다 —
+ * 설계 중 시군구 30개 조회에서 13개가 타임아웃한 실측이 있다.
  */
-export async function runDetail(limit?: number): Promise<number> {
+export async function runDetail(limit?: number, concurrency = DETAIL_CONCURRENCY): Promise<number> {
   const targets = await prisma.aptComplex.findMany({
     where: { fetchedAt: null },
     select: { kaptCode: true },
     orderBy: { kaptCode: 'asc' },
     ...(limit ? { take: limit } : {}),
   });
-  logger.info({ targets: targets.length }, 'apt-complex detail targets');
+  logger.info({ targets: targets.length, concurrency }, 'apt-complex detail targets');
 
   let done = 0;
-  for (const { kaptCode } of targets) {
-    try {
-      const basis = await fetchAptBasis(kaptCode);
-      const dtl = await fetchAptDetail(kaptCode);
-      const row = parseAptDetail(kaptCode, basis, dtl);
-      const { kaptCode: _key, rawJson, ...fields } = row;
-      await prisma.aptComplex.update({
-        where: { kaptCode },
-        data: { ...fields, rawJson: rawJson as object, fetchedAt: new Date() },
-      });
-      done++;
-      if (done % 500 === 0) logger.info({ done, of: targets.length }, 'apt-complex detail progress');
-    } catch (err) {
-      if (err instanceof QuotaExceededError) {
-        logger.warn({ done, remaining: targets.length - done }, 'quota exceeded — stopping');
-        await notify('warn', 'apt-complex detail 한도 초과로 중단', {
-          done,
-          remaining: targets.length - done,
+  let next = 0;
+  let quotaHit = false;
+
+  async function worker(): Promise<void> {
+    for (;;) {
+      if (quotaHit) return;
+      const i = next++;
+      if (i >= targets.length) return;
+      const { kaptCode } = targets[i];
+      try {
+        const [basis, dtl] = await Promise.all([fetchAptBasis(kaptCode), fetchAptDetail(kaptCode)]);
+        const row = parseAptDetail(kaptCode, basis, dtl);
+        const { kaptCode: _key, rawJson, ...fields } = row;
+        await prisma.aptComplex.update({
+          where: { kaptCode },
+          data: { ...fields, rawJson: rawJson as object, fetchedAt: new Date() },
         });
-        break;
+        done++;
+        if (done % 500 === 0) {
+          logger.info({ done, of: targets.length }, 'apt-complex detail progress');
+        }
+      } catch (err) {
+        if (err instanceof QuotaExceededError) {
+          quotaHit = true;
+          logger.warn({ done, remaining: targets.length - done }, 'quota exceeded — stopping');
+          await notify('warn', 'apt-complex detail 한도 초과로 중단', {
+            done,
+            remaining: targets.length - done,
+          });
+          return;
+        }
+        // 단건 실패는 건너뛴다. fetchedAt이 그대로 NULL이라 다음 회차에 재시도된다.
+        logger.warn({ err, kaptCode }, 'apt-complex detail skip');
       }
-      // 단건 실패는 건너뛴다. fetchedAt이 그대로 NULL이라 다음 회차에 재시도된다.
-      logger.warn({ err, kaptCode }, 'apt-complex detail skip');
     }
   }
+
+  await Promise.all(Array.from({ length: Math.max(1, concurrency) }, () => worker()));
   return done;
 }
 
@@ -118,7 +137,12 @@ async function main(): Promise<void> {
     } else {
       const raw = arg('limit');
       const limit = raw ? Number(raw) : undefined;
-      rows = await runDetail(Number.isFinite(limit) ? limit : undefined);
+      const rawC = arg('concurrency');
+      const conc = rawC ? Number(rawC) : undefined;
+      rows = await runDetail(
+        Number.isFinite(limit) ? limit : undefined,
+        Number.isFinite(conc) && conc ? conc : DETAIL_CONCURRENCY,
+      );
     }
     await prisma.ingestionRun.update({
       where: { id: run.id },
