@@ -86,7 +86,10 @@ export async function runDetail(limit?: number, concurrency = DETAIL_CONCURRENCY
       if (i >= targets.length) return;
       const { kaptCode } = targets[i];
       try {
-        const [basis, dtl] = await Promise.all([fetchAptBasis(kaptCode), fetchAptDetail(kaptCode)]);
+        // 레코드 안에서 병렬로 부르지 않는다. 워커 수 × 2가 되어 순간 동시 요청이
+        // 두 배가 되고, 그러면 429가 난다(운영 실측: 워커 4 × 병렬 2 = 동시 8 → 429 다발).
+        const basis = await fetchAptBasis(kaptCode);
+        const dtl = await fetchAptDetail(kaptCode);
         const row = parseAptDetail(kaptCode, basis, dtl);
         const { kaptCode: _key, rawJson, ...fields } = row;
         await prisma.aptComplex.update({
