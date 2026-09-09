@@ -55,6 +55,10 @@ const BANDS: BandLabel[] = ['60㎡ 이하', '60~85㎡', '85~135㎡', '135㎡ 초
  * 면적 구성. **4칸 완비 + 합이 세대수와 정확히 일치할 때만** 만든다.
  * 운영 실측(2026-09-08, 22,301건)에서 불일치는 0건이라 이 검사는 통과 전용이지만,
  * 비중을 %로 보이는 순간 합이 100%가 아니면 들통나므로 가드를 남긴다.
+ *
+ * 비중 계산은 최대 잔여 배분(largest remainder method)을 쓴다. 각 밴드를 따로
+ * 반올림하면 합이 100이 아닐 수 있기 때문(운영 실측 6.0%). 이 비중은 화면 구성
+ * 바의 폭으로 그대로 쓰이므로 합이 100이어야 한다.
  */
 export function buildUnitMix(f: ComplexFacts): UnitMix | null {
   const units = [f.area60, f.area85, f.area135, f.area136];
@@ -63,10 +67,33 @@ export function buildUnitMix(f: ComplexFacts): UnitMix | null {
   const total = units.reduce((a, b) => a! + b!, 0)!;
   if (total !== f.households) return null;
 
+  // 최대 잔여 배분: 각 밴드의 정확한 백분율에서 내림값을 취하고,
+  // 100에서 내림값 합을 뺀 나머지를 소수부가 큰 밴드부터 1씩 나눠 준다.
+  const percentages = units.map((u) => (u! / total) * 100);
+  const floors = percentages.map((p) => Math.floor(p));
+  const fractionals = percentages.map((p) => p - Math.floor(p));
+  const remainder = 100 - floors.reduce((a, b) => a + b, 0);
+
+  // 소수부가 큰 순으로 정렬. 동률이면: units 큼 우선, 그것도 같으면 인덱스 작음 우선
+  const sortedIndices = [0, 1, 2, 3].sort((i, j) => {
+    if (fractionals[i] !== fractionals[j]) {
+      return fractionals[j] - fractionals[i]; // 내림차순
+    }
+    if (units[i]! !== units[j]!) {
+      return units[j]! - units[i]!; // units 큰 것 우선
+    }
+    return i - j; // 인덱스 작은 것 우선
+  });
+
+  const allocations = [...floors];
+  for (let i = 0; i < remainder; i++) {
+    allocations[sortedIndices[i]]++;
+  }
+
   const bands = BANDS.map((label, i) => ({
     label,
     units: units[i]!,
-    pct: Math.round((units[i]! / total) * 100),
+    pct: allocations[i],
   }));
 
   let dominant = bands[0];

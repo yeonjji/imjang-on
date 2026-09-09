@@ -71,6 +71,42 @@ describe('buildUnitMix', () => {
   it('세대수가 0이면 null', () => {
     expect(buildUnitMix({ ...HELIO, households: 0, area60: 0, area85: 0, area135: 0, area136: 0 })).toBeNull();
   });
+
+  it('합이 항상 100 — 단순 반올림이 실패하는 케이스 [1,1,1,0]', () => {
+    const m = buildUnitMix({ ...HELIO, households: 3, area60: 1, area85: 1, area135: 1, area136: 0 })!;
+    const sum = m.bands.reduce((a, b) => a + b.pct, 0);
+    expect(sum).toBe(100);
+  });
+
+  it('여러 조합에서 비중 합이 항상 100', () => {
+    const testCases = [
+      { households: 7, areas: [1, 2, 3, 1] },
+      { households: 10, areas: [1, 1, 1, 7] },
+      { households: 100, areas: [10, 30, 40, 20] },
+      { households: 13, areas: [1, 3, 5, 4] },
+      { households: 97, areas: [20, 31, 28, 18] },
+      { households: 5, areas: [1, 1, 1, 2] },
+    ];
+    for (const tc of testCases) {
+      const m = buildUnitMix({
+        ...HELIO,
+        households: tc.households,
+        area60: tc.areas[0],
+        area85: tc.areas[1],
+        area135: tc.areas[2],
+        area136: tc.areas[3],
+      })!;
+      const sum = m.bands.reduce((a, b) => a + b.pct, 0);
+      expect(sum).toBe(100);
+    }
+  });
+
+  it('같은 입력은 같은 결과 — 결정성', () => {
+    const input = { ...HELIO, households: 3, area60: 1, area85: 1, area135: 1, area136: 0 };
+    const m1 = buildUnitMix(input)!;
+    const m2 = buildUnitMix(input)!;
+    expect(m1.bands.map((b) => b.pct)).toEqual(m2.bands.map((b) => b.pct));
+  });
 });
 
 describe('buildDensity', () => {
