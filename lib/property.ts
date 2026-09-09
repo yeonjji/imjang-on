@@ -3,6 +3,7 @@ import { PropertyType } from '@prisma/client';
 import type { Prisma, Property, Region } from '@prisma/client';
 import { normalizeName } from '@/lib/slug';
 import { sidoFullName } from '@/lib/region';
+import type { ComplexFacts } from '@/lib/insights/apt-complex';
 
 /**
  * 매물 상세를 공개·색인할 기준. **사이트맵 등재 조건과 페이지 robots가 이 하나만 읽는다** —
@@ -141,6 +142,27 @@ export async function getPropertyById(id: bigint) {
     where: { id },
     include: { region: true },
   });
+}
+
+/**
+ * 단지정보(AptComplex) 1:1 조회. 매칭 안 된 Property는 null이다(아파트의 약 72%).
+ *
+ * getPropertyById의 include에 얹지 않는다 — OG 이미지 생성이 같은 함수를 쓰는데
+ * 거기서는 단지정보가 필요 없다.
+ */
+export async function getComplexFacts(propertyId: bigint): Promise<ComplexFacts | null> {
+  const row = await prisma.aptComplex.findUnique({
+    where: { propertyId },
+    select: {
+      households: true, buildingCount: true, usedate: true, hallType: true,
+      topFloor: true, baseFloor: true,
+      area60: true, area85: true, area135: true, area136: true,
+      parkingGround: true, parkingUnder: true,
+      evGround: true, evUnder: true, elevator: true, cctv: true,
+      builder: true, fetchedAt: true,
+    },
+  });
+  return row;
 }
 
 /**
