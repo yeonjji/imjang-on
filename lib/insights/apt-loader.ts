@@ -10,7 +10,7 @@ import {
 import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { getNearbyInfra } from '@/lib/amenity/nearby';
 import { buildAptNarrative, type AptNarrative } from '@/lib/insights/apt';
-import type { ComplexFacts } from '@/lib/insights/apt-complex';
+import { buildUnitMix, buildDensity, type ComplexFacts } from '@/lib/insights/apt-complex';
 
 // 요청 스코프 캐시: generateMetadata와 본문에서 같은 인자로 호출하면 1회만 실행된다.
 export const cachedPropertyById = cache(getPropertyById);
@@ -80,6 +80,8 @@ export const loadAptInsight = cache(
       infra: infra.map((c) => ({ label: c.label, count: c.items.length, capped: c.capped })).filter((c) => c.count > 0).slice(0, 5),
       floorPremium,
       flags,
+      unitMix: complexFacts ? buildUnitMix(complexFacts) : null,
+      density: complexFacts ? buildDensity(complexFacts) : null,
     });
 
     const dateModified = toUtcDate(property.saleLastAt ?? property.jeonseLastAt ?? property.wolseLastAt);
