@@ -37,13 +37,23 @@ describe('AreaComparison — 단지 구성', () => {
     expect(out).toContain('54%');
   });
 
+  it('unitMix가 있으면 출처를 표기한다', () => {
+    const out = renderToStaticMarkup(<AreaComparison areas={AREAS} unitMix={MIX} />);
+    expect(out).toContain('국토교통부');
+  });
+
   it('unitMix가 null이면 구성 줄만 빠지고 기존 카드는 남는다', () => {
     const out = renderToStaticMarkup(<AreaComparison areas={AREAS} unitMix={null} />);
     expect(out).not.toContain('단지 구성');
     expect(out).toContain('면적별 실거래 비교');
   });
 
-  it('units 0인 밴드는 바에서 생략한다', () => {
+  it('unitMix가 null이면 출처도 표기하지 않는다', () => {
+    const out = renderToStaticMarkup(<AreaComparison areas={AREAS} unitMix={null} />);
+    expect(out).not.toContain('국토교통부');
+  });
+
+  it('pct 0인 밴드는 바에서 생략한다', () => {
     const out = renderToStaticMarkup(<AreaComparison areas={AREAS} unitMix={MIX} />);
     expect(out).not.toContain('135㎡ 초과');
   });

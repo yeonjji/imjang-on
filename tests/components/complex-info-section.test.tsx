@@ -44,7 +44,7 @@ describe('ComplexInfoSection', () => {
     expect(out).toContain('7년차');        // 준공 연차
     expect(out).toContain('25세대당');     // 승강기 — 384대가 아니라 밀도로
     expect(out).toContain('100세대당');    // EV·CCTV
-    expect(out).not.toContain('12,096');  // 원자료 주차 대수는 안 보여준다
+    expect(out).not.toContain('12096');   // 원자료 주차 대수는 안 보여준다
     expect(out).not.toContain('384');     // 원자료 승강기 대수도 안 보여준다
   });
 

@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/card';
+import { SourceCaption } from '@/components/ui/source-caption';
 import { formatBillion } from '@/lib/format';
 import type { UnitMix } from '@/lib/insights/apt-complex';
 import type { AreaSummaryItem } from '@/lib/transaction';
@@ -38,6 +39,7 @@ export function AreaComparison({
               .map((b) => `${b.label} ${b.pct}%`)
               .join(' · ')}
           </p>
+          <SourceCaption ids={['molit-apt-complex']} />
         </div>
       )}
       <div className="grid gap-3 sm:grid-cols-2">

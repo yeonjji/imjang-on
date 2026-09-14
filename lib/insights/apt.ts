@@ -132,7 +132,7 @@ function flagsInsight(d: AptInsightInput): Insight | null {
 function unitMixInsight(d: AptInsightInput): Insight | null {
   const m = d.unitMix;
   if (!m) return null;
-  if (m.dominant.pct >= 90) {
+  if (m.dominant.pct === 100) {
     return { key: 'unitMix', text: `전용 ${m.dominant.label} 한 종류로 이루어진 단지입니다.` };
   }
   if (m.smallMidPct >= 80) {
@@ -141,7 +141,7 @@ function unitMixInsight(d: AptInsightInput): Insight | null {
   if (m.smallMidPct <= 35) {
     return { key: 'unitMix', text: `전용 85㎡ 초과가 ${100 - m.smallMidPct}%로 중대형 비중이 높은 단지입니다.` };
   }
-  const rest = m.bands.filter((b) => b.label !== m.dominant.label && b.units > 0).sort((a, b) => b.pct - a.pct)[0];
+  const rest = m.bands.filter((b) => b.label !== m.dominant.label && b.pct > 0).sort((a, b) => b.pct - a.pct)[0];
   const restPart = rest ? `, ${rest.label} ${rest.pct}%` : '';
   return {
     key: 'unitMix',

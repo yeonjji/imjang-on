@@ -81,12 +81,13 @@ describe('unitMixInsight — 구간 경계', () => {
     return n?.sentences.find((s) => s.includes('전용')) ?? null;
   };
 
-  it('dominant 90% 이상이면 단일 면적대', () => {
-    expect(say(mix(95, 90, '60~85㎡'))).toContain('한 종류');
-    expect(say(mix(95, 91, '60~85㎡'))).toContain('한 종류');
+  it('dominant 100%면 단일 면적대', () => {
+    expect(say(mix(100, 100, '60~85㎡'))).toContain('한 종류');
   });
-  it('dominant 89%면 단일이 아니다', () => {
-    expect(say(mix(95, 89, '60~85㎡'))).not.toContain('한 종류');
+  it('dominant 99%면 단일이 아니라 실제 비율을 말한다 — 분기 공백이 없다', () => {
+    const s = say(mix(99, 99, '60~85㎡'));
+    expect(s).not.toContain('한 종류');
+    expect(s).toContain('중소형 중심');
   });
   it('85㎡ 이하 80% 이상이면 중소형 중심', () => {
     expect(say(mix(80, 54, '60~85㎡'))).toContain('중소형 중심');
