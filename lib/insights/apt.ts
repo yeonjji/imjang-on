@@ -1,5 +1,6 @@
 import type { Insight, Narrative } from './shared';
 import type { FloorPremium, TransactionFlags } from '@/lib/transaction';
+import type { UnitMix, DensityFacts } from '@/lib/insights/apt-complex';
 import { formatBillion } from '@/lib/format';
 import { josa } from '@/lib/seo/josa';
 import { walkMinutes } from '@/lib/walk-minutes';
@@ -22,6 +23,9 @@ export interface AptInsightInput {
   /** 색인 게이트 통과 후 서술을 다양화하는 고유 파생지표(있을 때만 문장 발화). */
   floorPremium?: FloorPremium | null;
   flags?: TransactionFlags | null;
+  /** 단지정보 해석용. 색인 판정에는 쓰이지 않는다(fired 제외). */
+  unitMix?: UnitMix | null;
+  density?: DensityFacts | null;
 }
 
 export type AptNarrative = Narrative;
@@ -121,6 +125,46 @@ function flagsInsight(d: AptInsightInput): Insight | null {
   return { key: 'flags', text: `최근 1년 거래에는 ${items.join('과 ')}이 집계됩니다.` };
 }
 
+// U: 면적 구성 — 공급 기준 비중. 구간별로 문장이 갈린다.
+// 실거래와 자동으로 연결하지 않는다: 우리 실거래는 평 단위이고 API 구성은 ㎡ 밴드라
+// 전용 85㎡(=25.7평) 경계에서 "26평"이 어느 밴드인지 단정할 수 없다.
+// 대조는 화면에서 '면적별 실거래 비교' 옆에 나란히 놓아 눈으로 하게 한다.
+function unitMixInsight(d: AptInsightInput): Insight | null {
+  const m = d.unitMix;
+  if (!m) return null;
+  if (m.dominant.pct === 100) {
+    return { key: 'unitMix', text: `전용 ${m.dominant.label} 한 종류로 이루어진 단지입니다.` };
+  }
+  if (m.smallMidPct >= 80) {
+    return { key: 'unitMix', text: `전용 85㎡ 이하가 ${m.smallMidPct}%인 중소형 중심 단지입니다.` };
+  }
+  if (m.smallMidPct <= 35) {
+    return { key: 'unitMix', text: `전용 85㎡ 초과가 ${100 - m.smallMidPct}%로 중대형 비중이 높은 단지입니다.` };
+  }
+  const rest = m.bands.filter((b) => b.label !== m.dominant.label && b.pct > 0).sort((a, b) => b.pct - a.pct)[0];
+  const restPart = rest ? `, ${rest.label} ${rest.pct}%` : '';
+  return {
+    key: 'unitMix',
+    text: `전용 ${m.dominant.label} ${m.dominant.pct}%${restPart}로 면적대가 고르게 섞여 있습니다.`,
+  };
+}
+
+// K: 주차 밀도. 총평("양호")과 공통 단서("실제와 다를 수 있습니다")를 쓰지 않는다 —
+// 전자는 데이터로 뒷받침되지 않고, 후자는 모든 페이지에 똑같이 붙어 그 자체가 near-duplicate다.
+function parkingInsight(d: AptInsightInput): Insight | null {
+  const den = d.density;
+  if (!den || den.parkingPerHousehold == null) return null;
+  const v = den.parkingPerHousehold.toFixed(2).replace(/0$/, '').replace(/\.$/, '');
+  const head =
+    den.parkingPerHousehold >= 1.5
+      ? `세대당 주차는 ${v}대로 넉넉한 편입니다.`
+      : den.parkingPerHousehold >= 1.0
+        ? `세대당 주차는 ${v}대입니다.`
+        : `세대당 주차는 ${v}대로 세대 수에 못 미칩니다.`;
+  const tail = den.parkingAllUnderground ? ' 주차는 전부 지하에 있습니다.' : '';
+  return { key: 'parking', text: `${head}${tail}` };
+}
+
 export function buildAptNarrative(d: AptInsightInput): AptNarrative | null {
   // 자연스러운 읽기 순서: 규모·연식(소개) → 추세 → 가격 위치 → 입지.
   const core = [bScale, tTrend, pPeer, aAccess].map((fn) => fn(d)).filter(Boolean) as Insight[];
@@ -130,8 +174,12 @@ export function buildAptNarrative(d: AptInsightInput): AptNarrative | null {
   // 게이트 통과 페이지에만, 데이터가 뒷받침하면 고유 파생지표 해석을 덧붙인다.
   // 조건부·구간별 분기라 단지마다 문장 구성이 달라져 near-duplicate를 줄인다(메타 설명은 앞 core 문장 유지).
   const extra = [floorPremiumInsight, flagsInsight].map((fn) => fn(d)).filter(Boolean) as Insight[];
+  // 단지정보 해석. sentences에만 들어가고 fired에는 안 들어간다 —
+  // 이것이 색인 계약이다(스펙 §4.1). lib/seo/indexable.ts는 fired만 센다.
+  const complex = [unitMixInsight, parkingInsight].map((fn) => fn(d)).filter(Boolean) as Insight[];
   const mods = [...core, ...extra];
+  const all = [...mods, ...complex];
   // 첫 문장에만 단지명을 붙인다.
-  const sentences = mods.map((m, i) => (i === 0 ? `${josa(d.name, '은', '는')} ${m.text}` : m.text));
+  const sentences = all.map((m, i) => (i === 0 ? `${josa(d.name, '은', '는')} ${m.text}` : m.text));
   return { sentences, text: sentences.join(' '), fired: mods.map((m) => m.key) };
 }

@@ -23,6 +23,7 @@ import { DealSummarySection } from '../../apt/[id]/_components/deal-summary-sect
 import { UnifiedTransactionTable } from '../../apt/[id]/_components/unified-transaction-table';
 import { PriceCharts } from '../../apt/[id]/_components/price-charts';
 import { AreaComparison } from '../../apt/[id]/_components/area-comparison';
+import { ComplexInfoSection } from '../../apt/[id]/_components/complex-info-section';
 import { SameFloorObservation } from '../../apt/[id]/_components/same-floor-observation';
 import { FloorPremiumView } from '../../apt/[id]/_components/floor-premium';
 import { TransactionFlagsView } from '../../apt/[id]/_components/transaction-flags';
@@ -41,6 +42,7 @@ import {
   cachedTransactionFlags,
   loadAptInsight,
 } from '@/lib/insights/apt-loader';
+import { buildUnitMix, shouldRenderComplexInfo } from '@/lib/insights/apt-complex';
 import { mapImageUrl } from '@/lib/seo/static-map';
 import { robotsFor } from '@/lib/seo/indexable';
 import { detailTitleLocality } from '@/lib/region';
@@ -125,7 +127,11 @@ export default async function OffiDetailPage({ params }: Params) {
       : Promise.resolve({ stations: [], fallback: false }),
   ]);
 
-  const { narrative, dateModified } = await loadAptInsight(propId);
+  const { narrative, dateModified, complexFacts } = await loadAptInsight(propId);
+  // 렌더 시점 기준. ISR 캐시에 박제되므로 연 단위만 쓴다(apt-complex.ts 참조).
+  const now = new Date();
+  const unitMix = complexFacts ? buildUnitMix(complexFacts) : null;
+  const showComplex = shouldRenderComplexInfo(complexFacts, now);
 
   const offiFaq = composeDetailFaq(
     buildAptFaq({ property, areaSummary, unifiedTotalCount: unified.totalCount }),
@@ -198,7 +204,8 @@ export default async function OffiDetailPage({ params }: Params) {
             </h2>
             <PriceCharts data={chart} latest={latestTx} areaSummary={areaSummary} />
           </section>
-          <AreaComparison id="area" areas={areaSummary} />
+          <AreaComparison id="area" areas={areaSummary} unitMix={unitMix} />
+          <ComplexInfoSection id="complex" facts={complexFacts} now={now} />
           <SameFloorObservation id="same-floor" pair={sameFloor} />
           <FloorPremiumView id="floor-premium" data={floorPremium} />
           <TransactionFlagsView id="data-notes" data={flags} />
@@ -211,7 +218,7 @@ export default async function OffiDetailPage({ params }: Params) {
           <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>
-          <DetailSidebar property={property} />
+          <DetailSidebar property={property} showComplex={showComplex} />
         </aside>
       </div>
     </div>

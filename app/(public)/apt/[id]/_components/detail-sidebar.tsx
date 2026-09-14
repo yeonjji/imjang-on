@@ -7,11 +7,18 @@ const ANCHORS = [
   { href: '#transactions', label: '최근 실거래' },
   { href: '#chart', label: '가격 그래프' },
   { href: '#area', label: '면적별 비교' },
+  { href: '#complex', label: '단지 정보', needsComplex: true },
   { href: '#nearby', label: '주변 단지 비교' },
   { href: '#poi', label: '주변 생활 인프라' },
 ];
 
-export function DetailSidebar({ property }: { property: Property }) {
+export function DetailSidebar({
+  property,
+  showComplex = false,
+}: {
+  property: Property;
+  showComplex?: boolean;
+}) {
   return (
     <div className="sticky top-24 flex flex-col gap-4">
       <Card>
@@ -25,7 +32,7 @@ export function DetailSidebar({ property }: { property: Property }) {
       <Card>
         <h3 className="mb-3 text-sm font-bold text-[var(--color-blue-dark)]">바로가기</h3>
         <ul className="flex flex-col gap-2">
-          {ANCHORS.map((a) => (
+          {ANCHORS.filter((a) => !a.needsComplex || showComplex).map((a) => (
             <li key={a.href}>
               <a
                 href={a.href}

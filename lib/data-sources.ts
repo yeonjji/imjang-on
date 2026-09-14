@@ -17,7 +17,8 @@ export type DataSourceId =
   | 'mois-bdong'
   | 'kakao-local'
   | 'kinfa-loan'
-  | 'hf-jeonse-guarantee';
+  | 'hf-jeonse-guarantee'
+  | 'molit-apt-complex';
 
 export type DataSourceCategory =
   | '부동산 거래'
@@ -152,6 +153,13 @@ export const DATA_SOURCES: Record<DataSourceId, DataSource> = {
     dataset: '전세자금보증상품 추천서비스',
     url: 'https://www.hf.go.kr',
     category: '주거금융',
+  },
+  'molit-apt-complex': {
+    id: 'molit-apt-complex',
+    provider: '국토교통부',
+    dataset: '공동주택 단지정보',
+    url: 'https://www.data.go.kr/data/15058453/openapi.do',
+    category: '부동산 거래',
   },
 };
 
