@@ -6,12 +6,19 @@ export function PropertyDetailHero({
   property,
   region,
   confirmed,
+  builtYear,
 }: {
   property: Property;
   region: Region;
   /** 이 단지의 거래가 단일 지번에 모여 있는지. 아니면 히어로는 법정동까지만 표기한다 */
   confirmed: boolean;
+  /**
+   * 준공 연도. 사용승인일이 있으면 그 연도가 들어온다(resolveBuiltYear).
+   * 미지정이면 실거래 신고의 건축년도를 쓴다 — 단지정보가 없는 페이지의 기존 동작.
+   */
+  builtYear?: number | null;
 }) {
+  const builtYearShown = builtYear !== undefined ? builtYear : property.builtYear;
   const addr = propertyAddress(property, region);
   // 미확정 지번을 접힘선 위에 확정 주소처럼 내보내지 않는다. 전체 지번은 '대표 지번' 배지가
   // 붙는 주소 줄(AddressLine)에서만 보여준다.
@@ -42,7 +49,7 @@ export function PropertyDetailHero({
           <h1 className="text-3xl font-black tracking-tight md:text-4xl">{property.name}</h1>
           <p className="mt-2 text-white/80">
             {display}
-            {property.builtYear ? ` · ${property.builtYear}년 준공` : ''}
+            {builtYearShown ? ` · ${builtYearShown}년 준공` : ''}
             {property.households
               ? ` · ${Number(property.households).toLocaleString('ko-KR')}세대`
               : ''}

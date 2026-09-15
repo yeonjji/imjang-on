@@ -5,6 +5,7 @@ import {
   buildingAgeYears,
   shouldRenderComplexInfo,
   type ComplexFacts,
+  type UnitMix,
 } from '@/lib/insights/apt-complex';
 
 interface Tile {
@@ -23,10 +24,13 @@ interface Tile {
  */
 export function ComplexInfoSection({
   facts,
+  unitMix,
   now,
   id,
 }: {
   facts: ComplexFacts | null;
+  /** 면적 구성. 「면적별 실거래 비교」에서 옮겨 왔다(2026-09-15). */
+  unitMix?: UnitMix | null;
   now: Date;
   id?: string;
 }) {
@@ -89,6 +93,28 @@ export function ComplexInfoSection({
           </div>
         ))}
       </div>
+      {unitMix && (
+        <div className="mt-4 rounded-2xl bg-[var(--color-sky-soft)] p-4">
+          <p className="text-xs font-bold text-[var(--color-blue-dark)]">면적 구성</p>
+          <div className="mt-2 flex h-2.5 overflow-hidden rounded-full bg-[var(--color-line)]">
+            {unitMix.bands
+              .filter((b) => b.pct > 0)
+              .map((b, i) => (
+                <div
+                  key={b.label}
+                  style={{ width: `${b.pct}%` }}
+                  className={i % 2 === 0 ? 'bg-[var(--color-blue)]' : 'bg-[var(--color-blue-dark)]'}
+                />
+              ))}
+          </div>
+          <p className="mt-2 break-keep text-xs text-[var(--color-muted)]">
+            {unitMix.bands
+              .filter((b) => b.pct > 0)
+              .map((b) => `${b.label} ${b.pct}%`)
+              .join(' · ')}
+          </p>
+        </div>
+      )}
       {structure.length > 0 && (
         <p className="mt-4 break-keep text-sm text-[var(--color-text)]">{structure.join(' · ')}</p>
       )}

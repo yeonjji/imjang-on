@@ -1,47 +1,18 @@
 import { Card } from '@/components/ui/card';
-import { SourceCaption } from '@/components/ui/source-caption';
 import { formatBillion } from '@/lib/format';
-import type { UnitMix } from '@/lib/insights/apt-complex';
 import type { AreaSummaryItem } from '@/lib/transaction';
 
-export function AreaComparison({
-  areas,
-  unitMix,
-  id,
-}: {
-  areas: AreaSummaryItem[];
-  unitMix?: UnitMix | null;
-  id?: string;
-}) {
-  // 구성만 있어도 섹션은 의미가 있다(공급 구성은 거래가 없어도 사실이다).
-  if (areas.length === 0 && !unitMix) return null;
+/**
+ * 면적 구성 막대는 여기 없다 — 「단지 정보」 섹션이 담당한다(2026-09-15).
+ * 실거래가 한 건도 없는 단지에서 구성만 남으면 "실거래 비교"라는 제목이
+ * 내용과 어긋났다(실측 796건, 매칭 단지의 6.7%).
+ */
+export function AreaComparison({ areas, id }: { areas: AreaSummaryItem[]; id?: string }) {
+  if (areas.length === 0) return null;
 
   return (
     <Card id={id}>
       <h2 className="mb-4 text-xl font-bold text-[var(--color-blue-dark)]">면적별 실거래 비교</h2>
-      {unitMix && (
-        <div className="mb-4 rounded-2xl bg-[var(--color-sky-soft)] p-4">
-          <p className="text-xs font-bold text-[var(--color-blue-dark)]">단지 구성</p>
-          <div className="mt-2 flex h-2.5 overflow-hidden rounded-full bg-[var(--color-line)]">
-            {unitMix.bands
-              .filter((b) => b.pct > 0)
-              .map((b, i) => (
-                <div
-                  key={b.label}
-                  style={{ width: `${b.pct}%` }}
-                  className={i % 2 === 0 ? 'bg-[var(--color-blue)]' : 'bg-[var(--color-blue-dark)]'}
-                />
-              ))}
-          </div>
-          <p className="mt-2 break-keep text-xs text-[var(--color-muted)]">
-            {unitMix.bands
-              .filter((b) => b.pct > 0)
-              .map((b) => `${b.label} ${b.pct}%`)
-              .join(' · ')}
-          </p>
-          <SourceCaption ids={['molit-apt-complex']} />
-        </div>
-      )}
       <div className="grid gap-3 sm:grid-cols-2">
         {areas.map((item) => (
           <div key={item.area} className="flex gap-3 rounded-2xl bg-[var(--color-soft)] p-4">

@@ -10,7 +10,12 @@ import {
 import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { getNearbyInfra } from '@/lib/amenity/nearby';
 import { buildAptNarrative, type AptNarrative } from '@/lib/insights/apt';
-import { buildUnitMix, buildDensity, type ComplexFacts } from '@/lib/insights/apt-complex';
+import {
+  buildUnitMix,
+  buildDensity,
+  resolveBuiltYear,
+  type ComplexFacts,
+} from '@/lib/insights/apt-complex';
 
 // 요청 스코프 캐시: generateMetadata와 본문에서 같은 인자로 호출하면 1회만 실행된다.
 export const cachedPropertyById = cache(getPropertyById);
@@ -68,7 +73,9 @@ export const loadAptInsight = cache(
     const narrative = buildAptNarrative({
       name: property.name,
       sigunguName: property.region.sigungu ?? property.region.sido,
-      builtYear: property.builtYear,
+      // 사용승인일이 있으면 그 연도를 쓴다 — 히어로·타일과 같은 값이어야 한 페이지에
+      // 다른 준공연도가 뜨지 않는다. 아파트는 builtYear가 100% 있어 bScale 발화는 불변이다.
+      builtYear: resolveBuiltYear(property.builtYear, complexFacts?.usedate ?? null),
       households: property.households,
       saleDeals,
       saleTrend,

@@ -143,9 +143,25 @@ export function buildingAgeYears(usedate: Date | null, now: Date): number | null
 }
 
 /**
+ * 준공 연도의 단일 출처. **사용승인일이 있으면 그것, 없으면 실거래 신고의 건축년도.**
+ *
+ * 두 값은 출처가 다르다 — `AptComplex.usedate`는 공동주택 사용승인일(공식 원본)이고
+ * `Property.builtYear`는 실거래 신고서의 건축년도다. 2026-09-14 실측으로 12,518건 중
+ * 92건(0.7%)이 어긋났고, 그대로 두면 한 페이지에 히어로 "2018년 준공"과
+ * 단지정보 "2015년"이 함께 뜬다. 히어로·산문·타일이 모두 이 함수를 거친다.
+ */
+export function resolveBuiltYear(builtYear: number | null, usedate: Date | null): number | null {
+  if (usedate) return usedate.getUTCFullYear();
+  return builtYear;
+}
+
+/**
  * 「단지 정보」 섹션을 띄울지. **타일 3개 미만이면 숨긴다.**
  * 한두 칸짜리 카드는 정보가 아니라 빈칸으로 읽히고, 그런 페이지가 느는 것이 곧 얇은 콘텐츠다.
  * 본문과 사이드바 네비가 갈리지 않도록 판정을 여기 하나로 모은다.
+ *
+ * 예외: 면적 구성이 있으면 타일이 모자라도 띄운다. 구성 막대가 이 섹션으로 옮겨 온 뒤로는
+ * (2026-09-15) 섹션이 숨으면 구성까지 같이 사라지기 때문이다. 실측 23건(0.2%)이 여기 걸린다.
  */
 export function shouldRenderComplexInfo(f: ComplexFacts | null, now: Date): boolean {
   if (!f) return false;
@@ -158,5 +174,6 @@ export function shouldRenderComplexInfo(f: ComplexFacts | null, now: Date): bool
     d.cctvPer100,
     f.households,
   ];
-  return tiles.filter((t) => t != null).length >= 3;
+  if (tiles.filter((t) => t != null).length >= 3) return true;
+  return buildUnitMix(f) != null;
 }
