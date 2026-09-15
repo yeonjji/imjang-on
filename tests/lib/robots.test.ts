@@ -44,4 +44,13 @@ describe('robots.txt', () => {
       expect(disallow, `rule for ${String(rule.userAgent)}`).toContain('/');
     }
   });
+
+  it('Cloudflare Managed robots.txt가 차단하던 봇을 그대로 차단한다 (그 기능을 껐으므로)', () => {
+    const blockedAgents = blockedRules.flatMap((rule) =>
+      Array.isArray(rule.userAgent) ? rule.userAgent : [rule.userAgent]
+    );
+    for (const agent of ['Amazonbot', 'Applebot-Extended', 'meta-externalagent']) {
+      expect(blockedAgents).toContain(agent);
+    }
+  });
 });
