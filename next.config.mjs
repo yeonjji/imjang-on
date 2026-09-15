@@ -19,6 +19,15 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // www → apex 정규화. 두 호스트가 같은 콘텐츠를 200으로 서빙해 크롤 표면이 2배였다
+      // (canonical이 apex를 가리켜 색인 중복은 없었지만 크롤 예산은 낭비됐다).
+      // 아래 경로 룰들보다 먼저 와야 www 요청이 두 번 리디렉트되지 않는다.
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.imjangon.co.kr' }],
+        destination: 'https://imjangon.co.kr/:path*',
+        permanent: true,
+      },
       {
         source: '/amenity/:category/regions',
         destination: '/amenity/:category',
