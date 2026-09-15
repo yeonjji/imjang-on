@@ -2,8 +2,32 @@ import { formatBillion } from '@/lib/format';
 import { josa } from '@/lib/seo/josa';
 import { walkMinutes } from '@/lib/walk-minutes';
 
-export interface Insight { key: string; text: string; }
-export interface Narrative { sentences: string[]; text: string; fired: string[]; }
+/**
+ * 화면 표시 단위. 모듈이 문장을 만들기 전에 가진 값을 그대로 구조화해 넘긴다.
+ * value·sub는 **모듈이 완성한 문자열**이다 — 화면은 파싱하거나 재계산하지 않는다.
+ * shape이 판별자다. 'card'를 두 번 쓰면 TS가 구분하지 못하므로 칩 카드는 'chips'로 나눈다.
+ */
+export type DisplayUnit =
+  | { shape: 'tile'; key: string; label: string; value: string; sub?: string; tone?: 'up' | 'down' }
+  | { shape: 'chips'; key: string; label: string; chips: { label: string; value: string }[] }
+  | { shape: 'card'; key: string; label: string; value: string; sub?: string }
+  | { shape: 'alert'; key: string; label: string; value: string; sub?: string };
+
+export interface Insight {
+  key: string;
+  text: string;
+  /** 화면 전용. 없으면 그 모듈은 대시보드에 표시되지 않는다(문장으로만 남는다). */
+  display?: DisplayUnit[];
+}
+
+export interface Narrative {
+  sentences: string[];
+  text: string;
+  fired: string[];
+  /** all(=mods+complex) 모듈의 display를 순서대로 이어 붙인 것. fired와 무관하다. */
+  display?: DisplayUnit[];
+  badges?: string[];
+}
 
 // A: 접근성 — 최근접 역 도보분 + 반경 인프라 밀도 (아파트 aAccess와 동일 로직)
 export function accessInsight(d: {

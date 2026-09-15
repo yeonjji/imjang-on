@@ -1,4 +1,4 @@
-import type { Insight, Narrative } from './shared';
+import type { DisplayUnit, Insight, Narrative } from './shared';
 import type { FloorPremium, TransactionFlags } from '@/lib/transaction';
 import type { UnitMix, DensityFacts } from '@/lib/insights/apt-complex';
 import { formatBillion } from '@/lib/format';
@@ -43,10 +43,22 @@ function tTrend(d: AptInsightInput): Insight | null {
     const body = pct >= 3 ? `약 ${pct}% 높습니다`
       : pct <= -3 ? `약 ${Math.abs(pct)}% 낮습니다`
       : '큰 차이가 없습니다';
+    // 화면 값: 「면적별 실거래 비교」가 같은 changePct를 toFixed(1)로 찍는다(area-comparison.tsx:33).
+    // 한 화면에 놓이므로 자릿수를 맞춰야 같은 지표가 두 값으로 읽히지 않는다.
+    const tileValue = pct >= 3 ? `+${t.changePct.toFixed(1)}%`
+      : pct <= -3 ? `−${Math.abs(t.changePct).toFixed(1)}%`
+      : '보합';
+    const tone = pct >= 3 ? ('up' as const) : pct <= -3 ? ('down' as const) : undefined;
     return { key: 'trend',
-      text: `${t.pyeong}평 최근 12개월 평균 실거래가는 직전 12개월 평균보다 ${body}(표본 ${t.sampleCount}건, 최근 실거래 ${formatBillion(last)}).` };
+      text: `${t.pyeong}평 최근 12개월 평균 실거래가는 직전 12개월 평균보다 ${body}(표본 ${t.sampleCount}건, 최근 실거래 ${formatBillion(last)}).`,
+      display: [{
+        shape: 'tile', key: 'trend', label: '가격 흐름', value: tileValue,
+        sub: `${t.pyeong}평 · 직전 12개월 대비 · 표본 ${t.sampleCount}건`,
+        ...(tone ? { tone } : {}),
+      }] };
   }
   // 같은 평형 표본이 부족하면 방향 단정 없이 최근가만.
+  // 이 값은 '가격 수준' 타일이 이미 보여주므로 타일을 또 만들지 않는다.
   return { key: 'trend', text: `최근 실거래가는 ${formatBillion(last)}입니다.` };
 }
 
@@ -63,7 +75,12 @@ function pPeer(d: AptInsightInput): Insight | null {
     : diff > -5 ? `${d.sigunguName} 평균과 비슷한 수준`
     : `${d.sigunguName} 평균을 밑도는 수준`;
   return { key: 'peer',
-    text: `최근 실거래 ${josa(formatBillion(latest), '은', '는')} ${judge}입니다(${d.sigunguName} 평균 ${formatBillion(avg)}).` };
+    text: `최근 실거래 ${josa(formatBillion(latest), '은', '는')} ${judge}입니다(${d.sigunguName} 평균 ${formatBillion(avg)}).`,
+    display: [{
+      shape: 'tile', key: 'peer', label: '가격 수준',
+      value: formatBillion(latest),
+      sub: `${d.sigunguName} 평균 ${formatBillion(avg)}`,
+    }] };
 }
 
 // A: 접근성 — 최근접 역 도보분 + 반경 인프라 밀도
@@ -88,7 +105,23 @@ function aAccess(d: AptInsightInput): Insight | null {
   } else {
     text = `반경 도보권에 ${infraParts.join('·')}이 있어 ${dense}.`;
   }
-  return { key: 'access', text };
+  const display: DisplayUnit[] = [];
+  if (station) {
+    display.push({
+      shape: 'tile', key: 'access', label: '입지',
+      value: `도보 ${walkMin}분`,
+      sub: `${line}${station.name}`.trim(),
+    });
+  }
+  if (hasInfra) {
+    display.push({
+      shape: 'chips', key: 'infra', label: '생활 편의',
+      chips: d.infra
+        .filter((c) => c.count > 0)
+        .map((c) => ({ label: c.label, value: `${c.count}${c.capped ? '+' : ''}` })),
+    });
+  }
+  return { key: 'access', text, display };
 }
 
 // 규모·연식 — 단지 소개(맨 앞 문장)
@@ -111,7 +144,15 @@ function floorPremiumInsight(d: AptInsightInput): Insight | null {
   const text = fp.pctPerFloor > 0
     ? `${fp.pyeong}평형은 층이 높을수록 ㎡당 실거래가가 한 층당 약 ${pct}% 오르는 경향이 관측됩니다(최근 매매 ${fp.n}건·설명력 R² ${r2}).`
     : `${fp.pyeong}평형은 층이 낮을수록 ㎡당 실거래가가 한 층당 약 ${pct}% 높게 나타나는 경향이 관측됩니다(최근 매매 ${fp.n}건·설명력 R² ${r2}).`;
-  return { key: 'floor', text };
+  // 화면 값: 「층별 프리미엄」 섹션과 같은 식을 쓴다(floor-premium.tsx:6 → Math.round(x*10)/10, :17 → toFixed(1)).
+  const displayPct = (Math.round(mag * 10) / 10).toFixed(1);
+  const signed = fp.pctPerFloor > 0 ? `+${displayPct}` : `−${displayPct}`;
+  return { key: 'floor', text,
+    display: [{
+      shape: 'card', key: 'floor', label: '층별 시세',
+      value: `한 층당 ${signed}%`,
+      sub: `${fp.pyeong}평 · 최근 매매 ${fp.n}건 · 설명력 R² ${r2}`,
+    }] };
 }
 
 // D: 거래 데이터 특이사항(자동) — 있는 항목에 따라 문장이 갈리고, 둘 다 없으면 문장 자체가 없다.
@@ -122,7 +163,14 @@ function flagsInsight(d: AptInsightInput): Insight | null {
   if (f.cancelledCount12m > 0) items.push(`해제 신고 ${f.cancelledCount12m}건`);
   if (f.anomalyCount12m > 0) items.push(`동일 평형 중앙값에서 ±10% 넘게 벗어난 거래 ${f.anomalyCount12m}건`);
   if (!items.length) return null;
-  return { key: 'flags', text: `최근 1년 거래에는 ${items.join('과 ')}이 집계됩니다.` };
+  const short: string[] = [];
+  if (f.cancelledCount12m > 0) short.push(`해제 신고 ${f.cancelledCount12m}건`);
+  if (f.anomalyCount12m > 0) short.push(`±10% 이탈 ${f.anomalyCount12m}건`);
+  return { key: 'flags', text: `최근 1년 거래에는 ${items.join('과 ')}이 집계됩니다.`,
+    display: [{
+      shape: 'alert', key: 'flags', label: '거래 특이사항',
+      value: short.join(' · '), sub: '최근 1년',
+    }] };
 }
 
 // U: 면적 구성 — 공급 기준 비중. 구간별로 문장이 갈린다.
@@ -181,5 +229,11 @@ export function buildAptNarrative(d: AptInsightInput): AptNarrative | null {
   const all = [...mods, ...complex];
   // 첫 문장에만 단지명을 붙인다.
   const sentences = all.map((m, i) => (i === 0 ? `${josa(d.name, '은', '는')} ${m.text}` : m.text));
-  return { sentences, text: sentences.join(' '), fired: mods.map((m) => m.key) };
+  // 화면 전용. fired와 무관하다 — 색인 판정(isPropertyIndexable, lib/property.ts)은 fired를 보지 않는다.
+  const display = all.flatMap((m) => m.display ?? []);
+  const badges: string[] = [];
+  if (d.nearestStation && walkMinutes(d.nearestStation.distanceMeters) <= 15) badges.push('역세권');
+  if (d.unitMix && d.unitMix.smallMidPct >= 80) badges.push('중소형 중심');
+  if (d.households != null && d.households >= 1000) badges.push('대단지');
+  return { sentences, text: sentences.join(' '), fired: mods.map((m) => m.key), display, badges };
 }

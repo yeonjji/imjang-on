@@ -34,7 +34,6 @@ import { shortSidoFromRegionCode, detailTitleLocality } from '@/lib/region';
 import { NearbySubscriptions } from './_components/nearby-subscriptions';
 import { propertyMetaDescription } from '@/lib/seo/blurb';
 import { JsonLd, residenceSchema, breadcrumbSchema, aptProvenanceNodes } from '@/lib/seo/json-ld';
-import { InsightSection } from '@/components/ui/insight-section';
 import { cachedPropertyById, cachedHasSingleJibun, cachedPropertyLatLng, cachedNearbySubway, cachedNearbyInfra, cachedFloorPremium, cachedTransactionFlags, loadAptInsight } from '@/lib/insights/apt-loader';
 import { buildUnitMix, resolveBuiltYear, shouldRenderComplexInfo } from '@/lib/insights/apt-complex';
 import { mapImageUrl } from '@/lib/seo/static-map';
@@ -43,6 +42,7 @@ import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
 import { BoardBriefingSection } from '../../_components/board-briefing-section';
 import { RelatedGuides } from '../../_components/related-guides';
+import { InsightDashboard } from './_components/insight-dashboard';
 import { Faq } from '../../_components/faq';
 import { composeDetailFaq } from '@/lib/faq/compose';
 import { buildAptFaq } from '@/lib/faq/builders/apt';
@@ -174,7 +174,7 @@ export default async function AptDetailPage({ params }: Params) {
         confirmed={jibunConfirmed}
         builtYear={resolveBuiltYear(property.builtYear, complexFacts?.usedate ?? null)}
       />
-      {narrative && <InsightSection sentences={narrative.sentences} />}
+      {narrative && <InsightDashboard narrative={narrative} />}
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-8">
           <DealSummarySection id="summary" property={property} />
