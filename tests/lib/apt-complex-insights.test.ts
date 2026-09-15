@@ -3,6 +3,7 @@ import {
   buildUnitMix,
   buildDensity,
   buildingAgeYears,
+  resolveBuiltYear,
   shouldRenderComplexInfo,
   type ComplexFacts,
 } from '@/lib/insights/apt-complex';
@@ -185,5 +186,48 @@ describe('shouldRenderComplexInfo', () => {
   });
   it('빈 레코드면 숨긴다', () => {
     expect(shouldRenderComplexInfo(EMPTY, now)).toBe(false);
+  });
+
+  // 구성 막대가 이 섹션으로 옮겨 온 뒤로는(2026-09-15) 섹션이 숨으면 구성까지 사라진다.
+  // 실측 23건(0.2%)이 여기 걸렸다.
+  it('타일이 모자라도 면적 구성이 있으면 띄운다', () => {
+    const thin: ComplexFacts = {
+      ...EMPTY,
+      households: 9510,
+      area60: 2854, area85: 5132, area135: 1500, area136: 24,
+    };
+    expect(buildUnitMix(thin)).not.toBeNull();
+    expect(shouldRenderComplexInfo(thin, now)).toBe(true);
+  });
+
+  it('타일도 구성도 없으면 여전히 숨긴다', () => {
+    expect(shouldRenderComplexInfo({ ...EMPTY, households: 500 }, now)).toBe(false);
+  });
+});
+
+/**
+ * 준공 연도 단일화. 실거래 신고의 건축년도와 사용승인일이 어긋나는 단지가
+ * 2026-09-14 실측으로 12,518건 중 92건(0.7%) 있었다.
+ */
+describe('resolveBuiltYear', () => {
+  it('사용승인일이 있으면 그 연도를 쓴다', () => {
+    expect(resolveBuiltYear(2018, new Date('2015-11-30T00:00:00Z'))).toBe(2015);
+  });
+
+  it('사용승인일이 없으면 건축년도를 쓴다', () => {
+    expect(resolveBuiltYear(2018, null)).toBe(2018);
+  });
+
+  it('둘 다 없으면 null', () => {
+    expect(resolveBuiltYear(null, null)).toBeNull();
+  });
+
+  it('건축년도가 없어도 사용승인일이 있으면 연도가 나온다', () => {
+    expect(resolveBuiltYear(null, new Date('2015-11-30T00:00:00Z'))).toBe(2015);
+  });
+
+  // 연말 준공이 UTC 변환으로 한 해 밀리지 않는지. usedate는 @db.Date라 UTC 자정으로 들어온다.
+  it('12월 31일 사용승인일이 그 해로 남는다', () => {
+    expect(resolveBuiltYear(2019, new Date('2018-12-31T00:00:00Z'))).toBe(2018);
   });
 });

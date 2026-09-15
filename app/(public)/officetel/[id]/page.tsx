@@ -42,7 +42,7 @@ import {
   cachedTransactionFlags,
   loadAptInsight,
 } from '@/lib/insights/apt-loader';
-import { buildUnitMix, shouldRenderComplexInfo } from '@/lib/insights/apt-complex';
+import { buildUnitMix, resolveBuiltYear, shouldRenderComplexInfo } from '@/lib/insights/apt-complex';
 import { mapImageUrl } from '@/lib/seo/static-map';
 import { robotsFor } from '@/lib/seo/indexable';
 import { detailTitleLocality } from '@/lib/region';
@@ -171,7 +171,12 @@ export default async function OffiDetailPage({ params }: Params) {
           }),
         ]}
       />
-      <PropertyDetailHero property={property} region={property.region} confirmed={jibunConfirmed} />
+      <PropertyDetailHero
+        property={property}
+        region={property.region}
+        confirmed={jibunConfirmed}
+        builtYear={resolveBuiltYear(property.builtYear, complexFacts?.usedate ?? null)}
+      />
       {narrative && <InsightSection sentences={narrative.sentences} />}
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-8">
@@ -204,8 +209,8 @@ export default async function OffiDetailPage({ params }: Params) {
             </h2>
             <PriceCharts data={chart} latest={latestTx} areaSummary={areaSummary} />
           </section>
-          <AreaComparison id="area" areas={areaSummary} unitMix={unitMix} />
-          <ComplexInfoSection id="complex" facts={complexFacts} now={now} />
+          <AreaComparison id="area" areas={areaSummary} />
+          <ComplexInfoSection id="complex" facts={complexFacts} unitMix={unitMix} now={now} />
           <SameFloorObservation id="same-floor" pair={sameFloor} />
           <FloorPremiumView id="floor-premium" data={floorPremium} />
           <TransactionFlagsView id="data-notes" data={flags} />
