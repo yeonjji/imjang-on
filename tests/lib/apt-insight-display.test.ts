@@ -36,14 +36,14 @@ describe('가격 수준 타일', () => {
 describe('가격 흐름 타일', () => {
   it('상승은 + 부호와 tone up', () => {
     expect(byKey(BASE, 'trend')).toEqual({
-      shape: 'tile', key: 'trend', label: '가격 흐름', value: '+17%',
-      sub: '직전 12개월 대비 · 표본 93건', tone: 'up',
+      shape: 'tile', key: 'trend', label: '가격 흐름', value: '+17.4%',
+      sub: '26평 · 직전 12개월 대비 · 표본 93건', tone: 'up',
     });
   });
 
   it('하락은 − 부호와 tone down', () => {
     const d = { ...BASE, saleTrend: { changePct: -3.2, pyeong: 26, sampleCount: 20 } };
-    expect(byKey(d, 'trend')).toMatchObject({ value: '−3%', tone: 'down' });
+    expect(byKey(d, 'trend')).toMatchObject({ value: '−3.2%', tone: 'down' });
   });
 
   it('보합은 부호 없이 표기하고 tone이 없다', () => {
@@ -57,6 +57,13 @@ describe('가격 흐름 타일', () => {
   // 그 값은 이미 '가격 수준' 타일에 있으므로 타일을 또 만들지 않는다.
   it('saleTrend가 없으면 타일을 내지 않는다', () => {
     expect(byKey({ ...BASE, saleTrend: null }, 'trend')).toBeUndefined();
+  });
+
+  // 회귀 방지: saleTrend는 최근 실거래와 같은 평형으로 좁힌 값이다(단지 전체 추세가 아니다).
+  // sub가 평형으로 시작하지 않으면 이 한정이 다시 탈락한 것이다.
+  it('sub가 평형으로 시작해 단지 전체 추세로 오인되지 않게 한다', () => {
+    const u = byKey(BASE, 'trend');
+    expect(u && 'sub' in u ? u.sub : undefined).toMatch(/^26평 · /);
   });
 });
 
@@ -92,8 +99,8 @@ describe('층별 시세 카드', () => {
   it('양의 기울기는 + 부호', () => {
     const d = { ...BASE, floorPremium: { pyeong: 26, pctPerFloor: 1.2, r2: 0.35, n: 77 } };
     expect(byKey(d, 'floor')).toEqual({
-      shape: 'card', key: 'floor', label: '층별 시세', value: '한 층당 +1%',
-      sub: '최근 매매 77건 · 설명력 R² 0.35',
+      shape: 'card', key: 'floor', label: '층별 시세', value: '한 층당 +1.2%',
+      sub: '26평 · 최근 매매 77건 · 설명력 R² 0.35',
     });
   });
 

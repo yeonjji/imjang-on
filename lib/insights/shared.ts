@@ -24,7 +24,7 @@ export interface Narrative {
   sentences: string[];
   text: string;
   fired: string[];
-  /** 발화 모듈의 display를 순서대로 이어 붙인 것. fired와 무관하다. */
+  /** all(=mods+complex) 모듈의 display를 순서대로 이어 붙인 것. fired와 무관하다. */
   display?: DisplayUnit[];
   badges?: string[];
 }

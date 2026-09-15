@@ -23,7 +23,7 @@ const BASE: AptInsightInput = {
   flags: { cancelledCount12m: 1, anomalyCount12m: 13, topAnomaly: null },
 };
 
-describe('색인 계약', () => {
+describe('fired 구성 계약', () => {
   it('fired는 core와 extra 키만 담는다', () => {
     expect(buildAptNarrative(BASE)?.fired).toEqual(['scale', 'trend', 'peer', 'access', 'floor', 'flags']);
   });
@@ -49,7 +49,7 @@ describe('색인 계약', () => {
     expect(buildAptNarrative(withComplex)!.fired).toEqual(buildAptNarrative(BASE)!.fired);
   });
 
-  it('display가 fired 길이를 바꾸지 않는다 — 색인 판정은 fired만 센다', () => {
+  it('display가 fired를 바꾸지 않는다', () => {
     const n = buildAptNarrative(BASE)!;
     expect(n.fired.length).toBe(6);
     expect(n.display!.length).toBeGreaterThan(0);

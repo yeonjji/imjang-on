@@ -43,14 +43,17 @@ function tTrend(d: AptInsightInput): Insight | null {
     const body = pct >= 3 ? `약 ${pct}% 높습니다`
       : pct <= -3 ? `약 ${Math.abs(pct)}% 낮습니다`
       : '큰 차이가 없습니다';
-    // 화면 값: 부호를 붙여 색에만 의존하지 않게 한다(U+2212 빼기 기호 — 하이픈이 아니다).
-    const tileValue = pct >= 3 ? `+${pct}%` : pct <= -3 ? `−${Math.abs(pct)}%` : '보합';
+    // 화면 값: 「면적별 실거래 비교」가 같은 changePct를 toFixed(1)로 찍는다(area-comparison.tsx:33).
+    // 한 화면에 놓이므로 자릿수를 맞춰야 같은 지표가 두 값으로 읽히지 않는다.
+    const tileValue = pct >= 3 ? `+${t.changePct.toFixed(1)}%`
+      : pct <= -3 ? `−${Math.abs(t.changePct).toFixed(1)}%`
+      : '보합';
     const tone = pct >= 3 ? ('up' as const) : pct <= -3 ? ('down' as const) : undefined;
     return { key: 'trend',
       text: `${t.pyeong}평 최근 12개월 평균 실거래가는 직전 12개월 평균보다 ${body}(표본 ${t.sampleCount}건, 최근 실거래 ${formatBillion(last)}).`,
       display: [{
         shape: 'tile', key: 'trend', label: '가격 흐름', value: tileValue,
-        sub: `직전 12개월 대비 · 표본 ${t.sampleCount}건`,
+        sub: `${t.pyeong}평 · 직전 12개월 대비 · 표본 ${t.sampleCount}건`,
         ...(tone ? { tone } : {}),
       }] };
   }
@@ -141,12 +144,14 @@ function floorPremiumInsight(d: AptInsightInput): Insight | null {
   const text = fp.pctPerFloor > 0
     ? `${fp.pyeong}평형은 층이 높을수록 ㎡당 실거래가가 한 층당 약 ${pct}% 오르는 경향이 관측됩니다(최근 매매 ${fp.n}건·설명력 R² ${r2}).`
     : `${fp.pyeong}평형은 층이 낮을수록 ㎡당 실거래가가 한 층당 약 ${pct}% 높게 나타나는 경향이 관측됩니다(최근 매매 ${fp.n}건·설명력 R² ${r2}).`;
-  const signed = fp.pctPerFloor > 0 ? `+${pct}` : `−${pct}`;
+  // 화면 값: 「층별 프리미엄」 섹션과 같은 식을 쓴다(floor-premium.tsx:6 → Math.round(x*10)/10, :17 → toFixed(1)).
+  const displayPct = (Math.round(mag * 10) / 10).toFixed(1);
+  const signed = fp.pctPerFloor > 0 ? `+${displayPct}` : `−${displayPct}`;
   return { key: 'floor', text,
     display: [{
       shape: 'card', key: 'floor', label: '층별 시세',
       value: `한 층당 ${signed}%`,
-      sub: `최근 매매 ${fp.n}건 · 설명력 R² ${r2}`,
+      sub: `${fp.pyeong}평 · 최근 매매 ${fp.n}건 · 설명력 R² ${r2}`,
     }] };
 }
 
@@ -224,7 +229,7 @@ export function buildAptNarrative(d: AptInsightInput): AptNarrative | null {
   const all = [...mods, ...complex];
   // 첫 문장에만 단지명을 붙인다.
   const sentences = all.map((m, i) => (i === 0 ? `${josa(d.name, '은', '는')} ${m.text}` : m.text));
-  // 화면 전용. fired에 영향을 주지 않는다 — 색인 계약(스펙 §3).
+  // 화면 전용. fired와 무관하다 — 색인 판정(isPropertyIndexable, lib/property.ts)은 fired를 보지 않는다.
   const display = all.flatMap((m) => m.display ?? []);
   const badges: string[] = [];
   if (d.nearestStation && walkMinutes(d.nearestStation.distanceMeters) <= 15) badges.push('역세권');
