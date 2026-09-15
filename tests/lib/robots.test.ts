@@ -49,8 +49,25 @@ describe('robots.txt', () => {
     const blockedAgents = blockedRules.flatMap((rule) =>
       Array.isArray(rule.userAgent) ? rule.userAgent : [rule.userAgent]
     );
-    for (const agent of ['Amazonbot', 'Applebot-Extended', 'meta-externalagent']) {
+    for (const agent of [
+      'Amazonbot',
+      'Applebot-Extended',
+      'meta-externalagent',
+      'Google-Extended',
+      'CloudflareBrowserRenderingCrawler',
+    ]) {
       expect(blockedAgents).toContain(agent);
+    }
+  });
+
+  it('검색용 크롤러는 전면 차단 목록에 넣지 않는다 (AI 학습 토큰만 차단)', () => {
+    const blockedAgents = blockedRules.flatMap((rule) =>
+      Array.isArray(rule.userAgent) ? rule.userAgent : [rule.userAgent]
+    );
+    // Googlebot·Applebot(검색)·Mediapartners-Google(AdSense)은 '*' 그룹으로 허용 유지돼야 한다.
+    // Google-Extended·Applebot-Extended는 AI 학습 전용 토큰이라 차단해도 색인에 영향이 없다.
+    for (const agent of ['Googlebot', 'Applebot', 'Mediapartners-Google', 'Bingbot']) {
+      expect(blockedAgents).not.toContain(agent);
     }
   });
 });
