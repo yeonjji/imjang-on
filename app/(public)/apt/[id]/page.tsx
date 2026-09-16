@@ -21,7 +21,9 @@ import { SameFloorObservation } from './_components/same-floor-observation';
 import { FloorPremiumView } from './_components/floor-premium';
 import { TransactionFlagsView } from './_components/transaction-flags';
 import { NearbyPriceComparison } from './_components/nearby-price-comparison';
+import { DongTransactionSection } from './_components/dong-transaction-section';
 import { DetailSidebar } from './_components/detail-sidebar';
+import { getDongTransactions, umdOfProperty } from '@/lib/transaction/dong';
 import type { getNearbyInfra } from '@/lib/amenity/nearby';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
@@ -124,6 +126,17 @@ export default async function AptDetailPage({ params }: Params) {
       : Promise.resolve({ stations: [], fallback: false }),
   ]);
 
+  const dongUmd = umdOfProperty(property.address);
+  const dongTx = property.sigunguCode
+    ? await getDongTransactions({
+        sigunguCode: property.sigunguCode,
+        umd: dongUmd,
+        propertyType: property.propertyType,
+        excludePropertyId: property.id,
+        limit: 5,
+      })
+    : [];
+
   const { narrative, dateModified, complexFacts } = await loadAptInsight(propId);
   // 렌더 시점 기준. ISR 캐시에 박제되므로 연 단위만 쓴다(apt-complex.ts 참조).
   const now = new Date();
@@ -206,6 +219,12 @@ export default async function AptDetailPage({ params }: Params) {
             </h2>
             <PriceCharts data={chart} latest={latestTx} areaSummary={areaSummary} />
           </section>
+          <DongTransactionSection
+            id="dong"
+            items={dongTx}
+            dongLabel={dongUmd}
+            propertyType={property.propertyType}
+          />
           <AreaComparison id="area" areas={areaSummary} />
           <ComplexInfoSection id="complex" facts={complexFacts} unitMix={unitMix} now={now} />
           <SameFloorObservation id="same-floor" pair={sameFloor} />
@@ -228,7 +247,7 @@ export default async function AptDetailPage({ params }: Params) {
           <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>
-          <DetailSidebar property={property} showComplex={showComplex} />
+          <DetailSidebar property={property} showComplex={showComplex} showDong={dongTx.length > 0} />
         </aside>
       </div>
     </div>

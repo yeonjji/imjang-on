@@ -28,7 +28,9 @@ import { SameFloorObservation } from '../../apt/[id]/_components/same-floor-obse
 import { FloorPremiumView } from '../../apt/[id]/_components/floor-premium';
 import { TransactionFlagsView } from '../../apt/[id]/_components/transaction-flags';
 import { NearbyPriceComparison } from '../../apt/[id]/_components/nearby-price-comparison';
+import { DongTransactionSection } from '../../apt/[id]/_components/dong-transaction-section';
 import { DetailSidebar } from '../../apt/[id]/_components/detail-sidebar';
+import { getDongTransactions, umdOfProperty } from '@/lib/transaction/dong';
 import { propertyMetaDescription } from '@/lib/seo/blurb';
 import { JsonLd, residenceSchema, breadcrumbSchema, aptProvenanceNodes } from '@/lib/seo/json-ld';
 import { InsightSection } from '@/components/ui/insight-section';
@@ -131,6 +133,17 @@ export default async function VillaDetailPage({ params }: Params) {
       : Promise.resolve({ stations: [], fallback: false }),
   ]);
 
+  const dongUmd = umdOfProperty(property.address);
+  const dongTx = property.sigunguCode
+    ? await getDongTransactions({
+        sigunguCode: property.sigunguCode,
+        umd: dongUmd,
+        propertyType: property.propertyType,
+        excludePropertyId: property.id,
+        limit: 5,
+      })
+    : [];
+
   const { narrative, dateModified, complexFacts } = await loadAptInsight(propId);
   // 렌더 시점 기준. ISR 캐시에 박제되므로 연 단위만 쓴다(apt-complex.ts 참조).
   const now = new Date();
@@ -213,6 +226,12 @@ export default async function VillaDetailPage({ params }: Params) {
             </h2>
             <PriceCharts data={chart} latest={latestTx} areaSummary={areaSummary} />
           </section>
+          <DongTransactionSection
+            id="dong"
+            items={dongTx}
+            dongLabel={dongUmd}
+            propertyType={property.propertyType}
+          />
           <AreaComparison id="area" areas={areaSummary} />
           <ComplexInfoSection id="complex" facts={complexFacts} unitMix={unitMix} now={now} />
           <SameFloorObservation id="same-floor" pair={sameFloor} />
@@ -227,7 +246,7 @@ export default async function VillaDetailPage({ params }: Params) {
           <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>
-          <DetailSidebar property={property} showComplex={showComplex} />
+          <DetailSidebar property={property} showComplex={showComplex} showDong={dongTx.length > 0} />
         </aside>
       </div>
     </div>
