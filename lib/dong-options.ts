@@ -29,8 +29,10 @@ type Payload = Record<string, DongOption[]>;
  * 76건 이하. 이 조건 없이 sigunguCode만으로 그룹핑하면 이 8개가 드롭다운엔 뜨는데
  * 조회하면 0건이 나온다(연동면 명학리는 실제로 270건이 있는데도) — §3.2가 약속한
  * "모든 선택지가 구조적으로 결과를 갖는다"가 깨진다. 세종에서만 나오는 이유는 세종이
- * 구가 없어 sigunguCode(생성열 LEFT(code,5))가 전부 36110으로 뭉치기 때문이다 — 근본
- * 해법은 세종 행정구역 코드 체계를 손보는 것이지만 이 브랜치 범위 밖이다. 조회 쪽
+ * 구가 없어 모든 읍·면·동이 LAWD_CD 36110 하나로 뭉쳐 조회되고(selectSigunguTargets가
+ * code.slice(0,5) 키로 겹침), ETL이 그 LAWD_CD를 조회된 모든 행의 sigunguCode(plain
+ * 컬럼)에 그대로 쓰기 때문이다 — 근본 해법은 세종 행정구역 코드 체계를 손보는
+ * 것이지만 이 브랜치 범위 밖이다. 조회 쪽
  * (getDongTransactions)은 건드리지 않는다 — regionCode 인덱스 적중을 운영에서 실측했다.
  */
 export async function writeDongOptions(): Promise<void> {

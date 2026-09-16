@@ -231,8 +231,16 @@ export function DongTransactionPanel({
       .then((r) => r.json())
       .then((list: SigunguItem[]) => {
         if (mine !== sigunguSeq.current) return;
-        setSigunguList(list);
-        if (!isInitial) {
+        // 마운트 시 이 fetch는 서버가 이미 내려준 1건 시드를 나머지 선택지로 채우는
+        // 배경 작업일 뿐이다 — 광주·전남처럼 /api/regions가 빈 배열을 주는 시도라면
+        // (컴포넌트 상단 주석 참고) 시드를 빈 배열로 덮어써 시군구 select가 빈 채로
+        // 뜬다. 반면 사용자가 시도를 바꾼 뒤(!isInitial)라면 빈 배열도 그대로 반영해야
+        // 한다 — 그게 sigungu-empty 뷰로 이어지는 안정 상태고, 여기서 막으면 그 탈출구가
+        // 사라져 스켈레톤에 갇힌다.
+        if (isInitial) {
+          if (list.length) setSigunguList(list);
+        } else {
+          setSigunguList(list);
           setSigunguCode(pickFirstSigungu(list)?.sigunguCode ?? '');
           setSigunguLoading(false);
         }
