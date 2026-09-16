@@ -17,12 +17,14 @@ async function main() {
 
   const { prisma } = await import('@/lib/db');
   const { writeHomeSnapshot } = await import('@/lib/dashboard-snapshot');
+  const { writeDongOptions } = await import('@/lib/dong-options');
 
   // 단일 커넥션에 statement_timeout 해제(대량 집계가 기본 한도에 걸리지 않도록).
   await prisma.$executeRawUnsafe(`SET statement_timeout = 0`);
 
   const t = Date.now();
   await writeHomeSnapshot();
+  await writeDongOptions();
   console.log(`[dashboard-snapshot] refreshed in ${Date.now() - t}ms`);
 
   await prisma.$disconnect();
