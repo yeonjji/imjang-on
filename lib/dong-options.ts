@@ -67,8 +67,3 @@ export function pickTopDong(list: DongOption[]): DongOption | null {
   if (list.length === 0) return null;
   return list.reduce((best, cur) => (cur.txCount > best.txCount ? cur : best));
 }
-
-/** 홈 첫 화면의 기본 동. sigunguCode로 직접 조회할 때 쓴다. */
-export async function readTopDong(sigunguCode: string): Promise<DongOption | null> {
-  return pickTopDong(await readDongOptions(sigunguCode));
-}
