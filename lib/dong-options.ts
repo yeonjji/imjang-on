@@ -23,11 +23,15 @@ type Payload = Record<string, DongOption[]>;
  *
  * `regionCode = "sigunguCode" || '00000'` 조건이 필수다 — lib/transaction/dong.ts의
  * getDongTransactions는 umd를 regionCode(시군구 코드+00000)로 찾지 sigunguCode 컬럼을
- * 직접 보지 않는다. 스펙 §3.1은 두 값이 99.7%만 일치한다고 적어 뒀다. 이 조건 없이
- * sigunguCode만으로 그룹핑하면 나머지 0.3%에만 존재하는 (시군구, 동) 조합이 드롭다운엔
- * 뜨는데 조회하면 0건이 나온다 — §3.2가 약속한 "모든 선택지가 구조적으로 결과를 갖는다"가
- * 깨진다. 조회 쪽(getDongTransactions)은 건드리지 않는다 — regionCode 인덱스 적중을
- * 운영에서 실측했다.
+ * 직접 보지 않는다. 스펙 §3.1은 두 값이 99.7%만 일치한다고 적어 뒀는데, 운영 읽기전용
+ * 프로브로 실측한 영향은 이렇다: 불일치 행 25,256건 중 조회로 못 잡는 (시군구, 동)
+ * 쌍은 8개, 전부 세종(36110)이다 — 연동면 명학리(270건)가 가장 크고, 나머지 7개는
+ * 76건 이하. 이 조건 없이 sigunguCode만으로 그룹핑하면 이 8개가 드롭다운엔 뜨는데
+ * 조회하면 0건이 나온다(연동면 명학리는 실제로 270건이 있는데도) — §3.2가 약속한
+ * "모든 선택지가 구조적으로 결과를 갖는다"가 깨진다. 세종에서만 나오는 이유는 세종이
+ * 구가 없어 sigunguCode(생성열 LEFT(code,5))가 전부 36110으로 뭉치기 때문이다 — 근본
+ * 해법은 세종 행정구역 코드 체계를 손보는 것이지만 이 브랜치 범위 밖이다. 조회 쪽
+ * (getDongTransactions)은 건드리지 않는다 — regionCode 인덱스 적중을 운영에서 실측했다.
  */
 export async function writeDongOptions(): Promise<void> {
   const rows = await prisma.$queryRaw<Array<{ sigungu_code: string; umd: string; n: bigint }>>`
