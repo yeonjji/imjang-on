@@ -20,12 +20,22 @@ type Payload = Record<string, DongOption[]>;
  *
  * 거래 건수로 거르지 않는다. 뜸한 동도 그 동네 사람에게는 유효한 조회 대상이고,
  * 건수는 데이터 오류를 판정하지 못한다(스펙 §3.3).
+ *
+ * `regionCode = "sigunguCode" || '00000'` 조건이 필수다 — lib/transaction/dong.ts의
+ * getDongTransactions는 umd를 regionCode(시군구 코드+00000)로 찾지 sigunguCode 컬럼을
+ * 직접 보지 않는다. 스펙 §3.1은 두 값이 99.7%만 일치한다고 적어 뒀다. 이 조건 없이
+ * sigunguCode만으로 그룹핑하면 나머지 0.3%에만 존재하는 (시군구, 동) 조합이 드롭다운엔
+ * 뜨는데 조회하면 0건이 나온다 — §3.2가 약속한 "모든 선택지가 구조적으로 결과를 갖는다"가
+ * 깨진다. 조회 쪽(getDongTransactions)은 건드리지 않는다 — regionCode 인덱스 적중을
+ * 운영에서 실측했다.
  */
 export async function writeDongOptions(): Promise<void> {
   const rows = await prisma.$queryRaw<Array<{ sigungu_code: string; umd: string; n: bigint }>>`
     SELECT "sigunguCode" AS sigungu_code, umd, COUNT(*) AS n
     FROM "Transaction"
-    WHERE umd IS NOT NULL AND "sigunguCode" IS NOT NULL
+    WHERE umd IS NOT NULL
+      AND "sigunguCode" IS NOT NULL
+      AND "regionCode" = "sigunguCode" || '00000'
     GROUP BY 1, 2
   `;
 

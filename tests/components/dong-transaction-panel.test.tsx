@@ -6,6 +6,7 @@ import {
   pickFirstSigungu,
   pickFirstDong,
   buildDongTransactionsQuery,
+  resolvePanelView,
   type SidoItem,
   type SigunguItem,
 } from '@/app/(public)/_components/dong-transaction-panel';
@@ -150,5 +151,64 @@ describe('지역 캐스케이드 로직', () => {
     expect(
       buildDongTransactionsQuery({ sigunguCode: '11710', umd: '', propertyType: 'APARTMENT', deal: 'ALL' }),
     ).toBeNull();
+  });
+});
+
+// 목록 아래에 무엇을 보여줄지 판정하는 상태 기계. cascading을 "로딩 중"으로만
+// 좁히고 실패·빈 목록을 구분한 게 이번 수정의 핵심이라, 우선순위 순서를
+// 계약으로 고정한다.
+describe('resolvePanelView', () => {
+  const base = {
+    sigunguLoading: false,
+    dongLoading: false,
+    sigunguFailed: false,
+    dongFailed: false,
+    sigunguCode: '11710',
+    umd: '문정동',
+    txStatus: 'idle' as const,
+    itemsCount: 3,
+  };
+
+  it('시군구 목록 로딩 중이면 다른 무엇보다 loading이다', () => {
+    expect(resolvePanelView({ ...base, sigunguLoading: true, sigunguFailed: true })).toBe('loading');
+  });
+
+  it('동 목록 로딩 중이면 다른 무엇보다 loading이다', () => {
+    expect(resolvePanelView({ ...base, dongLoading: true, dongFailed: true })).toBe('loading');
+  });
+
+  it('시군구 목록 조회가 실패하면(로딩 끝난 뒤) sigungu-failed다', () => {
+    expect(resolvePanelView({ ...base, sigunguFailed: true, sigunguCode: '' })).toBe('sigungu-failed');
+  });
+
+  it('실패는 아니지만 시군구가 비어 있으면(예: Region에 행이 없는 시도) sigungu-empty다', () => {
+    expect(resolvePanelView({ ...base, sigunguCode: '' })).toBe('sigungu-empty');
+  });
+
+  it('시군구는 있는데 동 목록 조회가 실패하면 dong-failed다', () => {
+    expect(resolvePanelView({ ...base, dongFailed: true, umd: '' })).toBe('dong-failed');
+  });
+
+  it('실패는 아니지만 동이 비어 있으면 dong-empty다', () => {
+    expect(resolvePanelView({ ...base, umd: '' })).toBe('dong-empty');
+  });
+
+  it('시군구·동이 확정된 뒤에만 txStatus를 본다: tx-loading', () => {
+    expect(resolvePanelView({ ...base, txStatus: 'loading' })).toBe('tx-loading');
+  });
+
+  // 이게 「다시 시도」가 재조회 없이 이전 동의 결과를 새 라벨 아래 보여주던
+  // 버그를 막는 계약이다: items에 이전 조회 결과(itemsCount>0)가 남아 있어도
+  // txStatus가 error면 결과 목록이 아니라 에러 UI로 간다.
+  it('txStatus가 error면 items가 남아 있어도(itemsCount>0) 결과가 아니라 tx-error다', () => {
+    expect(resolvePanelView({ ...base, txStatus: 'error', itemsCount: 8 })).toBe('tx-error');
+  });
+
+  it('txStatus idle에 itemsCount 0이면 tx-empty다', () => {
+    expect(resolvePanelView({ ...base, itemsCount: 0 })).toBe('tx-empty');
+  });
+
+  it('txStatus idle에 itemsCount>0이면 results다', () => {
+    expect(resolvePanelView({ ...base, itemsCount: 8 })).toBe('results');
   });
 });

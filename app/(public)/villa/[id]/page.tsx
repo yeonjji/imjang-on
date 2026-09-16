@@ -114,8 +114,12 @@ export default async function VillaDetailPage({ params }: Params) {
   if (property.redirectToId) permanentRedirect(`/villa/${property.redirectToId}`);
 
   const coord = await cachedPropertyLatLng(propId);
+  // property는 이미 위에서 await됐으니 dongUmd는 순수 계산이고, getDongTransactions는
+  // 아래 Promise.all의 다른 결과에 기대지 않는다 — 같이 병렬로 보낸다. 직렬로 남겨두면
+  // 콜드 ISR 렌더마다 DB 왕복 1회가 그대로 TTFB에 더해진다.
+  const dongUmd = umdOfProperty(property.address);
 
-  const [unified, counts, chart, areaSummary, latestTx, nearby, sameFloor, floorPremium, flags, infra, subway] = await Promise.all([
+  const [unified, counts, chart, areaSummary, latestTx, nearby, sameFloor, floorPremium, flags, infra, subway, dongTx] = await Promise.all([
     getUnifiedTransactions(propId, { page: 1, perPage: 15 }),
     getTransactionCounts(propId),
     getMonthlyChartData(propId),
@@ -131,18 +135,16 @@ export default async function VillaDetailPage({ params }: Params) {
     coord
       ? cachedNearbySubway(coord.lat, coord.lng)
       : Promise.resolve({ stations: [], fallback: false }),
+    property.sigunguCode
+      ? getDongTransactions({
+          sigunguCode: property.sigunguCode,
+          umd: dongUmd,
+          propertyType: property.propertyType,
+          excludePropertyId: property.id,
+          limit: 5,
+        })
+      : Promise.resolve([] as Awaited<ReturnType<typeof getDongTransactions>>),
   ]);
-
-  const dongUmd = umdOfProperty(property.address);
-  const dongTx = property.sigunguCode
-    ? await getDongTransactions({
-        sigunguCode: property.sigunguCode,
-        umd: dongUmd,
-        propertyType: property.propertyType,
-        excludePropertyId: property.id,
-        limit: 5,
-      })
-    : [];
 
   const { narrative, dateModified, complexFacts } = await loadAptInsight(propId);
   // 렌더 시점 기준. ISR 캐시에 박제되므로 연 단위만 쓴다(apt-complex.ts 참조).

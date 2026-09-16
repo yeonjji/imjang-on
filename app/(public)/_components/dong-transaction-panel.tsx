@@ -48,6 +48,18 @@ const SLUG: Record<string, string> = {
 
 type Status = 'idle' | 'loading' | 'error';
 
+/** 목록 아래에 무엇을 보여줄지. resolvePanelView가 순서대로 판정해 하나만 돌려준다. */
+type PanelView =
+  | 'loading'
+  | 'sigungu-failed'
+  | 'sigungu-empty'
+  | 'dong-failed'
+  | 'dong-empty'
+  | 'tx-loading'
+  | 'tx-error'
+  | 'tx-empty'
+  | 'results';
+
 /** 시군구 목록의 첫 항목을 고른다(가나다순 정렬은 서버 응답이 이미 해 둔다). 목록이 비면 선택 없음. */
 export function pickFirstSigungu(list: SigunguItem[]): SigunguItem | null {
   return list[0] ?? null;
@@ -82,6 +94,44 @@ export function buildDongTransactionsQuery(params: {
 }
 
 /**
+ * 목록 아래에 무엇을 보여줄지 판정하는 순수 함수. 세 단계(시군구 목록 → 동 목록 →
+ * 거래 목록) 각각 로딩/실패/빈 결과를 가질 수 있는데, 우선순위대로 하나만 고른다.
+ *
+ * 로딩 중인 단계가 있으면 무조건 스켈레톤이다(사용자에게 "아직 진행 중"이라고
+ * 말해 줘야 한다). 로딩이 끝났는데 sigunguCode나 umd가 비어 있으면 그건 더 이상
+ * "진행 중"이 아니라 "실패했거나 원래 빈 목록"이라는 안정적인 상태다 — 그 둘을
+ * 구분해야 실패면 재시도를, 빈 목록이면 그냥 사실을 보여줄 수 있다.
+ *
+ * txStatus는 sigunguCode·umd가 둘 다 있을 때만 의미가 있다 — 그 전 단계에서
+ * 걸러지므로 여기 도달했다는 건 이미 지역이 확정됐다는 뜻이다.
+ */
+export function resolvePanelView(params: {
+  sigunguLoading: boolean;
+  dongLoading: boolean;
+  sigunguFailed: boolean;
+  dongFailed: boolean;
+  sigunguCode: string;
+  umd: string;
+  txStatus: Status;
+  itemsCount: number;
+}): PanelView {
+  const { sigunguLoading, dongLoading, sigunguFailed, dongFailed, sigunguCode, umd, txStatus, itemsCount } = params;
+
+  if (sigunguLoading || dongLoading) return 'loading';
+  if (sigunguFailed) return 'sigungu-failed';
+  if (!sigunguCode) return 'sigungu-empty';
+  if (dongFailed) return 'dong-failed';
+  if (!umd) return 'dong-empty';
+  if (txStatus === 'loading') return 'tx-loading';
+  // txStatus가 'error'면 items에 이전 조회의 결과가 남아 있어도(성공 경로에서만
+  // items를 갱신하므로) 결과 목록이 아니라 에러 UI를 보여준다 — 그래야 이전 동의
+  // 거래가 새 동 라벨 아래 뜨는 일이 없다.
+  if (txStatus === 'error') return 'tx-error';
+  if (itemsCount === 0) return 'tx-empty';
+  return 'results';
+}
+
+/**
  * 홈 히어로 오른쪽의 동네 거래 패널.
  *
  * 지역은 시도 → 시군구 → 동 3단 캐스케이드다(스펙 §6.3). 시도·시군구는 `/api/regions`
@@ -96,6 +146,13 @@ export function buildDongTransactionsQuery(params: {
  *
  * 좁은 폭이라 두 줄 압축 형태다. 상세의 표와 데이터·포맷은 공유하지만 배치는 다르다.
  * 0건이어도 패널이 사라지지 않는다 — 필터를 눌렀는데 없어지면 고장으로 읽힌다.
+ *
+ * 시도 드롭다운은 getSidoList()의 정적 17개 상수라 Region에 행이 없는 시도(광주·
+ * 전남광주 등, lib/region.ts 참조)까지 항상 뜬다. 그런 시도를 고르면 /api/regions가
+ * 빈 배열을 주거나 실패하고, sigunguCode가 끝내 비게 된다 — 로딩도 아니고 결과도
+ * 아닌 이 안정 상태를 스켈레톤으로 보여주면 사용자가 갇힌다. 실패/빈 목록을
+ * 구분해 명시적으로 보여주고, 위 select들은 항상 enabled로 둬 다른 시도·시군구를
+ * 골라 빠져나올 수 있게 한다.
  */
 export function DongTransactionPanel({
   initialSido,
@@ -121,20 +178,26 @@ export function DongTransactionPanel({
     { code: initialSigunguCode, sigungu: initialSigunguName, fullName: '', sigunguCode: initialSigunguCode },
   ]);
   const [sigunguLoading, setSigunguLoading] = useState(false);
+  const [sigunguFailed, setSigunguFailed] = useState(false);
+  const [sidoRetryTick, setSidoRetryTick] = useState(0);
 
   const [umd, setUmd] = useState(initialUmd);
   const [dongs, setDongs] = useState<DongOption[]>(initialDongs);
   const [dongLoading, setDongLoading] = useState(false);
+  const [dongFailed, setDongFailed] = useState(false);
+  const [sigunguRetryTick, setSigunguRetryTick] = useState(0);
 
   const [propertyType, setPropertyType] = useState<PropertyType>('APARTMENT');
   const [deal, setDeal] = useState<DealType | 'ALL'>('ALL');
   const [items, setItems] = useState<DongTransaction[]>(initialItems);
   const [status, setStatus] = useState<Status>('idle');
+  const [retryTick, setRetryTick] = useState(0);
 
   // 시도가 바뀌면 시군구 목록을 다시 가져온다. 마운트 시에도 한 번 실행되어 초기
   // 시도의 전체 목록을 채우지만, 그때는 서버가 이미 정해 준 시군구·동 선택을
   // 건드리지 않는다 — 재설정(비우기+첫 항목 자동 선택)은 사용자가 시도를 바꾼
-  // 이후에만 한다.
+  // 이후에만 한다. sidoRetryTick은 "지역 목록을 불러오지 못했습니다"의 다시
+  // 시도 버튼이 올린다 — 같은 sido로 같은 fetch를 다시 보낸다.
   const sigunguSeq = useRef(0);
   const sigunguAbort = useRef<AbortController | null>(null);
   const firstSido = useRef(true);
@@ -149,6 +212,7 @@ export function DongTransactionPanel({
     sigunguAbort.current = ctl;
     if (!isInitial) {
       setSigunguLoading(true);
+      setSigunguFailed(false);
       // 시군구·동을 둘 다 비운다. 이전 시군구의 동이 새 시도에 남아 있으면 안 된다.
       setSigunguCode('');
       setUmd('');
@@ -169,14 +233,19 @@ export function DongTransactionPanel({
       .catch((e: unknown) => {
         if (ctl.signal.aborted || mine !== sigunguSeq.current) return;
         void e;
-        if (!isInitial) setSigunguLoading(false);
+        if (!isInitial) {
+          setSigunguLoading(false);
+          setSigunguFailed(true);
+        }
       });
 
     return () => ctl.abort();
-  }, [sido]);
+  }, [sido, sidoRetryTick]);
 
   // 시군구가 바뀌면(직접 선택이든 시도 전환의 자동 선택이든) 동 목록을 다시 가져오고
   // 첫 항목을 고른다. 마운트 시에는 서버가 이미 내려준 initialDongs·initialUmd를 쓴다.
+  // sigunguRetryTick은 "지역 목록을 불러오지 못했습니다"의 다시 시도 버튼이 올린다 —
+  // 같은 sigunguCode로 같은 fetch를 다시 보낸다.
   const dongSeq = useRef(0);
   const dongAbort = useRef<AbortController | null>(null);
   const firstSigungu = useRef(true);
@@ -188,9 +257,14 @@ export function DongTransactionPanel({
     }
     if (!sigunguCode) {
       // 시도가 막 바뀌어 시군구가 아직 정해지지 않은 과도 상태. 이전 시군구의
-      // 동이 남아 있으면 안 되므로 비운 채로 둔다.
+      // 동이 남아 있으면 안 되므로 비운 채로 둔다. dongLoading도 같이 내린다 —
+      // 이 effect가 새로 실행됐다는 건 React가 직전 fetch의 cleanup(abort)을
+      // 이미 불렀다는 뜻인데, 그 fetch가 진행 중이었다면 catch가 abort를 보고
+      // 조용히 빠져나가 dongLoading=true가 영영 고정될 수 있다.
       setDongs([]);
       setUmd('');
+      setDongFailed(false);
+      setDongLoading(false);
       return;
     }
 
@@ -199,6 +273,7 @@ export function DongTransactionPanel({
     const ctl = new AbortController();
     dongAbort.current = ctl;
     setDongLoading(true);
+    setDongFailed(false);
     setUmd('');
 
     fetch(`/api/dongs?sigunguCode=${encodeURIComponent(sigunguCode)}`, { signal: ctl.signal })
@@ -213,14 +288,18 @@ export function DongTransactionPanel({
         if (ctl.signal.aborted || mine !== dongSeq.current) return;
         void e;
         setDongLoading(false);
+        setDongFailed(true);
       });
 
     return () => ctl.abort();
-  }, [sigunguCode]);
+  }, [sigunguCode, sigunguRetryTick]);
 
   // 거래 목록 조회. 지역·유형을 빠르게 바꾸면 늦게 온 이전 응답이 최신 결과를
   // 덮을 수 있어 시퀀스로 최신 것만 반영하고 이전 요청은 취소한다. 시군구·동이
   // 캐스케이드 전환 중이라 비어 있으면(buildDongTransactionsQuery가 null) 조회하지 않는다.
+  // retryTick은 조회 실패 UI의 다시 시도 버튼이 올린다 — 필터가 그대로라도 이
+  // deps가 바뀌어야 effect가 다시 fetch를 보낸다("다시 시도"가 상태만 idle로
+  // 되돌리고 재조회를 안 하면 이전 결과가 새 라벨 아래 그대로 남는다).
   const seq = useRef(0);
   const abort = useRef<AbortController | null>(null);
   const firstTx = useRef(true);
@@ -253,16 +332,32 @@ export function DongTransactionPanel({
       .catch((e: unknown) => {
         if (ctl.signal.aborted || mine !== seq.current) return;
         void e;
+        // 실패했는데 이전 조회의 결과를 items에 남겨 둘 이유가 없다 — 남아 있으면
+        // 다음에 status가 idle로 돌아갈 때(다시 시도 등) 다른 동의 거래가 지금
+        // 라벨 아래 뜬다.
+        setItems([]);
         setStatus('error');
       });
 
     return () => ctl.abort();
-  }, [sigunguCode, umd, propertyType, deal]);
+  }, [sigunguCode, umd, propertyType, deal, retryTick]);
 
-  // 시군구·동이 아직 정해지지 않은 과도 상태(빈 문자열)도 "캐스케이드 중"으로 본다.
-  // 로딩 플래그만 보면 두 effect 사이의 커밋 경계에서 한 프레임 stale 결과가
-  // 비칠 수 있어, 선택 자체가 비어 있는지로도 같이 판정한다.
-  const cascading = sigunguLoading || dongLoading || !sigunguCode || !umd;
+  // 실제로 진행 중인 fetch가 있을 때만 "로딩"이다. sigunguCode·umd가 비어 있는
+  // 것 자체는 더 이상 cascading에 넣지 않는다 — 로딩이 끝났는데도 비어 있다면
+  // 그건 실패했거나 원래 빈 목록이라는 안정 상태이지, 아직 진행 중인 상태가
+  // 아니다. 그 구분은 resolvePanelView가 한다.
+  const cascading = sigunguLoading || dongLoading;
+
+  const view = resolvePanelView({
+    sigunguLoading,
+    dongLoading,
+    sigunguFailed,
+    dongFailed,
+    sigunguCode,
+    umd,
+    txStatus: status,
+    itemsCount: items.length,
+  });
 
   return (
     <section
@@ -342,7 +437,7 @@ export function DongTransactionPanel({
       </div>
 
       <div className="mt-3 border-t border-[var(--color-line)]">
-        {(status === 'loading' || cascading) && (
+        {(view === 'loading' || view === 'tx-loading') && (
           <ul className="divide-y divide-[var(--color-line)]" aria-busy="true">
             {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
               <li key={i} className="py-3">
@@ -353,12 +448,14 @@ export function DongTransactionPanel({
           </ul>
         )}
 
-        {status === 'error' && !cascading && (
+        {(view === 'sigungu-failed' || view === 'dong-failed') && (
           <div className="py-8 text-center">
-            <p className="text-sm text-[var(--color-muted)]">잠시 후 다시 시도해 주세요</p>
+            <p className="text-sm text-[var(--color-muted)]">지역 목록을 불러오지 못했습니다</p>
             <button
               type="button"
-              onClick={() => setStatus('idle')}
+              onClick={() =>
+                view === 'sigungu-failed' ? setSidoRetryTick((n) => n + 1) : setSigunguRetryTick((n) => n + 1)
+              }
               className="mt-2 rounded-lg border border-[var(--color-line)] px-3 py-1.5 text-xs font-semibold text-[var(--color-blue-dark)]"
             >
               다시 시도
@@ -366,13 +463,32 @@ export function DongTransactionPanel({
           </div>
         )}
 
-        {status === 'idle' && !cascading && items.length === 0 && (
+        {(view === 'sigungu-empty' || view === 'dong-empty') && (
+          <p className="py-8 text-center text-sm text-[var(--color-muted)]">
+            이 지역에는 표시할 거래가 없습니다
+          </p>
+        )}
+
+        {view === 'tx-error' && (
+          <div className="py-8 text-center">
+            <p className="text-sm text-[var(--color-muted)]">잠시 후 다시 시도해 주세요</p>
+            <button
+              type="button"
+              onClick={() => setRetryTick((n) => n + 1)}
+              className="mt-2 rounded-lg border border-[var(--color-line)] px-3 py-1.5 text-xs font-semibold text-[var(--color-blue-dark)]"
+            >
+              다시 시도
+            </button>
+          </div>
+        )}
+
+        {view === 'tx-empty' && (
           <p className="py-8 text-center text-sm text-[var(--color-muted)]">
             이 조건에 해당하는 거래가 없습니다
           </p>
         )}
 
-        {status === 'idle' && !cascading && items.length > 0 && (
+        {view === 'results' && (
           <ul className="divide-y divide-[var(--color-line)]">
             {items.map((t) => (
               <li key={t.id} className="flex items-start justify-between gap-3 py-3">
