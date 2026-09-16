@@ -56,12 +56,19 @@ export async function readDongOptions(sigunguCode: string): Promise<DongOption[]
 }
 
 /**
- * 홈 첫 화면의 기본 동. 거래량이 가장 많은 동을 고른다.
+ * 목록에서 거래량이 가장 많은 동을 고른다. 목록이 비면 null.
  * 드롭다운 정렬(가나다순)과 달리 여기서는 거래량이 기준이다 — 첫 화면에 빈 목록을
  * 띄우지 않기 위해서다.
+ *
+ * 순수 함수로 뽑아 둔다 — 호출부가 이미 readDongOptions로 목록을 갖고 있으면
+ * (예: 홈 페이지) 같은 스냅샷을 두 번 읽지 않고 이걸로 파생할 수 있다.
  */
-export async function readTopDong(sigunguCode: string): Promise<DongOption | null> {
-  const list = await readDongOptions(sigunguCode);
+export function pickTopDong(list: DongOption[]): DongOption | null {
   if (list.length === 0) return null;
   return list.reduce((best, cur) => (cur.txCount > best.txCount ? cur : best));
+}
+
+/** 홈 첫 화면의 기본 동. sigunguCode로 직접 조회할 때 쓴다. */
+export async function readTopDong(sigunguCode: string): Promise<DongOption | null> {
+  return pickTopDong(await readDongOptions(sigunguCode));
 }

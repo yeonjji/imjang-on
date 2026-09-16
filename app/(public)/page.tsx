@@ -13,7 +13,7 @@ import { readHomeSnapshot } from '@/lib/dashboard-snapshot';
 import { getHomeLatestPosts } from '@/lib/board/post';
 import { isBoardPublic } from '@/lib/board/visibility';
 import { getSidoList } from '@/lib/region';
-import { readDongOptions, readTopDong } from '@/lib/dong-options';
+import { readDongOptions, pickTopDong } from '@/lib/dong-options';
 import { getDongTransactions } from '@/lib/transaction/dong';
 import type { Metadata } from 'next';
 
@@ -57,9 +57,10 @@ export default async function HomePage() {
 
   // 히어로 오른쪽 동네 거래 패널의 첫 화면은 인기 지역 1위 시군구의 거래 최다 동을
   // 서버가 그린다. 드롭다운을 바꾸면 그때부터 클라이언트가 조회한다.
+  // topDong은 dongs에서 파생한다 — 같은 시군구의 동 목록 스냅샷을 두 번 읽지 않는다.
   const top = popularRegions[0] ?? null;
-  const topDong = top ? await safe(readTopDong(top.sigunguCode), null) : null;
   const dongs = top ? await safe(readDongOptions(top.sigunguCode), []) : [];
+  const topDong = pickTopDong(dongs);
   const dongItems =
     top && topDong
       ? await safe(

@@ -21,7 +21,16 @@ export function HeroSection({
   panelSlot: ReactNode;
 }) {
   return (
-    <section className="rounded-[28px] border border-[var(--color-line)] bg-gradient-to-br from-[#eaf2ff] via-[#f3f8ff] to-white p-6 xl:grid xl:grid-cols-[1.65fr_1fr] xl:items-start xl:gap-10 xl:p-10">
+    <section
+      className={[
+        'rounded-[28px] border border-[var(--color-line)] bg-gradient-to-br from-[#eaf2ff] via-[#f3f8ff] to-white p-6 md:p-10',
+        // panelSlot이 없으면(폴백) 그리드 자체를 켜지 않는다 — 명시적 1fr 트랙은
+        // 콘텐츠가 없어도 자기 몫의 공간을 그대로 차지해 오른쪽에 빈 칸이 남는다.
+        panelSlot ? 'xl:grid xl:grid-cols-[1.65fr_1fr] xl:items-start xl:gap-10' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <div>
         <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-[var(--color-sky-soft)] px-3.5 py-2 text-xs font-extrabold text-[var(--color-blue-dark)]">
           📍 실거래가·생활권 정보 통합 플랫폼
@@ -56,7 +65,7 @@ export function HeroSection({
         <div className="mt-6">{statsSlot}</div>
       </div>
 
-      <div className="mt-8 xl:mt-0">{panelSlot}</div>
+      {panelSlot ? <div className="mt-8 xl:mt-0">{panelSlot}</div> : null}
     </section>
   );
 }
