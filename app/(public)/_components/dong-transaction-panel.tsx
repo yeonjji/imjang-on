@@ -289,7 +289,7 @@ export function DongTransactionPanel({
         <select
           id="sigungu-select"
           value={sigunguCode}
-          onChange={(e) => setSigunguCode(e.target.value)}
+          onChange={(e) => { setSigunguCode(e.target.value); setUmd(''); }}
           disabled={sigunguLoading}
           className="rounded-lg border border-[var(--color-line)] bg-white px-3 py-2"
         >
