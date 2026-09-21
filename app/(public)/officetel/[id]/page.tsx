@@ -28,7 +28,9 @@ import { SameFloorObservation } from '../../apt/[id]/_components/same-floor-obse
 import { FloorPremiumView } from '../../apt/[id]/_components/floor-premium';
 import { TransactionFlagsView } from '../../apt/[id]/_components/transaction-flags';
 import { NearbyPriceComparison } from '../../apt/[id]/_components/nearby-price-comparison';
+import { DongTransactionSection } from '../../apt/[id]/_components/dong-transaction-section';
 import { DetailSidebar } from '../../apt/[id]/_components/detail-sidebar';
+import { getDongTransactions, umdOfProperty } from '@/lib/transaction/dong';
 import { propertyMetaDescription } from '@/lib/seo/blurb';
 import { JsonLd, residenceSchema, breadcrumbSchema, aptProvenanceNodes } from '@/lib/seo/json-ld';
 import { InsightSection } from '@/components/ui/insight-section';
@@ -108,8 +110,12 @@ export default async function OffiDetailPage({ params }: Params) {
   if (property.redirectToId) permanentRedirect(`/officetel/${property.redirectToId}`);
 
   const coord = await cachedPropertyLatLng(propId);
+  // property는 이미 위에서 await됐으니 dongUmd는 순수 계산이고, getDongTransactions는
+  // 아래 Promise.all의 다른 결과에 기대지 않는다 — 같이 병렬로 보낸다. 직렬로 남겨두면
+  // 콜드 ISR 렌더마다 DB 왕복 1회가 그대로 TTFB에 더해진다.
+  const dongUmd = umdOfProperty(property.address);
 
-  const [unified, counts, chart, areaSummary, latestTx, nearby, sameFloor, floorPremium, flags, infra, subway] = await Promise.all([
+  const [unified, counts, chart, areaSummary, latestTx, nearby, sameFloor, floorPremium, flags, infra, subway, dongTx] = await Promise.all([
     getUnifiedTransactions(propId, { page: 1, perPage: 15 }),
     getTransactionCounts(propId),
     getMonthlyChartData(propId),
@@ -125,6 +131,15 @@ export default async function OffiDetailPage({ params }: Params) {
     coord
       ? cachedNearbySubway(coord.lat, coord.lng)
       : Promise.resolve({ stations: [], fallback: false }),
+    property.sigunguCode
+      ? getDongTransactions({
+          sigunguCode: property.sigunguCode,
+          umd: dongUmd,
+          propertyType: property.propertyType,
+          excludePropertyId: property.id,
+          limit: 5,
+        })
+      : Promise.resolve([] as Awaited<ReturnType<typeof getDongTransactions>>),
   ]);
 
   const { narrative, dateModified, complexFacts } = await loadAptInsight(propId);
@@ -209,6 +224,12 @@ export default async function OffiDetailPage({ params }: Params) {
             </h2>
             <PriceCharts data={chart} latest={latestTx} areaSummary={areaSummary} />
           </section>
+          <DongTransactionSection
+            id="dong"
+            items={dongTx}
+            dongLabel={dongUmd}
+            propertyType={property.propertyType}
+          />
           <AreaComparison id="area" areas={areaSummary} />
           <ComplexInfoSection id="complex" facts={complexFacts} unitMix={unitMix} now={now} />
           <SameFloorObservation id="same-floor" pair={sameFloor} />
@@ -223,7 +244,7 @@ export default async function OffiDetailPage({ params }: Params) {
           <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>
-          <DetailSidebar property={property} showComplex={showComplex} />
+          <DetailSidebar property={property} showComplex={showComplex} showDong={dongTx.length > 0} />
         </aside>
       </div>
     </div>

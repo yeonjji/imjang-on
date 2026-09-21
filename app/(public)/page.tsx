@@ -6,11 +6,15 @@ import { MarketBriefing } from './_components/market-briefing';
 import { WeeklySubscriptionBoard } from './_components/weekly-subscription-board';
 import { HomeNews } from './_components/home-news';
 import { HomeEditorial } from './_components/home-editorial';
+import { DongTransactionPanel } from './_components/dong-transaction-panel';
 import { getHomeStats } from '@/lib/stats';
 import { getHomeWeekBoard } from '@/lib/subscription';
 import { readHomeSnapshot } from '@/lib/dashboard-snapshot';
 import { getHomeLatestPosts } from '@/lib/board/post';
 import { isBoardPublic } from '@/lib/board/visibility';
+import { getSidoList } from '@/lib/region';
+import { readDongOptions, pickTopDong } from '@/lib/dong-options';
+import { getDongTransactions } from '@/lib/transaction/dong';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -37,7 +41,7 @@ async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
 }
 
 export default async function HomePage() {
-  const [stats, snapshot, weeklyBoard, latestPosts] = await Promise.all([
+  const [stats, snapshot, weeklyBoard, latestPosts, sidoList] = await Promise.all([
     safe(getHomeStats(), { transactions: 0, properties: 0, schools: 0, lifeFacilities: 0 }),
     // 브리핑·인기지역은 5M행 집계라 요청 경로에서 너무 느리다. 일일 ingest가 미리 계산해 둔 스냅샷을 즉시 읽는다.
     safe(readHomeSnapshot(), { briefing: null, popularRegions: [] }),
@@ -47,13 +51,48 @@ export default async function HomePage() {
       days: [],
     }),
     safe(isBoardPublic() ? getHomeLatestPosts(5) : Promise.resolve([]), []),
+    safe(getSidoList(), []),
   ]);
   const { briefing, popularRegions } = snapshot;
 
+  // 히어로 오른쪽 동네 거래 패널의 첫 화면은 인기 지역 1위 시군구의 거래 최다 동을
+  // 서버가 그린다. 드롭다운을 바꾸면 그때부터 클라이언트가 조회한다.
+  // topDong은 dongs에서 파생한다 — 같은 시군구의 동 목록 스냅샷을 두 번 읽지 않는다.
+  const top = popularRegions[0] ?? null;
+  const dongs = top ? await safe(readDongOptions(top.sigunguCode), []) : [];
+  const topDong = pickTopDong(dongs);
+  const dongItems =
+    top && topDong
+      ? await safe(
+          getDongTransactions({
+            sigunguCode: top.sigunguCode,
+            umd: topDong.umd,
+            propertyType: 'APARTMENT',
+            limit: 8,
+          }),
+          [],
+        )
+      : [];
+
   return (
     <section className="mx-auto max-w-[1180px] px-6 py-12">
-      <HeroSection popularRegions={popularRegions} />
-      <StatsBar stats={stats} />
+      <HeroSection
+        popularRegions={popularRegions}
+        statsSlot={<StatsBar stats={stats} />}
+        panelSlot={
+          top && topDong ? (
+            <DongTransactionPanel
+              initialSido={top.sido}
+              initialSigunguCode={top.sigunguCode}
+              initialSigunguName={top.sigungu}
+              initialUmd={topDong.umd}
+              initialDongs={dongs}
+              initialItems={dongItems}
+              sidoList={sidoList}
+            />
+          ) : null
+        }
+      />
 
       <MarketBriefing briefing={briefing} />
 

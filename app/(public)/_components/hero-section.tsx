@@ -1,12 +1,39 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { HeroSearch } from './hero-search';
 import type { PopularRegion } from '@/lib/region';
 import { TypeIconGrid } from './type-icon-grid';
 
-export function HeroSection({ popularRegions }: { popularRegions: PopularRegion[] }) {
+/**
+ * 두 칸 전환은 xl(1280px)부터다.
+ *
+ * lg(1024px)에서 나누면 오른쪽 실폭이 323px다 — 컨테이너 여백 48 + 히어로 패딩 80 +
+ * 열 간격 40을 빼고 1.65:1로 나눈 값이다. 지역 선택과 두 줄 목록을 넣기에 부족하다.
+ * 1280px에서 400px가 나온다(스펙 §6.1).
+ */
+export function HeroSection({
+  popularRegions,
+  statsSlot,
+  panelSlot,
+}: {
+  popularRegions: PopularRegion[];
+  statsSlot: ReactNode;
+  panelSlot: ReactNode;
+}) {
   return (
-    <section className="rounded-[28px] border border-[var(--color-line)] bg-gradient-to-br from-[#eaf2ff] via-[#f3f8ff] to-white p-6 md:grid md:grid-cols-[1.05fr_0.95fr] md:items-center md:gap-10 md:p-10">
-      <div>
+    <section
+      className={[
+        'rounded-[28px] border border-[var(--color-line)] bg-gradient-to-br from-[#eaf2ff] via-[#f3f8ff] to-white p-6 md:p-10',
+        // panelSlot이 없으면(폴백) 그리드 자체를 켜지 않는다 — 명시적 1fr 트랙은
+        // 콘텐츠가 없어도 자기 몫의 공간을 그대로 차지해 오른쪽에 빈 칸이 남는다.
+        panelSlot ? 'xl:grid xl:grid-cols-[1.65fr_1fr] xl:items-start xl:gap-10' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      {/* @container: StatsBar가 이 열의 실제 렌더 폭으로 4열/2열을 정한다(뷰포트가
+          아니라) — 오른쪽 패널 유무에 따라 이 열의 폭이 뷰포트와 무관하게 달라진다. */}
+      <div className="@container">
         <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-[var(--color-sky-soft)] px-3.5 py-2 text-xs font-extrabold text-[var(--color-blue-dark)]">
           📍 실거래가·생활권 정보 통합 플랫폼
         </span>
@@ -30,11 +57,17 @@ export function HeroSection({ popularRegions }: { popularRegions: PopularRegion[
             📅 청약 일정 보기
           </Link>
         </div>
+
+        {/* 아이콘은 보조 탐색 수단이다. 왼쪽이 넓어졌다고 키우지 않는다 —
+            커지면 검색 영역이 아래로 길어져 통계가 접힘선 밖으로 밀린다. */}
+        <div className="mt-6">
+          <TypeIconGrid />
+        </div>
+
+        <div className="mt-6">{statsSlot}</div>
       </div>
 
-      <div className="mt-8 md:mt-0">
-        <TypeIconGrid />
-      </div>
+      {panelSlot ? <div className="mt-8 xl:mt-0">{panelSlot}</div> : null}
     </section>
   );
 }
