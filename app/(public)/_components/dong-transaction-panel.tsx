@@ -396,7 +396,9 @@ export function DongTransactionPanel({
       <h2 className="text-lg font-bold text-[var(--color-blue-dark)]">동네별 최근 실거래가</h2>
       <p className="mt-1 text-xs text-[var(--color-muted)]">관심 지역의 거래 내역을 확인하세요</p>
 
-      <div className="mt-3 flex flex-wrap gap-2 text-sm">
+      {/* 카드 콘텐츠 폭이 297px이라 3줄로 고정한다. flex-wrap에 맡기면 시도 셀렉트
+          폭(최장 옵션 "전남광주통합특별시" 기준 155px)에 따라 줄이 들쭉날쭉해진다. */}
+      <div className="mt-3 flex gap-2 text-sm">
         <label className="sr-only" htmlFor="sido-select">시도</label>
         <select
           id="sido-select"
@@ -421,7 +423,9 @@ export function DongTransactionPanel({
             <option key={sg.code} value={sg.sigunguCode}>{sg.sigungu}</option>
           ))}
         </select>
+      </div>
 
+      <div className="mt-2 flex gap-2 text-sm">
         <label className="sr-only" htmlFor="dong-select">읍·면·동·리</label>
         <select
           id="dong-select"
@@ -434,20 +438,21 @@ export function DongTransactionPanel({
             <option key={d.umd} value={d.umd}>{d.umd}</option>
           ))}
         </select>
-      </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-2">
         <label className="sr-only" htmlFor="type-select">건물 유형</label>
         <select
           id="type-select"
           value={propertyType}
           onChange={(e) => setPropertyType(e.target.value as PropertyType)}
-          className="rounded-lg border border-[var(--color-line)] bg-white px-3 py-2 text-sm"
+          className="rounded-lg border border-[var(--color-line)] bg-white px-3 py-2"
         >
           {PROPERTY_TYPES.map((t) => (
             <option key={t.key} value={t.key}>{t.label}</option>
           ))}
         </select>
+      </div>
+
+      <div className="mt-2">
         <div className="flex gap-1 rounded-lg bg-[var(--color-soft)] p-1">
           {DEAL_TABS.map((t) => (
             <button
