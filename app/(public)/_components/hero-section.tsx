@@ -31,9 +31,7 @@ export function HeroSection({
         .filter(Boolean)
         .join(' ')}
     >
-      {/* @container: StatsBar가 이 열의 실제 렌더 폭으로 4열/2열을 정한다(뷰포트가
-          아니라) — 오른쪽 패널 유무에 따라 이 열의 폭이 뷰포트와 무관하게 달라진다. */}
-      <div className="@container">
+      <div>
         <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-[var(--color-sky-soft)] px-3.5 py-2 text-xs font-extrabold text-[var(--color-blue-dark)]">
           📍 실거래가·생활권 정보 통합 플랫폼
         </span>
