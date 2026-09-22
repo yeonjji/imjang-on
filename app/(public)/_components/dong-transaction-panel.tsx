@@ -208,6 +208,8 @@ export function DongTransactionPanel({
   const [expanded, setExpanded] = useState(false);
   // 펼침 상태에서만 스크롤되는 목록 요소. 접힐 때 스크롤 위치를 되돌리는 데 쓴다.
   const listRef = useRef<HTMLUListElement>(null);
+  // 목록이 바닥에 닿았는지 — 닿기 전까지만 하단 페이드를 보여준다.
+  const [atBottom, setAtBottom] = useState(false);
 
   // 시도가 바뀌면 시군구 목록을 다시 가져온다. 마운트 시에도 한 번 실행되어 초기
   // 시도의 전체 목록을 채우지만, 그때는 서버가 이미 정해 준 시군구·동 선택을
@@ -337,10 +339,12 @@ export function DongTransactionPanel({
 
   // 접힐 때(더보기 토글이든 위 필터 변경으로 인한 자동 접힘이든) 목록 스크롤
   // 위치를 되돌린다. 안 그러면 다음에 펼쳤을 때 이전 스크롤 위치부터 보여
-  // 앞쪽 항목이 안 보일 수 있다.
+  // 앞쪽 항목이 안 보일 수 있다. atBottom도 함께 되돌린다 — 안 그러면 한 번
+  // 바닥까지 본 뒤 접었다 다시 펼쳤을 때 하단 페이드가 안 나온다.
   useEffect(() => {
-    if (!expanded && listRef.current) {
-      listRef.current.scrollTop = 0;
+    if (!expanded) {
+      if (listRef.current) listRef.current.scrollTop = 0;
+      setAtBottom(false);
     }
   }, [expanded]);
 
@@ -539,35 +543,55 @@ export function DongTransactionPanel({
                 렌더 높이 합(72+72+72+71, divide-y라 마지막 행만 아래 테두리가 없어
                 1px 작다)이라, 펼쳐도 카드 높이가 접힘 상태와 같아진다.
                 overscroll-behavior는 건드리지 않는다 — 기본값이 목록 끝에서 페이지
-                스크롤로 자연스럽게 넘어가는, 바로 우리가 원하는 동작이다. */}
-            <ul
-              ref={listRef}
-              className={`divide-y divide-[var(--color-line)] ${
-                expanded ? 'max-h-[285px] overflow-y-auto pr-1' : ''
-              }`}
-            >
-              {(expanded ? items : items.slice(0, VISIBLE_COUNT)).map((t) => (
-                <li key={t.id} className="flex items-start justify-between gap-3 py-3">
-                  <div className="min-w-0">
-                    <Link
-                      href={`/${SLUG[t.propertyType] ?? 'apt'}/${t.propertyId}`}
-                      className="block truncate text-sm font-bold text-[var(--color-blue-dark)] hover:underline"
-                    >
-                      {t.propertyName}
-                    </Link>
-                    <p className="mt-0.5 text-xs text-[var(--color-muted)]">{formatDongMeta(t)}</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-bold ${DEAL_BADGE[t.dealType]}`}>
-                      {DEAL_LABEL[t.dealType]}
-                    </span>
-                    <p className="mt-0.5 whitespace-nowrap text-sm font-bold text-[var(--color-blue-dark)]">
-                      {formatDongPrice(t)}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                스크롤로 자연스럽게 넘어가는, 바로 우리가 원하는 동작이다.
+
+                모바일 오버레이 스크롤바는 실제로 스크롤하는 동안에만 나타나 "더보기"를
+                눌렀을 때의 전환이 안 보인다. dong-scroll(globals.css)이 스크롤바를
+                스타일링하지만 iOS Safari의 터치 스크롤 영역에서는 무시되므로, 바닥에
+                닿기 전까지 하단 페이드를 함께 그려 모든 플랫폼에서 "더 있다"가 보이게
+                한다. */}
+            <div className="relative">
+              <ul
+                ref={listRef}
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  // 소수점 오차가 있어 1px 여유를 둔다.
+                  setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 1);
+                }}
+                className={`divide-y divide-[var(--color-line)] ${
+                  expanded ? 'dong-scroll max-h-[285px] overflow-y-auto pr-1' : ''
+                }`}
+              >
+                {(expanded ? items : items.slice(0, VISIBLE_COUNT)).map((t) => (
+                  <li key={t.id} className="flex items-start justify-between gap-3 py-3">
+                    <div className="min-w-0">
+                      <Link
+                        href={`/${SLUG[t.propertyType] ?? 'apt'}/${t.propertyId}`}
+                        className="block truncate text-sm font-bold text-[var(--color-blue-dark)] hover:underline"
+                      >
+                        {t.propertyName}
+                      </Link>
+                      <p className="mt-0.5 text-xs text-[var(--color-muted)]">{formatDongMeta(t)}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-bold ${DEAL_BADGE[t.dealType]}`}>
+                        {DEAL_LABEL[t.dealType]}
+                      </span>
+                      <p className="mt-0.5 whitespace-nowrap text-sm font-bold text-[var(--color-blue-dark)]">
+                        {formatDongPrice(t)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              {expanded && !atBottom && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[var(--color-card)] to-transparent"
+                />
+              )}
+            </div>
 
             {items.length > VISIBLE_COUNT && (
               <button
