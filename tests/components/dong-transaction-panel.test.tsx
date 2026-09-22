@@ -88,11 +88,64 @@ describe('DongTransactionPanel', () => {
     expect(out).toContain('이 조건에 해당하는 거래가 없습니다');
   });
 
-  it('「더 보기」 링크를 두지 않는다', () => {
+  // 원 설계 §6.8: /list는 건물 목록이지 거래 목록이라, 거기로 보내면 사용자가
+  // 따라가던 탐색의 성격이 바뀐다. 같은 자리에서 펼치는 더보기는 그 규칙과 다르다.
+  it('다른 화면으로 떠나보내는 링크를 두지 않는다', () => {
     const out = html(ITEMS);
-    expect(out).not.toContain('더 보기');
     expect(out).not.toContain('전체 보기');
     expect(out).not.toContain('매물 보기');
+    expect(out).not.toContain('href="/list');
+  });
+
+  const six: DongTransaction[] = Array.from({ length: 6 }, (_, i) => ({
+    id: String(100 + i),
+    propertyId: String(200 + i),
+    propertyName: `테스트단지${i}`,
+    dealType: 'SALE' as const,
+    propertyType: 'APARTMENT' as const,
+    dealAmount: 90000 + i,
+    deposit: null,
+    monthlyRent: null,
+    exclusiveArea: 84,
+    floor: 10,
+    contractDate: '2026-09-09',
+  }));
+
+  it('6건이 와도 4건만 그린다', () => {
+    const out = html(six);
+    expect(out).toContain('테스트단지0');
+    expect(out).toContain('테스트단지3');
+    expect(out).not.toContain('테스트단지4');
+    expect(out).not.toContain('테스트단지5');
+  });
+
+  it('5건 이상이면 더보기 버튼을 둔다', () => {
+    expect(html(six)).toContain('거래 내역 더보기');
+  });
+
+  it('4건 이하면 더보기 버튼을 두지 않는다', () => {
+    expect(html(six.slice(0, 4))).not.toContain('거래 내역 더보기');
+    expect(html(ITEMS)).not.toContain('거래 내역 더보기');
+  });
+
+  it('0건이면 더보기 버튼을 두지 않는다', () => {
+    expect(html([])).not.toContain('거래 내역 더보기');
+  });
+
+  // 접힘(초기 SSR)은 목록에 스크롤을 걸지 않는다 — 펼쳤을 때만 max-h+overflow-y-auto가
+  // 붙는다. renderToStaticMarkup은 클릭을 재현할 수 없어 펼침 쪽은 검증하지 않는다.
+  it('접힘 상태에서 목록에 overflow-y-auto가 없다', () => {
+    expect(html(six)).not.toContain('overflow-y-auto');
+  });
+
+  it('접힘 상태에서 버튼 라벨이 "거래 내역 더보기"다', () => {
+    const out = html(six);
+    expect(out).toContain('거래 내역 더보기');
+    expect(out).not.toContain('거래 내역 접기');
+  });
+
+  it('더보기 버튼에 aria-expanded가 있다', () => {
+    expect(html(six)).toContain('aria-expanded="false"');
   });
 });
 

@@ -13,37 +13,34 @@ import { HeroSection } from '@/app/(public)/_components/hero-section';
 
 (globalThis as unknown as { React: typeof React }).React = React;
 
-const html = (panelSlot: React.ReactNode) =>
-  renderToStaticMarkup(
-    <HeroSection
-      popularRegions={[]}
-      statsSlot={<div data-testid="stats">STATS_MARK</div>}
-      panelSlot={panelSlot}
-    />,
-  );
+const html = () => renderToStaticMarkup(<HeroSection popularRegions={[]} />);
 
 describe('HeroSection', () => {
-  it('panelSlot이 없으면(폴백) xl 2단 그리드 클래스를 켜지 않는다', () => {
-    const out = html(null);
+  // 2열 배치는 page.tsx의 래퍼가 정한다. 히어로가 스스로 그리드가 되면 자기 높이가
+  // 옆 카드에 끌려가 아래에 죽은 여백이 생긴다(이 작업이 없애려는 바로 그 문제).
+  it('스스로 2열 그리드가 되지 않는다', () => {
+    const out = html();
+    // 'grid-cols-'를 그대로 찾으면 TypeIconGrid 자신의 아이콘용 grid-cols-4와
+    // 충돌해 항상 실패한다(이 작업 대상이 아닌 컴포넌트). 히어로가 실제로 켰던
+    // 트리거 클래스(xl:grid-cols-[1.65fr_1fr])로 좁혀서 검사한다.
     expect(out).not.toContain('xl:grid-cols-');
   });
 
-  it('panelSlot이 있으면 xl 2단 그리드 클래스를 켜고 패널을 렌더한다', () => {
-    const out = html(<div data-testid="panel">PANEL_MARK</div>);
-    expect(out).toContain('xl:grid-cols-[1.65fr_1fr]');
-    expect(out).toContain('PANEL_MARK');
+  it('통계를 품지 않는다 — 통계는 히어로 밖 전체폭 밴드로 갔다', () => {
+    const out = html();
+    expect(out).not.toContain('실거래 데이터');
+    expect(out).not.toContain('생활편의시설');
   });
 
-  it('왼쪽 열 순서는 검색 → 아이콘 → 통계다(스펙 §6.2)', () => {
-    const out = html(null);
-    // TypeIconGrid의 아이콘 라벨, statsSlot 마커의 등장 순서로 배치를 확인한다.
-    const iconIdx = out.indexOf('EV충전소');
-    const statsIdx = out.indexOf('STATS_MARK');
-    expect(iconIdx).toBeGreaterThan(-1);
-    expect(statsIdx).toBeGreaterThan(iconIdx);
+  it('검색·버튼·카테고리는 그대로 있다', () => {
+    const out = html();
+    expect(out).toContain('임장ON');
+    expect(out).toContain('실거래가 찾기');
+    expect(out).toContain('청약 일정 보기');
+    expect(out).toContain('EV충전소');
   });
 
   it('popularRegions가 비어 있어도 렌더가 죽지 않는다', () => {
-    expect(() => html(null)).not.toThrow();
+    expect(() => html()).not.toThrow();
   });
 });

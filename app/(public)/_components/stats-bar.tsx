@@ -11,19 +11,20 @@ const ITEMS = [
 
 export function StatsBar({ stats }: { stats: HomeStats }) {
   return (
-    <>
+    <div className="@container">
       {/*
-        4열/2열 전환은 뷰포트(md/xl)가 아니라 컨테이너 쿼리(@4xl, hero-section.tsx의
-        @container)로 정한다. 이 컴포넌트는 히어로 왼쪽 열 안에서 쓰이는데, 그 실폭은
-        뷰포트만으로 못 정한다 — 768px 뷰포트의 단일 컬럼 히어로(카드 패딩만으로
-        638px)와 1280px 뷰포트의 오른쪽 패널 squeeze(629px)가 거의 같은 폭이고, 둘 다
-        4열이면 "아파트/오피스텔/다세대" 같은 긴 라벨이 단어 중간에서 줄바꿈된다(실측
-        확인). 반대로 패널이 없는 1280px+에서는 왼쪽 열이 그대로 ~1050px라 4열이 맞다 —
-        뷰포트만 보면 이 둘을 구분할 수 없다. @3xl(48rem/768px 컨테이너 폭)로는 부족했다
-        — 헤드리스 크롬 실측상 컨테이너 768px(라벨박스 107px)에서 여전히 2줄로
-        깨지고, 800px(라벨박스 111px)은 돼야 1줄이었다. @4xl(56rem/896px 컨테이너
-        폭)은 638·629 둘 다 아래, 894px(1024px 뷰포트, 실측상 안 깨짐)보다는 충분히
-        아래에 잡은 여유값이다.
+        4열/2열은 뷰포트가 아니라 이 컴포넌트가 실제로 받은 폭으로 정한다. 같은
+        뷰포트에서도 놓이는 자리에 따라 폭이 크게 달라지기 때문이다 — 히어로
+        왼쪽 열 안이면 약 630px, 전체폭 밴드면 1132px다.
+
+        @container를 이 컴포넌트가 직접 들고 있는 것이 핵심이다. container-type
+        조상이 없으면 @4xl:은 조용히 무시된다(빌드·린트·런타임 모두 통과하는데
+        폭이 1132px이어도 2열로 렌더된다). 부모에게 맡기면 옮길 때마다 같이
+        옮겨야 하는 결합이 남는다.
+
+        임계 @3xl(768px)로는 부족했다 — 실측에서 컨테이너 768px는 라벨박스 107px로
+        "아파트/오피스텔/다세대"가 단어 중간에서 깨지고, 800px(111px)은 돼야 한 줄이었다.
+        @4xl(896px)은 그 위로 잡은 여유값이다.
       */}
       <div className="grid grid-cols-2 overflow-hidden rounded-[20px] border border-[var(--color-line)] bg-white shadow-[var(--shadow)] @4xl:grid-cols-4">
       {ITEMS.map((item, i) => (
@@ -53,6 +54,6 @@ export function StatsBar({ stats }: { stats: HomeStats }) {
           전체 출처 보기 →
         </Link>
       </p>
-    </>
+    </div>
   );
 }

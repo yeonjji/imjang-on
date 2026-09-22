@@ -46,6 +46,12 @@ const SLUG: Record<string, string> = {
   APARTMENT: 'apt', OFFICETEL: 'officetel', MULTIPLEX: 'villa', ROW_HOUSE: 'villa',
 };
 
+/**
+ * 첫 화면 노출 개수. 통계를 뺀 히어로가 607px인데 행 하나가 약 71px이라, 4건일 때
+ * 카드가 606px로 히어로와 1px 차이다. 5건이면 64px, 6건이면 136px 길어진다.
+ */
+const VISIBLE_COUNT = 4;
+
 type Status = 'idle' | 'loading' | 'error';
 
 /** 목록 아래에 무엇을 보여줄지. resolvePanelView가 순서대로 판정해 하나만 돌려준다. */
@@ -199,6 +205,9 @@ export function DongTransactionPanel({
   const [items, setItems] = useState<DongTransaction[]>(initialItems);
   const [status, setStatus] = useState<Status>('idle');
   const [retryTick, setRetryTick] = useState(0);
+  const [expanded, setExpanded] = useState(false);
+  // 펼침 상태에서만 스크롤되는 목록 요소. 접힐 때 스크롤 위치를 되돌리는 데 쓴다.
+  const listRef = useRef<HTMLUListElement>(null);
 
   // 시도가 바뀌면 시군구 목록을 다시 가져온다. 마운트 시에도 한 번 실행되어 초기
   // 시도의 전체 목록을 채우지만, 그때는 서버가 이미 정해 준 시군구·동 선택을
@@ -319,6 +328,22 @@ export function DongTransactionPanel({
   const abort = useRef<AbortController | null>(null);
   const firstTx = useRef(true);
 
+  // 필터가 바뀌면 펼침을 접는다. 펼친 채로 지역이 바뀌면 새 결과 12건이 한꺼번에
+  // 쏟아져 앞 결과의 연장처럼 읽힌다. retryTick은 넣지 않는다 — 같은 필터의
+  // 재조회라 사용자가 펼쳐 둔 상태를 유지하는 편이 맞다.
+  useEffect(() => {
+    setExpanded(false);
+  }, [sigunguCode, umd, propertyType, deal]);
+
+  // 접힐 때(더보기 토글이든 위 필터 변경으로 인한 자동 접힘이든) 목록 스크롤
+  // 위치를 되돌린다. 안 그러면 다음에 펼쳤을 때 이전 스크롤 위치부터 보여
+  // 앞쪽 항목이 안 보일 수 있다.
+  useEffect(() => {
+    if (!expanded && listRef.current) {
+      listRef.current.scrollTop = 0;
+    }
+  }, [expanded]);
+
   useEffect(() => {
     if (firstTx.current) {
       // 서버가 그려 준 초기 결과를 그대로 쓴다. 마운트 직후 중복 조회를 하지 않는다.
@@ -382,7 +407,9 @@ export function DongTransactionPanel({
       <h2 className="text-lg font-bold text-[var(--color-blue-dark)]">동네별 최근 실거래가</h2>
       <p className="mt-1 text-xs text-[var(--color-muted)]">관심 지역의 거래 내역을 확인하세요</p>
 
-      <div className="mt-3 flex flex-wrap gap-2 text-sm">
+      {/* 카드 콘텐츠 폭이 297px이라 3줄로 고정한다. flex-wrap에 맡기면 시도 셀렉트
+          폭(최장 옵션 "전남광주통합특별시" 기준 155px)에 따라 줄이 들쭉날쭉해진다. */}
+      <div className="mt-3 flex gap-2 text-sm">
         <label className="sr-only" htmlFor="sido-select">시도</label>
         <select
           id="sido-select"
@@ -407,7 +434,9 @@ export function DongTransactionPanel({
             <option key={sg.code} value={sg.sigunguCode}>{sg.sigungu}</option>
           ))}
         </select>
+      </div>
 
+      <div className="mt-2 flex gap-2 text-sm">
         <label className="sr-only" htmlFor="dong-select">읍·면·동·리</label>
         <select
           id="dong-select"
@@ -420,21 +449,22 @@ export function DongTransactionPanel({
             <option key={d.umd} value={d.umd}>{d.umd}</option>
           ))}
         </select>
-      </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-2">
         <label className="sr-only" htmlFor="type-select">건물 유형</label>
         <select
           id="type-select"
           value={propertyType}
           onChange={(e) => setPropertyType(e.target.value as PropertyType)}
-          className="rounded-lg border border-[var(--color-line)] bg-white px-3 py-2 text-sm"
+          className="rounded-lg border border-[var(--color-line)] bg-white px-3 py-2"
         >
           {PROPERTY_TYPES.map((t) => (
             <option key={t.key} value={t.key}>{t.label}</option>
           ))}
         </select>
-        <div className="flex gap-1 rounded-lg bg-[var(--color-soft)] p-1">
+      </div>
+
+      <div className="mt-2">
+        <div className="flex w-fit gap-1 rounded-lg bg-[var(--color-soft)] p-1">
           {DEAL_TABS.map((t) => (
             <button
               key={t.key}
@@ -454,7 +484,7 @@ export function DongTransactionPanel({
       <div className="mt-3 border-t border-[var(--color-line)]">
         {(view === 'loading' || view === 'tx-loading') && (
           <ul className="divide-y divide-[var(--color-line)]" aria-busy="true">
-            {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            {[0, 1, 2, 3].map((i) => (
               <li key={i} className="py-3">
                 <div className="h-4 w-2/3 rounded bg-[var(--color-soft)]" />
                 <div className="mt-2 h-3 w-1/2 rounded bg-[var(--color-soft)]" />
@@ -504,29 +534,52 @@ export function DongTransactionPanel({
         )}
 
         {view === 'results' && (
-          <ul className="divide-y divide-[var(--color-line)]">
-            {items.map((t) => (
-              <li key={t.id} className="flex items-start justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <Link
-                    href={`/${SLUG[t.propertyType] ?? 'apt'}/${t.propertyId}`}
-                    className="block truncate text-sm font-bold text-[var(--color-blue-dark)] hover:underline"
-                  >
-                    {t.propertyName}
-                  </Link>
-                  <p className="mt-0.5 text-xs text-[var(--color-muted)]">{formatDongMeta(t)}</p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-bold ${DEAL_BADGE[t.dealType]}`}>
-                    {DEAL_LABEL[t.dealType]}
-                  </span>
-                  <p className="mt-0.5 whitespace-nowrap text-sm font-bold text-[var(--color-blue-dark)]">
-                    {formatDongPrice(t)}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <>
+            {/* 펼침일 때만 스크롤한다. 285px는 실측값이다 — 접힘 상태(4행)의 실제
+                렌더 높이 합(72+72+72+71, divide-y라 마지막 행만 아래 테두리가 없어
+                1px 작다)이라, 펼쳐도 카드 높이가 접힘 상태와 같아진다.
+                overscroll-behavior는 건드리지 않는다 — 기본값이 목록 끝에서 페이지
+                스크롤로 자연스럽게 넘어가는, 바로 우리가 원하는 동작이다. */}
+            <ul
+              ref={listRef}
+              className={`divide-y divide-[var(--color-line)] ${
+                expanded ? 'max-h-[285px] overflow-y-auto pr-1' : ''
+              }`}
+            >
+              {(expanded ? items : items.slice(0, VISIBLE_COUNT)).map((t) => (
+                <li key={t.id} className="flex items-start justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/${SLUG[t.propertyType] ?? 'apt'}/${t.propertyId}`}
+                      className="block truncate text-sm font-bold text-[var(--color-blue-dark)] hover:underline"
+                    >
+                      {t.propertyName}
+                    </Link>
+                    <p className="mt-0.5 text-xs text-[var(--color-muted)]">{formatDongMeta(t)}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-bold ${DEAL_BADGE[t.dealType]}`}>
+                      {DEAL_LABEL[t.dealType]}
+                    </span>
+                    <p className="mt-0.5 whitespace-nowrap text-sm font-bold text-[var(--color-blue-dark)]">
+                      {formatDongPrice(t)}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {items.length > VISIBLE_COUNT && (
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                aria-expanded={expanded}
+                className="mt-3 w-full rounded-lg border border-[var(--color-line)] bg-white py-2 text-xs font-bold text-[var(--color-blue-dark)] hover:bg-[var(--color-soft)]"
+              >
+                {expanded ? '거래 내역 접기' : '거래 내역 더보기'}
+              </button>
+            )}
+          </>
         )}
       </div>
 

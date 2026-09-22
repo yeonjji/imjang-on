@@ -7,6 +7,7 @@ import { WeeklySubscriptionBoard } from './_components/weekly-subscription-board
 import { HomeNews } from './_components/home-news';
 import { HomeEditorial } from './_components/home-editorial';
 import { DongTransactionPanel } from './_components/dong-transaction-panel';
+import { heroRowClass } from './_components/home-layout';
 import { getHomeStats } from '@/lib/stats';
 import { getHomeWeekBoard } from '@/lib/subscription';
 import { readHomeSnapshot } from '@/lib/dashboard-snapshot';
@@ -68,31 +69,37 @@ export default async function HomePage() {
             sigunguCode: top.sigunguCode,
             umd: topDong.umd,
             propertyType: 'APARTMENT',
-            limit: 8,
+            limit: 12,
           }),
           [],
         )
       : [];
 
+  const panel =
+    top && topDong ? (
+      <DongTransactionPanel
+        initialSido={top.sido}
+        initialSigunguCode={top.sigunguCode}
+        initialSigunguName={top.sigungu}
+        initialUmd={topDong.umd}
+        initialDongs={dongs}
+        initialItems={dongItems}
+        sidoList={sidoList}
+      />
+    ) : null;
+
   return (
     <section className="mx-auto max-w-[1180px] px-6 py-12">
-      <HeroSection
-        popularRegions={popularRegions}
-        statsSlot={<StatsBar stats={stats} />}
-        panelSlot={
-          top && topDong ? (
-            <DongTransactionPanel
-              initialSido={top.sido}
-              initialSigunguCode={top.sigunguCode}
-              initialSigunguName={top.sigungu}
-              initialUmd={topDong.umd}
-              initialDongs={dongs}
-              initialItems={dongItems}
-              sidoList={sidoList}
-            />
-          ) : null
-        }
-      />
+      <div className={heroRowClass(panel !== null)}>
+        <HeroSection popularRegions={popularRegions} />
+        {panel}
+      </div>
+
+      {/* 통계는 두 영역 아래 전체폭(1132px) 밴드다. 히어로 안에 있으면 히어로가
+          길어져 오른쪽 카드와의 높이 균형이 무너진다. */}
+      <div className="mt-6">
+        <StatsBar stats={stats} />
+      </div>
 
       <MarketBriefing briefing={briefing} />
 
