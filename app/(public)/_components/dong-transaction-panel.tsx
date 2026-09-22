@@ -337,15 +337,17 @@ export function DongTransactionPanel({
     setExpanded(false);
   }, [sigunguCode, umd, propertyType, deal]);
 
-  // 접힐 때(더보기 토글이든 위 필터 변경으로 인한 자동 접힘이든) 목록 스크롤
-  // 위치를 되돌린다. 안 그러면 다음에 펼쳤을 때 이전 스크롤 위치부터 보여
-  // 앞쪽 항목이 안 보일 수 있다. atBottom도 함께 되돌린다 — 안 그러면 한 번
-  // 바닥까지 본 뒤 접었다 다시 펼쳤을 때 하단 페이드가 안 나온다.
+  // expanded가 바뀔 때마다(접히든 펼쳐지든) 목록 스크롤 위치를 되돌린다.
+  // 접히는 순간에는 <ul>이 이미 max-h·overflow-y-auto를 잃어 스크롤 컨테이너가
+  // 아니므로 scrollTop=0이 no-op이다 — 브라우저는 이 요소가 언마운트된 적이
+  // 없으니 다시 펼칠 때 이전 스크롤 오프셋을 그대로 복원한다. 그래서
+  // !expanded로만 가드하면 실제로는 한 번도 되돌려지지 않는다. 펼쳐지는
+  // 순간(요소가 다시 스크롤 컨테이너가 된 뒤)에도 같은 effect로 되돌려야
+  // 실제로 맨 위부터 보인다. atBottom도 함께 되돌린다 — 안 그러면 한 번
+  // 바닥까지 본 뒤 접었다 다시 펼쳤을 때 하단 페이드가 잘못된 신호를 준다.
   useEffect(() => {
-    if (!expanded) {
-      if (listRef.current) listRef.current.scrollTop = 0;
-      setAtBottom(false);
-    }
+    if (listRef.current) listRef.current.scrollTop = 0;
+    setAtBottom(false);
   }, [expanded]);
 
   useEffect(() => {
