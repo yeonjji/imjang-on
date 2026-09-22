@@ -148,15 +148,15 @@ describe('DongTransactionPanel', () => {
     expect(html(six)).toContain('aria-expanded="false"');
   });
 
-  // 스크롤바 유틸리티(dong-scroll, globals.css)와 하단 페이드는 펼침일 때만
-  // 붙는다 — 접힘 상태(SSR 초기 렌더)에 남아 있으면 안 되는 이유가 없는데도
-  // 붙으면 불필요한 시각 요소가 늘 떠 있게 된다.
+  // 스크롤바 유틸리티(dong-scroll, globals.css)와 스크롤 인디케이터(트랙+thumb)는
+  // 펼침일 때만 붙는다 — 접힘 상태(SSR 초기 렌더)에 남아 있으면 안 되는 이유가
+  // 없는데도 붙으면 불필요한 시각 요소가 늘 떠 있게 된다.
   it('접힘 상태에서 목록에 dong-scroll 클래스가 없다', () => {
     expect(html(six)).not.toContain('dong-scroll');
   });
 
-  it('접힘 상태에서 하단 페이드 요소가 없다', () => {
-    expect(html(six)).not.toContain('bg-gradient-to-t');
+  it('접힘 상태에서 스크롤 인디케이터가 없다', () => {
+    expect(html(six)).not.toContain('inset-y-0 right-0 w-1');
   });
 });
 
