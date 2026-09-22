@@ -46,6 +46,12 @@ const SLUG: Record<string, string> = {
   APARTMENT: 'apt', OFFICETEL: 'officetel', MULTIPLEX: 'villa', ROW_HOUSE: 'villa',
 };
 
+/**
+ * 첫 화면 노출 개수. 통계를 뺀 히어로가 607px인데 행 하나가 약 71px이라, 4건일 때
+ * 카드가 606px로 히어로와 1px 차이다. 5건이면 64px, 6건이면 136px 길어진다.
+ */
+const VISIBLE_COUNT = 4;
+
 type Status = 'idle' | 'loading' | 'error';
 
 /** 목록 아래에 무엇을 보여줄지. resolvePanelView가 순서대로 판정해 하나만 돌려준다. */
@@ -199,6 +205,7 @@ export function DongTransactionPanel({
   const [items, setItems] = useState<DongTransaction[]>(initialItems);
   const [status, setStatus] = useState<Status>('idle');
   const [retryTick, setRetryTick] = useState(0);
+  const [expanded, setExpanded] = useState(false);
 
   // 시도가 바뀌면 시군구 목록을 다시 가져온다. 마운트 시에도 한 번 실행되어 초기
   // 시도의 전체 목록을 채우지만, 그때는 서버가 이미 정해 준 시군구·동 선택을
@@ -318,6 +325,13 @@ export function DongTransactionPanel({
   const seq = useRef(0);
   const abort = useRef<AbortController | null>(null);
   const firstTx = useRef(true);
+
+  // 필터가 바뀌면 펼침을 접는다. 펼친 채로 지역이 바뀌면 새 결과 12건이 한꺼번에
+  // 쏟아져 앞 결과의 연장처럼 읽힌다. retryTick은 넣지 않는다 — 같은 필터의
+  // 재조회라 사용자가 펼쳐 둔 상태를 유지하는 편이 맞다.
+  useEffect(() => {
+    setExpanded(false);
+  }, [sigunguCode, umd, propertyType, deal]);
 
   useEffect(() => {
     if (firstTx.current) {
@@ -454,7 +468,7 @@ export function DongTransactionPanel({
       <div className="mt-3 border-t border-[var(--color-line)]">
         {(view === 'loading' || view === 'tx-loading') && (
           <ul className="divide-y divide-[var(--color-line)]" aria-busy="true">
-            {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            {[0, 1, 2, 3].map((i) => (
               <li key={i} className="py-3">
                 <div className="h-4 w-2/3 rounded bg-[var(--color-soft)]" />
                 <div className="mt-2 h-3 w-1/2 rounded bg-[var(--color-soft)]" />
@@ -504,29 +518,41 @@ export function DongTransactionPanel({
         )}
 
         {view === 'results' && (
-          <ul className="divide-y divide-[var(--color-line)]">
-            {items.map((t) => (
-              <li key={t.id} className="flex items-start justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <Link
-                    href={`/${SLUG[t.propertyType] ?? 'apt'}/${t.propertyId}`}
-                    className="block truncate text-sm font-bold text-[var(--color-blue-dark)] hover:underline"
-                  >
-                    {t.propertyName}
-                  </Link>
-                  <p className="mt-0.5 text-xs text-[var(--color-muted)]">{formatDongMeta(t)}</p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-bold ${DEAL_BADGE[t.dealType]}`}>
-                    {DEAL_LABEL[t.dealType]}
-                  </span>
-                  <p className="mt-0.5 whitespace-nowrap text-sm font-bold text-[var(--color-blue-dark)]">
-                    {formatDongPrice(t)}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="divide-y divide-[var(--color-line)]">
+              {(expanded ? items : items.slice(0, VISIBLE_COUNT)).map((t) => (
+                <li key={t.id} className="flex items-start justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/${SLUG[t.propertyType] ?? 'apt'}/${t.propertyId}`}
+                      className="block truncate text-sm font-bold text-[var(--color-blue-dark)] hover:underline"
+                    >
+                      {t.propertyName}
+                    </Link>
+                    <p className="mt-0.5 text-xs text-[var(--color-muted)]">{formatDongMeta(t)}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-bold ${DEAL_BADGE[t.dealType]}`}>
+                      {DEAL_LABEL[t.dealType]}
+                    </span>
+                    <p className="mt-0.5 whitespace-nowrap text-sm font-bold text-[var(--color-blue-dark)]">
+                      {formatDongPrice(t)}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {!expanded && items.length > VISIBLE_COUNT && (
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                className="mt-3 w-full rounded-lg border border-[var(--color-line)] bg-white py-2 text-xs font-bold text-[var(--color-blue-dark)] hover:bg-[var(--color-soft)]"
+              >
+                거래 내역 더보기
+              </button>
+            )}
+          </>
         )}
       </div>
 

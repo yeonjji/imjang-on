@@ -69,7 +69,7 @@ export default async function HomePage() {
             sigunguCode: top.sigunguCode,
             umd: topDong.umd,
             propertyType: 'APARTMENT',
-            limit: 8,
+            limit: 12,
           }),
           [],
         )

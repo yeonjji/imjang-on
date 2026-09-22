@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
       umd,
       dealType: dealRaw && DEAL_TYPES.has(dealRaw) ? (dealRaw as DealType) : undefined,
       propertyType: typeRaw && PROPERTY_TYPES.has(typeRaw) ? (typeRaw as PropertyType) : undefined,
-      limit: 8,
+      // 홈 패널은 4건만 그리고 나머지는 「거래 내역 더보기」로 펼친다. 추가 요청을
+      // 하지 않으므로 그 여분까지 한 번에 내려준다.
+      limit: 12,
     }),
   );
 }
