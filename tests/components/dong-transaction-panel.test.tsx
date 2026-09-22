@@ -131,6 +131,22 @@ describe('DongTransactionPanel', () => {
   it('0건이면 더보기 버튼을 두지 않는다', () => {
     expect(html([])).not.toContain('거래 내역 더보기');
   });
+
+  // 접힘(초기 SSR)은 목록에 스크롤을 걸지 않는다 — 펼쳤을 때만 max-h+overflow-y-auto가
+  // 붙는다. renderToStaticMarkup은 클릭을 재현할 수 없어 펼침 쪽은 검증하지 않는다.
+  it('접힘 상태에서 목록에 overflow-y-auto가 없다', () => {
+    expect(html(six)).not.toContain('overflow-y-auto');
+  });
+
+  it('접힘 상태에서 버튼 라벨이 "거래 내역 더보기"다', () => {
+    const out = html(six);
+    expect(out).toContain('거래 내역 더보기');
+    expect(out).not.toContain('거래 내역 접기');
+  });
+
+  it('더보기 버튼에 aria-expanded가 있다', () => {
+    expect(html(six)).toContain('aria-expanded="false"');
+  });
 });
 
 // 시도 → 시군구 → 동 캐스케이드의 리셋·자동선택 로직. 렌더 상호작용은 이 저장소

@@ -206,6 +206,8 @@ export function DongTransactionPanel({
   const [status, setStatus] = useState<Status>('idle');
   const [retryTick, setRetryTick] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  // 펼침 상태에서만 스크롤되는 목록 요소. 접힐 때 스크롤 위치를 되돌리는 데 쓴다.
+  const listRef = useRef<HTMLUListElement>(null);
 
   // 시도가 바뀌면 시군구 목록을 다시 가져온다. 마운트 시에도 한 번 실행되어 초기
   // 시도의 전체 목록을 채우지만, 그때는 서버가 이미 정해 준 시군구·동 선택을
@@ -333,6 +335,15 @@ export function DongTransactionPanel({
     setExpanded(false);
   }, [sigunguCode, umd, propertyType, deal]);
 
+  // 접힐 때(더보기 토글이든 위 필터 변경으로 인한 자동 접힘이든) 목록 스크롤
+  // 위치를 되돌린다. 안 그러면 다음에 펼쳤을 때 이전 스크롤 위치부터 보여
+  // 앞쪽 항목이 안 보일 수 있다.
+  useEffect(() => {
+    if (!expanded && listRef.current) {
+      listRef.current.scrollTop = 0;
+    }
+  }, [expanded]);
+
   useEffect(() => {
     if (firstTx.current) {
       // 서버가 그려 준 초기 결과를 그대로 쓴다. 마운트 직후 중복 조회를 하지 않는다.
@@ -453,7 +464,7 @@ export function DongTransactionPanel({
       </div>
 
       <div className="mt-2">
-        <div className="flex gap-1 rounded-lg bg-[var(--color-soft)] p-1">
+        <div className="flex w-fit gap-1 rounded-lg bg-[var(--color-soft)] p-1">
           {DEAL_TABS.map((t) => (
             <button
               key={t.key}
@@ -524,7 +535,17 @@ export function DongTransactionPanel({
 
         {view === 'results' && (
           <>
-            <ul className="divide-y divide-[var(--color-line)]">
+            {/* 펼침일 때만 스크롤한다. 285px는 실측값이다 — 접힘 상태(4행)의 실제
+                렌더 높이 합(72+72+72+71, divide-y라 마지막 행만 아래 테두리가 없어
+                1px 작다)이라, 펼쳐도 카드 높이가 접힘 상태와 같아진다.
+                overscroll-behavior는 건드리지 않는다 — 기본값이 목록 끝에서 페이지
+                스크롤로 자연스럽게 넘어가는, 바로 우리가 원하는 동작이다. */}
+            <ul
+              ref={listRef}
+              className={`divide-y divide-[var(--color-line)] ${
+                expanded ? 'max-h-[285px] overflow-y-auto pr-1' : ''
+              }`}
+            >
               {(expanded ? items : items.slice(0, VISIBLE_COUNT)).map((t) => (
                 <li key={t.id} className="flex items-start justify-between gap-3 py-3">
                   <div className="min-w-0">
@@ -548,13 +569,14 @@ export function DongTransactionPanel({
               ))}
             </ul>
 
-            {!expanded && items.length > VISIBLE_COUNT && (
+            {items.length > VISIBLE_COUNT && (
               <button
                 type="button"
-                onClick={() => setExpanded(true)}
+                onClick={() => setExpanded((v) => !v)}
+                aria-expanded={expanded}
                 className="mt-3 w-full rounded-lg border border-[var(--color-line)] bg-white py-2 text-xs font-bold text-[var(--color-blue-dark)] hover:bg-[var(--color-soft)]"
               >
-                거래 내역 더보기
+                {expanded ? '거래 내역 접기' : '거래 내역 더보기'}
               </button>
             )}
           </>
