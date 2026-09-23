@@ -64,3 +64,14 @@ a {
 .board-prose th { background: var(--color-soft); font-weight: 700; }
 .board-prose a { color: var(--color-blue); text-decoration: underline; }
 .board-prose strong { font-weight: 700; }
+
+/* 동네 거래 목록 — 펼쳤을 때 "스크롤된다"가 즉시 보여야 한다.
+   네이티브 스크롤바는 플랫폼마다 다르다: 윈도우·리눅스는 자리를 차지해 늘 보이고,
+   macOS·iOS·안드로이드는 오버레이라 스크롤하는 동안에만 나타난다(실측: 폭 0px).
+   그래서 네이티브를 숨기고 컴포넌트가 직접 인디케이터를 그린다 — 어느 기기에서나
+   같은 모습이 된다. */
+.dong-scroll {
+  scrollbar-width: none;              /* Firefox, Chrome 121+ */
+  -ms-overflow-style: none;           /* 구형 Edge */
+}
+.dong-scroll::-webkit-scrollbar { display: none; }

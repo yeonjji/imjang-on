@@ -208,6 +208,10 @@ export function DongTransactionPanel({
   const [expanded, setExpanded] = useState(false);
   // 펼침 상태에서만 스크롤되는 목록 요소. 접힐 때 스크롤 위치를 되돌리는 데 쓴다.
   const listRef = useRef<HTMLUListElement>(null);
+  // 직접 그리는 스크롤 인디케이터(트랙+thumb) 계산에 쓰는 실측값. 네이티브
+  // 스크롤바가 플랫폼마다 다르게(혹은 안) 보여 대신 그린다 — dong-scroll
+  // 유틸리티(globals.css)가 네이티브 쪽은 숨긴다.
+  const [scrollMetrics, setScrollMetrics] = useState({ scrollTop: 0, scrollHeight: 0, clientHeight: 0 });
 
   // 시도가 바뀌면 시군구 목록을 다시 가져온다. 마운트 시에도 한 번 실행되어 초기
   // 시도의 전체 목록을 채우지만, 그때는 서버가 이미 정해 준 시군구·동 선택을
@@ -335,13 +339,23 @@ export function DongTransactionPanel({
     setExpanded(false);
   }, [sigunguCode, umd, propertyType, deal]);
 
-  // 접힐 때(더보기 토글이든 위 필터 변경으로 인한 자동 접힘이든) 목록 스크롤
-  // 위치를 되돌린다. 안 그러면 다음에 펼쳤을 때 이전 스크롤 위치부터 보여
-  // 앞쪽 항목이 안 보일 수 있다.
+  // expanded가 바뀔 때마다(접히든 펼쳐지든) 목록 스크롤 위치를 되돌린다.
+  // 접히는 순간에는 <ul>이 이미 max-h·overflow-y-auto를 잃어 스크롤 컨테이너가
+  // 아니므로 scrollTop=0이 no-op이다 — 브라우저는 이 요소가 언마운트된 적이
+  // 없으니 다시 펼칠 때 이전 스크롤 오프셋을 그대로 복원한다. 그래서
+  // !expanded로만 가드하면 실제로는 한 번도 되돌려지지 않는다. 펼쳐지는
+  // 순간(요소가 다시 스크롤 컨테이너가 된 뒤)에도 같은 effect로 되돌려야
+  // 실제로 맨 위부터 보인다.
+  //
+  // scrollMetrics도 이 자리에서 같이 갱신한다 — onScroll만 의존하면 펼친
+  // 직후(사용자가 아직 스크롤하기 전)에는 인디케이터가 그릴 값이 없어 스크롤을
+  // 시작해야만 나타난다. 그게 바로 이번 수정 전 모바일 문제(전환이 안 보임)와
+  // 같은 종류의 결함이라, 펼쳐지는 즉시 실측해 초기값을 채운다.
   useEffect(() => {
-    if (!expanded && listRef.current) {
-      listRef.current.scrollTop = 0;
-    }
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollTop = 0;
+    setScrollMetrics({ scrollTop: el.scrollTop, scrollHeight: el.scrollHeight, clientHeight: el.clientHeight });
   }, [expanded]);
 
   useEffect(() => {
@@ -398,6 +412,23 @@ export function DongTransactionPanel({
     txStatus: status,
     itemsCount: items.length,
   });
+
+  // 스크롤 인디케이터(트랙 안의 thumb) 크기·위치를 실측값에서 계산한다. thumb
+  // 높이는 보이는 비율(clientHeight/scrollHeight)만큼이되 항목이 많아져도
+  // 점처럼 작아지지 않도록 20px 아래로는 안 줄인다. thumb 위치는 스크롤
+  // 가능한 나머지 거리(scrollHeight-clientHeight) 대비 현재 scrollTop
+  // 비율을, 트랙에서 thumb이 움직일 수 있는 거리(trackHeight-thumbHeight)에
+  // 곱해 구한다 — 이래야 바닥에서 thumb이 트랙 끝에 정확히 닿는다.
+  const trackHeight = scrollMetrics.clientHeight;
+  const thumbHeight = scrollMetrics.scrollHeight > 0
+    ? Math.max(20, (scrollMetrics.clientHeight / scrollMetrics.scrollHeight) * trackHeight)
+    : trackHeight;
+  const maxScrollTop = scrollMetrics.scrollHeight - scrollMetrics.clientHeight;
+  const thumbTop = maxScrollTop > 0
+    ? (scrollMetrics.scrollTop / maxScrollTop) * (trackHeight - thumbHeight)
+    : 0;
+  // 내용이 트랙보다 짧으면(스크롤할 게 없으면) 인디케이터 자체를 그리지 않는다.
+  const showScrollIndicator = expanded && scrollMetrics.scrollHeight > scrollMetrics.clientHeight;
 
   return (
     <section
@@ -539,35 +570,60 @@ export function DongTransactionPanel({
                 렌더 높이 합(72+72+72+71, divide-y라 마지막 행만 아래 테두리가 없어
                 1px 작다)이라, 펼쳐도 카드 높이가 접힘 상태와 같아진다.
                 overscroll-behavior는 건드리지 않는다 — 기본값이 목록 끝에서 페이지
-                스크롤로 자연스럽게 넘어가는, 바로 우리가 원하는 동작이다. */}
-            <ul
-              ref={listRef}
-              className={`divide-y divide-[var(--color-line)] ${
-                expanded ? 'max-h-[285px] overflow-y-auto pr-1' : ''
-              }`}
-            >
-              {(expanded ? items : items.slice(0, VISIBLE_COUNT)).map((t) => (
-                <li key={t.id} className="flex items-start justify-between gap-3 py-3">
-                  <div className="min-w-0">
-                    <Link
-                      href={`/${SLUG[t.propertyType] ?? 'apt'}/${t.propertyId}`}
-                      className="block truncate text-sm font-bold text-[var(--color-blue-dark)] hover:underline"
-                    >
-                      {t.propertyName}
-                    </Link>
-                    <p className="mt-0.5 text-xs text-[var(--color-muted)]">{formatDongMeta(t)}</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-bold ${DEAL_BADGE[t.dealType]}`}>
-                      {DEAL_LABEL[t.dealType]}
-                    </span>
-                    <p className="mt-0.5 whitespace-nowrap text-sm font-bold text-[var(--color-blue-dark)]">
-                      {formatDongPrice(t)}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                스크롤로 자연스럽게 넘어가는, 바로 우리가 원하는 동작이다.
+
+                네이티브 스크롤바로는 "더보기"를 눌렀을 때의 전환이 플랫폼마다
+                다르게(혹은 전혀 안) 보인다 — macOS·iOS·안드로이드는 오버레이라
+                실측 폭이 0px, 스크롤하는 동안에만 나타난다. dong-scroll이
+                네이티브를 숨기고, 대신 오른쪽에 우리가 그리는 트랙+thumb으로
+                항상 같은 모습을 보장한다. pr-3은 그 인디케이터(4px)가 금액
+                텍스트 위에 얹히지 않을 여백이다. */}
+            <div className="relative">
+              <ul
+                ref={listRef}
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  setScrollMetrics({ scrollTop: el.scrollTop, scrollHeight: el.scrollHeight, clientHeight: el.clientHeight });
+                }}
+                className={`divide-y divide-[var(--color-line)] ${
+                  expanded ? 'dong-scroll max-h-[285px] overflow-y-auto pr-3' : ''
+                }`}
+              >
+                {(expanded ? items : items.slice(0, VISIBLE_COUNT)).map((t) => (
+                  <li key={t.id} className="flex items-start justify-between gap-3 py-3">
+                    <div className="min-w-0">
+                      <Link
+                        href={`/${SLUG[t.propertyType] ?? 'apt'}/${t.propertyId}`}
+                        className="block truncate text-sm font-bold text-[var(--color-blue-dark)] hover:underline"
+                      >
+                        {t.propertyName}
+                      </Link>
+                      <p className="mt-0.5 text-xs text-[var(--color-muted)]">{formatDongMeta(t)}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-bold ${DEAL_BADGE[t.dealType]}`}>
+                        {DEAL_LABEL[t.dealType]}
+                      </span>
+                      <p className="mt-0.5 whitespace-nowrap text-sm font-bold text-[var(--color-blue-dark)]">
+                        {formatDongPrice(t)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              {showScrollIndicator && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-y-0 right-0 w-1 rounded-full bg-[var(--color-soft)]"
+                >
+                  <div
+                    className="absolute right-0 w-1 rounded-full bg-[var(--color-sky)]"
+                    style={{ height: `${thumbHeight}px`, top: `${thumbTop}px` }}
+                  />
+                </div>
+              )}
+            </div>
 
             {items.length > VISIBLE_COUNT && (
               <button
