@@ -33,8 +33,9 @@ describe('sitemap SOURCE_ORDER', () => {
 });
 
 describe('sitemap STATIC_ENTRIES 게시판', () => {
-  it('게시판은 상시 공개이므로 /board 를 사이트맵에 포함한다', () => {
-    expect(STATIC_ENTRIES.some((e) => e.url.endsWith('/board'))).toBe(true);
+  it('게시판 비공개 동안 /board 와 post 소스를 사이트맵에서 뺀다', () => {
+    expect(STATIC_ENTRIES.some((e) => e.url.endsWith('/board'))).toBe(false);
+    expect(SOURCE_ORDER.some((s) => s.key === 'post')).toBe(false);
   });
 });
 

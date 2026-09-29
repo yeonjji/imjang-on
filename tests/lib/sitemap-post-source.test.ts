@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-// 게시판은 상시 공개이므로 post 소스는 항상 SOURCE_MAP에 포함된다(PUBLISHED 글만).
+// 게시판 공개 중일 때만 post 소스가 SOURCE_MAP에 들어간다(PUBLISHED 글만). 비공개면 스킵.
 import { prisma } from '@/lib/db';
 import { assertLocalDatabase } from '../_helpers/assert-local-db';
 import { SOURCE_MAP } from '@/lib/sitemap/sources';
+import { isBoardPublic } from '@/lib/board/visibility';
 
 assertLocalDatabase();
 const MARK = 'test-sitemap-';
@@ -10,7 +11,7 @@ const MARK = 'test-sitemap-';
 afterEach(async () => { await prisma.post.deleteMany({ where: { slug: { startsWith: MARK } } }); });
 beforeEach(async () => { await prisma.post.deleteMany({ where: { slug: { startsWith: MARK } } }); });
 
-describe('sitemap post 소스', () => {
+describe.skipIf(!isBoardPublic())('sitemap post 소스', () => {
   it('SOURCE_MAP에 post 소스가 있다', () => {
     expect(SOURCE_MAP.post).toBeDefined();
   });

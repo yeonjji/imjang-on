@@ -2,6 +2,7 @@ import { ImageResponse } from 'next/og';
 import { OG_SIZE, loadOgFonts, OgFrame } from '@/lib/seo/og';
 import { getPublishedPostById } from '@/lib/board/post';
 import { categoryLabel } from '@/lib/board/labels';
+import { isBoardPublic } from '@/lib/board/visibility';
 
 export const runtime = 'nodejs';
 // Route Handler는 기본 동적이라 revalidate만으론 캐시가 안 된다.
@@ -13,6 +14,8 @@ export function generateStaticParams() {
 }
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  // 비공개 동안엔 제목이 박힌 썸네일도 내보내지 않는다.
+  if (!isBoardPublic()) return new Response('Not Found', { status: 404 });
   const { id } = await params;
   const post = /^\d+$/.test(id) ? await getPublishedPostById(BigInt(id)).catch(() => null) : null;
   const title = post?.title ?? '임장ON 소식';
