@@ -72,12 +72,19 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const p = await cachedPropertyById(BigInt(id)).catch(() => null);
   // ID 공간 공유 → 유형 필터 필수. 없으면 /officetel/{id}가 타 유형 메타를 방출한다.
   if (!p || p.propertyType !== PropertyType.OFFICETEL) return {};
-  const { narrative } = await loadAptInsight(BigInt(id));
+  const { narrative } = await safe(
+    loadAptInsight(BigInt(id)),
+    { narrative: null, complexFacts: null },
+    'metadata:loadAptInsight',
+  );
   // 사이트맵 등재 조건과 **같은 판정**을 쓴다(lib/property.ts). 종전에는 서사 발화 수로
   // 판정해 Property 컬럼만으로 재현할 수 없었고, 그래서 사이트맵이 매물을 통째로 뺐다.
   const indexable = isPropertyIndexable(p);
   const addr = propertyAddress(p, p.region);
-  const jibunConfirmed = addr.street !== null ? await cachedHasSingleJibun(BigInt(id)) : false;
+  const jibunConfirmed =
+    addr.street !== null
+      ? await safe(cachedHasSingleJibun(BigInt(id)), false, 'metadata:cachedHasSingleJibun')
+      : false;
   return {
     title: `${p.name} 실거래가 · ${detailTitleLocality(p.region, p.address)}`,
     description: narrative?.text.slice(0, 150) ?? propertyMetaDescription({
