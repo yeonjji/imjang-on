@@ -45,6 +45,7 @@ import {
   loadAptInsight,
 } from '@/lib/insights/apt-loader';
 import { buildUnitMix, resolveBuiltYear, shouldRenderComplexInfo } from '@/lib/insights/apt-complex';
+import { safe } from '@/lib/safe';
 import { mapImageUrl } from '@/lib/seo/static-map';
 import { robotsFor } from '@/lib/seo/indexable';
 import { detailTitleLocality } from '@/lib/region';
@@ -113,40 +114,60 @@ export default async function VillaDetailPage({ params }: Params) {
   // 삭제 전 구 매물(redirectToId) → 신 매물 301. 삭제 후엔 위 getRedirectPath가 커버.
   if (property.redirectToId) permanentRedirect(`/villa/${property.redirectToId}`);
 
-  const coord = await cachedPropertyLatLng(propId);
+  const coord = await safe(cachedPropertyLatLng(propId), null, 'cachedPropertyLatLng');
   // property는 이미 위에서 await됐으니 dongUmd는 순수 계산이고, getDongTransactions는
   // 아래 Promise.all의 다른 결과에 기대지 않는다 — 같이 병렬로 보낸다. 직렬로 남겨두면
   // 콜드 ISR 렌더마다 DB 왕복 1회가 그대로 TTFB에 더해진다.
   const dongUmd = umdOfProperty(property.address);
 
   const [unified, counts, chart, areaSummary, latestTx, nearby, sameFloor, floorPremium, flags, infra, subway, dongTx] = await Promise.all([
-    getUnifiedTransactions(propId, { page: 1, perPage: 15 }),
-    getTransactionCounts(propId),
-    getMonthlyChartData(propId),
-    getAreaSummary(propId),
-    getLatestTransactionsByType(propId),
-    getNearbyProperties({ propertyId: propId, propertyType: property.propertyType }),
-    getSameFloorComparison(propId),
-    cachedFloorPremium(propId),
-    cachedTransactionFlags(propId),
-    coord
-      ? cachedNearbyInfra(coord.lat, coord.lng)
-      : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
-    coord
-      ? cachedNearbySubway(coord.lat, coord.lng)
-      : Promise.resolve({ stations: [], fallback: false }),
-    property.sigunguCode
-      ? getDongTransactions({
-          sigunguCode: property.sigunguCode,
-          umd: dongUmd,
-          propertyType: property.propertyType,
-          excludePropertyId: property.id,
-          limit: 5,
-        })
-      : Promise.resolve([] as Awaited<ReturnType<typeof getDongTransactions>>),
+    safe(getUnifiedTransactions(propId, { page: 1, perPage: 15 }), { rows: [], totalCount: 0 }, 'getUnifiedTransactions'),
+    safe(getTransactionCounts(propId), { SALE: 0, JEONSE: 0, WOLSE: 0 }, 'getTransactionCounts'),
+    safe(getMonthlyChartData(propId), { SALE: [], JEONSE: [], WOLSE: [] }, 'getMonthlyChartData'),
+    safe(getAreaSummary(propId), [], 'getAreaSummary'),
+    safe(getLatestTransactionsByType(propId), {}, 'getLatestTransactionsByType'),
+    safe(
+      getNearbyProperties({ propertyId: propId, propertyType: property.propertyType }),
+      [],
+      'getNearbyProperties',
+    ),
+    safe(getSameFloorComparison(propId), null, 'getSameFloorComparison'),
+    safe(cachedFloorPremium(propId), null, 'cachedFloorPremium'),
+    safe(cachedTransactionFlags(propId), null, 'cachedTransactionFlags'),
+    safe(
+      coord
+        ? cachedNearbyInfra(coord.lat, coord.lng)
+        : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),
+      [] as Awaited<ReturnType<typeof getNearbyInfra>>,
+      'cachedNearbyInfra',
+    ),
+    safe(
+      coord
+        ? cachedNearbySubway(coord.lat, coord.lng)
+        : Promise.resolve({ stations: [], fallback: false }),
+      { stations: [], fallback: false },
+      'cachedNearbySubway',
+    ),
+    safe(
+      property.sigunguCode
+        ? getDongTransactions({
+            sigunguCode: property.sigunguCode,
+            umd: dongUmd,
+            propertyType: property.propertyType,
+            excludePropertyId: property.id,
+            limit: 5,
+          })
+        : Promise.resolve([] as Awaited<ReturnType<typeof getDongTransactions>>),
+      [] as Awaited<ReturnType<typeof getDongTransactions>>,
+      'getDongTransactions',
+    ),
   ]);
 
-  const { narrative, dateModified, complexFacts } = await loadAptInsight(propId);
+  const { narrative, dateModified, complexFacts } = await safe(
+    loadAptInsight(propId),
+    { narrative: null, complexFacts: null },
+    'loadAptInsight',
+  );
   // 렌더 시점 기준. ISR 캐시에 박제되므로 연 단위만 쓴다(apt-complex.ts 참조).
   const now = new Date();
   const unitMix = complexFacts ? buildUnitMix(complexFacts) : null;
