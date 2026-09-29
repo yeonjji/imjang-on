@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { getPublishedPostById, getPublishedPostBySlug } from '@/lib/board/post';
 import { boardPath } from '@/lib/board/slug';
-import { canViewBoard, isBoardPublic } from '@/lib/board/visibility';
+import { isBoardPublic } from '@/lib/board/visibility';
 import { categoryLabel } from '@/lib/board/labels';
 import { canonicalizeSourceName } from '@/lib/board/source-name';
 import { PostSource } from '@/components/ui/post-source';
@@ -25,7 +25,6 @@ export function generateStaticParams() { return []; }
 
 interface Params {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ preview?: string }>;
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
@@ -40,13 +39,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function BoardDetailPage({ params, searchParams }: Params) {
-  // 공개 상태(상시)에선 preview가 불필요 → searchParams를 읽지 않아 ISR 정적 렌더를 유지한다.
-  // 비공개(런칭 전 토글)일 때만 preview 토큰을 검사한다(이 경우에만 동적 렌더).
-  if (!isBoardPublic()) {
-    const { preview } = await searchParams;
-    if (!canViewBoard(preview)) notFound();
-  }
+export default async function BoardDetailPage({ params }: Params) {
+  // 비공개면 바로 404. searchParams(preview 토큰)는 읽지 않는다 — 이 페이지는 ISR 정적 렌더라
+  // 런타임에 searchParams를 읽으면 운영 빌드에서 DYNAMIC_SERVER_USAGE 500이 난다(dev에선 안 드러남).
+  // 비공개 동안 상세 미리보기는 불가, 목록(/board?preview=)은 동적 페이지라 그대로 된다.
+  if (!isBoardPublic()) notFound();
   const { id } = await params;
 
   // 레거시: 옛 한글 slug URL(`/board/<slug>`) → id 경로로 영구 리다이렉트
