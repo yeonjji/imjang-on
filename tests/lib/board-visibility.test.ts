@@ -11,11 +11,11 @@ afterEach(() => {
 });
 
 describe('isBoardPublic', () => {
-  it('상시 공개 — env와 무관하게 항상 true', () => {
+  it('AdSense 검증 기간 비공개 — env와 무관하게 항상 false', () => {
     delete process.env.NEXT_PUBLIC_BOARD_ENABLED;
-    expect(isBoardPublic()).toBe(true);
-    process.env.NEXT_PUBLIC_BOARD_ENABLED = 'false';
-    expect(isBoardPublic()).toBe(true);
+    expect(isBoardPublic()).toBe(false);
+    process.env.NEXT_PUBLIC_BOARD_ENABLED = 'true';
+    expect(isBoardPublic()).toBe(false);
   });
 });
 
@@ -33,10 +33,12 @@ describe('isBoardPreview', () => {
 });
 
 describe('canViewBoard', () => {
-  it('상시 공개라 토큰 없이도 항상 허용', () => {
+  it('비공개 동안 토큰 없으면 거부, 관리자 토큰이면 허용', () => {
     delete process.env.NEXT_PUBLIC_BOARD_ENABLED;
     delete process.env.BOARD_PREVIEW_TOKEN;
-    expect(canViewBoard(undefined)).toBe(true);
-    expect(canViewBoard('anything')).toBe(true);
+    expect(canViewBoard(undefined)).toBe(false);
+    expect(canViewBoard('anything')).toBe(false);
+    process.env.BOARD_PREVIEW_TOKEN = 'secret123';
+    expect(canViewBoard('secret123')).toBe(true);
   });
 });

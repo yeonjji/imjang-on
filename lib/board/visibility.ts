@@ -1,11 +1,14 @@
 /**
- * 공개 게시판(/board) 노출 여부. 게시판은 상시 공개한다.
+ * 공개 게시판(/board) 노출 여부.
  *
  * (2026-06-18: `NEXT_PUBLIC_BOARD_ENABLED` 토글 제거 — env 스위치 없이 전체 공개.)
- * 내비 메뉴·`/board`·`/board/[id]`·사이트맵·robots 모두 이 함수로 공개 여부를 본다.
+ * (2026-09-29: AdSense 6차 신청 동안 비공개 — AI 생성 글이 '질' 거절 요인인지 분리 검증.
+ *  글·DB는 그대로 두고 노출만 끈다. 다시 열려면 true로 되돌리면 된다.)
+ * 내비 메뉴·홈/상세 브리핑 섹션·`/board`·`/board/[id]`(+thumbnail)·사이트맵·robots 모두
+ * 이 함수로 공개 여부를 본다. false면 페이지는 404, 링크·사이트맵에서 전부 빠진다.
  */
 export function isBoardPublic(): boolean {
-  return true;
+  return false;
 }
 
 /**
