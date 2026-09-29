@@ -102,7 +102,7 @@ export default async function AptDetailPage({ params }: Params) {
   const property = await cachedPropertyById(propId);
   if (!property) {
     // 폐지지역 삭제된 구 매물(B1) → 신 매물 301
-    const to = await getRedirectPath('property', propId);
+    const to = await safe(getRedirectPath('property', propId), null, 'redirect:getRedirectPath');
     if (to) permanentRedirect(to);
     notFound();
   }
