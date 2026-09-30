@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createOgMapRoute, type OgMapData } from '@/lib/seo/og-map-route';
+import { createOgMapRoute, OG_MAP_MAX_INFLIGHT, type OgMapData } from '@/lib/seo/og-map-route';
 
 describe('createOgMapRoute', () => {
   it('load가 null이면 generateImageMetadata는 빈 배열을 반환한다', async () => {
@@ -33,5 +33,43 @@ describe('createOgMapRoute', () => {
     expect(item.size).toEqual({ width: 1200, height: 630 });
     expect(item.contentType).toBe('image/png');
     expect(item.alt).toBe(data.alt);
+  });
+
+  it('동시 렌더가 한도에 차면 load도 하지 않고 즉시 503 + no-store로 돌려보낸다', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    let loads = 0;
+    const route = createOgMapRoute(async () => {
+      loads++;
+      await gate;
+      return null;
+    });
+
+    const inflight = Array.from({ length: OG_MAP_MAX_INFLIGHT }, () =>
+      route.Image({ params: Promise.resolve({}) }),
+    );
+    const shed = await route.Image({ params: Promise.resolve({}) });
+    expect(shed.status).toBe(503);
+    expect(shed.headers.get('Cache-Control')).toBe('no-store');
+    expect(shed.headers.get('Retry-After')).not.toBeNull();
+    expect(loads).toBe(OG_MAP_MAX_INFLIGHT);
+
+    release();
+    await Promise.all(inflight);
+    // 슬롯이 반납되어야 다음 요청이 다시 렌더된다.
+    const next = await route.Image({ params: Promise.resolve({}) });
+    expect(next.status).toBe(404);
+  });
+
+  it('load가 throw해도 슬롯을 반납한다', async () => {
+    const failing = createOgMapRoute(async () => {
+      throw new Error('db down');
+    });
+    for (let i = 0; i < OG_MAP_MAX_INFLIGHT; i++) {
+      await expect(failing.Image({ params: Promise.resolve({}) })).rejects.toThrow('db down');
+    }
+    const ok = createOgMapRoute(async () => null);
+    const res = await ok.Image({ params: Promise.resolve({}) });
+    expect(res.status).toBe(404);
   });
 });
