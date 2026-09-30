@@ -19,6 +19,13 @@ export interface OgMapData {
 // 같은 1.905 비율인 1024x538을 받아 satori에서 캔버스 크기로 늘린다.
 const OG_MAP_SIZE = { w: 1024, h: 538 } as const;
 
+// 지도 OG 한 장은 DB 조회 + NCP 호출 + satori 렌더라 비싸다. 크롤러가 몰리면 CPU가 포화되고,
+// 그러면 NCP 호출이 타임아웃 → 502(no-store)라 캐시되지 않고 → 다음 크롤에 다시 렌더되는
+// 순환이 생긴다(2026-09-30 운영 실측). 동시 렌더를 제한하고 넘치는 요청은 일을 하기 전에
+// 503으로 돌려보내, 페이지 렌더에 CPU를 남긴다. 단일 박스·단일 프로세스라 모듈 카운터로 충분하다.
+export const OG_MAP_MAX_INFLIGHT = 2;
+let inflight = 0;
+
 export function createOgMapRoute<P>(load: (params: P) => Promise<OgMapData | null>) {
   async function generateImageMetadata({ params }: { params: Promise<P> }) {
     const data = await load(await params);
@@ -28,6 +35,21 @@ export function createOgMapRoute<P>(load: (params: P) => Promise<OgMapData | nul
   }
 
   async function Image({ params }: { params: Promise<P> }) {
+    if (inflight >= OG_MAP_MAX_INFLIGHT) {
+      return new Response(null, {
+        status: 503,
+        headers: { 'Cache-Control': 'no-store', 'Retry-After': '120' },
+      });
+    }
+    inflight++;
+    try {
+      return await render(params);
+    } finally {
+      inflight--;
+    }
+  }
+
+  async function render(params: Promise<P>) {
     const data = await load(await params);
     if (!data) {
       return new Response(null, { status: 404, headers: { 'Cache-Control': 'no-store' } });
