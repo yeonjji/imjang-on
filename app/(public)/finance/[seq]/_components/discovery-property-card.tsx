@@ -19,7 +19,7 @@ const TYPE_LABEL: Record<string, string> = {
 export function DiscoveryPropertyCard({ property: p }: { property: DiscoveryProperty }) {
   const href = `/${typeToSlug(p.propertyType)}/${p.id}`;
   return (
-    <Link
+    <Link prefetch={false}
       href={href}
       className="flex h-full flex-col rounded-xl border border-[var(--color-line)] bg-white px-3.5 py-3 transition hover:border-[var(--color-blue)]"
     >

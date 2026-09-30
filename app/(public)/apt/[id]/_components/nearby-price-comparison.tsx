@@ -49,7 +49,7 @@ export function NearbyPriceComparison({
       <ul className="divide-y divide-[var(--color-line)]">
         {items.map((it) => (
           <li key={it.id}>
-            <Link href={`/${slug}/${it.id}`} className="flex items-center justify-between gap-3 py-3">
+            <Link prefetch={false} href={`/${slug}/${it.id}`} className="flex items-center justify-between gap-3 py-3">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{it.name}</p>
                 <p className="text-xs text-[var(--color-muted)]">

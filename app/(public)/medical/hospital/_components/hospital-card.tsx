@@ -11,7 +11,7 @@ export function HospitalCard({ hospital }: Props) {
   const beds =
     (hospital.facility?.generalBedPremium ?? 0) + (hospital.facility?.generalBedNormal ?? 0);
   return (
-    <Link
+    <Link prefetch={false}
       href={href}
       className="block rounded-xl border border-[var(--color-line)] bg-white p-4 transition hover:border-[var(--color-blue)] hover:shadow-sm"
     >

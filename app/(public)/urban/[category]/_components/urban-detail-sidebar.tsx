@@ -41,7 +41,7 @@ export function UrbanDetailSidebar({
           <ul className="flex flex-col gap-2">
             {others.map((it) => (
               <li key={String(it.id)}>
-                <Link href={`/urban/${def.slug}/${it.id}`} className="text-sm hover:text-[var(--color-blue)]">· {it.name}</Link>
+                <Link prefetch={false} href={`/urban/${def.slug}/${it.id}`} className="text-sm hover:text-[var(--color-blue)]">· {it.name}</Link>
               </li>
             ))}
             <li>

@@ -28,7 +28,7 @@ export function ChildcareCard({ item }: { item: ChildcareCardItem }) {
       ? Math.round((item.currentCount / item.capacity) * 100)
       : null;
   return (
-    <Link href={`/childcare/${item.sigunguCode}/${item.id}`}>
+    <Link prefetch={false} href={`/childcare/${item.sigunguCode}/${item.id}`}>
       <article className="flex items-center gap-4 rounded-[18px] border border-[var(--color-line)] bg-white px-5 py-4 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-sky)]">
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[var(--color-sky-soft)] text-2xl">👶</div>
         <div className="min-w-0 flex-1">

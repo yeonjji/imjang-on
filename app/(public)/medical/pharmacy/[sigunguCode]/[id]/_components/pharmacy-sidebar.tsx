@@ -11,7 +11,7 @@ export function PharmacySidebar({ pharmacies, sigunguCode }: Props) {
       <ul className="divide-y divide-[var(--color-line)]">
         {pharmacies.map(p => (
           <li key={String(p.id)}>
-            <Link
+            <Link prefetch={false}
               href={`/medical/pharmacy/${sigunguCode}/${p.id}`}
               className="block py-2.5 text-sm transition hover:text-[var(--color-blue)]"
             >

@@ -4,7 +4,7 @@ import type { School } from '@prisma/client';
 
 export function SchoolCard({ school }: { school: School }) {
   return (
-    <Link href={`/school/${school.sigunguCode}/${school.id}`}>
+    <Link prefetch={false} href={`/school/${school.sigunguCode}/${school.id}`}>
       <article className="flex items-center gap-4 rounded-[18px] border border-[var(--color-line)] bg-white px-5 py-4 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-sky)]">
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[var(--color-sky-soft)] text-2xl">🏫</div>
         <div className="min-w-0 flex-1">
