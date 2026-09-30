@@ -1,9 +1,10 @@
 'use client';
 
 import './globals.css';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ErrorState } from '@/components/error-state';
 import { Button } from '@/components/ui/button';
+import { isStaleChunkError, reloadIfStaleChunk } from '@/lib/stale-chunk';
 
 export default function GlobalError({
   error,
@@ -12,9 +13,20 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  // 배포 직후 옛 청크 에러는 새로고침 한 번이면 풀린다 — 그동안 500 화면을 보이지 않는다.
+  const [reloading, setReloading] = useState(() => isStaleChunkError(error));
   useEffect(() => {
     console.error(error);
+    if (!reloadIfStaleChunk(error)) setReloading(false);
   }, [error]);
+
+  if (reloading) {
+    return (
+      <html lang="ko">
+        <body />
+      </html>
+    );
+  }
 
   return (
     <html lang="ko">
