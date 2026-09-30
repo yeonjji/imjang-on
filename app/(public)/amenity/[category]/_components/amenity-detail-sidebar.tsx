@@ -37,7 +37,7 @@ export function AmenityDetailSidebar({
           <ul className="flex flex-col gap-2">
             {others.map((it) => (
               <li key={String(it.id)}>
-                <Link href={`/amenity/${def.slug}/${it.id}`} className="text-sm hover:text-[var(--color-blue)]">· {displayAmenityName(it, def)}</Link>
+                <Link prefetch={false} href={`/amenity/${def.slug}/${it.id}`} className="text-sm hover:text-[var(--color-blue)]">· {displayAmenityName(it, def)}</Link>
               </li>
             ))}
             <li>

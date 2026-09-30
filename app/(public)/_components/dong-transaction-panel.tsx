@@ -592,7 +592,7 @@ export function DongTransactionPanel({
                 {(expanded ? items : items.slice(0, VISIBLE_COUNT)).map((t) => (
                   <li key={t.id} className="flex items-start justify-between gap-3 py-3">
                     <div className="min-w-0">
-                      <Link
+                      <Link prefetch={false}
                         href={`/${SLUG[t.propertyType] ?? 'apt'}/${t.propertyId}`}
                         className="block truncate text-sm font-bold text-[var(--color-blue-dark)] hover:underline"
                       >

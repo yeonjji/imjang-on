@@ -24,7 +24,7 @@ export function PropertyListCard({ property: p, deal }: Props) {
     !deal || deal === 'all' || deal === type;
 
   return (
-    <Link href={href}>
+    <Link prefetch={false} href={href}>
       <article className="grid grid-cols-1 md:grid-cols-[1fr_200px] gap-4 md:gap-6 items-start md:items-center rounded-[22px] border border-[var(--color-line)] bg-white px-6 py-5 shadow-[var(--shadow)] transition hover:shadow-lg">
         {/* 왼쪽 */}
         <div>

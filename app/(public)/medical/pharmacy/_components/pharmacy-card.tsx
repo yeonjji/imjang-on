@@ -6,7 +6,7 @@ interface Props { pharmacy: Pharmacy; }
 export function PharmacyCard({ pharmacy }: Props) {
   const href = `/medical/pharmacy/${pharmacy.sigunguCode}/${pharmacy.id}`;
   return (
-    <Link
+    <Link prefetch={false}
       href={href}
       className="block rounded-xl border border-[var(--color-line)] bg-white p-4 transition hover:border-[var(--color-blue)] hover:shadow-sm"
     >

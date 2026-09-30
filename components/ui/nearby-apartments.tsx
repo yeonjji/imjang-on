@@ -12,7 +12,7 @@ export function NearbyApartments({ items }: { items: NearbyApartment[] }) {
       <ul className="divide-y divide-[var(--color-line)]">
         {items.map((a) => (
           <li key={String(a.id)}>
-            <Link href={`/apt/${a.id}`} className="flex items-center justify-between py-3">
+            <Link prefetch={false} href={`/apt/${a.id}`} className="flex items-center justify-between py-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-[var(--color-blue-dark)]">
                   {a.name}

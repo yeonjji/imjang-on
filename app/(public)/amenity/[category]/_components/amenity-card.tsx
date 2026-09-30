@@ -7,7 +7,7 @@ export function AmenityCard({ item, def }: { item: AmenityItem; def: AmenityCate
   const summary = def.inferRowSummary(item);
   const displayName = displayAmenityName(item, def);
   return (
-    <Link href={`/amenity/${def.slug}/${item.id}`}>
+    <Link prefetch={false} href={`/amenity/${def.slug}/${item.id}`}>
       <article className="flex items-center gap-4 rounded-[18px] border border-[var(--color-line)] bg-white px-5 py-4 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-sky)]">
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[var(--color-sky-soft)] text-2xl">{def.emoji}</div>
         <div className="min-w-0 flex-1">

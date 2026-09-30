@@ -14,7 +14,9 @@ export function middleware(req: NextRequest) {
       JSON.stringify({
         msg: 'ua-probe',
         path: pathname,
-        rsc: req.nextUrl.searchParams.has('_rsc'),
+        // Next가 미들웨어 전에 _rsc 쿼리를 떼므로 헤더로 판정한다.
+        rsc: req.headers.get('rsc') === '1',
+        prefetch: req.headers.get('next-router-prefetch') === '1',
         ua: req.headers.get('user-agent'),
         ip: req.headers.get('cf-connecting-ip'),
         country: req.headers.get('cf-ipcountry'),

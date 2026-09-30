@@ -85,7 +85,7 @@ function InfraRow({ item: it }: { item: InfraItem }) {
   return (
     <li className="border-b border-[var(--color-line)] last:border-0">
       {it.href ? (
-        <Link
+        <Link prefetch={false}
           href={it.href}
           className="-mx-1.5 flex items-center justify-between gap-2.5 rounded-lg px-1.5 py-2 transition-colors hover:bg-[var(--color-sky-soft)]"
         >

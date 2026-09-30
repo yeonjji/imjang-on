@@ -60,7 +60,7 @@ export function DongTransactionSection({
               <tr key={t.id} className="border-b border-[var(--color-line)] last:border-0">
                 <td className="py-3 text-[var(--color-muted)]">{formatDongDate(t.contractDate)}</td>
                 <td className="py-3">
-                  <Link
+                  <Link prefetch={false}
                     href={`/${SLUG[t.propertyType] ?? 'apt'}/${t.propertyId}`}
                     className="font-semibold text-[var(--color-blue-dark)] hover:underline"
                   >

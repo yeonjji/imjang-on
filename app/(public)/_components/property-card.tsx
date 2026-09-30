@@ -19,7 +19,7 @@ export function PropertyCard({ property: p, deal }: Props) {
     !deal || deal === 'all' || deal === type;
 
   return (
-    <Link href={href} className="block h-full">
+    <Link prefetch={false} href={href} className="block h-full">
       {/* h-full: 같은 줄 카드와 높이 일치. min-h-[186px]: 매매·전세·월세 3줄 표준 카드(≈184px) 기준 floor로, 거래유형 적은 카드도 균등 높이(내용은 상단 정렬, 남는 높이는 하단 여백). */}
       <Card className="h-full min-h-[186px] transition hover:shadow-lg">
         <div className="flex items-start justify-between gap-3">
