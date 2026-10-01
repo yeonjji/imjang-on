@@ -25,6 +25,22 @@ export interface AmenityItem {
   industryName?: string | null;
   branchName?: string | null;
   marketType?: string | null;
+  storeCount?: number | null;
+  openCycle?: string | null;
+  establishedYear?: number | null;
+  products?: string | null;
+  hasParking?: boolean | null;
+  hasToilet?: boolean | null;
+  tel?: string | null;
+  homepage?: string | null;
+  referenceDate?: Date | null;
+}
+
+export interface AmenityDetailField {
+  label: string;
+  value: string;
+  /** 있으면 외부 링크로 렌더(externalHref로 정규화된 값). */
+  href?: string;
 }
 
 export interface AmenityListFilter {
@@ -73,7 +89,7 @@ export interface AmenityCategoryDef {
   /** 카드 보조 라벨 (예: '대형마트', '상설시장') */
   inferRowSummary(row: AmenityItem): string | null;
   /** DETAIL 기본정보 그리드 행 */
-  detailFields(item: AmenityItem): Array<{ label: string; value: string }>;
+  detailFields(item: AmenityItem): AmenityDetailField[];
   /**
    * 시군구 picker / 허브용 카운트 (groupBy 결과).
    * sub-filter는 반영하지 않음 — 허브는 카테고리 전체 분포를 보여주는 게 목적.
