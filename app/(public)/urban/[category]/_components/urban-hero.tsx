@@ -3,7 +3,15 @@ import type { UrbanCategoryDef, UrbanItem } from '@/lib/urban/category';
 import type { ParkingRaw } from '@/lib/urban/adapters/parking';
 import { isAllDayOpen24, hasAnyHours } from '@/lib/urban/parking-hours';
 
-export function UrbanHero({ item, def }: { item: UrbanItem; def: UrbanCategoryDef }) {
+export function UrbanHero({
+  item,
+  def,
+  summaryLine,
+}: {
+  item: UrbanItem;
+  def: UrbanCategoryDef;
+  summaryLine?: string | null;
+}) {
   const r = item.raw as ParkingRaw;
   const hours = {
     weekdayOpen: r.weekdayOpenHhmm, weekdayClose: r.weekdayCloseHhmm,
@@ -31,6 +39,11 @@ export function UrbanHero({ item, def }: { item: UrbanItem; def: UrbanCategoryDe
           {r.prkcmprt != null && <span>구획 {r.prkcmprt}면</span>}
           {r.enforceSe && <span>단속 {r.enforceSe}</span>}
         </div>
+        {summaryLine && (
+          <p className="mt-3 border-t border-[var(--color-line)] pt-3 text-sm font-bold text-[var(--color-blue)]">
+            {summaryLine}
+          </p>
+        )}
       </div>
     </div>
   );

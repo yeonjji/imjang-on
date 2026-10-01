@@ -29,6 +29,8 @@ import { RelatedGuides } from '@/app/(public)/_components/related-guides';
 import type { ParkingRaw } from '@/lib/urban/adapters/parking';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { ParkInfo } from '../_components/park-info';
+import { ParkFacilities } from '../_components/park-facilities';
+import { buildParkHeroLine } from '@/lib/urban/park-display';
 import type { ParkRaw } from '@/lib/urban/adapters/park';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
 import { InsightSection } from '@/components/ui/insight-section';
@@ -175,13 +177,20 @@ export default async function UrbanDetailPage({ params }: Params) {
         <span className="truncate font-semibold text-[var(--color-blue-dark)]">{item.name}</span>
       </nav>
 
-      <UrbanHero item={item} def={def} />
+      <UrbanHero
+        item={item}
+        def={def}
+        summaryLine={isPark ? buildParkHeroLine((item as UrbanItem<ParkRaw>).raw) : null}
+      />
       {narrative && <InsightSection sentences={narrative.sentences} />}
 
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-6">
           {def.slug === 'park' ? (
-            <ParkInfo item={item as UrbanItem<ParkRaw>} />
+            <>
+              <ParkInfo item={item as UrbanItem<ParkRaw>} />
+              <ParkFacilities item={item as UrbanItem<ParkRaw>} />
+            </>
           ) : (
             <>
               <UrbanInfo item={item} def={def} regionFullName={region?.fullName ?? ''} />
