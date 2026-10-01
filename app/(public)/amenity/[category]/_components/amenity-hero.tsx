@@ -2,7 +2,15 @@ import { Badge } from '@/components/ui/badge';
 import { displayAmenityName } from '@/lib/amenity/store-name';
 import type { AmenityCategoryDef, AmenityItem } from '@/lib/amenity/category';
 
-export function AmenityHero({ item, def }: { item: AmenityItem; def: AmenityCategoryDef }) {
+export function AmenityHero({
+  item,
+  def,
+  summaryLine,
+}: {
+  item: AmenityItem;
+  def: AmenityCategoryDef;
+  summaryLine?: string | null;
+}) {
   const summary = def.inferRowSummary(item);
   const displayName = displayAmenityName(item, def);
   return (
@@ -17,6 +25,11 @@ export function AmenityHero({ item, def }: { item: AmenityItem; def: AmenityCate
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-muted)]">
           <span>📍 {item.address}</span>
         </div>
+        {summaryLine && (
+          <p className="mt-3 border-t border-[var(--color-line)] pt-3 text-sm font-bold text-[var(--color-blue)]">
+            {summaryLine}
+          </p>
+        )}
       </div>
     </div>
   );
