@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <header><resultCode>00</resultCode><resultMsg>NORMAL SERVICE.</resultMsg></header>
+  <body>
+    <items>
+      <item>
+        <manageNo>41220-00405</manageNo>
+        <parkNm>근린공원 1호(황해자유구역 현덕지구)</parkNm>
+        <parkSe>근린공원</parkSe>
+        <rdnmadr></rdnmadr>
+        <lnmadr>경기도 평택시 현덕면 장수리 264-18</lnmadr>
+        <latitude>36.93667042</latitude>
+        <longitude>126.914174</longitude>
+        <parkAr>58462</parkAr>
+        <mvmFclty>야외헬스기구+체력단련시설</mvmFclty>
+        <amsmtFclty>조합놀이대+그네</amsmtFclty>
+        <cnvnncFclty>정자,의자/음수전</cnvnncFclty>
+        <cltrFclty>화장실+야외무대</cltrFclty>
+        <etcFclty>관리사무소</etcFclty>
+        <appnNtfcDate>2016-06-17</appnNtfcDate>
+        <institutionNm>경기도 평택시청</institutionNm>
+        <phoneNumber>031-8024-4248</phoneNumber>
+        <referenceDate>2026-03-13</referenceDate>
+      </item>
+      <item>
+        <manageNo>41220-00406</manageNo>
+        <parkNm>빈시설공원</parkNm>
+        <parkSe>어린이공원</parkSe>
+        <lnmadr>경기도 평택시 현덕면 권관리 824</lnmadr>
+        <latitude>36.929521</latitude>
+        <longitude>126.907927</longitude>
+        <parkAr>1500</parkAr>
+        <mvmFclty></mvmFclty>
+        <amsmtFclty></amsmtFclty>
+        <cnvnncFclty></cnvnncFclty>
+        <cltrFclty></cltrFclty>
+        <appnNtfcDate></appnNtfcDate>
+        <institutionNm></institutionNm>
+        <phoneNumber>0318024424</phoneNumber>
+        <referenceDate>2026-03-13</referenceDate>
+      </item>
+      <item>
+        <manageNo>41220-00407</manageNo>
+        <parkNm>자리표시날짜공원</parkNm>
+        <parkSe>근린공원</parkSe>
+        <lnmadr>경기도 평택시 현덕면 권관리 705</lnmadr>
+        <parkAr>30498</parkAr>
+        <appnNtfcDate>1900-01-01</appnNtfcDate>
+        <referenceDate>2026-03-13</referenceDate>
+      </item>
+      <item>
+        <manageNo>11110-00001</manageNo>
+        <parkNm>오래된공원</parkNm>
+        <parkSe>근린공원</parkSe>
+        <lnmadr>서울특별시 종로구 사직동 1</lnmadr>
+        <parkAr>30000</parkAr>
+        <appnNtfcDate>1940-03-12</appnNtfcDate>
+        <referenceDate>2026-03-13</referenceDate>
+      </item>
+    </items>
+    <numOfRows>1000</numOfRows>
+    <pageNo>1</pageNo>
+    <totalCount>4</totalCount>
+  </body>
+</response>

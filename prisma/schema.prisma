@@ -400,6 +400,13 @@ model Park {
   parkType  String?                               @db.VarChar(40)
   area      Float?
   referenceDate DateTime?                          @db.Date
+  facilitySport       String?   @db.VarChar(300)
+  facilityPlay        String?   @db.VarChar(300)
+  facilityConvenience String?   @db.VarChar(300)
+  facilityCulture     String?   @db.VarChar(300)
+  designatedAt        DateTime? @db.Date
+  managingOrg         String?   @db.VarChar(100)
+  tel                 String?   @db.VarChar(30)
   updatedAt DateTime                              @updatedAt
 
   @@index([parkType])

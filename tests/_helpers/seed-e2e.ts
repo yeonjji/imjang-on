@@ -287,6 +287,33 @@ async function main() {
     update: {},
   });
 
+  // 공원 상세 e2e용 — 시설이 채워진 공원 1곳, 빈 공원 1곳(카드 숨김 검증)
+  await prisma.park.upsert({
+    where: { sourceId: 'e2e-park-filled' },
+    create: {
+      sourceId: 'e2e-park-filled',
+      name: 'e2e 시설공원',
+      address: '서울특별시 서초구 서초동 1',
+      parkType: '근린공원',
+      area: 58462,
+      facilityPlay: '조합놀이대+그네',
+      facilitySport: '야외헬스기구',
+      designatedAt: new Date('2016-06-17T00:00:00Z'),
+      managingOrg: '서울특별시 서초구청',
+      tel: '02-000-0000',
+    },
+    update: {},
+  });
+  await prisma.park.upsert({
+    where: { sourceId: 'e2e-park-empty' },
+    create: {
+      sourceId: 'e2e-park-empty',
+      name: 'e2e 빈공원',
+      address: '서울특별시 서초구 서초동 2',
+    },
+    update: {},
+  });
+
   // 오피스텔·빌라 상세 주변 생활 인프라 e2e용 (시드 주차장 반경 500m 내)
   const offi = await seedPropertyWithDeals({
     propertyType: PropertyType.OFFICETEL,
