@@ -68,6 +68,22 @@ describe('MarketOverview', () => {
     expect(html).toContain('주차장 없음 · 화장실 없음');
   });
 
+  it('올해 개설한 시장은 "0년" 대신 "올해"', () => {
+    const html = renderToStaticMarkup(
+      createElement(MarketOverview, { item: { ...empty, establishedYear: 2026 }, nowYear: 2026 }),
+    );
+    expect(html).toContain('올해');
+    expect(html).not.toContain('>0년<');
+  });
+
+  it('주차장·화장실 중 하나라도 모르면 "없음"이라고 단정하지 않는다', () => {
+    const html = renderToStaticMarkup(
+      createElement(MarketOverview, { item: { ...empty, hasParking: false, hasToilet: null }, nowYear: 2026 }),
+    );
+    expect(html).not.toContain('>없음<');
+    expect(html).toContain('주차장 없음 · 화장실 정보 없음');
+  });
+
   it('낯선 개설 주기는 원문으로', () => {
     const html = renderToStaticMarkup(
       createElement(MarketOverview, { item: { ...empty, openCycle: '상설' }, nowYear: 2026 }),

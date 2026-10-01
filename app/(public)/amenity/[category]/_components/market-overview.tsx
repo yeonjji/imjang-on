@@ -14,7 +14,9 @@ export function MarketOverview({ item, nowYear }: { item: AmenityItem; nowYear: 
   const tiles: Tile[] = [];
   if (item.storeCount) tiles.push({ label: '점포 수', value: `${item.storeCount.toLocaleString('ko-KR')}곳` });
   const age = marketAgeYears(item.establishedYear, nowYear);
-  if (age !== null) tiles.push({ label: '개설', value: `${age}년`, sub: `${item.establishedYear}년 개설` });
+  if (age !== null) {
+    tiles.push({ label: '개설', value: age === 0 ? '올해' : `${age}년`, sub: `${item.establishedYear}년 개설` });
+  }
   const days = parseMarketDays(item.openCycle);
   if (days) {
     tiles.push({
@@ -27,7 +29,12 @@ export function MarketOverview({ item, nowYear }: { item: AmenityItem; nowYear: 
     const have = [item.hasParking && '주차장', item.hasToilet && '공중화장실'].filter(Boolean);
     tiles.push({
       label: '방문 편의',
-      value: have.length ? have.join('·') : '없음',
+      // 하나라도 모르면 '없음'으로 단정하지 않는다(세부는 sub 줄이 정확히 보여준다).
+      value: have.length
+        ? have.join('·')
+        : item.hasParking === false && item.hasToilet === false
+          ? '없음'
+          : '정보 없음',
       sub: `주차장 ${yn(item.hasParking)} · 화장실 ${yn(item.hasToilet)}`,
     });
   }
