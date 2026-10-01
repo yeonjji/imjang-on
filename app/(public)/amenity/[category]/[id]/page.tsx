@@ -12,6 +12,9 @@ import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { AmenityHero } from '../_components/amenity-hero';
 import { AmenityInfo } from '../_components/amenity-info';
 import { AmenityDetailSidebar } from '../_components/amenity-detail-sidebar';
+import { MarketOverview } from '../_components/market-overview';
+import { MarketProducts } from '../_components/market-products';
+import { buildMarketHeroLine } from '@/lib/amenity/market-display';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
@@ -77,6 +80,7 @@ export default async function AmenityDetailPage({ params }: Params) {
     notFound();
   }
   const displayName = displayAmenityName(item, def);
+  const isMarket = def.slug === 'market';
 
   const region = item.sigunguCode
     ? await getSigunguByCode(item.sigunguCode).catch(() => null)
@@ -136,12 +140,14 @@ export default async function AmenityDetailPage({ params }: Params) {
         <span className="truncate font-semibold text-[var(--color-blue-dark)]">{displayName}</span>
       </nav>
 
-      <AmenityHero item={item} def={def} />
+      <AmenityHero item={item} def={def} summaryLine={isMarket ? buildMarketHeroLine(item) : null} />
 
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-6">
+          {isMarket && <MarketOverview item={item} nowYear={new Date().getFullYear()} />}
           <AmenityInfo item={item} def={def} regionFullName={region?.fullName ?? ''} />
           <SourceCaption ids={[AMENITY_SOURCE[def.slug]]} />
+          {isMarket && <MarketProducts item={item} />}
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>

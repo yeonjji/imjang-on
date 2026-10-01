@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <header><resultCode>00</resultCode><resultMsg>NORMAL SERVICE.</resultMsg></header>
+  <body>
+    <items>
+      <item>
+        <mrktNm>장호원전통시장</mrktNm>
+        <mrktType>상설장+4일장</mrktType>
+        <rdnmadr>경기도 이천시 장호원읍 장감로77번길 14</rdnmadr>
+        <lnmadr>경기도 이천시 장호원읍 장호원리 350</lnmadr>
+        <mrktEstblCycle>4일+9일</mrktEstblCycle>
+        <latitude>37.11809055</latitude>
+        <longitude>127.631251</longitude>
+        <storNumber>64</storNumber>
+        <trtmntPrdlst>농산물+축산물+수산물+가공식품+의류+신발+가정용품+음식점+근린생활서비스</trtmntPrdlst>
+        <useGcct></useGcct>
+        <homepageUrl>http://www.jmarket.org/</homepageUrl>
+        <pblicToiletYn>Y</pblicToiletYn>
+        <prkplceYn>Y</prkplceYn>
+        <estblYear>1955</estblYear>
+        <phoneNumber>031-643-1330</phoneNumber>
+        <referenceDate>2025-11-10</referenceDate>
+      </item>
+      <item>
+        <mrktNm>사기막골도자기시장</mrktNm>
+        <mrktType>상설장</mrktType>
+        <rdnmadr>경기도 이천시 경충대로2993번길 24</rdnmadr>
+        <lnmadr>경기도 이천시 사음동 536</lnmadr>
+        <mrktEstblCycle>매일</mrktEstblCycle>
+        <latitude>37.29483104</latitude>
+        <longitude>127.4119796</longitude>
+        <storNumber>62</storNumber>
+        <trtmntPrdlst>의류+가정용품+음식점+근린생활서비스</trtmntPrdlst>
+        <homepageUrl>www.sagimakgol.com</homepageUrl>
+        <pblicToiletYn>Y</pblicToiletYn>
+        <prkplceYn>N</prkplceYn>
+        <estblYear>1978</estblYear>
+        <phoneNumber>031-638-8388</phoneNumber>
+        <referenceDate>2025-11-10</referenceDate>
+      </item>
+      <item>
+        <mrktNm>경계사례시장</mrktNm>
+        <mrktType>상설장</mrktType>
+        <rdnmadr>서울특별시 중구 경계로 1</rdnmadr>
+        <mrktEstblCycle></mrktEstblCycle>
+        <storNumber>0</storNumber>
+        <trtmntPrdlst>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</trtmntPrdlst>
+        <pblicToiletYn>X</pblicToiletYn>
+        <prkplceYn></prkplceYn>
+        <estblYear>1650</estblYear>
+        <phoneNumber>0316438388</phoneNumber>
+        <referenceDate>20251110</referenceDate>
+      </item>
+    </items>
+    <numOfRows>1000</numOfRows>
+    <pageNo>1</pageNo>
+    <totalCount>3</totalCount>
+  </body>
+</response>

@@ -213,15 +213,30 @@ async function ingestTraditionalMarkets(): Promise<number> {
   for (let i = 0; i < rows.length; i += CHUNK) {
     const chunk = rows.slice(i, i + CHUNK);
     const values = chunk.map((r: NormalizedTraditionalMarket) =>
-      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.marketType ?? null}, ${locationSql(r.lat, r.lng)}, NOW())`,
+      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.marketType ?? null},
+        ${r.storeCount}, ${r.openCycle}, ${r.establishedYear}, ${r.products},
+        ${r.hasParking}, ${r.hasToilet}, ${r.tel}, ${r.homepage}, ${r.referenceDate}::date,
+        ${locationSql(r.lat, r.lng)}, NOW())`,
     );
     await prisma.$executeRaw`
-      INSERT INTO "TraditionalMarket" ("sourceId", name, address, "marketType", location, "updatedAt")
+      INSERT INTO "TraditionalMarket" ("sourceId", name, address, "marketType",
+        "storeCount", "openCycle", "establishedYear", products,
+        "hasParking", "hasToilet", tel, homepage, "referenceDate",
+        location, "updatedAt")
       VALUES ${Prisma.join(values)}
       ON CONFLICT ("sourceId") DO UPDATE SET
         name = EXCLUDED.name,
         address = EXCLUDED.address,
         "marketType" = EXCLUDED."marketType",
+        "storeCount" = EXCLUDED."storeCount",
+        "openCycle" = EXCLUDED."openCycle",
+        "establishedYear" = EXCLUDED."establishedYear",
+        products = EXCLUDED.products,
+        "hasParking" = EXCLUDED."hasParking",
+        "hasToilet" = EXCLUDED."hasToilet",
+        tel = EXCLUDED.tel,
+        homepage = EXCLUDED.homepage,
+        "referenceDate" = EXCLUDED."referenceDate",
         location = EXCLUDED.location,
         "updatedAt" = NOW()
     `;

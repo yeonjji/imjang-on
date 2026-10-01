@@ -1,6 +1,7 @@
 import { parseXml, getItems, getTotalCount } from '@/scripts/ingest/xml-parse';
 import { decodeEntities } from '@/lib/text/decode-entities';
 import type { NormalizedTraditionalMarket } from './types';
+import { strOrNull, boolFromYn, parseRefDate, intInRange, clip } from './parse-helpers';
 import { createHash } from 'node:crypto';
 
 // 전국전통시장표준데이터 (행정안전부 표준데이터). 고유 ID 필드가 없어 name+address 해시로 sourceId 생성.
@@ -41,6 +42,19 @@ export function parseTraditionalMarketXml(xml: string): {
       lat,
       lng,
       marketType: item.mrktType ? String(item.mrktType).trim() : null,
+      storeCount: intInRange(item.storNumber, 1, 100_000),
+      openCycle: clip(strOrNull(item.mrktEstblCycle), 40),
+      establishedYear: intInRange(item.estblYear, 1700, new Date().getUTCFullYear()),
+      products: clip(
+        item.trtmntPrdlst != null ? decodeEntities(String(item.trtmntPrdlst).trim()) || null : null,
+        300,
+      ),
+      hasParking: boolFromYn(item.prkplceYn),
+      hasToilet: boolFromYn(item.pblicToiletYn),
+      // parseTagValue가 하이픈 없는 번호를 숫자로 바꿔 앞자리 0이 사라진다 → 문자열로 온 값만 신뢰.
+      tel: typeof item.phoneNumber === 'string' ? clip(strOrNull(item.phoneNumber), 30) : null,
+      homepage: clip(strOrNull(item.homepageUrl), 200),
+      referenceDate: parseRefDate(item.referenceDate),
     });
   }
 
@@ -62,6 +76,8 @@ export async function fetchAllTraditionalMarkets(): Promise<NormalizedTraditiona
       serviceKey,
       pageNo,
       numOfRows: PAGE_SIZE,
+      // 미지정 시 JSON 응답 → XML 파서가 0건으로 조용히 끝난다.
+      type: 'xml',
     });
     const { rows, totalCount } = parseTraditionalMarketXml(xml);
     all.push(...rows);

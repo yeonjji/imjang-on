@@ -2,10 +2,12 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import type {
   AmenityCategoryDef,
+  AmenityDetailField,
   AmenityItem,
   AmenityListFilter,
   AmenityListResult,
 } from '@/lib/amenity/category';
+import { externalHref, isLinkableUrl } from '@/lib/external-href';
 import { sidoPrefix } from '@/lib/region';
 import { AMENITY_PER_PAGE as PER_PAGE } from '@/lib/amenity/_shared';
 
@@ -46,20 +48,26 @@ export function buildMarketWhere(f: AmenityListFilter): Prisma.TraditionalMarket
   return where;
 }
 
-function toItem(m: {
+// 목록은 기존 5개 컬럼만 select하므로 상세 전용 필드는 선택이다.
+type MarketRow = {
   id: bigint;
   name: string;
   address: string;
   sigunguCode: string | null;
   marketType: string | null;
-}): AmenityItem {
-  return {
-    id: m.id,
-    name: m.name,
-    address: m.address,
-    sigunguCode: m.sigunguCode,
-    marketType: m.marketType,
-  };
+  storeCount?: number | null;
+  openCycle?: string | null;
+  establishedYear?: number | null;
+  products?: string | null;
+  hasParking?: boolean | null;
+  hasToilet?: boolean | null;
+  tel?: string | null;
+  homepage?: string | null;
+  referenceDate?: Date | null;
+};
+
+function toItem(m: MarketRow): AmenityItem {
+  return { ...m };
 }
 
 async function getList(f: AmenityListFilter, page: number): Promise<AmenityListResult> {
@@ -86,7 +94,11 @@ async function getList(f: AmenityListFilter, page: number): Promise<AmenityListR
 async function getById(id: bigint): Promise<AmenityItem | null> {
   const m = await prisma.traditionalMarket.findUnique({
     where: { id },
-    select: { id: true, name: true, address: true, sigunguCode: true, marketType: true },
+    select: {
+      id: true, name: true, address: true, sigunguCode: true, marketType: true,
+      storeCount: true, openCycle: true, establishedYear: true, products: true,
+      hasParking: true, hasToilet: true, tel: true, homepage: true, referenceDate: true,
+    },
   });
   return m ? toItem(m) : null;
 }
@@ -158,9 +170,22 @@ export const marketDef: AmenityCategoryDef = {
   getById,
   getLatLng,
   inferRowSummary,
-  detailFields: (item) => [
-    { label: '시장 유형', value: item.marketType ?? '-' },
-    { label: '분류', value: inferRowSummary(item) ?? '-' },
-  ],
+  detailFields: (item) => {
+    const rows: AmenityDetailField[] = [];
+    if (item.marketType) rows.push({ label: '시장 유형', value: item.marketType });
+    const summary = inferRowSummary(item);
+    if (summary) rows.push({ label: '분류', value: summary });
+    if (item.openCycle) rows.push({ label: '개설 주기', value: item.openCycle });
+    if (item.establishedYear) rows.push({ label: '개설 연도', value: `${item.establishedYear}년` });
+    if (item.tel) rows.push({ label: '전화', value: item.tel });
+    if (item.homepage) {
+      rows.push(
+        isLinkableUrl(item.homepage)
+          ? { label: '홈페이지', value: item.homepage, href: externalHref(item.homepage) }
+          : { label: '홈페이지', value: item.homepage },
+      );
+    }
+    return rows;
+  },
   getCountsBySigungu,
 };

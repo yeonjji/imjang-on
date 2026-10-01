@@ -10,7 +10,18 @@ export function AmenityInfo({ item, def, regionFullName }: { item: AmenityItem; 
         {rows.map((r) => (
           <div key={r.label} className="flex justify-between border-b border-[var(--color-line)] pb-2.5">
             <span className="text-sm text-[var(--color-muted)]">{r.label}</span>
-            <span className="text-sm font-semibold text-[var(--color-text)]">{r.value || '-'}</span>
+            {'href' in r && r.href ? (
+              <a
+                href={r.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="truncate text-sm font-semibold text-[var(--color-blue)] hover:underline"
+              >
+                {r.value}
+              </a>
+            ) : (
+              <span className="text-sm font-semibold text-[var(--color-text)]">{r.value || '-'}</span>
+            )}
           </div>
         ))}
       </div>

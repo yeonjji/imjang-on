@@ -1,14 +1,9 @@
 import { parseXml, getItems, getTotalCount } from '@/scripts/ingest/xml-parse';
 import type { NormalizedParking } from './types';
+import { strOrNull, boolFromYn, parseRefDate } from './parse-helpers';
 
 const BASE_URL = 'https://api.data.go.kr/openapi/tn_pubr_prkplce_info_api';
 const PAGE_SIZE = 1000;
-
-function strOrNull(v: unknown): string | null {
-  if (v === undefined || v === null) return null;
-  const s = String(v).trim();
-  return s === '' ? null : s;
-}
 
 function numOrNull(v: unknown): number | null {
   if (v === undefined || v === null || v === '') return null;
@@ -21,22 +16,6 @@ function coordOrNull(v: unknown): number | null {
   const n = Number(v);
   if (!Number.isFinite(n) || n === 0) return null;
   return n;
-}
-
-function boolFromYn(v: unknown): boolean | null {
-  const s = strOrNull(v);
-  if (s === null) return null;
-  if (s === 'Y') return true;
-  if (s === 'N') return false;
-  return null;
-}
-
-function parseRefDate(v: unknown): Date | null {
-  const s = strOrNull(v);
-  if (!s) return null;
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
-  if (!m) return null;
-  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
 }
 
 export function parseParkingXml(xml: string): {
