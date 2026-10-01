@@ -283,10 +283,12 @@ async function ingestSchools(): Promise<number> {
   for (let i = 0; i < rows.length; i += CHUNK) {
     const chunk = rows.slice(i, i + CHUNK);
     const values = chunk.map((r: NormalizedSchool) =>
-      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${locationSql(r.lat, r.lng)}, ${r.schoolKind ?? null}, ${r.foundType ?? null}, ${r.coeduType ?? null}, ${r.region ?? null}, ${r.eduOffice ?? null}, ${r.tel ?? null}, ${r.homepage ?? null}, NOW())`,
+      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${locationSql(r.lat, r.lng)}, ${r.schoolKind ?? null}, ${r.foundType ?? null}, ${r.coeduType ?? null}, ${r.region ?? null}, ${r.eduOffice ?? null}, ${r.tel ?? null}, ${r.homepage ?? null},
+        ${r.hsType}, ${r.hsTrack}, ${r.specialPurpose}, ${r.admissionPeriod}, ${r.foundedAt}::date, ${r.anniversaryAt}::date, NOW())`,
     );
     await prisma.$executeRaw`
-      INSERT INTO "School" ("sourceId", name, address, location, "schoolKind", "foundType", "coeduType", region, "eduOffice", tel, homepage, "updatedAt")
+      INSERT INTO "School" ("sourceId", name, address, location, "schoolKind", "foundType", "coeduType", region, "eduOffice", tel, homepage,
+        "hsType", "hsTrack", "specialPurpose", "admissionPeriod", "foundedAt", "anniversaryAt", "updatedAt")
       VALUES ${Prisma.join(values)}
       ON CONFLICT ("sourceId") DO UPDATE SET
         name = EXCLUDED.name,
@@ -299,6 +301,12 @@ async function ingestSchools(): Promise<number> {
         "eduOffice" = EXCLUDED."eduOffice",
         tel = EXCLUDED.tel,
         homepage = EXCLUDED.homepage,
+        "hsType" = EXCLUDED."hsType",
+        "hsTrack" = EXCLUDED."hsTrack",
+        "specialPurpose" = EXCLUDED."specialPurpose",
+        "admissionPeriod" = EXCLUDED."admissionPeriod",
+        "foundedAt" = EXCLUDED."foundedAt",
+        "anniversaryAt" = EXCLUDED."anniversaryAt",
         "updatedAt" = NOW()
     `;
   }

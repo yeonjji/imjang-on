@@ -81,6 +81,12 @@ export interface NormalizedSchool {
   eduOffice: string | null;
   tel: string | null;
   homepage: string | null;
+  hsType: string | null;
+  hsTrack: string | null;
+  specialPurpose: string | null;
+  admissionPeriod: string | null;
+  foundedAt: Date | null;
+  anniversaryAt: Date | null;
 }
 
 export interface NormalizedChildcare {

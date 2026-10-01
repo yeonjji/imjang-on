@@ -1,8 +1,10 @@
 import { Badge } from '@/components/ui/badge';
 import { externalHref } from '@/lib/external-href';
 import type { School } from '@prisma/client';
+import { isHighSchool, schoolOpenYears } from '@/lib/school-display';
 
-export function SchoolHero({ school }: { school: School }) {
+export function SchoolHero({ school, nowYear = new Date().getUTCFullYear() }: { school: School; nowYear?: number }) {
+  const openYears = schoolOpenYears(school.anniversaryAt, nowYear, school.foundedAt);
   return (
     <div className="flex items-center gap-5 rounded-[26px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
       <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl border border-[var(--color-line)] bg-[var(--color-sky-soft)] text-3xl">🏫</div>
@@ -12,9 +14,15 @@ export function SchoolHero({ school }: { school: School }) {
           {school.schoolKind && <Badge tone="blue">{school.schoolKind}</Badge>}
           {school.foundType && <Badge tone="green">{school.foundType}</Badge>}
           {school.coeduType && <Badge tone="gray">{school.coeduType}</Badge>}
+          {isHighSchool(school.schoolKind) && school.hsType && <Badge tone="blue">{school.hsType}</Badge>}
         </div>
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-muted)]">
           <span>📍 {school.address}</span>
+          {openYears !== null && (
+            <span className="font-semibold text-[var(--color-blue)]">
+              {openYears === 0 ? '올해 개교' : `개교 ${openYears}년`}
+            </span>
+          )}
           {school.tel && <span>📞 {school.tel}</span>}
           {school.homepage && <a href={externalHref(school.homepage)} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--color-blue)]">🔗 홈페이지</a>}
         </div>

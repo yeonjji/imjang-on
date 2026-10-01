@@ -426,6 +426,12 @@ model School {
   tel        String?                               @db.VarChar(30)
   homepage   String?                               @db.VarChar(200)
   sigunguCode String?                              @db.VarChar(5)
+  hsType          String?   @db.VarChar(20)
+  hsTrack         String?   @db.VarChar(20)
+  specialPurpose  String?   @db.VarChar(40)
+  admissionPeriod String?   @db.VarChar(10)
+  foundedAt       DateTime? @db.Date
+  anniversaryAt   DateTime? @db.Date
   updatedAt  DateTime                              @updatedAt
 
   @@index([schoolKind])
