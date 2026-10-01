@@ -256,6 +256,37 @@ async function main() {
     update: {},
   });
 
+  // 전통시장 상세 e2e용 — 새 필드가 채워진 시장 1곳, 빈 시장 1곳(카드 숨김 검증)
+  await prisma.traditionalMarket.upsert({
+    where: { sourceId: 'e2e-market-filled' },
+    create: {
+      sourceId: 'e2e-market-filled',
+      name: 'e2e 장날시장',
+      address: '서울특별시 서초구 서초동',
+      sigunguCode: '11650',
+      marketType: '상설장+4일장',
+      storeCount: 64,
+      openCycle: '4일+9일',
+      establishedYear: 1955,
+      products: '농산물+축산물+수산물',
+      hasParking: true,
+      hasToilet: true,
+      tel: '02-000-0000',
+      referenceDate: new Date('2025-11-10T00:00:00Z'),
+    },
+    update: {},
+  });
+  await prisma.traditionalMarket.upsert({
+    where: { sourceId: 'e2e-market-empty' },
+    create: {
+      sourceId: 'e2e-market-empty',
+      name: 'e2e 빈시장',
+      address: '서울특별시 서초구 서초동',
+      sigunguCode: '11650',
+    },
+    update: {},
+  });
+
   // 오피스텔·빌라 상세 주변 생활 인프라 e2e용 (시드 주차장 반경 500m 내)
   const offi = await seedPropertyWithDeals({
     propertyType: PropertyType.OFFICETEL,
