@@ -1,5 +1,6 @@
 import { logger } from '@/lib/logger';
 import type { NormalizedSchool } from './types';
+import { clip } from './parse-helpers';
 
 const BASE_URL = 'https://open.neis.go.kr/hub/schoolInfo';
 const PAGE_SIZE = 1000;
@@ -17,6 +18,24 @@ function pick(item: Record<string, unknown>, key: string): string | null {
   if (v == null) return null;
   const s = String(v).trim();
   return s ? s : null;
+}
+
+/** '해당없음'은 값이 아니다(초·중·특수학교의 고교 계열 칸). */
+function pickValue(item: Record<string, unknown>, key: string): string | null {
+  const v = pick(item, key);
+  return v === '해당없음' ? null : v;
+}
+
+/** 나이스 날짜(YYYYMMDD). 8자리가 아니거나 존재하지 않는 날짜는 null. */
+export function parseYyyymmdd(v: unknown): Date | null {
+  if (v == null) return null;
+  const m = /^(\d{4})(\d{2})(\d{2})$/.exec(String(v).trim());
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  const date = new Date(Date.UTC(y, mo - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d ? date : null;
 }
 
 export function parseSchoolJson(body: string): {
@@ -64,6 +83,12 @@ export function parseSchoolJson(body: string): {
       eduOffice: pick(item, 'ATPT_OFCDC_SC_NM'),
       tel: pick(item, 'ORG_TELNO'),
       homepage: pick(item, 'HMPG_ADRES'),
+      hsType: clip(pickValue(item, 'HS_SC_NM'), 20),
+      hsTrack: clip(pickValue(item, 'HS_GNRL_BUSNS_SC_NM'), 20),
+      specialPurpose: clip(pickValue(item, 'SPCLY_PURPS_HS_ORD_NM'), 40),
+      admissionPeriod: clip(pickValue(item, 'ENE_BFE_SEHF_SC_NM'), 10),
+      foundedAt: parseYyyymmdd(item.FOND_YMD),
+      anniversaryAt: parseYyyymmdd(item.FOAS_MEMRD),
     });
   }
 
