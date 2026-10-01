@@ -33,4 +33,9 @@ describe('adapter-park 상세 필드', () => {
     expect(p.managingOrg).toBeNull();
     expect(p.tel).toBeNull();
   });
+
+  it('1900-01-01 같은 자리표시 날짜는 null, 1940년 같은 실제 지정일은 유지', () => {
+    expect(byName('자리표시날짜공원').designatedAt).toBeNull();
+    expect(byName('오래된공원').designatedAt?.toISOString()).toBe('1940-03-12T00:00:00.000Z');
+  });
 });

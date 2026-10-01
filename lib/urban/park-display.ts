@@ -4,11 +4,27 @@ import { formatParkArea } from '@/lib/urban/adapters/park';
 /** 국제 규격 축구장 1면(105m × 68m). */
 export const SOCCER_FIELD_M2 = 7140;
 
-/** 실측(2026-09-30) 구분자는 '+'가 대부분이고 ',' '/'가 섞여 있다. */
+/**
+ * 실측(2026-09-30) 구분자는 '+'가 대부분이고 ',' '/'가 섞여 있다.
+ * 괄호 안의 구분자는 항목의 일부다 — '다목적구장(배드민턴+족구)2'는 한 칩이어야 한다.
+ */
 export function splitFacilities(s: string | null | undefined): string[] {
   if (!s) return [];
-  const parts = s.split(/[+,/]/).map((x) => x.trim()).filter(Boolean);
-  return Array.from(new Set(parts));
+  const parts: string[] = [];
+  let depth = 0;
+  let cur = '';
+  for (const ch of s) {
+    if (ch === '(') depth++;
+    else if (ch === ')') depth = Math.max(0, depth - 1);
+    if (depth === 0 && (ch === '+' || ch === ',' || ch === '/')) {
+      parts.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  parts.push(cur);
+  return Array.from(new Set(parts.map((x) => x.trim()).filter(Boolean)));
 }
 
 export interface ParkFacilityGroup {
@@ -36,7 +52,8 @@ export function parkFacilityGroups(r: {
 
 export function soccerFieldCount(area: number | null | undefined): number | null {
   if (!area) return null;
-  const n = Math.round(area / SOCCER_FIELD_M2);
+  // 내림: 반 면짜리 공원을 "약 1개"로 부풀리지 않는다(과장 금지).
+  const n = Math.floor(area / SOCCER_FIELD_M2);
   return n >= 1 ? n : null;
 }
 
