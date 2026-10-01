@@ -26,6 +26,14 @@ function pickValue(item: Record<string, unknown>, key: string): string | null {
   return v === '해당없음' ? null : v;
 }
 
+/**
+ * 1월 1일 개교기념일은 자리표시다(예: 1974년 설립 방송통신고들이 일괄 '20020101').
+ * 학년도는 3월에 시작하므로 실제 개교일이 1월 1일일 가능성은 낮다.
+ */
+function realAnniversary(d: Date | null): Date | null {
+  return d && !(d.getUTCMonth() === 0 && d.getUTCDate() === 1) ? d : null;
+}
+
 /** 나이스 날짜(YYYYMMDD). 8자리가 아니거나 존재하지 않는 날짜는 null. */
 export function parseYyyymmdd(v: unknown): Date | null {
   if (v == null) return null;
@@ -88,7 +96,7 @@ export function parseSchoolJson(body: string): {
       specialPurpose: clip(pickValue(item, 'SPCLY_PURPS_HS_ORD_NM'), 40),
       admissionPeriod: clip(pickValue(item, 'ENE_BFE_SEHF_SC_NM'), 10),
       foundedAt: parseYyyymmdd(item.FOND_YMD),
-      anniversaryAt: parseYyyymmdd(item.FOAS_MEMRD),
+      anniversaryAt: realAnniversary(parseYyyymmdd(item.FOAS_MEMRD)),
     });
   }
 

@@ -24,10 +24,19 @@ function school(over: Partial<School>): School {
 describe('SchoolInfo', () => {
   it('고등학교: 고교 유형·계열·입학 전형·설립일·개교기념일', () => {
     const html = renderToStaticMarkup(createElement(SchoolInfo, { school: school({}), regionFullName: '서울 송파구' }));
-    expect(html).toContain('일반고 · 일반계');
+    expect(html).toContain('>일반고<');
+    expect(html).not.toContain('일반고 · 일반계');
     expect(html).toContain('후기');
     expect(html).toContain('1988-12-23');
-    expect(html).toContain('4월 28일');
+    expect(html).toContain('1989년 4월 28일');
+  });
+
+  it('특목고에 "일반계"를 붙이지 않는다(모순처럼 읽힘), 전문계 같은 정보성 계열은 붙인다', () => {
+    const sp = renderToStaticMarkup(createElement(SchoolInfo, { school: school({ hsType: '특목고', hsTrack: '일반계', specialPurpose: '외국어계열' }), regionFullName: '서울' }));
+    expect(sp).not.toContain('특목고 · 일반계');
+    expect(sp).toContain('외국어계열');
+    const voc = renderToStaticMarkup(createElement(SchoolInfo, { school: school({ hsType: '특성화고', hsTrack: '전문계' }), regionFullName: '서울' }));
+    expect(voc).toContain('특성화고 · 전문계');
   });
 
   it('초등학교에는 고교 전용 행이 없다(일반계·전기 기본값 무시)', () => {
@@ -67,8 +76,15 @@ describe('SchoolHero', () => {
     expect(html).not.toContain('개교');
   });
 
+  it('개교기념일이 설립일보다 한참 늦으면 개교 햇수를 쓰지 않는다', () => {
+    const html = renderToStaticMarkup(
+      createElement(SchoolHero, { school: school({ foundedAt: d('1975-01-19'), anniversaryAt: d('2002-09-01') }), nowYear: 2026 }),
+    );
+    expect(html).not.toContain('개교');
+  });
+
   it('올해 개교는 "올해 개교"', () => {
-    const html = renderToStaticMarkup(createElement(SchoolHero, { school: school({ anniversaryAt: d('2026-03-02') }), nowYear: 2026 }));
+    const html = renderToStaticMarkup(createElement(SchoolHero, { school: school({ foundedAt: d('2025-09-01'), anniversaryAt: d('2026-03-02') }), nowYear: 2026 }));
     expect(html).toContain('올해 개교');
   });
 });

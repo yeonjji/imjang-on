@@ -7,7 +7,7 @@ const base = {
 };
 const body = JSON.stringify({
   schoolInfo: [
-    { head: [{ list_total_count: 3 }, { RESULT: { CODE: 'INFO-000', MESSAGE: '정상' } }] },
+    { head: [{ list_total_count: 4 }, { RESULT: { CODE: 'INFO-000', MESSAGE: '정상' } }] },
     {
       row: [
         { ...base, SD_SCHUL_CODE: '7010057', SCHUL_NM: '가락고등학교', SCHUL_KND_SC_NM: '고등학교',
@@ -19,6 +19,9 @@ const body = JSON.stringify({
         { ...base, SD_SCHUL_CODE: '7000002', SCHUL_NM: '날짜이상학교', SCHUL_KND_SC_NM: '초등학교',
           ORG_RDNMA: '서울특별시 중구 1', HS_SC_NM: null, HS_GNRL_BUSNS_SC_NM: '일반계',
           SPCLY_PURPS_HS_ORD_NM: null, ENE_BFE_SEHF_SC_NM: '전기', FOND_YMD: '20240231', FOAS_MEMRD: '1989' },
+        { ...base, SD_SCHUL_CODE: '7000003', SCHUL_NM: '경동고등학교부설방송통신고등학교', SCHUL_KND_SC_NM: '방송통신고',
+          ORG_RDNMA: '서울특별시 성북구 1', HS_SC_NM: '일반고', HS_GNRL_BUSNS_SC_NM: '일반계',
+          SPCLY_PURPS_HS_ORD_NM: null, ENE_BFE_SEHF_SC_NM: '후기', FOND_YMD: '19740302', FOAS_MEMRD: '20020101' },
       ],
     },
   ],
@@ -45,6 +48,14 @@ describe('adapter-school 상세 필드', () => {
     const s = byName('날짜이상학교');
     expect(s.foundedAt).toBeNull();
     expect(s.anniversaryAt).toBeNull();
+  });
+});
+
+describe('개교기념일 자리표시', () => {
+  it('MMDD가 0101인 개교기념일은 자리표시로 보고 null', () => {
+    const s = byName('경동고등학교부설방송통신고등학교');
+    expect(s.anniversaryAt).toBeNull();
+    expect(s.foundedAt?.toISOString()).toBe('1974-03-02T00:00:00.000Z');
   });
 });
 

@@ -7,8 +7,8 @@ test.describe('학교 상세 보강', () => {
 
     await expect(page.getByRole('heading', { name: '학교 정보' })).toBeVisible({ timeout: 5000 });
     await expect(page.getByText(/개교 \d+년/)).toBeVisible();
-    await expect(page.getByText('일반고 · 일반계')).toBeVisible();
-    await expect(page.getByText('4월 28일')).toBeVisible();
+    await expect(page.getByText('일반고', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('1989년 4월 28일')).toBeVisible();
   });
 
   test('초등학교: 고교 전용 행이 없다', async ({ page }) => {
