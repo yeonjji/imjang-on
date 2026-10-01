@@ -1,6 +1,6 @@
 import { parseXml, getItems, getTotalCount } from '@/scripts/ingest/xml-parse';
 import type { NormalizedPark } from './types';
-import { parseRefDate } from './parse-helpers';
+import { strOrNull, parseRefDate, clip } from './parse-helpers';
 
 const BASE_URL = 'https://api.data.go.kr/openapi/tn_pubr_public_cty_park_info_api';
 const PAGE_SIZE = 1000;
@@ -41,6 +41,14 @@ export function parseParkXml(xml: string): {
       parkType: item.parkSe ? String(item.parkSe).trim() : null,
       area,
       referenceDate: parseRefDate(item.referenceDate),
+      facilitySport: clip(strOrNull(item.mvmFclty), 300),
+      facilityPlay: clip(strOrNull(item.amsmtFclty), 300),
+      facilityConvenience: clip(strOrNull(item.cnvnncFclty), 300),
+      facilityCulture: clip(strOrNull(item.cltrFclty), 300),
+      designatedAt: parseRefDate(item.appnNtfcDate),
+      managingOrg: clip(strOrNull(item.institutionNm), 100),
+      // parseTagValue가 하이픈 없는 번호를 숫자로 바꿔 앞자리 0이 사라진다 → 문자열로 온 값만 신뢰.
+      tel: typeof item.phoneNumber === 'string' ? clip(strOrNull(item.phoneNumber), 30) : null,
     });
   }
 

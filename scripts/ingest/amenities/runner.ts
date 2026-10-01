@@ -249,10 +249,14 @@ async function ingestParks(): Promise<number> {
   for (let i = 0; i < rows.length; i += CHUNK) {
     const chunk = rows.slice(i, i + CHUNK);
     const values = chunk.map((r: NormalizedPark) =>
-      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.parkType ?? null}, ${r.area ?? null}, ${locationSql(r.lat, r.lng)}, ${r.referenceDate ?? null}, NOW())`,
+      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.parkType ?? null}, ${r.area ?? null}, ${locationSql(r.lat, r.lng)}, ${r.referenceDate ?? null},
+        ${r.facilitySport}, ${r.facilityPlay}, ${r.facilityConvenience}, ${r.facilityCulture},
+        ${r.designatedAt}::date, ${r.managingOrg}, ${r.tel}, NOW())`,
     );
     await prisma.$executeRaw`
-      INSERT INTO "Park" ("sourceId", name, address, "parkType", area, location, "referenceDate", "updatedAt")
+      INSERT INTO "Park" ("sourceId", name, address, "parkType", area, location, "referenceDate",
+        "facilitySport", "facilityPlay", "facilityConvenience", "facilityCulture",
+        "designatedAt", "managingOrg", tel, "updatedAt")
       VALUES ${Prisma.join(values)}
       ON CONFLICT ("sourceId") DO UPDATE SET
         name = EXCLUDED.name,
@@ -261,6 +265,13 @@ async function ingestParks(): Promise<number> {
         area = EXCLUDED.area,
         location = EXCLUDED.location,
         "referenceDate" = EXCLUDED."referenceDate",
+        "facilitySport" = EXCLUDED."facilitySport",
+        "facilityPlay" = EXCLUDED."facilityPlay",
+        "facilityConvenience" = EXCLUDED."facilityConvenience",
+        "facilityCulture" = EXCLUDED."facilityCulture",
+        "designatedAt" = EXCLUDED."designatedAt",
+        "managingOrg" = EXCLUDED."managingOrg",
+        tel = EXCLUDED.tel,
         "updatedAt" = NOW()
     `;
   }

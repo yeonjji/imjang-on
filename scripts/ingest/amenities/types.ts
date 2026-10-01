@@ -59,6 +59,13 @@ export interface NormalizedPark {
   parkType: string | null;
   area: number | null;
   referenceDate: Date | null;
+  facilitySport: string | null;
+  facilityPlay: string | null;
+  facilityConvenience: string | null;
+  facilityCulture: string | null;
+  designatedAt: Date | null;
+  managingOrg: string | null;
+  tel: string | null;
 }
 
 export interface NormalizedSchool {
