@@ -360,6 +360,15 @@ model TraditionalMarket {
   location    Unsupported("geography(Point,4326)")?
   marketType  String?                               @db.VarChar(40)
   sigunguCode String?                               @db.VarChar(5)
+  storeCount      Int?
+  openCycle       String?   @db.VarChar(40)
+  establishedYear Int?
+  products        String?   @db.VarChar(300)
+  hasParking      Boolean?
+  hasToilet       Boolean?
+  tel             String?   @db.VarChar(30)
+  homepage        String?   @db.VarChar(200)
+  referenceDate   DateTime? @db.Date
   updatedAt   DateTime                              @updatedAt
 
   @@index([sigunguCode])

@@ -26,6 +26,15 @@ export interface NormalizedTraditionalMarket {
   lat: number | null;
   lng: number | null;
   marketType: string | null;
+  storeCount: number | null;
+  openCycle: string | null;
+  establishedYear: number | null;
+  products: string | null;
+  hasParking: boolean | null;
+  hasToilet: boolean | null;
+  tel: string | null;
+  homepage: string | null;
+  referenceDate: Date | null;
 }
 
 export interface NormalizedStore {
