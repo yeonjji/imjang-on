@@ -180,6 +180,26 @@ async function main() {
   // 시드 학교를 어린이집 바로 옆(~100m)에 위치
   await prisma.$executeRaw`UPDATE "School" SET location = ST_SetSRID(ST_MakePoint(127.1040, 37.5048), 4326)::geography WHERE "sourceId" = 'E2E_SCH_0001'`;
 
+  // 학교 상세 보강 e2e용 — 고교 필드가 채워진 고등학교
+  await prisma.school.create({
+    data: {
+      sourceId: 'E2E_SCH_0002',
+      name: 'E2E 해솔고등학교',
+      address: '서울특별시 송파구 송이로 42',
+      sigunguCode: '11710',
+      schoolKind: '고등학교',
+      region: '서울특별시',
+      hsType: '일반고',
+      hsTrack: '일반계',
+      admissionPeriod: '후기',
+      foundedAt: new Date('1988-12-23T00:00:00Z'),
+      anniversaryAt: new Date('1989-04-28T00:00:00Z'),
+    },
+  });
+  // 목록은 학교급 오름차순이라 고등학교가 먼저 열린다 → childcare.spec이 첫 학교에서
+  // '근처 어린이집'을 기대하므로 이 학교도 시드 어린이집 옆에 둔다.
+  await prisma.$executeRaw`UPDATE "School" SET location = ST_SetSRID(ST_MakePoint(127.1042, 37.5049), 4326)::geography WHERE "sourceId" = 'E2E_SCH_0002'`;
+
   const p = await prisma.property.create({
     data: {
       propertyType: PropertyType.APARTMENT,
