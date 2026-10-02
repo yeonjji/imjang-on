@@ -15,6 +15,8 @@ import type { UrbanItem } from '@/lib/urban/category';
 import { robotsFor } from '@/lib/seo/indexable';
 import { ChargerHero } from './_components/charger-hero';
 import { ChargerStatusTable } from './_components/charger-status-table';
+import { ChargerAccessNotice } from './_components/charger-access-notice';
+import { ChargerGuide } from './_components/charger-guide';
 import { UrbanInfo } from '@/app/(public)/urban/[category]/_components/urban-info';
 import { UrbanDetailSidebar } from '@/app/(public)/urban/[category]/_components/urban-detail-sidebar';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
@@ -104,13 +106,17 @@ export default async function ChargerDetailPage({ params }: Params) {
       </nav>
 
       <ChargerHero item={item} />
+      <div className="mt-4">
+        <ChargerAccessNotice accessLimited={r.accessLimited} limitDetail={r.limitDetail} />
+      </div>
 
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-6">
           <ChargerStatusTable
             statId={r.sourceId}
-            units={r.units.map((u) => ({ chgerId: u.chgerId, chgerType: u.chgerType, isFast: u.isFast }))}
+            units={r.units.map((u) => ({ chgerId: u.chgerId, chgerType: u.chgerType, isFast: u.isFast, outputKw: u.outputKw }))}
           />
+          <ChargerGuide raw={r} units={r.units} />
           <UrbanInfo item={item} def={chargerDef} regionFullName={region?.fullName ?? ''} />
           <SourceCaption ids={['kepco-ev']} />
           {coord ? (
