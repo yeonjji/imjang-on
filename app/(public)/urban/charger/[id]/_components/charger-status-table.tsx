@@ -1,6 +1,12 @@
+'use client';
+
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import type { EvChargerUnit } from '@prisma/client';
-import type { ChargerUnitStatus } from '@/lib/urban/ev-status';
+import {
+  mergeUnitStatuses,
+  type ChargerUnitPlain,
+  type ChargerUnitStatus,
+} from '@/lib/urban/ev-status-shared';
 
 const STAT_ICON: Record<string, string> = {
   '0': '⚪',
@@ -21,83 +27,86 @@ const CHGER_TYPE_LABELS: Record<string, string> = {
   '07': 'AC3상',
 };
 
+type LoadState =
+  | { kind: 'idle' }
+  | { kind: 'loading' }
+  | { kind: 'loaded'; statuses: ChargerUnitStatus[] }
+  | { kind: 'error' };
+
 interface Props {
-  units: EvChargerUnit[];
-  statuses: ChargerUnitStatus[];
-  lastUpdated: string | null;
+  units: ChargerUnitPlain[];
+  statId: string;
 }
 
-export function ChargerStatusTable({ units, statuses, lastUpdated }: Props) {
-  const statusMap = new Map(statuses.map((s) => [s.chgerId, s]));
-  const hasStatus = statuses.length > 0;
+/**
+ * 충전기 목록은 DB 값으로 바로 보여주고, 실시간 상태는 사용자가 버튼을 누를 때만 조회한다.
+ * 렌더 시점 조회는 크롤러 방문마다 외부 API 일일 한도를 소모해 월간 수집을 막았다.
+ */
+export function ChargerStatusTable({ units, statId }: Props) {
+  const [state, setState] = useState<LoadState>({ kind: 'idle' });
+
+  async function load() {
+    setState({ kind: 'loading' });
+    try {
+      const res = await fetch(`/api/ev-status?statId=${encodeURIComponent(statId)}`);
+      if (!res.ok) throw new Error(String(res.status));
+      const body = (await res.json()) as { statuses: ChargerUnitStatus[] };
+      setState({ kind: 'loaded', statuses: body.statuses });
+    } catch {
+      setState({ kind: 'error' });
+    }
+  }
+
+  const loaded = state.kind === 'loaded' && state.statuses.length > 0;
+  const rows = mergeUnitStatuses(units, state.kind === 'loaded' ? state.statuses : []);
+  const lastUpdated = state.kind === 'loaded' ? state.statuses.find((s) => s.lastTsdt)?.lastTsdt ?? null : null;
+  const fast = units.filter((u) => u.isFast).length;
 
   return (
     <Card id="status">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-bold text-[var(--color-blue-dark)]">⚡ 충전기 현황</h2>
-        {hasStatus && lastUpdated && (
+        {loaded && lastUpdated && (
           <span className="text-xs text-[var(--color-muted)]">업데이트: {lastUpdated}</span>
         )}
       </div>
 
-      {!hasStatus && (
-        <p className="rounded-xl bg-[var(--color-soft)] px-4 py-3 text-sm text-[var(--color-muted)]">
-          이 충전소는 실시간 상태 정보를 제공하지 않습니다.
-          충전기 수: {units.length}기 ({units.filter((u) => u.isFast).length}급속 / {units.filter((u) => !u.isFast).length}완속)
-        </p>
-      )}
+      <p className="mb-3 text-sm text-[var(--color-text)]">
+        충전기 {units.length}기 ({fast}급속 / {units.length - fast}완속)
+      </p>
 
-      {/* 데스크탑: 테이블 */}
-      {hasStatus && <div className="hidden md:block">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-[var(--color-line)] text-left text-xs text-[var(--color-muted)]">
-              <th className="pb-2 font-semibold">충전기</th>
-              <th className="pb-2 font-semibold">타입</th>
-              <th className="pb-2 font-semibold">상태</th>
-            </tr>
-          </thead>
-          <tbody>
-            {units.map((unit) => {
-              const s = statusMap.get(unit.chgerId);
-              const statLabel = s?.statLabel ?? '미확인';
-              const icon = STAT_ICON[s?.stat ?? '0'];
-              return (
-                <tr key={unit.id.toString()} className="border-b border-[var(--color-line)] last:border-0">
-                  <td className="py-2.5 font-medium">{unit.chgerId}번</td>
-                  <td className="py-2.5 text-[var(--color-muted)]">
-                    {unit.isFast ? '급속' : '완속'}
-                    <span className="ml-1 text-xs">({CHGER_TYPE_LABELS[unit.chgerType] ?? unit.chgerType})</span>
-                  </td>
-                  <td className="py-2.5">{icon} {statLabel}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>}
+      <ul className="flex flex-col divide-y divide-[var(--color-line)]">
+        {rows.map((r) => (
+          <li key={r.chgerId} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+            <span className="font-medium">
+              {r.chgerId}번 · {r.isFast ? '급속' : '완속'}
+              <span className="ml-1 text-xs text-[var(--color-muted)]">({CHGER_TYPE_LABELS[r.chgerType] ?? r.chgerType})</span>
+            </span>
+            {loaded && <span>{STAT_ICON[r.stat] ?? STAT_ICON['0']} {r.statLabel}</span>}
+          </li>
+        ))}
+      </ul>
 
-      {/* 모바일: 카드 */}
-      {hasStatus && <div className="flex flex-col gap-3 md:hidden">
-        {units.map((unit) => {
-          const s = statusMap.get(unit.chgerId);
-          const statLabel = s?.statLabel ?? '미확인';
-          const icon = STAT_ICON[s?.stat ?? '0'];
-          return (
-            <div key={unit.id.toString()} className="rounded-xl border border-[var(--color-line)] p-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-[var(--color-blue-dark)]">
-                  {unit.chgerId}번 · {unit.isFast ? '급속' : '완속'}
-                </span>
-                <span className="text-sm">{icon} {statLabel}</span>
-              </div>
-              <p className="mt-1 text-xs text-[var(--color-muted)]">
-                {CHGER_TYPE_LABELS[unit.chgerType] ?? unit.chgerType}
-              </p>
-            </div>
-          );
-        })}
-      </div>}
+      <div className="mt-4">
+        {state.kind !== 'loaded' && (
+          <button
+            type="button"
+            onClick={load}
+            disabled={state.kind === 'loading'}
+            className="rounded-full bg-[var(--color-blue)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-blue-dark)] disabled:opacity-60"
+          >
+            {state.kind === 'loading' ? '불러오는 중…' : '현재 충전 상태 보기'}
+          </button>
+        )}
+        {state.kind === 'error' && (
+          <p className="mt-2 text-sm text-[var(--color-text)]">실시간 상태를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+        )}
+        {state.kind === 'loaded' && state.statuses.length === 0 && (
+          <p className="rounded-xl bg-[var(--color-soft)] px-4 py-3 text-sm text-[var(--color-text)]">
+            이 충전소는 실시간 상태 정보를 제공하지 않습니다.
+          </p>
+        )}
+      </div>
     </Card>
   );
 }
