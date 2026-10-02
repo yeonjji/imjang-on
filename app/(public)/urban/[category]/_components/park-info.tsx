@@ -2,11 +2,18 @@ import { Card } from '@/components/ui/card';
 import type { UrbanItem } from '@/lib/urban/category';
 import { formatParkArea, type ParkRaw } from '@/lib/urban/adapters/park';
 
-export function ParkInfo({ item }: { item: UrbanItem<ParkRaw> }) {
+export function ParkInfo({
+  item,
+  areaRank,
+}: {
+  item: UrbanItem<ParkRaw>;
+  areaRank?: { rank: number; total: number; scope: string } | null;
+}) {
   const r = item.raw;
   const rows: Array<[string, string | null]> = [
     ['공원 유형', r.parkType],
     ['면적', formatParkArea(r.area)],
+    ['면적 순위', areaRank ? `${areaRank.scope} ${areaRank.total}곳 중 ${areaRank.rank}위` : null],
     ['지정 고시일', r.designatedAt ? r.designatedAt.toISOString().slice(0, 10) : null],
     ['관리기관', r.managingOrg],
     ['전화', r.tel],

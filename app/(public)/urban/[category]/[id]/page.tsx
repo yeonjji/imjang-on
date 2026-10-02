@@ -30,6 +30,10 @@ import type { ParkingRaw } from '@/lib/urban/adapters/parking';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { ParkInfo } from '../_components/park-info';
 import { ParkFacilities } from '../_components/park-facilities';
+import { getParkAreaRank } from '@/lib/urban/park-context';
+import { getParkingFeeComparison } from '@/lib/urban/parking-context';
+import { ParkingFeeCompare } from '../_components/parking-fee-compare';
+import { resolveAddrPrefix } from '@/lib/urban/_shared';
 import { buildParkHeroLine } from '@/lib/urban/park-display';
 import type { ParkRaw } from '@/lib/urban/adapters/park';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
@@ -128,6 +132,17 @@ export default async function UrbanDetailPage({ params }: Params) {
     ? await loadParkInsight(itemId)
     : { narrative: null, dateModified: undefined as string | undefined };
 
+  const parkRaw = isPark ? (item as UrbanItem<ParkRaw>).raw : null;
+  const addrPrefix = sigunguCode ? await resolveAddrPrefix({ sigunguCode }) : null;
+  const areaRank = parkRaw ? await getParkAreaRank(parkRaw, addrPrefix) : null;
+  const feeCmp = def.slug === 'parking' ? await getParkingFeeComparison(r, addrPrefix) : null;
+  // 범위 이름은 실제로 비교한 접두어에서 뽑는다(region.fullName과 다를 수 있음).
+  const scopeName = addrPrefix && addrPrefix !== '__NO_MATCH__' ? addrPrefix.split(' ').pop() ?? '' : '';
+  const areaRankProp =
+    areaRank && scopeName && parkRaw?.parkType
+      ? { ...areaRank, scope: `${scopeName} ${parkRaw.parkType}` }
+      : null;
+
   const others = otherList.rows.filter((s) => s.id !== item.id).slice(0, 4);
 
   const PARK_ANCHORS = [
@@ -188,7 +203,7 @@ export default async function UrbanDetailPage({ params }: Params) {
         <main className="flex flex-col gap-6">
           {def.slug === 'park' ? (
             <>
-              <ParkInfo item={item as UrbanItem<ParkRaw>} />
+              <ParkInfo item={item as UrbanItem<ParkRaw>} areaRank={areaRankProp} />
               <ParkFacilities item={item as UrbanItem<ParkRaw>} />
             </>
           ) : (
@@ -196,6 +211,7 @@ export default async function UrbanDetailPage({ params }: Params) {
               <UrbanInfo item={item} def={def} regionFullName={region?.fullName ?? ''} />
               <ParkingHoursTable row={r} />
               <ParkingFeeGrid row={r} />
+              {feeCmp && scopeName && <ParkingFeeCompare cmp={feeCmp} scope={scopeName} />}
               <ParkingExtras row={r} />
             </>
           )}
