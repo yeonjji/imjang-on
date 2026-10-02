@@ -6,7 +6,6 @@ import { getUrbanList } from '@/lib/urban/list';
 import { resolveSigunguFromAddress, resolveSigunguLabelFromAddress } from '@/lib/region/from-address';
 import { qualifiedTitle } from '@/lib/seo/title';
 import { urbanChargerDescriptor } from '@/lib/seo/facility-descriptor';
-import { fetchChargerStatus } from '@/lib/urban/ev-status';
 import { getNearbyApartments, getNearbyInfra } from '@/lib/amenity/nearby';
 import { getNearbySubwayStations } from '@/lib/subway/nearby';
 import { getSigunguByCode } from '@/lib/region';
@@ -29,7 +28,7 @@ import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-
 import { RelatedGuides } from '@/app/(public)/_components/related-guides';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 
-export const revalidate = 60;
+export const revalidate = 86_400; // 실시간 상태를 렌더에서 뺐으므로 다른 상세와 같은 1일 ISR
 // 동적 세그먼트는 generateStaticParams가 없으면 revalidate가 무시되고 매 요청 동적 렌더된다.
 // 빈 배열 → 프리빌드 없이 첫 요청 시 렌더 후 revalidate 동안 ISR 캐시(dynamicParams 기본 true).
 export function generateStaticParams() { return []; }
@@ -70,10 +69,11 @@ export default async function ChargerDetailPage({ params }: Params) {
   const r = item.raw;
   const sigunguCode = await resolveSigunguFromAddress(r.address);
 
-  const [region, coord, statuses] = await Promise.all([
+  // 실시간 충전 상태는 렌더에서 조회하지 않는다(크롤러 방문마다 외부 API 일일 한도 소모).
+  // ChargerStatusTable이 사용자 클릭 시 /api/ev-status로 조회한다.
+  const [region, coord] = await Promise.all([
     sigunguCode ? getSigunguByCode(sigunguCode).catch(() => null) : Promise.resolve(null),
     getUrbanLatLng('charger', itemId),
-    fetchChargerStatus(r.sourceId),
   ]);
 
   const emptyList = { rows: [], total: 0, page: 1, perPage: 0, totalPages: 0 };
@@ -90,7 +90,6 @@ export default async function ChargerDetailPage({ params }: Params) {
   ]);
 
   const others = otherList.rows.filter((s) => s.id !== item.id).slice(0, 4);
-  const lastUpdated = statuses.find((s) => s.lastTsdt)?.lastTsdt ?? null;
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10">
@@ -108,7 +107,10 @@ export default async function ChargerDetailPage({ params }: Params) {
 
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-6">
-          <ChargerStatusTable units={r.units} statuses={statuses} lastUpdated={lastUpdated} />
+          <ChargerStatusTable
+            statId={r.sourceId}
+            units={r.units.map((u) => ({ chgerId: u.chgerId, chgerType: u.chgerType, isFast: u.isFast }))}
+          />
           <UrbanInfo item={item} def={chargerDef} regionFullName={region?.fullName ?? ''} />
           <SourceCaption ids={['kepco-ev']} />
           {coord ? (

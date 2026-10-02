@@ -1,5 +1,9 @@
 import { XMLParser } from 'fast-xml-parser';
 import { env } from '@/lib/env';
+import type { ChargerUnitStatus } from './ev-status-shared';
+
+// 클라이언트에서도 쓰는 순수 헬퍼·타입은 env를 끌고 가지 않도록 ev-status-shared에 둔다.
+export * from './ev-status-shared';
 
 // getChargerInfo를 사용해 특정 충전소의 현재 상태를 조회한다.
 // getChargerStatus는 period(최대 10분) 이내 갱신된 충전기만 반환하므로
@@ -15,13 +19,6 @@ const STAT_LABELS: Record<string, string> = {
   '4': '운영중지',
   '5': '점검중',
 };
-
-export interface ChargerUnitStatus {
-  chgerId: string;
-  stat: string;
-  statLabel: string;
-  lastTsdt: string | null;
-}
 
 const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: true, trimValues: true });
 

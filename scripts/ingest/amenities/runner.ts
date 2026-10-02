@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { notify } from '@/scripts/ingest/notify';
 import { streamEvChargers } from './adapter-ev-charger';
+import { evIngestFailure } from './ev-outcome';
 import { fetchAllTraditionalMarkets } from './adapter-traditional-market';
 import { fetchStoresByUpjong, STORE_UPJONG_TARGETS } from './adapter-store';
 import { fetchAllParks } from './adapter-park';
@@ -205,6 +206,9 @@ async function ingestEvChargers(ingestSource: string): Promise<number> {
     { complete, lastPage, totalStations, totalUnits },
     complete ? 'ev-charger ingest complete' : 'ev-charger ingest partial — re-run to resume',
   );
+  // 체크포인트는 위에서 RUNNING으로 남겨 다음 실행이 이어받는다. 이번 실행 자체는 실패로 기록한다.
+  const failure = evIngestFailure({ complete, lastPage, totalStations });
+  if (failure) throw new Error(failure);
   return totalStations;
 }
 
