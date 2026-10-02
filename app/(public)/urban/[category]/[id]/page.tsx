@@ -30,6 +30,8 @@ import type { ParkingRaw } from '@/lib/urban/adapters/parking';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { ParkInfo } from '../_components/park-info';
 import { ParkFacilities } from '../_components/park-facilities';
+import { getParkAreaRank } from '@/lib/urban/park-context';
+import { resolveAddrPrefix } from '@/lib/urban/_shared';
 import { buildParkHeroLine } from '@/lib/urban/park-display';
 import type { ParkRaw } from '@/lib/urban/adapters/park';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
@@ -128,6 +130,14 @@ export default async function UrbanDetailPage({ params }: Params) {
     ? await loadParkInsight(itemId)
     : { narrative: null, dateModified: undefined as string | undefined };
 
+  const parkRaw = isPark ? (item as UrbanItem<ParkRaw>).raw : null;
+  const addrPrefix = sigunguCode ? await resolveAddrPrefix({ sigunguCode }) : null;
+  const areaRank = parkRaw ? await getParkAreaRank(parkRaw, addrPrefix) : null;
+  const areaRankProp =
+    areaRank && region && parkRaw?.parkType
+      ? { ...areaRank, scope: `${region.fullName.split(' ').pop()} ${parkRaw.parkType}` }
+      : null;
+
   const others = otherList.rows.filter((s) => s.id !== item.id).slice(0, 4);
 
   const PARK_ANCHORS = [
@@ -188,7 +198,7 @@ export default async function UrbanDetailPage({ params }: Params) {
         <main className="flex flex-col gap-6">
           {def.slug === 'park' ? (
             <>
-              <ParkInfo item={item as UrbanItem<ParkRaw>} />
+              <ParkInfo item={item as UrbanItem<ParkRaw>} areaRank={areaRankProp} />
               <ParkFacilities item={item as UrbanItem<ParkRaw>} />
             </>
           ) : (
