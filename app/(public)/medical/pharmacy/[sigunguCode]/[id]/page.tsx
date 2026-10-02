@@ -7,6 +7,8 @@ import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { PharmacyHero } from './_components/pharmacy-hero';
 import { PharmacyInfo } from './_components/pharmacy-info';
 import { PharmacySidebar } from './_components/pharmacy-sidebar';
+import { PharmacyNeighborhood } from './_components/pharmacy-neighborhood';
+import { getPharmacyDong, countSundayClinicsNearby, pharmacyYears } from '@/lib/pharmacy/context';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
@@ -63,7 +65,7 @@ export default async function PharmacyDetailPage({ params }: Params) {
 
   const coord = await getPharmacyLatLng(pharmacyId);
 
-  const [apts, infra, otherList, subway] = await Promise.all([
+  const [apts, infra, otherList, subway, dong, sundayClinics] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
     coord
       ? getNearbyInfra(coord.lat, coord.lng, { excludePharmacyId: pharmacy.id, includeChildcare: true })
@@ -72,6 +74,8 @@ export default async function PharmacyDetailPage({ params }: Params) {
     coord
       ? getNearbySubwayStations(coord.lat, coord.lng)
       : Promise.resolve({ stations: [], fallback: false }),
+    getPharmacyDong(pharmacy),
+    coord ? countSundayClinicsNearby(coord.lat, coord.lng) : Promise.resolve(0),
   ]);
 
   const others = otherList.rows.filter(p => p.id !== pharmacy.id).slice(0, 4);
@@ -118,6 +122,12 @@ export default async function PharmacyDetailPage({ params }: Params) {
         <div className="flex flex-col gap-6">
           <PharmacyInfo pharmacy={pharmacy} />
           <SourceCaption ids={['hira']} />
+          <PharmacyNeighborhood
+            years={pharmacyYears(pharmacy.openedAt, new Date().getUTCFullYear())}
+            openedYear={pharmacy.openedAt ? pharmacy.openedAt.getUTCFullYear() : null}
+            dong={dong}
+            sundayClinics={sundayClinics}
+          />
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>

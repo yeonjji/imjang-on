@@ -4,6 +4,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ParkInfo } from '@/app/(public)/urban/[category]/_components/park-info';
 import { ParkingFeeCompare } from '@/app/(public)/urban/[category]/_components/parking-fee-compare';
+import { PharmacyNeighborhood } from '@/app/(public)/medical/pharmacy/[sigunguCode]/[id]/_components/pharmacy-neighborhood';
 import type { ParkRaw } from '@/lib/urban/adapters/park';
 import type { UrbanItem } from '@/lib/urban/category';
 
@@ -37,5 +38,23 @@ describe('ParkingFeeCompare', () => {
   it('중앙값이 없는 지표는 타일을 숨기고, 다 없으면 렌더하지 않는다', () => {
     const none = { own30: 1500, median30: null, count30: 1, ownMonthly: null, medianMonthly: null, countMonthly: 0 };
     expect(renderToStaticMarkup(createElement(ParkingFeeCompare, { cmp: none, scope: '평택시' }))).toBe('');
+  });
+});
+
+describe('PharmacyNeighborhood', () => {
+  it('연차·동 순서·일요일 진료와 그 기준 표기', () => {
+    const html = renderToStaticMarkup(createElement(PharmacyNeighborhood, { years: 20, openedYear: 2007, dong: { dong: '박달동', count: 7, openedRank: 2 }, sundayClinics: 2 }));
+    expect(html).toContain('20년차');
+    expect(html).toContain('박달동 약국 7곳');
+    expect(html).toContain('개설 순 2번째');
+    expect(html).toContain('2곳');
+    expect(html).toContain('진료시간을 공개한 병·의원 기준');
+  });
+  it('일요일 진료 0곳은 "없음"으로 단정하지 않고 타일을 숨긴다', () => {
+    const html = renderToStaticMarkup(createElement(PharmacyNeighborhood, { years: 20, openedYear: 2007, dong: null, sundayClinics: 0 }));
+    expect(html).not.toContain('일요일');
+  });
+  it('보여줄 게 없으면 렌더하지 않는다', () => {
+    expect(renderToStaticMarkup(createElement(PharmacyNeighborhood, { years: null, openedYear: null, dong: null, sundayClinics: 0 }))).toBe('');
   });
 });
