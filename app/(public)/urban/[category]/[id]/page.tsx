@@ -31,6 +31,8 @@ import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { ParkInfo } from '../_components/park-info';
 import { ParkFacilities } from '../_components/park-facilities';
 import { getParkAreaRank } from '@/lib/urban/park-context';
+import { getParkingFeeComparison } from '@/lib/urban/parking-context';
+import { ParkingFeeCompare } from '../_components/parking-fee-compare';
 import { resolveAddrPrefix } from '@/lib/urban/_shared';
 import { buildParkHeroLine } from '@/lib/urban/park-display';
 import type { ParkRaw } from '@/lib/urban/adapters/park';
@@ -133,6 +135,7 @@ export default async function UrbanDetailPage({ params }: Params) {
   const parkRaw = isPark ? (item as UrbanItem<ParkRaw>).raw : null;
   const addrPrefix = sigunguCode ? await resolveAddrPrefix({ sigunguCode }) : null;
   const areaRank = parkRaw ? await getParkAreaRank(parkRaw, addrPrefix) : null;
+  const feeCmp = def.slug === 'parking' ? await getParkingFeeComparison(r, addrPrefix) : null;
   const areaRankProp =
     areaRank && region && parkRaw?.parkType
       ? { ...areaRank, scope: `${region.fullName.split(' ').pop()} ${parkRaw.parkType}` }
@@ -206,6 +209,7 @@ export default async function UrbanDetailPage({ params }: Params) {
               <UrbanInfo item={item} def={def} regionFullName={region?.fullName ?? ''} />
               <ParkingHoursTable row={r} />
               <ParkingFeeGrid row={r} />
+              {feeCmp && region && <ParkingFeeCompare cmp={feeCmp} scope={region.fullName.split(' ').pop() ?? ''} />}
               <ParkingExtras row={r} />
             </>
           )}
