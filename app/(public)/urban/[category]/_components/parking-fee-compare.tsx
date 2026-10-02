@@ -6,10 +6,10 @@ const won = (n: number) => `${n.toLocaleString('ko-KR')}원`;
 export function ParkingFeeCompare({ cmp, scope }: { cmp: ParkingFeeComparison; scope: string }) {
   const tiles: { label: string; value: string; sub: string }[] = [];
   if (cmp.own30 !== null && cmp.median30 !== null) {
-    tiles.push({ label: '30분 요금(환산)', value: won(cmp.own30), sub: `${scope} 공영주차장 중앙값 ${won(cmp.median30)}` });
+    tiles.push({ label: '30분 요금(환산)', value: won(cmp.own30), sub: `${scope} 유료 공영주차장 ${cmp.count30}곳 중앙값 ${won(cmp.median30)}` });
   }
   if (cmp.ownMonthly !== null && cmp.medianMonthly !== null) {
-    tiles.push({ label: '월 정기권', value: won(cmp.ownMonthly), sub: `${scope} 공영주차장 중앙값 ${won(cmp.medianMonthly)}` });
+    tiles.push({ label: '월 정기권', value: won(cmp.ownMonthly), sub: `${scope} 공영주차장 ${cmp.countMonthly}곳 중앙값 ${won(cmp.medianMonthly)}` });
   }
   if (tiles.length === 0) return null;
   return (
@@ -25,7 +25,7 @@ export function ParkingFeeCompare({ cmp, scope }: { cmp: ParkingFeeComparison; s
         ))}
       </div>
       <p className="mt-3 text-xs text-[var(--color-muted)]">
-        기본시간 5~120분인 공영주차장의 기본요금을 30분 기준으로 환산해 비교했습니다(1일 요금 제외).
+        기본시간 5~120분인 유료 공영주차장의 기본요금을 30분 기준으로 환산해 비교했습니다. 무료 주차장 제외, 1일 요금 제외.
       </p>
     </Card>
   );

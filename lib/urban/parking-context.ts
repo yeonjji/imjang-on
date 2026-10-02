@@ -26,10 +26,12 @@ export interface ParkingFeeComparison {
 }
 
 export async function getParkingFeeComparison(
-  r: { basicTime: number | null; basicCharge: number | null; monthCmmtkt: number | null },
+  r: { address: string; basicTime: number | null; basicCharge: number | null; monthCmmtkt: number | null },
   addrPrefix: string | null,
 ): Promise<ParkingFeeComparison | null> {
   if (!addrPrefix || addrPrefix === '__NO_MATCH__') return null;
+  // 이 주차장이 비교 그룹(같은 '시도 시군구') 안에 있을 때만 비교한다(park-context와 같은 이유).
+  if (!r.address.startsWith(`${addrPrefix} `)) return null;
   const own30 = per30(r.basicTime, r.basicCharge);
   const ownMonthly = r.monthCmmtkt && r.monthCmmtkt > 0 ? r.monthCmmtkt : null;
   if (own30 === null && ownMonthly === null) return null;

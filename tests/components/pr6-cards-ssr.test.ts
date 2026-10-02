@@ -33,7 +33,8 @@ describe('ParkingFeeCompare', () => {
       }),
     );
     expect(html).toContain('1,500원');
-    expect(html).toContain('평택시 공영주차장 중앙값 600원');
+    expect(html).toContain('평택시 유료 공영주차장 3곳 중앙값 600원');
+    expect(html).toContain('무료 주차장 제외');
     expect(html).toContain('100,000원');
   });
   it('중앙값이 없는 지표는 타일을 숨기고, 다 없으면 렌더하지 않는다', () => {
@@ -66,7 +67,12 @@ describe('HospitalSameDept', () => {
     expect(html).toContain('반경 1km 내과 의원');
     expect(html).toContain('6곳');
     expect(html).toContain('이곳 포함');
-    expect(html).toContain('진료시간을 공개한 4곳 기준');
+    expect(html).toContain('진료시간 공개 4곳 중');
+  });
+  it('토요일·야간이 0곳이면 그 타일은 숨긴다(미공개를 휴진으로 읽히지 않게)', () => {
+    const html = renderToStaticMarkup(createElement(HospitalSameDept, { data: { dept: '내과', typeName: '의원', total: 6, withHours: 4, saturday: 3, night: 0 } }));
+    expect(html).toContain('토요일');
+    expect(html).not.toContain('20시');
   });
   it('진료시간 공개분이 없으면 토요일·야간 타일을 숨긴다', () => {
     const html = renderToStaticMarkup(createElement(HospitalSameDept, { data: { dept: '내과', typeName: '의원', total: 3, withHours: 0, saturday: 0, night: 0 } }));

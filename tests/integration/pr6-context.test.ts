@@ -45,12 +45,16 @@ beforeAll(async () => {
   const h2 = await mk('UT-PR6-H2', 'UT바다내과의원', '의원'); // 토요일만
   const h3 = await mk('UT-PR6-H3', 'UT소아청소년과의원', '의원'); // 진료시간 비공개
   const h4 = await mk('UT-PR6-H4', 'UT먼내과의원', '의원'); // 3km 밖
+  const h5 = await mk('UT-PR6-H5', 'UT빈시간내과의원', '의원'); // 상세 행은 있으나 시간 전부 null
+  const h6 = await mk('UT-PR6-H6', 'UT정각내과의원', '의원'); // 평일 20:00 정각 종료(야간 아님)
   await prisma.hospitalDept.createMany({
     data: [
       { hospitalId: h1.id, deptCode: '01', deptName: '내과' },
       { hospitalId: h2.id, deptCode: '01', deptName: '내과' },
       { hospitalId: h3.id, deptCode: '11', deptName: '소아청소년과' },
       { hospitalId: h4.id, deptCode: '01', deptName: '내과' },
+      { hospitalId: h5.id, deptCode: '01', deptName: '내과' },
+      { hospitalId: h6.id, deptCode: '01', deptName: '내과' },
     ],
   });
   await prisma.hospitalDetail.createMany({
@@ -58,9 +62,11 @@ beforeAll(async () => {
       { hospitalId: h1.id, openSun: 900, closeSun: 1300, openSat: 900, closeSat: 1300, openMon: 900, closeMon: 2100 },
       { hospitalId: h2.id, openSat: 900, closeSat: 1300, openMon: 900, closeMon: 1800 },
       { hospitalId: h4.id, openSun: 900, closeSun: 1300 },
+      { hospitalId: h5.id },
+      { hospitalId: h6.id, openMon: 900, closeMon: 2000 },
     ],
   });
-  await prisma.$executeRaw`UPDATE "Hospital" SET location = ST_SetSRID(ST_MakePoint(124.5000, 33.0000), 4326)::geography WHERE "sourceId" IN ('UT-PR6-H1','UT-PR6-H3')`;
+  await prisma.$executeRaw`UPDATE "Hospital" SET location = ST_SetSRID(ST_MakePoint(124.5000, 33.0000), 4326)::geography WHERE "sourceId" IN ('UT-PR6-H1','UT-PR6-H3','UT-PR6-H5','UT-PR6-H6')`;
   await prisma.$executeRaw`UPDATE "Hospital" SET location = ST_SetSRID(ST_MakePoint(124.5030, 33.0000), 4326)::geography WHERE "sourceId" = 'UT-PR6-H2'`;
   await prisma.$executeRaw`UPDATE "Hospital" SET location = ST_SetSRID(ST_MakePoint(124.5400, 33.0000), 4326)::geography WHERE "sourceId" = 'UT-PR6-H4'`;
 });
@@ -76,31 +82,37 @@ afterAll(async () => {
 
 describe('getParkAreaRank', () => {
   it('같은 시군구·같은 유형 중 면적 순위(이 공원 포함)', async () => {
-    expect(await getParkAreaRank({ parkType: '근린공원', area: 50000 }, PREFIX)).toEqual({ rank: 2, total: 3 });
+    expect(await getParkAreaRank({ address: `${PREFIX} 2`, parkType: '근린공원', area: 50000 }, PREFIX)).toEqual({ rank: 2, total: 3 });
   });
   it('비교 대상이 3곳 미만이면 null', async () => {
-    expect(await getParkAreaRank({ parkType: '어린이공원', area: 99999 }, PREFIX)).toBeNull();
+    expect(await getParkAreaRank({ address: `${PREFIX} 4`, parkType: '어린이공원', area: 99999 }, PREFIX)).toBeNull();
+  });
+  it('이 공원 주소가 접두어 밖이면 null(세종 동 오분류·시도 표기 혼재로 엉뚱한 그룹과 비교되는 것 방지)', async () => {
+    expect(await getParkAreaRank({ address: '세종특별자치시 한솔동 965', parkType: '근린공원', area: 1 }, PREFIX)).toBeNull();
   });
   it('접두어·유형·면적이 없으면 null', async () => {
-    expect(await getParkAreaRank({ parkType: '근린공원', area: 50000 }, null)).toBeNull();
-    expect(await getParkAreaRank({ parkType: null, area: 50000 }, PREFIX)).toBeNull();
-    expect(await getParkAreaRank({ parkType: '근린공원', area: null }, PREFIX)).toBeNull();
+    expect(await getParkAreaRank({ address: `${PREFIX} 2`, parkType: '근린공원', area: 50000 }, null)).toBeNull();
+    expect(await getParkAreaRank({ address: `${PREFIX} 2`, parkType: null, area: 50000 }, PREFIX)).toBeNull();
+    expect(await getParkAreaRank({ address: `${PREFIX} 2`, parkType: '근린공원', area: null }, PREFIX)).toBeNull();
   });
 });
 
 describe('getParkingFeeComparison', () => {
   it('공영 주차장 30분 환산 중앙값·월정기권 중앙값(1일 요금·민영 제외)', async () => {
-    const cmp = await getParkingFeeComparison({ basicTime: 30, basicCharge: 1500, monthCmmtkt: 100000 }, PREFIX);
+    const cmp = await getParkingFeeComparison({ address: `${PREFIX} 9`, basicTime: 30, basicCharge: 1500, monthCmmtkt: 100000 }, PREFIX);
     expect(cmp).toEqual({
       own30: 1500, median30: 600, count30: 3, // 500, 600, 1000 → 600
       ownMonthly: 100000, medianMonthly: 80000, countMonthly: 3,
     });
   });
   it('접두어가 없으면 null', async () => {
-    expect(await getParkingFeeComparison({ basicTime: 30, basicCharge: 1500, monthCmmtkt: null }, '__NO_MATCH__')).toBeNull();
+    expect(await getParkingFeeComparison({ address: `${PREFIX} 9`, basicTime: 30, basicCharge: 1500, monthCmmtkt: null }, '__NO_MATCH__')).toBeNull();
+  });
+  it('이 주차장 주소가 접두어 밖이면 null', async () => {
+    expect(await getParkingFeeComparison({ address: '세종특별자치시 한솔동 1', basicTime: 30, basicCharge: 1500, monthCmmtkt: null }, PREFIX)).toBeNull();
   });
   it('이 주차장 요금이 없으면 null', async () => {
-    expect(await getParkingFeeComparison({ basicTime: null, basicCharge: null, monthCmmtkt: null }, PREFIX)).toBeNull();
+    expect(await getParkingFeeComparison({ address: `${PREFIX} 9`, basicTime: null, basicCharge: null, monthCmmtkt: null }, PREFIX)).toBeNull();
   });
 });
 
@@ -121,7 +133,8 @@ describe('약국 동네 맥락', () => {
 describe('getSameDeptNearby', () => {
   it('반경 1km 같은 진료과·같은 종별(이곳 포함), 진료시간 공개분 중 토요일·평일 20시 이후', async () => {
     expect(await getSameDeptNearby({ typeName: '의원' }, '내과', 33.0, 124.5)).toEqual({
-      dept: '내과', typeName: '의원', total: 2, withHours: 2, saturday: 2, night: 1,
+      // H1·H2·H5·H6: 시간 전부 null인 H5는 '공개'에서 제외, 20:00 정각 종료 H6은 야간 아님
+      dept: '내과', typeName: '의원', total: 4, withHours: 3, saturday: 2, night: 1,
     });
   });
   it('혼자면 null', async () => {

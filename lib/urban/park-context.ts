@@ -8,10 +8,13 @@ export interface ParkAreaRank {
 }
 
 export async function getParkAreaRank(
-  p: { parkType: string | null; area: number | null },
+  p: { address: string; parkType: string | null; area: number | null },
   addrPrefix: string | null,
 ): Promise<ParkAreaRank | null> {
   if (!addrPrefix || addrPrefix === '__NO_MATCH__' || !p.parkType || !p.area) return null;
+  // 이 공원이 그룹 안에 있어야 "N곳 중 M위"가 성립한다. 세종(동이 시군구 코드를 공유)·시도 표기 혼재
+  // (강원도/강원특별자치도 등)로 접두어가 이 공원을 빠뜨리면 "14곳 중 15위" 같은 불가능한 순위가 나온다.
+  if (!p.address.startsWith(`${addrPrefix} `)) return null;
   const rows = await prisma.$queryRaw<{ total: number; bigger: number }[]>`
     SELECT count(*)::int AS total, count(*) FILTER (WHERE area > ${p.area})::int AS bigger
     FROM "Park"

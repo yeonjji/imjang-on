@@ -30,14 +30,22 @@ export async function getSameDeptNearby(
 ): Promise<SameDeptNearby | null> {
   const rows = await prisma.$queryRaw<{ total: number; with_hours: number; saturday: number; night: number }[]>`
     SELECT count(DISTINCT x.id)::int AS total,
-           count(DISTINCT x.id) FILTER (WHERE d.id IS NOT NULL)::int AS with_hours,
+           -- 상세 행이 있어도 시간이 전부 비어 있는 곳(약 10%)은 '공개'로 세지 않는다.
+           count(DISTINCT x.id) FILTER (
+             WHERE COALESCE(d."openMon", d."closeMon", d."openTue", d."closeTue", d."openWed", d."closeWed",
+                            d."openThu", d."closeThu", d."openFri", d."closeFri", d."openSat", d."closeSat",
+                            d."openSun", d."closeSun") IS NOT NULL
+           )::int AS with_hours,
            count(DISTINCT x.id) FILTER (
              WHERE d."openSat" BETWEEN 0 AND 2400 AND d."closeSat" BETWEEN 0 AND 2400 AND d."closeSat" > d."openSat"
            )::int AS saturday,
            count(DISTINCT x.id) FILTER (
-             WHERE d."closeMon" BETWEEN 2000 AND 2400 OR d."closeTue" BETWEEN 2000 AND 2400
-                OR d."closeWed" BETWEEN 2000 AND 2400 OR d."closeThu" BETWEEN 2000 AND 2400
-                OR d."closeFri" BETWEEN 2000 AND 2400
+             -- 20:00 정각 종료는 '20시 이후'가 아니다. 시작 < 종료인 유효 시간대만.
+             WHERE (d."closeMon" > 2000 AND d."closeMon" <= 2400 AND d."openMon" < d."closeMon")
+                OR (d."closeTue" > 2000 AND d."closeTue" <= 2400 AND d."openTue" < d."closeTue")
+                OR (d."closeWed" > 2000 AND d."closeWed" <= 2400 AND d."openWed" < d."closeWed")
+                OR (d."closeThu" > 2000 AND d."closeThu" <= 2400 AND d."openThu" < d."closeThu")
+                OR (d."closeFri" > 2000 AND d."closeFri" <= 2400 AND d."openFri" < d."closeFri")
            )::int AS night
     FROM "Hospital" x
     JOIN "HospitalDept" dp ON dp."hospitalId" = x.id AND dp."deptName" = ${dept}

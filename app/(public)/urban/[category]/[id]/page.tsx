@@ -136,9 +136,11 @@ export default async function UrbanDetailPage({ params }: Params) {
   const addrPrefix = sigunguCode ? await resolveAddrPrefix({ sigunguCode }) : null;
   const areaRank = parkRaw ? await getParkAreaRank(parkRaw, addrPrefix) : null;
   const feeCmp = def.slug === 'parking' ? await getParkingFeeComparison(r, addrPrefix) : null;
+  // 범위 이름은 실제로 비교한 접두어에서 뽑는다(region.fullName과 다를 수 있음).
+  const scopeName = addrPrefix && addrPrefix !== '__NO_MATCH__' ? addrPrefix.split(' ').pop() ?? '' : '';
   const areaRankProp =
-    areaRank && region && parkRaw?.parkType
-      ? { ...areaRank, scope: `${region.fullName.split(' ').pop()} ${parkRaw.parkType}` }
+    areaRank && scopeName && parkRaw?.parkType
+      ? { ...areaRank, scope: `${scopeName} ${parkRaw.parkType}` }
       : null;
 
   const others = otherList.rows.filter((s) => s.id !== item.id).slice(0, 4);
@@ -209,7 +211,7 @@ export default async function UrbanDetailPage({ params }: Params) {
               <UrbanInfo item={item} def={def} regionFullName={region?.fullName ?? ''} />
               <ParkingHoursTable row={r} />
               <ParkingFeeGrid row={r} />
-              {feeCmp && region && <ParkingFeeCompare cmp={feeCmp} scope={region.fullName.split(' ').pop() ?? ''} />}
+              {feeCmp && scopeName && <ParkingFeeCompare cmp={feeCmp} scope={scopeName} />}
               <ParkingExtras row={r} />
             </>
           )}
