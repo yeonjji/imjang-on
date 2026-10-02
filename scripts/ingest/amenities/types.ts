@@ -9,6 +9,16 @@ export interface NormalizedEvCharger {
   chargeSpeed: string;
   chargerCount: number;
   operatorName: string | null;
+  accessLimited: boolean | null;
+  limitDetail: string | null;
+  useTime: string | null;
+  parkingFree: boolean | null;
+  floorType: string | null;
+  floorNum: number | null;
+  facilityKind: string | null;
+  facilityKindDetail: string | null;
+  operatorTel: string | null;
+  locationDetail: string | null;
 }
 
 export interface NormalizedEvChargerUnit {
@@ -17,6 +27,8 @@ export interface NormalizedEvChargerUnit {
   chgerId: string;
   chgerType: string;
   isFast: boolean;
+  outputKw: number | null;
+  installYear: number | null;
 }
 
 export interface NormalizedTraditionalMarket {

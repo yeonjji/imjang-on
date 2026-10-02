@@ -1,5 +1,6 @@
 import { parseXml, getItems, getTotalCount } from '@/scripts/ingest/xml-parse';
 import type { NormalizedEvCharger, NormalizedEvChargerUnit } from './types';
+import { strOrNull, boolFromYn, intInRange, clip } from './parse-helpers';
 
 const FAST_TYPES = new Set(['01', '03', '04', '05', '06', '07']);
 const BASE_URL = 'https://apis.data.go.kr/B552584/EvCharger/getChargerInfo';
@@ -33,6 +34,21 @@ function buildEvChargerData(items: Record<string, unknown>[]): EvChargerParseRes
     const lat = Number.isFinite(rawLat) && rawLat !== 0 ? rawLat : null;
     const lng = Number.isFinite(rawLng) && rawLng !== 0 ? rawLng : null;
 
+    const floorType = strOrNull(item.floorType);
+    const stationDetail = {
+      accessLimited: boolFromYn(item.limitYn),
+      limitDetail: clip(strOrNull(item.limitDetail), 200),
+      useTime: clip(strOrNull(item.useTime), 100),
+      parkingFree: boolFromYn(item.parkingFree),
+      floorType: floorType === 'F' || floorType === 'B' ? floorType : null,
+      floorNum: intInRange(item.floorNum, 1, 99),
+      facilityKind: clip(strOrNull(item.kind), 2),
+      facilityKindDetail: clip(strOrNull(item.kindDetail), 4),
+      // parseTagValue가 하이픈 없는 번호를 숫자로 바꿔 앞자리 0이 사라진다 → 문자열로 온 값만 신뢰.
+      operatorTel: typeof item.busiCall === 'string' ? clip(strOrNull(item.busiCall), 30) : null,
+      locationDetail: clip(strOrNull(item.location), 300),
+    };
+
     if (stationMap.has(statId)) {
       const existing = stationMap.get(statId)!;
       existing.chargerCount += 1;
@@ -52,6 +68,8 @@ function buildEvChargerData(items: Record<string, unknown>[]): EvChargerParseRes
         chargeSpeed: isFast ? '급속' : '완속',
         chargerCount: 1,
         operatorName: item.busiNm ? String(item.busiNm).trim() : null,
+        // 충전소 단위 필드는 그 충전소의 첫 행 값을 쓴다.
+        ...stationDetail,
       });
     }
 
@@ -64,6 +82,8 @@ function buildEvChargerData(items: Record<string, unknown>[]): EvChargerParseRes
       chgerId,
       chgerType,
       isFast,
+      outputKw: intInRange(item.output, 1, 1000),
+      installYear: intInRange(item.year, 1990, new Date().getUTCFullYear()),
     });
   }
 
