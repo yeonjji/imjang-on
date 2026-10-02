@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { ParkInfo } from '@/app/(public)/urban/[category]/_components/park-info';
 import { ParkingFeeCompare } from '@/app/(public)/urban/[category]/_components/parking-fee-compare';
 import { PharmacyNeighborhood } from '@/app/(public)/medical/pharmacy/[sigunguCode]/[id]/_components/pharmacy-neighborhood';
+import { HospitalSameDept } from '@/app/(public)/medical/hospital/[sigunguCode]/[id]/_components/hospital-same-dept';
 import type { ParkRaw } from '@/lib/urban/adapters/park';
 import type { UrbanItem } from '@/lib/urban/category';
 
@@ -56,5 +57,20 @@ describe('PharmacyNeighborhood', () => {
   });
   it('보여줄 게 없으면 렌더하지 않는다', () => {
     expect(renderToStaticMarkup(createElement(PharmacyNeighborhood, { years: null, openedYear: null, dong: null, sundayClinics: 0 }))).toBe('');
+  });
+});
+
+describe('HospitalSameDept', () => {
+  it('같은 과 수와 토요일·야간 진료, 그 기준 표기', () => {
+    const html = renderToStaticMarkup(createElement(HospitalSameDept, { data: { dept: '내과', typeName: '의원', total: 6, withHours: 4, saturday: 4, night: 1 } }));
+    expect(html).toContain('반경 1km 내과 의원');
+    expect(html).toContain('6곳');
+    expect(html).toContain('이곳 포함');
+    expect(html).toContain('진료시간을 공개한 4곳 기준');
+  });
+  it('진료시간 공개분이 없으면 토요일·야간 타일을 숨긴다', () => {
+    const html = renderToStaticMarkup(createElement(HospitalSameDept, { data: { dept: '내과', typeName: '의원', total: 3, withHours: 0, saturday: 0, night: 0 } }));
+    expect(html).not.toContain('토요일');
+    expect(html).not.toContain('20시');
   });
 });

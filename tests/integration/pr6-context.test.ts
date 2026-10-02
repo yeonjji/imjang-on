@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getParkAreaRank } from '@/lib/urban/park-context';
 import { getParkingFeeComparison } from '@/lib/urban/parking-context';
 import { getPharmacyDong, countSundayClinicsNearby } from '@/lib/pharmacy/context';
+import { getSameDeptNearby } from '@/lib/hospital/context';
 
 // 실제 데이터와 겹치지 않게 가상 주소 접두어와 바다 좌표를 쓴다(CI check 잡은 seed를 안 한다).
 const PREFIX = 'UT도 UT시';
@@ -114,5 +115,16 @@ describe('약국 동네 맥락', () => {
   });
   it('도보권(500m) 일요일 진료: 진료시간 공개분 중 일요일 유효 시간대만, 3km 밖 제외', async () => {
     expect(await countSundayClinicsNearby(33.0, 124.5)).toBe(1);
+  });
+});
+
+describe('getSameDeptNearby', () => {
+  it('반경 1km 같은 진료과·같은 종별(이곳 포함), 진료시간 공개분 중 토요일·평일 20시 이후', async () => {
+    expect(await getSameDeptNearby({ typeName: '의원' }, '내과', 33.0, 124.5)).toEqual({
+      dept: '내과', typeName: '의원', total: 2, withHours: 2, saturday: 2, night: 1,
+    });
+  });
+  it('혼자면 null', async () => {
+    expect(await getSameDeptNearby({ typeName: '의원' }, '소아청소년과', 33.0, 124.5)).toBeNull();
   });
 });

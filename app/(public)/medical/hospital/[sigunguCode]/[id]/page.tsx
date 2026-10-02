@@ -8,6 +8,8 @@ import { HospitalHero } from './_components/hospital-hero';
 import { HospitalSummaryCards } from './_components/hospital-summary-cards';
 import { HospitalTabs } from './_components/hospital-tabs';
 import { HospitalSidebar } from './_components/hospital-sidebar';
+import { HospitalSameDept } from './_components/hospital-same-dept';
+import { primaryDept, getSameDeptNearby } from '@/lib/hospital/context';
 import { NearbyApartments } from '@/components/ui/nearby-apartments';
 import { NearbyInfra } from '@/components/ui/nearby-infra';
 import { NearbySubway } from '@/components/ui/nearby-subway';
@@ -65,6 +67,8 @@ export default async function HospitalDetailPage({ params }: Params) {
   if (hospital.sigunguCode !== sigunguCode) permanentRedirect(`/medical/hospital/${hospital.sigunguCode}/${hospital.id}`);
 
   const coord = await cachedHospitalLatLng(hospitalId);
+  const dept = primaryDept(hospital.name, hospital.depts.map((d) => d.deptName));
+  const sameDept = coord && dept ? await getSameDeptNearby(hospital, dept, coord.lat, coord.lng) : null;
 
   const [apts, infra, otherList, subway] = await Promise.all([
     coord ? cachedNearbyApartmentsHosp(coord.lat, coord.lng) : Promise.resolve([] as NearbyApartment[]),
@@ -159,6 +163,7 @@ export default async function HospitalDetailPage({ params }: Params) {
         <div className="flex flex-col gap-6">
           <HospitalTabs hospital={hospital} />
           <SourceCaption ids={['hira']} />
+          {sameDept && <HospitalSameDept data={sameDept} />}
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">위치</h2>
