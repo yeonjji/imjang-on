@@ -1,5 +1,6 @@
-import { parseXml, getItems, getTotalCount } from '@/scripts/ingest/xml-parse';
+import { parseXmlKeepCodes, getItems, getTotalCount } from '@/scripts/ingest/xml-parse';
 import type { NormalizedEvCharger, NormalizedEvChargerUnit } from './types';
+import { strOrNull, boolFromYn, intInRange, clip } from './parse-helpers';
 
 const FAST_TYPES = new Set(['01', '03', '04', '05', '06', '07']);
 const BASE_URL = 'https://apis.data.go.kr/B552584/EvCharger/getChargerInfo';
@@ -33,10 +34,30 @@ function buildEvChargerData(items: Record<string, unknown>[]): EvChargerParseRes
     const lat = Number.isFinite(rawLat) && rawLat !== 0 ? rawLat : null;
     const lng = Number.isFinite(rawLng) && rawLng !== 0 ? rawLng : null;
 
+    const floorType = strOrNull(item.floorType);
+    const stationDetail = {
+      accessLimited: boolFromYn(item.limitYn),
+      limitDetail: clip(strOrNull(item.limitDetail), 200),
+      useTime: clip(strOrNull(item.useTime), 100),
+      parkingFree: boolFromYn(item.parkingFree),
+      floorType: floorType === 'F' || floorType === 'B' ? floorType : null,
+      floorNum: intInRange(item.floorNum, 1, 99),
+      facilityKind: clip(strOrNull(item.kind), 2),
+      facilityKindDetail: clip(strOrNull(item.kindDetail), 4),
+      // parseTagValue가 하이픈 없는 번호를 숫자로 바꿔 앞자리 0이 사라진다 → 문자열로 온 값만 신뢰.
+      operatorTel: typeof item.busiCall === 'string' ? clip(strOrNull(item.busiCall), 30) : null,
+      locationDetail: clip(strOrNull(item.location), 300),
+    };
+
     if (stationMap.has(statId)) {
       const existing = stationMap.get(statId)!;
       existing.chargerCount += 1;
       if (isFast) existing.chargeSpeed = '급속';
+      // 이용 제한은 충전기마다 다를 수 있다(실측 377곳 중 2곳 혼재). 하나라도 제한이면 제한으로 —
+      // 첫 행이 개방이라 경고가 사라지는 일이 없게 행 순서와 무관하게 정한다.
+      if (stationDetail.accessLimited === true) existing.accessLimited = true;
+      else if (existing.accessLimited == null) existing.accessLimited = stationDetail.accessLimited;
+      if (existing.limitDetail == null && stationDetail.limitDetail) existing.limitDetail = stationDetail.limitDetail;
       // 같은 statId의 후속 item에 좌표가 있으면 보강
       if (existing.lat == null && lat != null && lng != null) {
         existing.lat = lat;
@@ -52,6 +73,8 @@ function buildEvChargerData(items: Record<string, unknown>[]): EvChargerParseRes
         chargeSpeed: isFast ? '급속' : '완속',
         chargerCount: 1,
         operatorName: item.busiNm ? String(item.busiNm).trim() : null,
+        // 충전소 단위 필드는 그 충전소의 첫 행 값을 쓴다.
+        ...stationDetail,
       });
     }
 
@@ -64,6 +87,8 @@ function buildEvChargerData(items: Record<string, unknown>[]): EvChargerParseRes
       chgerId,
       chgerType,
       isFast,
+      outputKw: intInRange(item.output, 1, 1000),
+      installYear: intInRange(item.year, 1990, new Date().getUTCFullYear()),
     });
   }
 
@@ -74,7 +99,7 @@ function buildEvChargerData(items: Record<string, unknown>[]): EvChargerParseRes
 }
 
 export function parseEvChargerXml(xml: string): EvChargerParseResult & { totalCount: number } {
-  const parsed = parseXml(xml);
+  const parsed = parseXmlKeepCodes(xml);
   const items = getItems(parsed) as Record<string, unknown>[];
   const totalCount = getTotalCount(parsed);
   return { ...buildEvChargerData(items), totalCount };
@@ -134,7 +159,7 @@ export async function streamEvChargers(
       throw err;
     }
 
-    const parsed = parseXml(xml);
+    const parsed = parseXmlKeepCodes(xml);
     const items = getItems(parsed) as Record<string, unknown>[];
     const tc = getTotalCount(parsed);
     if (tc) totalCount = tc;

@@ -16,6 +16,7 @@ export function ChargerHero({ item }: { item: UrbanItem<ChargerRaw> }) {
           </h1>
           <Badge tone={r.chargeSpeed === '급속' ? 'blue' : 'gray'}>{r.chargeSpeed}</Badge>
           <Badge tone="gray">{r.chargerCount}기</Badge>
+          {r.accessLimited === true && <Badge tone="orange">이용 제한</Badge>}
         </div>
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-muted)]">
           <span>📍 {item.address}</span>

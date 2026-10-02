@@ -105,16 +105,30 @@ async function writeEvChargerStations(stations: NormalizedEvCharger[]): Promise<
   for (let i = 0; i < stations.length; i += CHUNK) {
     const chunk = stations.slice(i, i + CHUNK);
     const values = chunk.map((r: NormalizedEvCharger) =>
-      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.chargeSpeed}, ${r.chargerCount}, ${r.operatorName ?? null}, ${locationSql(r.lat, r.lng)}, NOW())`,
+      Prisma.sql`(${r.sourceId}, ${r.name}, ${r.address}, ${r.chargeSpeed}, ${r.chargerCount}, ${r.operatorName ?? null}, ${locationSql(r.lat, r.lng)},
+        ${r.accessLimited}, ${r.limitDetail}, ${r.useTime}, ${r.parkingFree}, ${r.floorType}, ${r.floorNum},
+        ${r.facilityKind}, ${r.facilityKindDetail}, ${r.operatorTel}, ${r.locationDetail}, NOW())`,
     );
     await prisma.$executeRaw`
-      INSERT INTO "EvCharger" ("sourceId", name, address, "chargeSpeed", "chargerCount", "operatorName", location, "updatedAt")
+      INSERT INTO "EvCharger" ("sourceId", name, address, "chargeSpeed", "chargerCount", "operatorName", location,
+        "accessLimited", "limitDetail", "useTime", "parkingFree", "floorType", "floorNum",
+        "facilityKind", "facilityKindDetail", "operatorTel", "locationDetail", "updatedAt")
       VALUES ${Prisma.join(values)}
       ON CONFLICT ("sourceId") DO UPDATE SET
         name = EXCLUDED.name,
         address = EXCLUDED.address,
         "operatorName" = EXCLUDED."operatorName",
         location = EXCLUDED.location,
+        "accessLimited" = EXCLUDED."accessLimited",
+        "limitDetail" = EXCLUDED."limitDetail",
+        "useTime" = EXCLUDED."useTime",
+        "parkingFree" = EXCLUDED."parkingFree",
+        "floorType" = EXCLUDED."floorType",
+        "floorNum" = EXCLUDED."floorNum",
+        "facilityKind" = EXCLUDED."facilityKind",
+        "facilityKindDetail" = EXCLUDED."facilityKindDetail",
+        "operatorTel" = EXCLUDED."operatorTel",
+        "locationDetail" = EXCLUDED."locationDetail",
         "updatedAt" = NOW()
     `;
   }
@@ -124,16 +138,18 @@ async function writeEvChargerUnits(units: NormalizedEvChargerUnit[]): Promise<vo
   for (let i = 0; i < units.length; i += CHUNK) {
     const chunk = units.slice(i, i + CHUNK);
     const values = chunk.map((u: NormalizedEvChargerUnit) =>
-      Prisma.sql`(${u.sourceId}, ${u.stationSourceId}, ${u.chgerId}, ${u.chgerType}, ${u.isFast}, NOW())`,
+      Prisma.sql`(${u.sourceId}, ${u.stationSourceId}, ${u.chgerId}, ${u.chgerType}, ${u.isFast}, ${u.outputKw}, ${u.installYear}, NOW())`,
     );
     await prisma.$executeRaw`
-      INSERT INTO "EvChargerUnit" ("sourceId", "stationSourceId", "chgerId", "chgerType", "isFast", "updatedAt")
+      INSERT INTO "EvChargerUnit" ("sourceId", "stationSourceId", "chgerId", "chgerType", "isFast", "outputKw", "installYear", "updatedAt")
       VALUES ${Prisma.join(values)}
       ON CONFLICT ("sourceId") DO UPDATE SET
         "stationSourceId" = EXCLUDED."stationSourceId",
         "chgerId" = EXCLUDED."chgerId",
         "chgerType" = EXCLUDED."chgerType",
         "isFast" = EXCLUDED."isFast",
+        "outputKw" = EXCLUDED."outputKw",
+        "installYear" = EXCLUDED."installYear",
         "updatedAt" = NOW()
     `;
   }

@@ -16,6 +16,7 @@ export interface ChargerUnitPlain {
   chgerId: string;
   chgerType: string;
   isFast: boolean;
+  outputKw?: number | null;
 }
 
 export interface ChargerUnitRow extends ChargerUnitPlain {

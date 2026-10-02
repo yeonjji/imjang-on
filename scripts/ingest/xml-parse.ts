@@ -10,6 +10,19 @@ export function parseXml(xml: string): Record<string, unknown> {
   return parser.parse(xml) as Record<string, unknown>;
 }
 
+// 코드성 문자열을 숫자로 바꾸지 않는 파서. 기본 파서는 'E0'·'E001'을 지수 표기로 읽어 NaN을,
+// '0215991234'는 앞자리 0을 잃은 숫자를 만든다(EV 충전소 시설 구분·연락처에서 실측, 2026-10-02).
+const codeSafeParser = new XMLParser({
+  ignoreAttributes: true,
+  parseTagValue: true,
+  trimValues: true,
+  numberParseOptions: { hex: false, leadingZeros: false, eNotation: false },
+});
+
+export function parseXmlKeepCodes(xml: string): Record<string, unknown> {
+  return codeSafeParser.parse(xml) as Record<string, unknown>;
+}
+
 export function getItems(parsed: Record<string, unknown>): Record<string, unknown>[] {
   const items = (parsed as any)?.response?.body?.items;
   if (!items) return [];

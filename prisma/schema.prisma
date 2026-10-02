@@ -332,6 +332,16 @@ model EvCharger {
   chargeSpeed  String                                @db.VarChar(10)
   chargerCount Int
   operatorName String?                               @db.VarChar(80)
+  accessLimited      Boolean?
+  limitDetail        String?  @db.VarChar(200)
+  useTime            String?  @db.VarChar(100)
+  parkingFree        Boolean?
+  floorType          String?  @db.VarChar(1)
+  floorNum           Int?
+  facilityKind       String?  @db.VarChar(2)
+  facilityKindDetail String?  @db.VarChar(4)
+  operatorTel        String?  @db.VarChar(30)
+  locationDetail     String?  @db.VarChar(300)
   updatedAt    DateTime                              @updatedAt
 
   units EvChargerUnit[]
@@ -347,6 +357,8 @@ model EvChargerUnit {
   chgerId         String   @db.VarChar(20)
   chgerType       String   @db.VarChar(4)
   isFast          Boolean
+  outputKw        Int?
+  installYear     Int?
   updatedAt       DateTime @updatedAt
 
   @@index([stationSourceId])

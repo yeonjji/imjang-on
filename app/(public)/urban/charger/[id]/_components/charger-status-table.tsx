@@ -81,6 +81,7 @@ export function ChargerStatusTable({ units, statId }: Props) {
             <span className="font-medium">
               {r.chgerId}번 · {r.isFast ? '급속' : '완속'}
               <span className="ml-1 text-xs text-[var(--color-muted)]">({CHGER_TYPE_LABELS[r.chgerType] ?? r.chgerType})</span>
+              {r.outputKw ? <span className="ml-1 text-xs text-[var(--color-muted)]">{r.outputKw}kW</span> : null}
             </span>
             {loaded && <span>{STAT_ICON[r.stat] ?? STAT_ICON['0']} {r.statLabel}</span>}
           </li>
