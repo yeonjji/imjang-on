@@ -29,7 +29,31 @@
         <floorNum>0</floorNum><floorType>X</floorType><kind></kind>
         <limitYn></limitYn><parkingFree></parkingFree>
       </item>
+      <item>
+        <statNm>롯데마트 석사점</statNm><statId>ME000E01</statId><chgerId>01</chgerId><chgerType>04</chgerType>
+        <addr>강원특별자치도 춘천시 1</addr><useTime>10:00~23:00</useTime>
+        <busiNm>기후에너지환경부</busiNm><busiCall>1661-9408</busiCall>
+        <lat>37.86</lat><lng>127.74</lng><output>100</output><year>2021</year>
+        <floorNum>1</floorNum><floorType>F</floorType><kind>E0</kind><kindDetail>E001</kindDetail>
+        <limitYn>N</limitYn><parkingFree>Y</parkingFree>
+      </item>
+      <item>
+        <statNm>혼합제한아파트</statNm><statId>PI000MIX</statId><chgerId>01</chgerId><chgerType>02</chgerType>
+        <addr>서울특별시 동작구 1</addr><useTime>24시간 이용가능</useTime>
+        <busiNm>GS차지비</busiNm><busiCall>1600-4047</busiCall>
+        <lat>37.5</lat><lng>126.98</lng><output>7</output><year>2022</year>
+        <floorNum>2</floorNum><floorType>B</floorType><kind>H0</kind><kindDetail>H001</kindDetail>
+        <limitYn>N</limitYn><limitDetail></limitDetail><parkingFree>Y</parkingFree>
+      </item>
+      <item>
+        <statNm>혼합제한아파트</statNm><statId>PI000MIX</statId><chgerId>02</chgerId><chgerType>02</chgerType>
+        <addr>서울특별시 동작구 1</addr><useTime>24시간 이용가능</useTime>
+        <busiNm>GS차지비</busiNm><busiCall>1600-4047</busiCall>
+        <lat>37.5</lat><lng>126.98</lng><output>7</output><year>2022</year>
+        <floorNum>2</floorNum><floorType>B</floorType><kind>H0</kind><kindDetail>H001</kindDetail>
+        <limitYn>Y</limitYn><limitDetail>거주자외 출입제한</limitDetail><parkingFree>Y</parkingFree>
+      </item>
     </items>
-    <numOfRows>1000</numOfRows><pageNo>1</pageNo><totalCount>3</totalCount>
+    <numOfRows>1000</numOfRows><pageNo>1</pageNo><totalCount>6</totalCount>
   </body>
 </response>

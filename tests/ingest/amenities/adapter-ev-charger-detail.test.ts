@@ -47,4 +47,16 @@ describe('adapter-ev-charger 상세 필드', () => {
     expect(s.operatorTel).toBeNull();
     expect(un('XX000001')).toMatchObject({ outputKw: null, installYear: null });
   });
+
+  it('E0·E001 같은 시설 코드를 지수 표기 숫자(NaN)로 바꾸지 않는다', () => {
+    const s = st('ME000E01');
+    expect(s.facilityKind).toBe('E0');
+    expect(s.facilityKindDetail).toBe('E001');
+  });
+
+  it('충전기마다 제한 여부가 섞이면, 하나라도 제한이면 제한(행 순서와 무관)과 첫 제한 사유', () => {
+    const s = st('PI000MIX');
+    expect(s.accessLimited).toBe(true);
+    expect(s.limitDetail).toBe('거주자외 출입제한');
+  });
 });
