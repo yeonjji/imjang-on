@@ -7,6 +7,9 @@ describe('facilityKindLabel', () => {
     expect(facilityKindLabel('A0')).toBe('공공시설');
     expect(facilityKindLabel('J0')).toBe('교육문화시설');
   });
+  it('원천 오타 BO(영문 O)는 B0(주차시설)로 읽는다 — 상세 코드가 B001(공영주차장)', () => {
+    expect(facilityKindLabel('BO')).toBe('주차시설');
+  });
   it('표에 없는 코드·빈 값은 null(추측 금지)', () => {
     expect(facilityKindLabel('Z9')).toBeNull();
     expect(facilityKindLabel('H001')).toBeNull();

@@ -18,8 +18,12 @@ const FACILITY_KIND: Record<string, string> = {
   J0: '교육문화시설',
 };
 
+// 원천 오타: 일부 충전소가 'B0'을 'BO'(영문 O)로 보낸다(2026-10-06 운영 143곳, 상세 코드는 모두 B001 공영주차장).
+const KIND_TYPO: Record<string, string> = { BO: 'B0' };
+
 export function facilityKindLabel(code: string | null | undefined): string | null {
-  return code ? FACILITY_KIND[code] ?? null : null;
+  if (!code) return null;
+  return FACILITY_KIND[KIND_TYPO[code] ?? code] ?? null;
 }
 
 export function floorLabel(type: string | null | undefined, num: number | null | undefined): string | null {
