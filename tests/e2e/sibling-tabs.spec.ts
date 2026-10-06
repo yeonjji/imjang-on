@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { isAmenityPublic } from '@/lib/amenity/visibility';
 
 // PR #5의 amenity LIST는 `?sido=`/`?region=` 없이 진입하면 한글 sido로 redirect함.
 // 한글 location 헤더가 dev 모드에서 Runtime TypeError를 일으키므로 직접 인코딩 URL로 진입.
 const seoul = '?sido=' + encodeURIComponent('서울');
 
 test.describe('amenity LIST sibling 탭', () => {
+  test.skip(!isAmenityPublic(), '상권·편의 비공개 중 (lib/amenity/visibility.ts)');
   test('편의점 LIST에 4개 상권·편의 탭, 편의점이 활성', async ({ page }) => {
     await page.goto(`/amenity/convenience${seoul}`);
     const tabs = page.getByTestId('sibling-tabs');

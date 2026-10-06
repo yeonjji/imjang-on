@@ -1,5 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { getSiblingTabs } from '@/lib/life/sibling-tabs';
+
+// 공개 상태(복구 시 동작)를 검증한다. 비공개 상태는 tests/lib/amenity-hidden.test.ts.
+vi.mock('@/lib/amenity/visibility', () => ({ isAmenityPublic: () => true }));
 
 describe('getSiblingTabs', () => {
   it('/school은 교육시설 그룹을 반환하고 학교가 활성이다', () => {

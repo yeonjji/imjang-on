@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { isAmenityPublic } from '@/lib/amenity/visibility';
 import { EDITORIAL } from '@/lib/editorial';
 
 export function Footer() {
@@ -24,7 +25,7 @@ export function Footer() {
             <li><Link href="/jeonse-guarantee">전세보증</Link></li>
             <li><Link href="/school">교육시설</Link></li>
             <li><Link href="/medical/hospital">의료시설</Link></li>
-            <li><Link href="/amenity/convenience">상권·편의</Link></li>
+            {isAmenityPublic() && <li><Link href="/amenity/convenience">상권·편의</Link></li>}
             <li><Link href="/urban/parking">도시인프라</Link></li>
           </ul>
         </div>

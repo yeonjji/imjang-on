@@ -5,6 +5,7 @@ import {
   MapPin, type LucideIcon,
 } from 'lucide-react';
 import { LIFE_GROUPS, type LifeGroupSlug } from './life-menu';
+import { isAmenityPublic } from '@/lib/amenity/visibility';
 
 export const GROUP_ICONS: Record<LifeGroupSlug, LucideIcon> = {
   education: GraduationCap,
@@ -34,7 +35,7 @@ export function AmenityHub() {
         생활권까지 함께 보기
       </h2>
       <p className="mb-6 text-sm text-[var(--color-muted)]">
-        학교·병원·상권·도시인프라 — 우리 동네 편의시설을 카테고리별로 둘러보세요.
+        {isAmenityPublic() ? '학교·병원·상권·도시인프라' : '학교·병원·도시인프라'} — 우리 동네 편의시설을 카테고리별로 둘러보세요.
       </p>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

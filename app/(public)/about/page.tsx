@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EDITORIAL } from '@/lib/editorial';
+import { isAmenityPublic } from '@/lib/amenity/visibility';
 
 export const metadata: Metadata = {
   title: '서비스 소개',
@@ -42,7 +43,7 @@ export default function AboutPage() {
       <ul className="mt-3 list-disc space-y-2 pl-5 text-[var(--color-text)]">
         <li>아파트·오피스텔·연립다세대 실거래가(매매·전세·월세)</li>
         <li>청약·분양 일정 정보</li>
-        <li>생활 인프라 — 학교·어린이집, 병원·약국, 편의점·마트·카페·전통시장, 공원·주차장·전기차 충전소</li>
+        <li>생활 인프라 — 학교·어린이집, 병원·약국, {isAmenityPublic() && '편의점·마트·카페·전통시장, '}공원·주차장·전기차 충전소</li>
         <li>지하철 역세권 및 지역별 시세</li>
       </ul>
 

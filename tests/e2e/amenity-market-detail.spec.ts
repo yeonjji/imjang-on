@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { isAmenityPublic } from '@/lib/amenity/visibility';
 
 test.describe('전통시장 상세 보강', () => {
+  test.skip(!isAmenityPublic(), '상권·편의 비공개 중 (lib/amenity/visibility.ts)');
   test('채워진 시장: 히어로 요약, 시장 한눈에, 취급 품목', async ({ page }) => {
     await page.goto(`/amenity/market?q=${encodeURIComponent('e2e 장날시장')}`);
     await page.locator('a:has(article)').first().click();

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { GONE_SUBSCRIPTION_IDS } from '@/lib/subscription/gone-ids';
+import { isAmenityPublic } from '@/lib/amenity/visibility';
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -16,6 +17,12 @@ export function middleware(req: NextRequest) {
     if (GONE_SUBSCRIPTION_IDS.has(normalizedId)) {
       return new NextResponse('Gone', { status: 410 });
     }
+  }
+
+  // 상권·편의 비공개: 페이지의 notFound()로는 이미 ISR 캐시에 든 상세가 revalidate(24h)까지
+  // 200으로 나가므로 캐시 앞단에서 끊는다. 없는 경로로 rewrite해 사이트 404 페이지를 404로 낸다.
+  if (!isAmenityPublic() && (pathname === '/amenity' || pathname.startsWith('/amenity/'))) {
+    return NextResponse.rewrite(new URL('/_amenity-hidden', req.url));
   }
 
   if (!pathname.startsWith('/admin')) return NextResponse.next();
@@ -37,4 +44,4 @@ export function middleware(req: NextRequest) {
   });
 }
 
-export const config = { matcher: ['/admin/:path*', '/subscription/:id'] };
+export const config = { matcher: ['/admin/:path*', '/subscription/:id', '/amenity', '/amenity/:path*'] };

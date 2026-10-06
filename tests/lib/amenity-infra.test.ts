@@ -1,8 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   classifyStore, buildInfraCategories, infraHref, storeAmenitySlug, storeHref,
   INFRA_FETCH_LIMIT, type RawInfra,
 } from '@/lib/amenity/infra';
+
+// 공개 상태(복구 시 동작)를 검증한다. 비공개 상태는 tests/lib/amenity-hidden.test.ts.
+vi.mock('@/lib/amenity/visibility', () => ({ isAmenityPublic: () => true }));
 
 describe('classifyStore', () => {
   it('편의점·마트·슈퍼 prefix는 mart', () => {

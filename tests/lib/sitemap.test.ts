@@ -1,10 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { STATIC_ENTRIES } from '@/lib/sitemap/static-entries';
 import { SOURCE_ORDER } from '@/lib/sitemap/sources';
 import { LIFE_GROUPS } from '@/app/(public)/_components/life-menu';
 import { SITE_URL } from '@/lib/site';
 import { AMENITY_SLUGS, AMENITY_CATEGORIES, amenityListPath } from '@/lib/amenity/category';
 import { URBAN_SLUGS, URBAN_CATEGORIES, urbanListPath } from '@/lib/urban/category';
+
+// 공개 상태(복구 시 동작)를 검증한다. 비공개 상태는 tests/lib/amenity-hidden.test.ts.
+vi.mock('@/lib/amenity/visibility', () => ({ isAmenityPublic: () => true }));
 
 describe('sitemap STATIC_ENTRIES', () => {
   it('/life 자체 URL을 포함하지 않는다 (허브 제거)', () => {

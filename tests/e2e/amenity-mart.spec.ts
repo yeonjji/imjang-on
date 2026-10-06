@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { isAmenityPublic } from '@/lib/amenity/visibility';
 
 // `/amenity/mart`는 PR #5에서 LIST 본체로 전환됨 (regions/[sigunguCode] 단계 제거).
 // 한글 sido는 location 헤더 인코딩 필요 (서버 redirect 회피 + 시드 명시).
 const seoul = '?sido=' + encodeURIComponent('서울');
 
 test.describe('amenity mart happy path', () => {
+  test.skip(!isAmenityPublic(), '상권·편의 비공개 중 (lib/amenity/visibility.ts)');
   test.skip(({ viewport }) => (viewport?.width ?? 0) < 768, '데스크톱 사이드바 필터 사용');
 
   test('LIST hero + 카드 → DETAIL', async ({ page }) => {
@@ -30,6 +32,7 @@ test.describe('amenity mart happy path', () => {
 });
 
 test.describe('amenity mart mobile', () => {
+  test.skip(!isAmenityPublic(), '상권·편의 비공개 중 (lib/amenity/visibility.ts)');
   test.use({ viewport: { width: 375, height: 812 } });
 
   test('모바일 LIST에서 바텀시트 필터로 sub 적용', async ({ page }) => {

@@ -1,5 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { LIFE_GROUPS, LIFE_ITEM_EMOJI } from '@/app/(public)/_components/life-menu';
+
+// 공개 상태(복구 시 동작)를 검증한다. 비공개 상태는 tests/lib/amenity-hidden.test.ts.
+vi.mock('@/lib/amenity/visibility', () => ({ isAmenityPublic: () => true }));
 
 describe('LIFE_GROUPS', () => {
   it('교육시설·의료시설·상권·편의·도시인프라 4개 그룹을 가진다', () => {
