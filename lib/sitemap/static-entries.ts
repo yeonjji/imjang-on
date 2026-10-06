@@ -3,6 +3,7 @@ import { SITE_URL } from '@/lib/site';
 import { AMENITY_SLUGS, AMENITY_CATEGORIES, amenityListPath } from '@/lib/amenity/category';
 import { URBAN_SLUGS, URBAN_CATEGORIES, urbanListPath } from '@/lib/urban/category';
 import { isBoardPublic } from '@/lib/board/visibility';
+import { isAmenityPublic } from '@/lib/amenity/visibility';
 
 export const STATIC_ENTRIES: MetadataRoute.Sitemap = [
   { url: `${SITE_URL}/`, changeFrequency: 'daily', priority: 1.0 },
@@ -14,7 +15,8 @@ export const STATIC_ENTRIES: MetadataRoute.Sitemap = [
   // 카테고리 허브는 canonical과 **같은 정본 경로**로 담는다(amenityListPath/urbanListPath).
   // 종전에는 amenity 전부를 ?sido=서울로 넣어 전통시장(스코프 불필요, bare가 정본)과 어긋났고,
   // urban은 parking 하나만 들어가 park·charger 허브가 사이트맵에서 빠져 있었다.
-  ...AMENITY_SLUGS.map((slug) => ({
+  // 상권·편의는 isAmenityPublic()이 false면 404라 사이트맵에서도 뺀다.
+  ...(isAmenityPublic() ? AMENITY_SLUGS : []).map((slug) => ({
     url: `${SITE_URL}${amenityListPath(AMENITY_CATEGORIES[slug])}`,
     changeFrequency: 'weekly' as const,
     priority: 0.8,

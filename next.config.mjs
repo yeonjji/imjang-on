@@ -28,20 +28,22 @@ const nextConfig = {
         destination: 'https://imjangon.co.kr/:path*',
         permanent: true,
       },
-      {
-        source: '/amenity/:category/regions',
-        destination: '/amenity/:category',
-        permanent: true,
-      },
-      // ⚠️ '/amenity/:category/:sigunguCode(\\d{5})' → LIST redirect 룰은
-      // detail id 일부(5자리 BigInt: 19290, 54012, 54589 등)와 패턴 충돌해
-      // detail이 LIST로 잘못 308 redirect됨 → 제거.
-      // 옛 시군구+id 형태 URL(예: /amenity/conv/11710/54589)은 아래 룰로 detail로 정리.
-      {
-        source: '/amenity/:category/:sigunguCode(\\d{5})/:id(\\d+)',
-        destination: '/amenity/:category/:id',
-        permanent: true,
-      },
+      // ↓ 상권·편의 비공개(lib/amenity/visibility.ts) 동안 끈 옛 /amenity URL 정리 룰.
+      //   켜두면 308 → 404 2단 체인이 된다. 다시 열 때 주석 해제.
+      // {
+      //   source: '/amenity/:category/regions',
+      //   destination: '/amenity/:category',
+      //   permanent: true,
+      // },
+      // // ⚠️ '/amenity/:category/:sigunguCode(\\d{5})' → LIST redirect 룰은
+      // // detail id 일부(5자리 BigInt: 19290, 54012, 54589 등)와 패턴 충돌해
+      // // detail이 LIST로 잘못 308 redirect됨 → 제거.
+      // // 옛 시군구+id 형태 URL(예: /amenity/conv/11710/54589)은 아래 룰로 detail로 정리.
+      // {
+      //   source: '/amenity/:category/:sigunguCode(\\d{5})/:id(\\d+)',
+      //   destination: '/amenity/:category/:id',
+      //   permanent: true,
+      // },
       // /region 서브트리 제거(thin-content) — 실콘텐츠 목록으로 308 승계.
       // 시군구 코드는 parseListParams가 ?region=→sigunguCode로 매핑해 필터 착지.
       {
@@ -61,11 +63,12 @@ const nextConfig = {
         destination: '/medical/hospital',
         permanent: true,
       },
-      {
-        source: '/amenity',
-        destination: '/amenity/convenience',
-        permanent: true,
-      },
+      // ↓ 상권·편의 비공개 동안 끔(308 → 404 체인 방지). 다시 열 때 주석 해제.
+      // {
+      //   source: '/amenity',
+      //   destination: '/amenity/convenience',
+      //   permanent: true,
+      // },
       {
         source: '/urban',
         destination: '/urban/parking',
@@ -87,11 +90,12 @@ const nextConfig = {
         destination: '/medical/hospital',
         permanent: true,
       },
-      {
-        source: '/life/amenity',
-        destination: '/amenity/convenience',
-        permanent: true,
-      },
+      // ↓ 상권·편의 비공개 동안 끔(그냥 404 — 홈으로 보내면 soft 404 신호). 다시 열 때 주석 해제.
+      // {
+      //   source: '/life/amenity',
+      //   destination: '/amenity/convenience',
+      //   permanent: true,
+      // },
       {
         source: '/life/urban',
         destination: '/urban/parking',

@@ -3,6 +3,7 @@ import type {
   NearbyTraditionalMarket, NearbyEvCharger, NearbyParking, NearbyChildcare,
 } from '@/lib/amenity/nearby';
 import { displayStoreName } from '@/lib/amenity/store-name';
+import { isAmenityPublic } from '@/lib/amenity/visibility';
 
 /** 카테고리별 DB fetch 상한. 화면 cap(5)과 별개로, 이 수에 도달하면 개수 배지를 'N+'로 표기. */
 export const INFRA_FETCH_LIMIT = 12;
@@ -95,8 +96,11 @@ export function buildInfraCategories(raw: RawInfra): InfraCategory[] {
       items: etc.map((s) => ({ id: String(s.id), name: displayStoreName(s), sub: s.industryName ?? null, distanceMeters: s.distanceMeters, href: storeHref(s.industryCode, String(s.id)) })) },
   ];
 
+  // 상권·편의(/amenity) 비공개 동안은 해당 블록(편의·마트·카페·전통시장)을 통째로 숨긴다.
+  const hidden: InfraCategoryKey[] = isAmenityPublic() ? [] : ['store', 'cafe', 'market'];
+
   return cats
-    .filter((c) => c.items.length > 0)
+    .filter((c) => c.items.length > 0 && !hidden.includes(c.key))
     .map((c) => ({
       ...c,
       capped: c.items.length >= INFRA_FETCH_LIMIT,

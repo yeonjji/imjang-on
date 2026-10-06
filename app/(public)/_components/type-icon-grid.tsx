@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { isAmenityPublic } from '@/lib/amenity/visibility';
 
 const TYPE_ICONS = [
   { icon: '🏢', label: '아파트', href: '/list?type=apt' },
@@ -6,10 +7,13 @@ const TYPE_ICONS = [
   { icon: '🏘️', label: '다세대', href: '/list?type=villa' },
   { icon: '🏫', label: '학교', href: '/school' },
   { icon: '🌳', label: '공원', href: '/urban/park' },
-  { icon: '🏪', label: '전통시장', href: '/amenity/market' },
+  // 상권·편의 비공개 동안은 4열 그리드가 비지 않도록 주차장으로 자리를 채운다.
+  isAmenityPublic()
+    ? { icon: '🏪', label: '전통시장', href: '/amenity/market' }
+    : { icon: '🅿️', label: '주차장', href: '/urban/parking' },
   { icon: '⚡', label: 'EV충전소', href: '/urban/charger' },
   { icon: '🏥', label: '병원/약국', href: '/medical/hospital' },
-] as const;
+];
 
 export function TypeIconGrid() {
   return (

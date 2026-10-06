@@ -36,16 +36,16 @@ test.describe('모바일 생활편의 아코디언', () => {
     await page.getByRole('button', { name: '메뉴 열기' }).click();
     const drawer = page.getByTestId('mobile-drawer');
     await drawer.getByRole('button', { name: '생활편의' }).click();
-    await drawer.getByRole('link', { name: /상권·편의/ }).click();
-    await expect(page).toHaveURL(/\/amenity\/convenience/);
+    await drawer.getByRole('link', { name: /도시인프라/ }).click();
+    await expect(page).toHaveURL(/\/urban\/parking/);
   });
 
-  test('아코디언에서 하위 항목(편의점)으로 LIST 이동', async ({ page }) => {
+  test('아코디언에서 하위 항목(공원)으로 LIST 이동', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: '메뉴 열기' }).click();
     const drawer = page.getByTestId('mobile-drawer');
     await drawer.getByRole('button', { name: '생활편의' }).click();
-    await drawer.getByRole('link', { name: '편의점' }).click();
-    await expect(page).toHaveURL(/\/amenity\/convenience/);
+    await drawer.getByRole('link', { name: '공원' }).click();
+    await expect(page).toHaveURL(/\/urban\/park(?!ing)/);
   });
 });

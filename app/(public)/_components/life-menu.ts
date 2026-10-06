@@ -1,3 +1,5 @@
+import { isAmenityPublic } from '@/lib/amenity/visibility';
+
 export interface LifeSubItem {
   label: string;
   href: string;
@@ -17,7 +19,7 @@ export interface LifeGroup {
   items: LifeSubItem[];
 }
 
-export const LIFE_GROUPS: LifeGroup[] = [
+const ALL_LIFE_GROUPS: LifeGroup[] = [
   {
     slug: 'education',
     label: '교육시설',
@@ -58,6 +60,11 @@ export const LIFE_GROUPS: LifeGroup[] = [
     ],
   },
 ];
+
+/** 노출 중인 생활편의 그룹. 상권·편의는 isAmenityPublic()이 false면 메뉴·허브·사이트맵 전부에서 빠진다. */
+export const LIFE_GROUPS: LifeGroup[] = ALL_LIFE_GROUPS.filter(
+  (g) => g.slug !== 'amenity' || isAmenityPublic(),
+);
 
 /** 하위 항목 label → emoji 매핑 (그룹 허브, /life 인덱스, sibling 탭 공용) */
 export const LIFE_ITEM_EMOJI: Record<string, string> = {
