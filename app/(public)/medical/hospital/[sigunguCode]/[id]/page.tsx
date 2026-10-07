@@ -30,6 +30,7 @@ import { qualifiedTitle } from '@/lib/seo/title';
 import { hospitalDescriptor } from '@/lib/seo/facility-descriptor';
 import { resolveSigunguLabelFromAddress } from '@/lib/region/from-address';
 import type { Metadata } from 'next';
+import { nameWithAddress } from '@/lib/seo/meta-description';
 
 // 시설 정보는 거의 불변이라 7일 캐시 — 크롤러 재생성(ISR write·원본전송)을 대폭 절감.
 export const revalidate = 604_800;
@@ -50,7 +51,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const locality = await resolveSigunguLabelFromAddress(hospital.address);
   return {
     title: qualifiedTitle(hospital.name, locality, `— ${hospitalDescriptor(hospital.depts, hospital.typeName)}`),
-    description: narrative?.text.slice(0, 150) ?? `${hospital.name} ${hospital.typeName}${docs}. 진료·시설·교통 정보와 도보권 아파트 실거래가를 함께 확인하세요.`,
+    description: narrative?.text.slice(0, 150) ?? `${nameWithAddress(hospital.name, hospital.address)} ${hospital.typeName}${docs}. 진료·시설·교통 정보와 도보권 아파트 실거래가를 함께 확인하세요.`,
     robots: robotsFor(indexable),
     alternates: { canonical: `/medical/hospital/${hospital.sigunguCode}/${id}` },
   };

@@ -32,6 +32,7 @@ import { qualifiedTitle } from '@/lib/seo/title';
 import { resolveSigunguLabelFromAddress } from '@/lib/region/from-address';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
+import { nameWithAddress } from '@/lib/seo/meta-description';
 
 // 시설 정보는 거의 불변이라 7일 캐시 — 크롤러 재생성(ISR write·원본전송)을 대폭 절감.
 export const revalidate = 604_800;
@@ -62,7 +63,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const locality = await resolveSigunguLabelFromAddress(item.address);
   return {
     title: qualifiedTitle(item.name, locality, `— ${item.crType ?? '어린이집'} 정원 ${item.capacity ?? '-'}`),
-    description: narrative?.text.slice(0, 150) ?? `${item.name}${type}${stat}. 도보권 아파트 실거래가와 보육정보를 한눈에.`,
+    description: narrative?.text.slice(0, 150) ?? `${nameWithAddress(item.name, item.address)}${type}${stat}. 도보권 아파트 실거래가와 보육정보를 한눈에.`,
     robots: robotsFor(indexable),
     alternates: { canonical: `/childcare/${sigunguCode}/${id}` },
   };
