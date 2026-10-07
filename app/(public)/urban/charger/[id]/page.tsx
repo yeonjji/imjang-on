@@ -29,6 +29,7 @@ import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-section';
 import { RelatedGuides } from '@/app/(public)/_components/related-guides';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
+import { nameWithAddress } from '@/lib/seo/meta-description';
 
 export const revalidate = 86_400; // 실시간 상태를 렌더에서 뺐으므로 다른 상세와 같은 1일 ISR
 // 동적 세그먼트는 generateStaticParams가 없으면 revalidate가 무시되고 매 요청 동적 렌더된다.
@@ -51,9 +52,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const item = await getUrbanById('charger', BigInt(id)).catch(() => null);
   if (!item) return {};
   const locality = await resolveSigunguLabelFromAddress(item.address).catch(() => null);
+  const raw = item.raw as ChargerRaw;
+  // 한 단지가 동·출입구별 충전소로 따로 등록돼 이름·주소가 같은 경우가 많아 설치 위치·속도·대수로 가른다.
+  const spot = raw.locationDetail?.trim() ? ` ${raw.locationDetail.trim()}` : '';
   return {
-    title: qualifiedTitle(item.name, locality, `— ${urbanChargerDescriptor((item.raw as ChargerRaw).chargeSpeed)}`),
-    description: `${item.name} 전기차충전소 실시간 충전기 현황과 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
+    title: qualifiedTitle(item.name, locality, `— ${urbanChargerDescriptor(raw.chargeSpeed)}`),
+    description: `${nameWithAddress(item.name, item.address)}${spot} 전기차충전소(${raw.chargeSpeed} ${raw.chargerCount}기) 실시간 충전기 현황과 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
     robots: robotsFor(false),
     alternates: { canonical: `/urban/charger/${id}` },
   };

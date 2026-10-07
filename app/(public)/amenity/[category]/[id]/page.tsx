@@ -33,6 +33,7 @@ import { SITE_URL } from '@/lib/site';
 import { displayAmenityName } from '@/lib/amenity/store-name';
 import type { Metadata } from 'next';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
+import { nameWithAddress } from '@/lib/seo/meta-description';
 
 const AMENITY_PLACE_TYPE: Record<string, PlaceType> = {
   convenience: 'ConvenienceStore',
@@ -59,7 +60,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const displayName = displayAmenityName(item, def);
   return {
     title: qualifiedTitle(displayName, locality, `— ${amenityDescriptor(def.slug, item, def.label)}`),
-    description: `${displayName} ${def.label} 정보와 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
+    description: `${nameWithAddress(displayName, item.address)} ${def.label} 정보와 도보권 아파트 실거래가. 주변 시세를 공공데이터로 확인하세요.`,
     robots: robotsFor(false),
     alternates: { canonical: `/amenity/${def.slug}/${id}` },
   };

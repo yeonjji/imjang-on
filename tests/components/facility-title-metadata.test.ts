@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { __resetRegionCatalogCacheForTests } from '@/lib/region/from-address';
 import { generateMetadata as hospitalMeta } from '@/app/(public)/medical/hospital/[sigunguCode]/[id]/page';
 import { generateMetadata as amenityMeta } from '@/app/(public)/amenity/[category]/[id]/page';
+import { generateMetadata as chargerMeta } from '@/app/(public)/urban/charger/[id]/page';
 
 const HOSPITAL_ID = 990001n;
 const STORE_ID = 990002n;
@@ -85,3 +86,44 @@ describe('시설 상세 generateMetadata title', () => {
     }
   });
 });
+
+describe('시설 상세 generateMetadata description', () => {
+  // 네이버 서치어드바이저 '동일 description' 경고(2026-10): 지역 없는 템플릿이라 동명 시설
+  // (체인 매장·'서울치과의원' 등)의 description이 글자까지 같았다. 주소로 갈라야 한다.
+  it('이름이 같은 병원이라도 주소가 다르면 description이 다르다', async () => {
+    const TWIN_ID = 990003n;
+    await prisma.hospital.upsert({
+      where: { id: TWIN_ID },
+      create: {
+        id: TWIN_ID, sourceId: 'test-hosp-990003', name: '서울치과의원', typeCode: '81', typeName: '치과의원',
+        sigunguCode: '110019', sido: '서울', sigungu: '강남구', address: '서울특별시 강남구 테헤란로 9',
+      },
+      update: {},
+    });
+    try {
+      const a = await hospitalMeta(params({ sigunguCode: '110019', id: String(HOSPITAL_ID) }));
+      const b = await hospitalMeta(params({ sigunguCode: '110019', id: String(TWIN_ID) }));
+      expect(a.description).toContain('테헤란로 1');
+      expect(a.description).not.toBe(b.description);
+    } finally {
+      await prisma.hospital.delete({ where: { id: TWIN_ID } }).catch(() => {});
+    }
+  });
+
+  // 아파트 단지 하나가 동·출입구별 충전소로 따로 등록돼 이름·주소가 같다(운영 실측 6,994건).
+  it('이름·주소가 같은 충전소도 설치 위치가 다르면 description이 다르다', async () => {
+    const ids = [990004n, 990005n];
+    const base = { name: '테스트아파트', address: '서울특별시 강남구 테헤란로 3', chargeSpeed: '완속', chargerCount: 2 };
+    await prisma.evCharger.upsert({ where: { id: ids[0] }, create: { id: ids[0], sourceId: 'test-ev-990004', ...base, locationDetail: '주출입구 지상주차장1' }, update: {} });
+    await prisma.evCharger.upsert({ where: { id: ids[1] }, create: { id: ids[1], sourceId: 'test-ev-990005', ...base, locationDetail: '부출입구 지상주차장2' }, update: {} });
+    try {
+      const a = await chargerMeta(params({ id: String(ids[0]) }));
+      const b = await chargerMeta(params({ id: String(ids[1]) }));
+      expect(a.description).toContain('주출입구 지상주차장1');
+      expect(a.description).not.toBe(b.description);
+    } finally {
+      await prisma.evCharger.deleteMany({ where: { id: { in: ids } } });
+    }
+  });
+});
+
