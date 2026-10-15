@@ -17,6 +17,8 @@ import { UnifiedTransactionTable } from './_components/unified-transaction-table
 import { PriceCharts } from './_components/price-charts';
 import { AreaComparison } from './_components/area-comparison';
 import { ComplexInfoSection } from './_components/complex-info-section';
+import { MaintenanceCostSection } from './_components/maintenance-cost-section';
+import { getMaintenanceCostView } from '@/lib/maintenance-cost-query';
 import { SameFloorObservation } from './_components/same-floor-observation';
 import { FloorPremiumView } from './_components/floor-premium';
 import { TransactionFlagsView } from './_components/transaction-flags';
@@ -176,6 +178,11 @@ export default async function AptDetailPage({ params }: Params) {
   const now = new Date();
   const unitMix = complexFacts ? buildUnitMix(complexFacts) : null;
   const showComplex = shouldRenderComplexInfo(complexFacts, now);
+  const maintenance = await safe(
+    getMaintenanceCostView(propId, property.region.sigungu ?? null),
+    null,
+    'getMaintenanceCostView',
+  );
 
   const aptFaq = composeDetailFaq(
     buildAptFaq({ property, areaSummary, unifiedTotalCount: unified.totalCount }),
@@ -261,6 +268,7 @@ export default async function AptDetailPage({ params }: Params) {
           />
           <AreaComparison id="area" areas={areaSummary} />
           <ComplexInfoSection id="complex" facts={complexFacts} unitMix={unitMix} now={now} />
+          <MaintenanceCostSection id="maintenance-cost" view={maintenance} />
           <SameFloorObservation id="same-floor" pair={sameFloor} />
           <FloorPremiumView id="floor-premium" data={floorPremium} />
           <TransactionFlagsView id="data-notes" data={flags} />
@@ -281,7 +289,7 @@ export default async function AptDetailPage({ params }: Params) {
           <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>
-          <DetailSidebar property={property} showComplex={showComplex} showDong={dongTx.length > 0} />
+          <DetailSidebar property={property} showComplex={showComplex} showDong={dongTx.length > 0} showMaintenance={maintenance !== null} />
         </aside>
       </div>
     </div>
