@@ -1,8 +1,8 @@
 # 1단계 · 아파트 상세 관리비 섹션 설계
 
 - 작성일: 2026-10-15
-- 상태: 초안. 사용자 검토 대기, UI 시안 확인 중 (**시안 확정 전 개발 금지**)
-- UI 시안(검토용): https://claude.ai/artifact/RAyfGp18iJhwWo5ppo24nr
+- 상태: 승인. UI 시안 확정(2026-10-15). 연수구 중앙값 칸은 구현 시 실제 계산값으로 채운다
+- UI 시안(확정본): https://claude.ai/artifact/RAyfGp18iJhwWo5ppo24nr (A 지역난방 · B 개별난방 · C 모바일)
 - 상위 문서: [로드맵](2026-10-15-detail-public-data-roadmap.md) · [데이터·필드·섹션 계획](2026-10-15-detail-public-data-section-plan.md) 1단계
 
 ## 1. 표본 실측 (2026-10-15)
@@ -152,4 +152,4 @@ model AptMaintenanceCostStat {
 ## 8. 남은 결정
 
 1. ~~운영계정 트래픽 증설 신청~~: 3개 API 신청 완료(2026-10-15), 승인 대기. 승인 전에는 개발계정 한도로 수집
-2. **UI 시안 확인**: 확정본 링크를 이 문서 상단에 기록한 뒤 개발 착수
+2. ~~UI 시안 확인~~: 2026-10-15 확정
