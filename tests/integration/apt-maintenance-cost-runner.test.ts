@@ -16,7 +16,8 @@ const ok = (item: Record<string, unknown>) => ({ response: { header: { resultCod
 const fakeFetch: FetchItem = async (op, kaptCode) => {
   const i = Number(kaptCode.slice(PREFIX.length));
   if (op.op === 'getHsmpCleaningCostInfoV3') return ok({ kaptCode, cleanCost: (i + 1) * 1000 });
-  return ok({ kaptCode, v: 0 });
+  const fields = op.kind === 'sum' ? op.fields : [op.key];
+  return ok({ kaptCode, ...Object.fromEntries(fields.map((f) => [f, 0])) });
 };
 
 async function cleanup() {
@@ -51,6 +52,33 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await prisma.aptMaintenanceCost.deleteMany({ where: { kaptCode: { startsWith: PREFIX } } });
+});
+
+const row = (kaptCode: string, yearMonth: string, o: Record<string, unknown> = {}) => ({
+  kaptCode, yearMonth, complete: true, raw: {}, fetchedAt: new Date(), commonTotal: 1000n, ...o,
+});
+
+describe('runCollect 우선순위·재시도', () => {
+  it('보여줄 데이터가 하나도 없는 단지를 먼저 받는다', async () => {
+    // 0~4는 이전 달 데이터가 있고 5만 없다 → 한도가 1단지뿐이면 5를 받아야 한다
+    await prisma.aptMaintenanceCost.createMany({ data: codes.slice(0, 5).map((c) => row(c, '202607')) });
+    const seen: string[] = [];
+    await runCollect({ months: [YM], kaptCodes: codes, limit: 1, concurrency: 1, fetchItem: async (op, k, ym) => { seen.push(k); return fakeFetch(op, k, ym); } });
+    expect(new Set(seen)).toEqual(new Set([`${PREFIX}5`]));
+  });
+
+  it('빈 응답으로 끝난 달은 공개 지연일 수 있어 60일 동안 다시 받는다', async () => {
+    await prisma.aptMaintenanceCost.createMany({
+      data: [
+        row(`${PREFIX}0`, YM, { commonTotal: null, fetchedAt: new Date('2026-09-15T00:00:00Z') }), // 월말+60일 이전 → 재시도
+        row(`${PREFIX}1`, YM, { commonTotal: null, fetchedAt: new Date('2026-11-15T00:00:00Z') }), // 월말+60일 이후 → 확정
+        ...codes.slice(2).map((c) => row(c, YM)),
+      ],
+    });
+    const seen = new Set<string>();
+    await runCollect({ months: [YM], kaptCodes: codes, concurrency: 1, fetchItem: async (op, k, ym) => { seen.add(k); return fakeFetch(op, k, ym); } });
+    expect([...seen]).toEqual([`${PREFIX}0`]);
+  });
 });
 
 describe('runCollect', () => {

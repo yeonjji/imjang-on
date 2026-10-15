@@ -113,7 +113,7 @@ describe('buildMaintenanceView', () => {
   });
 
   it('개별난방이면 안내 플래그', () => {
-    expect(buildMaintenanceView([month('202608')], { ...basis, heatType: '개별난방' }, null)!.individualHeating).toBe(true);
+    expect(buildMaintenanceView([month('202608', { heat: 0 })], { ...basis, heatType: '개별난방' }, null)!.individualHeating).toBe(true);
     expect(buildMaintenanceView([month('202608')], basis, null)!.individualHeating).toBe(false);
   });
 
@@ -122,5 +122,20 @@ describe('buildMaintenanceView', () => {
     expect(v.ltr).toEqual({ levy: 52_459_240, levyPerHousehold: 52_459, levyPerM2: 350, balance: 1_312_406_334, rate: null });
     expect(buildMaintenanceView([month('202608', { ltrRate: 3 })], basis, null)!.ltr!.rate).toBe(3);
     expect(buildMaintenanceView([month('202608', { ltrLevy: null, ltrBalance: null })], basis, null)!.ltr).toBeNull();
+  });
+
+  it('개별난방이라도 최신 월 난방비가 있으면 안내하지 않는다', () => {
+    expect(buildMaintenanceView([month('202608', { heat: 5_000_000 })], { ...basis, heatType: '개별난방' }, null)!.individualHeating).toBe(false);
+    expect(buildMaintenanceView([month('202608', { heat: 0 })], { ...basis, heatType: '개별난방' }, null)!.individualHeating).toBe(true);
+    expect(buildMaintenanceView([month('202608', { heat: null })], { ...basis, heatType: '개별난방' }, null)!.individualHeating).toBe(true);
+  });
+
+  it('추이는 최신 월에서 끊김 없이 이어진 달만 쓴다', () => {
+    expect(buildMaintenanceView(['202601', '202608', '202609'].map((m) => month(m)), basis, null)!.trend).toBeNull();
+    const v = buildMaintenanceView(['202601', '202607', '202608', '202609'].map((m) => month(m)), basis, null)!;
+    expect(v.trend!.map((t) => t.label)).toEqual(['7월', '8월', '9월']);
+    const cross = buildMaintenanceView(['202511', '202512', '202601'].map((m) => month(m)), basis, null)!;
+    expect(cross.trend!.map((t) => t.label)).toEqual(['11월', '12월', '1월']);
+    expect(cross.trendRangeLabel).toBe('2025년 11월 ~ 2026년 1월');
   });
 });

@@ -51,10 +51,6 @@ describe('MaintenanceCostSection', () => {
     expect(h).not.toContain('㎡당 추이');
     expect(h).not.toContain('겨울과 여름');
   });
-  it('개별난방 안내', () => {
-    const h = html({ ...base, seasonal: null, individualHeating: true, heatType: '개별난방' });
-    expect(h).toContain('난방비는 세대가 도시가스에 직접 내므로 관리비에 포함되지 않습니다');
-  });
   it('세대수가 없으면 단지 전체 표기', () => {
     const h = html({ ...base, perHousehold: false, households: null });
     expect(h).toContain('단지 전체');
@@ -63,5 +59,14 @@ describe('MaintenanceCostSection', () => {
   it('장기수선충당금에 평가 문구가 없다', () => {
     const h = html(base);
     for (const w of ['부족', '충분', '양호', '위험']) expect(h).not.toContain(w);
+  });
+  it('조회일은 한국 시간 기준', () => {
+    const h = html({ ...base, fetchedAt: new Date('2026-10-14T17:30:00Z') });
+    expect(h).toContain('2026-10-15 조회');
+  });
+  it('개별난방 안내는 원자료 범위만 말한다(납부처 단정 없음)', () => {
+    const h = html({ ...base, seasonal: null, individualHeating: true, heatType: '개별난방' });
+    expect(h).toContain('난방비가 관리비에 포함되지 않습니다');
+    expect(h).not.toContain('도시가스');
   });
 });

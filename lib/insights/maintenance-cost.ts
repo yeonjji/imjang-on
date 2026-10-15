@@ -101,6 +101,17 @@ export function heatKind(t: string | null): 'shared' | 'individual' | 'other' {
   return 'other';
 }
 
+function prevMonth(ym: string): string {
+  const y = Number(ym.slice(0, 4));
+  const m = Number(ym.slice(4, 6));
+  return m === 1 ? `${y - 1}12` : `${y}${String(m - 1).padStart(2, '0')}`;
+}
+
+/** 조회일 표시는 한국 시간 기준(박스는 UTC, 수집은 KST 02:00). */
+export function kstDate(d: Date): string {
+  return d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+}
+
 const hasData = (m: MaintenanceMonth) => m.commonTotal !== null && m.commonTotal > 0;
 
 export function buildMaintenanceView(
@@ -142,7 +153,16 @@ export function buildMaintenanceView(
   const individualItems = items(INDIVIDUAL_DEFS, 'individualEtc');
   const individualRaw = INDIVIDUAL_KEYS.reduce((s, k) => s + (latest[k] ?? 0), 0);
 
-  const trendMonths = area ? sorted.slice(-12) : [];
+  // 최신 월에서 거꾸로 끊김 없이 이어진 달만(최대 12개). 빈 달을 건너뛰고 붙이면 연속 추이처럼 읽힌다.
+  const byYmAll = new Map(sorted.map((m) => [m.yearMonth, m]));
+  const trendMonths: MaintenanceMonth[] = [];
+  if (area) {
+    let ym = latest.yearMonth;
+    while (trendMonths.length < 12 && byYmAll.has(ym)) {
+      trendMonths.unshift(byYmAll.get(ym)!);
+      ym = prevMonth(ym);
+    }
+  }
   const trend = trendMonths.length >= MIN_TREND
     ? trendMonths.map((m) => ({ label: `${Number(m.yearMonth.slice(4, 6))}월`, perM2: Math.round(m.commonTotal! / area!) }))
     : null;
@@ -197,7 +217,8 @@ export function buildMaintenanceView(
     trend,
     trendRangeLabel,
     seasonal,
-    individualHeating: kind === 'individual',
+    // 개별난방이어도 관리비에 난방비가 잡힌 단지가 있다(실측 66곳 중 2곳) — 그땐 안내하지 않는다.
+    individualHeating: kind === 'individual' && !(latest.heat !== null && latest.heat > 0),
     ltr,
     fetchedAt: latest.fetchedAt,
   };

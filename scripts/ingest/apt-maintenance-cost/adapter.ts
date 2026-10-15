@@ -4,7 +4,6 @@
 import { COST_OPS, COMMON_GROUPS, INDIVIDUAL_GROUPS, type CostOp, type SumGroup, type LtrField } from './ops';
 
 type Rec = Record<string, unknown>;
-const ID_KEYS = new Set(['kaptCode', 'kaptName']);
 
 export function toAmount(v: unknown): number | null {
   if (typeof v === 'number') return Number.isFinite(v) ? v : null;
@@ -56,9 +55,7 @@ export function summarizeMonth(results: OpResult[]): {
     if (!r.item) continue;
     if (r.op.kind === 'sum') {
       let s: number | null = null;
-      for (const [k, v] of Object.entries(r.item)) {
-        if (!ID_KEYS.has(k)) s = add(s, toAmount(v));
-      }
+      for (const f of r.op.fields) s = add(s, toAmount(r.item[f]));
       amounts[r.op.group] = add(amounts[r.op.group], s);
     } else {
       amounts[r.op.field] = toAmount(r.item[r.op.key]);

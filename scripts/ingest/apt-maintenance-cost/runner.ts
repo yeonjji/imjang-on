@@ -18,6 +18,7 @@ import { readItem, summarizeMonth, toAmount, type OpResult, type MaintenanceAmou
 export const MAINTENANCE_COST_SOURCE = 'apt-maintenance-cost';
 const DEFAULT_CONCURRENCY = 3; // 동시 6에서 429 실측(2026-10-15)
 const MIN_STAT_SAMPLE = 5;
+const EMPTY_RETRY_MS = 60 * 86_400_000;
 
 export type FetchItem = (op: CostOp, kaptCode: string, yearMonth: string) => Promise<unknown>;
 
@@ -91,13 +92,34 @@ export async function runCollect(opts: {
 
   for (const ym of opts.months) {
     if (quotaHit) break;
-    const done = new Set(
+    // 빈 응답(정상 응답인데 금액이 전부 비어 있음)은 공개 지연일 수 있어 월말+60일까지는 다시 받는다.
+    const retryUntil = new Date(Date.UTC(Number(ym.slice(0, 4)), Number(ym.slice(4, 6)), 0) + EMPTY_RETRY_MS);
+    const existing = await prisma.aptMaintenanceCost.findMany({
+      where: { yearMonth: ym, complete: true },
+      select: { kaptCode: true, commonTotal: true, fetchedAt: true },
+    });
+    const done = new Set<string>();
+    const emptyRetry = new Set<string>();
+    for (const r of existing) {
+      if (r.commonTotal !== null || r.fetchedAt >= retryUntil) done.add(r.kaptCode);
+      else emptyRetry.add(r.kaptCode);
+    }
+    // 한도가 하루 수천 건이라 한 달치를 다 받기 전에 다음 달로 넘어갈 수 있다(운영 증설 전 약 43일/월).
+    // 화면에 보여줄 데이터가 아직 없는 단지를 먼저 받아 뒤쪽 시군구가 영영 비는 일을 막는다.
+    const withData = new Set(
       (await prisma.aptMaintenanceCost.findMany({
-        where: { yearMonth: ym, complete: true },
+        where: { complete: true, commonTotal: { gt: 0 } },
         select: { kaptCode: true },
+        distinct: ['kaptCode'],
       })).map((r) => r.kaptCode),
     );
-    let todo = complexes.map((c) => c.kaptCode).filter((k) => !done.has(k));
+    const rank = (k: string) => (emptyRetry.has(k) ? 2 : withData.has(k) ? 1 : 0);
+    let todo = complexes
+      .map((c) => c.kaptCode)
+      .filter((k) => !done.has(k))
+      .map((k, i) => ({ k, i, r: rank(k) }))
+      .sort((a, b) => a.r - b.r || a.i - b.i)
+      .map((x) => x.k);
     if (opts.limit) todo = todo.slice(0, opts.limit);
 
     let next = 0;

@@ -8,13 +8,16 @@ const SGG = '11710';
 const CODE = 'UT-MCQ-1';
 let propertyId: bigint;
 let bareId: bigint;
+let guId: bigint;
 
 const amounts = { labor: 40_000_000n, cleaning: 30_000_000n, commonTotal: 70_000_000n, electricity: 50_000_000n, ltrLevy: 10_000_000n };
 
 async function cleanup() {
   await prisma.aptMaintenanceCost.deleteMany({ where: { kaptCode: CODE } });
   await prisma.aptMaintenanceCostStat.deleteMany({ where: { sigunguCode: SGG, yearMonth: '202608' } });
-  await prisma.aptComplex.deleteMany({ where: { kaptCode: CODE } });
+  await prisma.aptComplex.deleteMany({ where: { kaptCode: { in: [CODE, 'UT-MCQ-GU'] } } });
+  await prisma.aptMaintenanceCost.deleteMany({ where: { kaptCode: 'UT-MCQ-GU' } });
+  await prisma.aptMaintenanceCostStat.deleteMany({ where: { sigunguCode: '41111', yearMonth: '202608' } });
   await prisma.property.deleteMany({ where: { name: { startsWith: 'UT-MCQ' } } });
 }
 
@@ -37,6 +40,19 @@ beforeAll(async () => {
   // 불완전 행은 더 최신이어도 쓰지 않는다
   await prisma.aptMaintenanceCost.create({ data: { ...base, yearMonth: '202609', complete: false, ...amounts, commonTotal: 999_000_000n } });
   await prisma.aptMaintenanceCostStat.create({ data: { sigunguCode: SGG, yearMonth: '202608', medianCommonPerM2: 7000, sampleCount: 12, computedAt: new Date() } });
+  // 일반구: 구 중앙값은 41111(장안구) 단위이므로 라벨도 '수원시 장안구'여야 한다
+  await prisma.region.upsert({
+    where: { code: '4111100000' },
+    create: { code: '4111100000', sido: '경기도', sigungu: '수원시', eupmyeondong: '장안구', fullName: '경기도 수원시 장안구', level: 3, sourceVersion: 'test' },
+    update: {},
+  });
+  const gu = await prisma.property.create({ data: { propertyType: PropertyType.APARTMENT, name: 'UT-MCQ-GU', nameNorm: 'ut-mcq-gu', regionCode: REGION_CODE, address: '경기' } });
+  guId = gu.id;
+  await prisma.aptComplex.create({
+    data: { kaptCode: 'UT-MCQ-GU', kaptName: 'gu', nameNorm: 'ut-mcq-gu', bjdCode: '4111110100', sigunguCode: '41111', propertyId: guId, households: 100, rawJson: { kaptMarea: '10000' } },
+  });
+  await prisma.aptMaintenanceCost.create({ data: { ...base, kaptCode: 'UT-MCQ-GU', yearMonth: '202608', complete: true, ...amounts } });
+  await prisma.aptMaintenanceCostStat.create({ data: { sigunguCode: '41111', yearMonth: '202608', medianCommonPerM2: 7000, sampleCount: 9, computedAt: new Date() } });
 });
 afterAll(async () => {
   await cleanup();
@@ -45,13 +61,17 @@ afterAll(async () => {
 
 describe('getMaintenanceCostView', () => {
   it('complete 행 중 최신 월과 그 달 구 통계로 표시 모델을 만든다', async () => {
-    const v = (await getMaintenanceCostView(propertyId, '송파구'))!;
+    const v = (await getMaintenanceCostView(propertyId))!;
     expect(v.yearMonth).toBe('202608');
     expect(v.commonPerM2).toBe(7000);
     expect(v.comparison).toEqual({ sigunguName: '송파구', pct: 0, label: '비슷함', sampleCount: 12, medianPerM2: 7000 });
     expect(v.commonAmount).toBe(700_000);
   });
   it('연결된 단지가 없으면 null', async () => {
-    expect(await getMaintenanceCostView(bareId, '송파구')).toBeNull();
+    expect(await getMaintenanceCostView(bareId)).toBeNull();
+  });
+  it('구 비교 라벨은 통계 단위(단지의 시군구 코드)에서 만든다 — 일반구는 "시 구"', async () => {
+    const v = (await getMaintenanceCostView(guId))!;
+    expect(v.comparison!.sigunguName).toBe('수원시 장안구');
   });
 });

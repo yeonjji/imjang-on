@@ -100,4 +100,13 @@ describe('summarizeMonth', () => {
     const r = summarizeMonth(results({ getHsmpGuardCostInfoV3: { guardCost: 5 } }));
     expect(r.raw.getHsmpGuardCostInfoV3).toEqual({ guardCost: 5 });
   });
+
+  it('명세에 없는 필드(일련번호·날짜 등)는 합산하지 않는다', () => {
+    const r = summarizeMonth(results({
+      getHsmpLaborCostInfoV3: { pay: 100, seq: 999, searchDate: '202608' },
+      getHsmpHeatCostInfoV3: { heatP: 10, heatC: 5, totalCnt: 3 },
+    }));
+    expect(r.amounts.labor).toBe(100);
+    expect(r.amounts.heat).toBe(15);
+  });
 });

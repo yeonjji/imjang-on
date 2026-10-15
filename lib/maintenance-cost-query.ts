@@ -8,11 +8,23 @@ import {
 
 const num = (v: bigint | null) => (v === null ? null : Number(v));
 
+/**
+ * 구 비교 라벨. 중앙값이 단지의 시군구 코드 단위로 계산되므로 라벨도 같은 코드에서 만든다.
+ * 일반구는 구명이 eupmyeondong에 있어 "수원시 장안구"로 합친다(lib/region.ts와 같은 규칙).
+ * Property.region.sigungu를 쓰면 일반구는 "수원시", 세종은 동 이름이 나온다.
+ */
+async function sigunguLabel(sigunguCode: string): Promise<string | null> {
+  const r = await prisma.region.findUnique({
+    where: { code: `${sigunguCode}00000` },
+    select: { level: true, sido: true, sigungu: true, eupmyeondong: true },
+  });
+  if (!r) return null;
+  if (r.level === 3 && r.eupmyeondong) return `${r.sigungu ?? ''} ${r.eupmyeondong}`.trim();
+  return r.sigungu ?? r.sido;
+}
+
 /** 아파트 상세 관리비 섹션. 연결된 K-apt 단지가 없거나 데이터가 없으면 null. */
-export async function getMaintenanceCostView(
-  propertyId: bigint,
-  sigunguName: string | null,
-): Promise<MaintenanceView | null> {
+export async function getMaintenanceCostView(propertyId: bigint): Promise<MaintenanceView | null> {
   const complex = await prisma.aptComplex.findUnique({
     where: { propertyId },
     select: { kaptCode: true, households: true, heatType: true, rawJson: true, sigunguCode: true },
@@ -43,6 +55,7 @@ export async function getMaintenanceCostView(
         select: { medianCommonPerM2: true, sampleCount: true },
       })
     : null;
+  const sigunguName = stat ? await sigunguLabel(complex.sigunguCode) : null;
 
   return buildMaintenanceView(
     months,

@@ -179,7 +179,7 @@ export default async function AptDetailPage({ params }: Params) {
   const unitMix = complexFacts ? buildUnitMix(complexFacts) : null;
   const showComplex = shouldRenderComplexInfo(complexFacts, now);
   const maintenance = await safe(
-    getMaintenanceCostView(propId, property.region.sigungu ?? null),
+    getMaintenanceCostView(propId),
     null,
     'getMaintenanceCostView',
   );

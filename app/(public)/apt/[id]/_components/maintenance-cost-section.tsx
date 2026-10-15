@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { SourceCaption } from '@/components/ui/source-caption';
-import { won, manWon, type MaintenanceView, type CostItem } from '@/lib/insights/maintenance-cost';
+import { won, manWon, kstDate, type MaintenanceView, type CostItem } from '@/lib/insights/maintenance-cost';
 
 /**
  * 아파트 상세 · 관리비. UI 확정본: https://claude.ai/artifact/RAyfGp18iJhwWo5ppo24nr
@@ -55,7 +55,7 @@ export function MaintenanceCostSection({ view, id }: { view: MaintenanceView | n
 
       {v.individualHeating && (
         <p className="mt-5 rounded-2xl bg-[var(--color-soft)] px-4 py-3.5 text-sm leading-relaxed">
-          <strong className="text-[var(--color-blue-dark)]">개별난방 단지</strong> — 난방비는 세대가 도시가스에 직접 내므로 관리비에 포함되지 않습니다.
+          <strong className="text-[var(--color-blue-dark)]">개별난방 단지</strong> — 난방비가 관리비에 포함되지 않습니다.
         </p>
       )}
 
@@ -130,7 +130,7 @@ export function MaintenanceCostSection({ view, id }: { view: MaintenanceView | n
       <div className="mt-6 border-t border-[var(--color-line)] pt-3 text-xs leading-relaxed text-[var(--color-muted)]">
         <p>
           국토교통부 공동주택관리정보시스템(K-apt) · 단지 관리주체 공개 자료 · {v.monthLabel} 부과분 ·{' '}
-          {v.fetchedAt.toISOString().slice(0, 10)} 조회
+          {kstDate(v.fetchedAt)} 조회
         </p>
         <p className="mt-1">
           임장ON 계산:{' '}
