@@ -18,7 +18,8 @@ export type DataSourceId =
   | 'kakao-local'
   | 'kinfa-loan'
   | 'hf-jeonse-guarantee'
-  | 'molit-apt-complex';
+  | 'molit-apt-complex'
+  | 'kapt-maintenance-cost';
 
 export type DataSourceCategory =
   | '부동산 거래'
@@ -159,6 +160,13 @@ export const DATA_SOURCES: Record<DataSourceId, DataSource> = {
     provider: '국토교통부',
     dataset: '공동주택 단지정보',
     url: 'https://www.data.go.kr/data/15058453/openapi.do',
+    category: '부동산 거래',
+  },
+  'kapt-maintenance-cost': {
+    id: 'kapt-maintenance-cost',
+    provider: '국토교통부',
+    dataset: '공동주택관리정보시스템(K-apt) 관리비 공개',
+    url: 'https://www.data.go.kr/data/15057937/openapi.do',
     category: '부동산 거래',
   },
 };

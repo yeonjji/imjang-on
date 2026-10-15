@@ -30,7 +30,7 @@ export function assertNotQuotaExceeded(payload: unknown): void {
   }
 }
 
-async function getJson(url: URL, label: string): Promise<unknown> {
+export async function getJson(url: URL, label: string): Promise<unknown> {
   if (!env.PUBLIC_DATA_KEY) throw new Error('PUBLIC_DATA_KEY is required');
   url.searchParams.set('serviceKey', env.PUBLIC_DATA_KEY);
 

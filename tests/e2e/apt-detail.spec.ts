@@ -77,3 +77,15 @@ test('apt detail: 가격 그래프 모바일 폭 — 가로 오버플로우 없�
   );
   expect(overflow).toBeLessThanOrEqual(1);
 });
+
+test('apt detail: 관리비 섹션이 단지 정보 아래에 렌더된다', async ({ page }) => {
+  await page.goto(`/apt/${propertyId}`);
+  const sec = page.locator('#maintenance-cost');
+  await expect(sec).toBeVisible();
+  await expect(sec.getByRole('heading', { name: '관리비' })).toBeVisible();
+  await expect(sec.getByText('공용관리비 ㎡당', { exact: true })).toBeVisible();
+  await expect(sec.getByText('서초구 아파트 중앙값 대비')).toBeVisible();
+  await expect(sec.getByText('겨울과 여름')).toBeVisible();
+  await expect(sec.getByText(/2026년 8월 부과분/).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: '관리비' })).toBeVisible();
+});

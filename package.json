@@ -35,6 +35,7 @@
     "ingest:loan": "dotenv -e .env.local -- tsx scripts/ingest/loan/runner.ts",
     "ingest:board": "dotenv -e .env.local -- tsx scripts/ingest/posts/runner.ts",
     "ingest:subway": "dotenv -e .env.local -- tsx scripts/ingest-subway.ts",
+    "ingest:maintenance-cost": "dotenv -e .env.local -- tsx scripts/ingest/apt-maintenance-cost/runner.ts",
     "dashboard:refresh": "dotenv -e .env.local -- tsx scripts/dashboard/refresh-snapshot.ts"
   },
   "dependencies": {

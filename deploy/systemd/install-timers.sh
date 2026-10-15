@@ -11,6 +11,7 @@ amenities|*-*-01 02:00:00
 board-posts|Mon *-*-* 02:00:00
 seed-regions|*-04-05 18:00:00
 subway|*-01,04,07,10-01 03:00:00
+apt-maintenance-cost|*-*-* 17:00:00
 '
 sudo cp /opt/imjang/deploy/systemd/imjang-etl@.service /etc/systemd/system/
 while IFS='|' read -r job cal; do
