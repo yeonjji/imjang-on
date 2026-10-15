@@ -173,6 +173,54 @@ model AptComplex {
   @@index([matchTier])
 }
 
+/// K-apt 관리비. 단지 × 부과연월 한 행. 금액 단위는 원(단지 월 총액).
+/// 화면은 complete=true 행만 쓴다. 수집 도중 오퍼레이션이 하나라도 실패하면 false로 남고 다음 실행이 다시 받는다.
+model AptMaintenanceCost {
+  kaptCode  String @db.VarChar(20)
+  yearMonth String @db.Char(6)
+
+  labor         BigInt?
+  cleaning      BigInt?
+  guard         BigInt?
+  disinfection  BigInt?
+  elevator      BigInt?
+  homeNetwork   BigInt?
+  consignFee    BigInt?
+  repairs       BigInt?
+  commonEtc     BigInt?
+  commonTotal   BigInt?
+
+  heat          BigInt?
+  hotWater      BigInt?
+  gas           BigInt?
+  electricity   BigInt?
+  water         BigInt?
+  individualEtc BigInt?
+
+  ltrLevy    BigInt?
+  ltrUse     BigInt?
+  ltrBalance BigInt?
+  ltrRate    Decimal? @db.Decimal(6, 2)
+
+  complete  Boolean
+  raw       Json
+  fetchedAt DateTime
+
+  @@id([kaptCode, yearMonth])
+  @@index([yearMonth])
+}
+
+/// 시군구 × 월 공용관리비 ㎡당 중앙값. ETL이 계산해 저장한다(표본 5개 이상만).
+model AptMaintenanceCostStat {
+  sigunguCode       String   @db.VarChar(5)
+  yearMonth         String   @db.Char(6)
+  medianCommonPerM2 Int
+  sampleCount       Int
+  computedAt        DateTime
+
+  @@id([sigunguCode, yearMonth])
+}
+
 enum DealType {
   SALE
   JEONSE
