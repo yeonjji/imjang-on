@@ -118,6 +118,9 @@ async function seedLoans() {
 async function main() {
   assertLocalDatabase();
 
+  await prisma.aptMaintenanceCost.deleteMany({ where: { kaptCode: 'E2E-KAPT-1' } });
+  await prisma.aptMaintenanceCostStat.deleteMany({ where: { sigunguCode: '11650' } });
+  await prisma.aptComplex.deleteMany({ where: { kaptCode: 'E2E-KAPT-1' } });
   await prisma.transaction.deleteMany();
   await prisma.property.deleteMany();
   await prisma.region.deleteMany();
@@ -210,6 +213,23 @@ async function main() {
       builtYear: 2009,
       households: 1184,
     },
+  });
+
+  // 관리비 섹션 e2e — 지역난방, 1월·8월 + 구 통계
+  await prisma.aptComplex.create({
+    data: {
+      kaptCode: 'E2E-KAPT-1', kaptName: '래미안서초에스티지', nameNorm: '래미안서초에스티지', bjdCode: '1165010100',
+      sigunguCode: '11650', propertyId: p.id, households: 1184, heatType: '지역난방', rawJson: { kaptMarea: '120000' },
+    },
+  });
+  const mc = (yearMonth: string, heat: bigint) => ({
+    kaptCode: 'E2E-KAPT-1', yearMonth, complete: true, raw: {}, fetchedAt: new Date(),
+    labor: 50_000_000n, cleaning: 40_000_000n, guard: 30_000_000n, repairs: 10_000_000n, commonTotal: 130_000_000n,
+    heat, electricity: 120_000_000n, water: 30_000_000n, ltrLevy: 40_000_000n, ltrBalance: 1_500_000_000n,
+  });
+  await prisma.aptMaintenanceCost.createMany({ data: [mc('202601', 200_000_000n), mc('202608', 10_000_000n)] });
+  await prisma.aptMaintenanceCostStat.create({
+    data: { sigunguCode: '11650', yearMonth: '202608', medianCommonPerM2: 1200, sampleCount: 20, computedAt: new Date() },
   });
 
   // 주변 생활 인프라 e2e용 — 시드 주차장(E2E-PRK-1/2) 반경 500m 내 좌표 부여
