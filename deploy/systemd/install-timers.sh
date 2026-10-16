@@ -30,6 +30,6 @@ EOF
   sudo systemctl enable "imjang-etl@${job}.timer" >/dev/null 2>&1
 done <<< "$JOBS"
 sudo systemctl daemon-reload
-sudo systemctl start imjang-etl@transactions-daily.timer imjang-etl@subscriptions.timer imjang-etl@loan.timer imjang-etl@jeonse-guarantee.timer imjang-etl@amenities.timer imjang-etl@board-posts.timer imjang-etl@seed-regions.timer imjang-etl@subway.timer
+sudo systemctl start imjang-etl@transactions-daily.timer imjang-etl@subscriptions.timer imjang-etl@loan.timer imjang-etl@jeonse-guarantee.timer imjang-etl@amenities.timer imjang-etl@board-posts.timer imjang-etl@seed-regions.timer imjang-etl@subway.timer imjang-etl@apt-maintenance-cost.timer
 echo "=== 설치된 타이머 ==="
 systemctl list-timers "imjang-etl@*" --all --no-pager
