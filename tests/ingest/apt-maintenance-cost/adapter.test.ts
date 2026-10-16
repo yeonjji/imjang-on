@@ -109,4 +109,10 @@ describe('summarizeMonth', () => {
     expect(r.amounts.labor).toBe(100);
     expect(r.amounts.heat).toBe(15);
   });
+
+  it('적립요율이 저장 범위(0~9999.99)를 벗어난 비정상 값이면 null', () => {
+    expect(summarizeMonth(results({ getHsmpAccumulationTariffInfoV3: { sPer: 12345 } })).amounts.ltrRate).toBeNull();
+    expect(summarizeMonth(results({ getHsmpAccumulationTariffInfoV3: { sPer: -1 } })).amounts.ltrRate).toBeNull();
+    expect(summarizeMonth(results({ getHsmpAccumulationTariffInfoV3: { sPer: 189 } })).amounts.ltrRate).toBe(189);
+  });
 });
