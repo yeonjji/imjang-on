@@ -19,6 +19,7 @@ export const MAINTENANCE_COST_SOURCE = 'apt-maintenance-cost';
 const DEFAULT_CONCURRENCY = 3; // 동시 6에서 429 실측(2026-10-15)
 const MIN_STAT_SAMPLE = 5;
 const EMPTY_RETRY_MS = 60 * 86_400_000;
+const DEFAULT_MAX_MINUTES = 100;
 
 export type FetchItem = (op: CostOp, kaptCode: string, yearMonth: string) => Promise<unknown>;
 
@@ -75,7 +76,9 @@ export async function runCollect(opts: {
   fetchItem?: FetchItem;
   /** 테스트 전용 — 대상 단지를 좁힌다. */
   kaptCodes?: string[];
-}): Promise<{ saved: number; quotaHit: boolean }> {
+  /** epoch ms. 이 시각이 지나면 새 단지를 받지 않는다(남은 건 다음 실행이 이어 받음). */
+  deadline?: number;
+}): Promise<{ saved: number; quotaHit: boolean; timeUp: boolean }> {
   const fetchItem = opts.fetchItem ?? fetchCostItem;
   const complexes = await prisma.aptComplex.findMany({
     where: {
@@ -89,9 +92,10 @@ export async function runCollect(opts: {
 
   let saved = 0;
   let quotaHit = false;
+  let timeUp = false;
 
   for (const ym of opts.months) {
-    if (quotaHit) break;
+    if (quotaHit || timeUp) break;
     // 빈 응답(정상 응답인데 금액이 전부 비어 있음)은 공개 지연일 수 있어 월말+60일까지는 다시 받는다.
     const retryUntil = new Date(Date.UTC(Number(ym.slice(0, 4)), Number(ym.slice(4, 6)), 0) + EMPTY_RETRY_MS);
     const existing = await prisma.aptMaintenanceCost.findMany({
@@ -125,7 +129,11 @@ export async function runCollect(opts: {
     let next = 0;
     const worker = async (): Promise<void> => {
       for (;;) {
-        if (quotaHit) return;
+        if (quotaHit || timeUp) return;
+        if (opts.deadline !== undefined && Date.now() > opts.deadline) {
+          timeUp = true;
+          return;
+        }
         const i = next++;
         if (i >= todo.length) return;
         const kaptCode = todo[i];
@@ -146,19 +154,25 @@ export async function runCollect(opts: {
         }
         const row = summarizeMonth(results);
         const data = { ...toDb(row.amounts), complete: row.complete, raw: row.raw as object, fetchedAt: new Date() };
-        await prisma.aptMaintenanceCost.upsert({
-          where: { kaptCode_yearMonth: { kaptCode, yearMonth: ym } },
-          create: { kaptCode, yearMonth: ym, ...data },
-          update: data,
-        });
+        try {
+          await prisma.aptMaintenanceCost.upsert({
+            where: { kaptCode_yearMonth: { kaptCode, yearMonth: ym } },
+            create: { kaptCode, yearMonth: ym, ...data },
+            update: data,
+          });
+        } catch (err) {
+          // 한 단지의 저장 실패(원자료 이상값 등)로 실행 전체가 죽지 않게 한다. 다음 실행에서 다시 받는다.
+          logger.warn({ err, kaptCode, ym }, 'maintenance-cost upsert failed — skipped');
+          continue;
+        }
         saved++;
         if (saved % 500 === 0) logger.info({ saved, ym }, 'maintenance-cost progress');
       }
     };
     await Promise.all(Array.from({ length: Math.max(1, opts.concurrency ?? DEFAULT_CONCURRENCY) }, () => worker()));
-    logger.info({ ym, todo: todo.length, saved, quotaHit }, 'maintenance-cost month pass');
+    logger.info({ ym, todo: todo.length, saved, quotaHit, timeUp }, 'maintenance-cost month pass');
   }
-  return { saved, quotaHit };
+  return { saved, quotaHit, timeUp };
 }
 
 /**
@@ -194,6 +208,7 @@ function arg(name: string): string | undefined {
 }
 
 async function main(): Promise<void> {
+  const startedAt = Date.now();
   const run = await prisma.ingestionRun.create({
     data: { source: MAINTENANCE_COST_SOURCE, targetKey: 'resolving', status: 'RUNNING' },
   });
@@ -213,14 +228,18 @@ async function main(): Promise<void> {
     const months = targetMonths(latest);
     const limit = Number(arg('limit')) || undefined;
     const concurrency = Number(arg('concurrency')) || undefined;
-    const { saved, quotaHit } = await runCollect({ months, limit, concurrency });
+    // systemd TimeoutStartSec(2h) 안에 통계까지 끝내도록 수집 시간을 자른다.
+    const maxMinutes = Number(arg('max-minutes')) || DEFAULT_MAX_MINUTES;
+    const deadline = startedAt + maxMinutes * 60_000;
+    const { saved, quotaHit, timeUp } = await runCollect({ months, limit, concurrency, deadline });
     for (const ym of months) await refreshStats(ym);
 
     await prisma.ingestionRun.update({
       where: { id: run.id },
       data: { status: 'OK', targetKey: latest, rowsUpserted: saved, finishedAt: new Date() },
     });
-    await notify(quotaHit ? 'warn' : 'info', `apt-maintenance-cost ${latest}${quotaHit ? ' 한도 도달로 중단(다음 실행이 이어 받음)' : ' 완료'}`, { months, saved });
+    const stop = quotaHit ? ' 한도 도달로 중단' : timeUp ? ' 시간 예산 도달로 중단' : '';
+    await notify(quotaHit ? 'warn' : 'info', `apt-maintenance-cost ${latest}${stop ? `${stop}(다음 실행이 이어 받음)` : ' 완료'}`, { months, saved });
   } catch (err) {
     await prisma.ingestionRun.update({
       where: { id: run.id },
