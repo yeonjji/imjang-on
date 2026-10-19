@@ -85,7 +85,7 @@ describe('runCollect', () => {
   it('단지마다 31번 호출해 complete 행을 저장한다', async () => {
     let calls = 0;
     const r = await runCollect({ months: [YM], kaptCodes: codes, fetchItem: async (...a) => { calls++; return fakeFetch(...a); } });
-    expect(r).toEqual({ saved: 6, quotaHit: false });
+    expect(r).toEqual({ saved: 6, quotaHit: false, timeUp: false });
     expect(calls).toBe(6 * COST_OPS.length);
     const row = await prisma.aptMaintenanceCost.findUniqueOrThrow({ where: { kaptCode_yearMonth: { kaptCode: `${PREFIX}0`, yearMonth: YM } } });
     expect(row.complete).toBe(true);
@@ -121,8 +121,28 @@ describe('runCollect', () => {
       return fakeFetch(op, kaptCode, ym);
     };
     const r = await runCollect({ months: [YM], kaptCodes: codes, fetchItem: quota, concurrency: 1 });
-    expect(r).toEqual({ saved: 1, quotaHit: true });
+    expect(r).toEqual({ saved: 1, quotaHit: true, timeUp: false });
     expect(await prisma.aptMaintenanceCost.count({ where: { kaptCode: { startsWith: PREFIX } } })).toBe(1);
+  });
+});
+
+describe('runCollect 견고성', () => {
+  it('한 단지의 저장이 DB 오류로 실패해도 나머지는 계속 저장한다', async () => {
+    // jsonb는 \u0000을 받지 않는다 → 이 단지의 upsert만 실패
+    const poison: FetchItem = async (op, kaptCode, ym) => {
+      if (kaptCode === `${PREFIX}2` && op.op === 'getHsmpGuardCostInfoV3') return ok({ kaptCode, guardCost: 1, kaptName: 'bad\u0000' });
+      return fakeFetch(op, kaptCode, ym);
+    };
+    const r = await runCollect({ months: [YM], kaptCodes: codes, fetchItem: poison, concurrency: 1 });
+    expect(r.saved).toBe(5);
+    expect(await prisma.aptMaintenanceCost.count({ where: { kaptCode: { startsWith: PREFIX }, yearMonth: YM } })).toBe(5);
+  });
+
+  it('시간 예산이 지나면 새 단지를 받지 않고 멈춘다', async () => {
+    let calls = 0;
+    const r = await runCollect({ months: [YM], kaptCodes: codes, deadline: Date.now() - 1, fetchItem: async (...a) => { calls++; return fakeFetch(...a); } });
+    expect(r).toEqual({ saved: 0, quotaHit: false, timeUp: true });
+    expect(calls).toBe(0);
   });
 });
 

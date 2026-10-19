@@ -69,4 +69,8 @@ describe('MaintenanceCostSection', () => {
     expect(h).toContain('난방비가 관리비에 포함되지 않습니다');
     expect(h).not.toContain('도시가스');
   });
+  it('적립요율은 표시하지 않는다(무엇에 대한 비율인지 원자료 명세에 정의가 없음)', () => {
+    const h = html({ ...base, ltr: { ...base.ltr!, rate: 3 } });
+    expect(h).not.toContain('적립요율');
+  });
 });

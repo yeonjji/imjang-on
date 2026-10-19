@@ -62,6 +62,10 @@ export function summarizeMonth(results: OpResult[]): {
     }
   }
 
+  // 적립요율은 Decimal(6,2) 컬럼이다. 범위를 벗어난 값(운영 실측: 10000 이상)은 원자료 오류로 보고 버린다.
+  const rate = amounts.ltrRate;
+  if (rate !== null && (rate < 0 || rate >= 10_000)) amounts.ltrRate = null;
+
   amounts.commonTotal = COMMON_GROUPS.reduce<number | null>((acc, g) => add(acc, amounts[g]), null);
   const complete = results.length === COST_OPS.length && results.every((r) => r.ok);
   return { amounts, complete, raw };
