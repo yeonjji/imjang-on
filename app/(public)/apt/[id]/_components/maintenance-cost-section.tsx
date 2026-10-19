@@ -113,7 +113,7 @@ export function MaintenanceCostSection({ view, id }: { view: MaintenanceView | n
                 sub={[
                   v.ltr.levyPerHousehold !== null ? `세대당 ${won(v.ltr.levyPerHousehold)}` : null,
                   v.ltr.levyPerM2 !== null ? `㎡당 ${won(v.ltr.levyPerM2)}` : null,
-                  v.ltr.rate !== null ? `적립요율 ${v.ltr.rate}%` : null,
+                  // 적립요율(sPer)은 표시하지 않는다 — 0~189% 분포(2026-10-16 실측)인데 무엇에 대한 비율인지 명세에 정의가 없다.
                 ].filter(Boolean).join(' · ') || undefined}
               />
             )}
