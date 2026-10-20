@@ -31,6 +31,14 @@ describe('기본 학교', () => {
     expect(isPrimarySchool('동방초광역통학구역', 'wide', '동방초등학교(휴교)')).toBe(true);
     expect(isPrimarySchool('가남초가양초공동통학구역', 'shared', '가양초등학교')).toBe(true);
   });
+  it('광역 학구명에 학교가 여럿이면 모두 기본 학교(토큰 경계로만 일치)', () => {
+    expect(isPrimarySchool('창녕초명덕초광역통학구역', 'wide', '창녕초등학교')).toBe(true);
+    expect(isPrimarySchool('창녕초명덕초광역통학구역', 'wide', '명덕초등학교')).toBe(true);
+    expect(isPrimarySchool('진남초남포초산양초광역통학구역', 'wide', '산양초등학교')).toBe(true);
+    expect(isPrimarySchool('진남초남포초산양초광역통학구역', 'wide', '남초등학교')).toBe(false); // '진남초' 안의 부분 문자열
+    expect(isPrimarySchool('초당초광역통학구역', 'wide', '초당초등학교')).toBe(true);
+    expect(isPrimarySchool('창녕초명덕초광역통학구역', 'wide', '대지초등학교')).toBe(false);
+  });
   it('광역인데 기본 학교를 못 찾으면 전원을 기본으로', () => {
     const zones = [{ hakgudoId: 'Z1', name: '이상한광역통학구역', kind: 'wide' as const, eduName: null, baseDate: '2025-09-22', geometry: null }];
     const links = [
@@ -57,5 +65,6 @@ describe('파일 파싱', () => {
     const links = parseLinkCsv(new Uint8Array(readFileSync(FX + 'link.csv')));
     expect(links).toHaveLength(5);
     expect(links.find((l) => l.schoolName === '먼산초등학교')!.eduOffice).toBe('전남광주통합특별시교육청(광주)');
+    expect(links.every((l) => l.baseDate === '2025-09-22')).toBe(true);
   });
 });

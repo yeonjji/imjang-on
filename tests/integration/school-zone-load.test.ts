@@ -49,8 +49,9 @@ describe('replaceSchoolZones', () => {
 
   it('같은 학구 ID가 두 번 오면 폴리곤을 합친다', async () => {
     const zones = await readZoneZip(new Uint8Array(readFileSync(FX + 'zone.zip')));
+    const links = parseLinkCsv(new Uint8Array(readFileSync(FX + 'link.csv')));
     const dup = [...zones, { ...zones[1], hakgudoId: zones[0].hakgudoId }];
-    const r = await replaceSchoolZones(dup, []);
+    const r = await replaceSchoolZones(dup, links);
     expect(r.zones).toBe(3);
     const [n] = await prisma.$queryRaw<{ n: number }[]>`SELECT ST_NumGeometries(geom)::int AS n FROM "SchoolZone" WHERE "hakgudoId" = 'Z000000001'`;
     expect(n.n).toBe(2);
@@ -58,8 +59,23 @@ describe('replaceSchoolZones', () => {
 
   it('이전의 90% 미만이면 거부하고 기존 데이터를 지킨다', async () => {
     const zones = await readZoneZip(new Uint8Array(readFileSync(FX + 'zone.zip')));
-    await replaceSchoolZones(zones, []);
-    await expect(replaceSchoolZones(zones.slice(0, 1), [])).rejects.toThrow(/90%/);
+    const links = parseLinkCsv(new Uint8Array(readFileSync(FX + 'link.csv')));
+    await replaceSchoolZones(zones, links);
+    await expect(replaceSchoolZones(zones.slice(0, 1), links)).rejects.toThrow(/90%/);
     expect(await prisma.schoolZone.count()).toBe(3);
+  });
+
+  it('두 파일의 기준일이 다르면 적재하지 않는다(판 섞임 방지)', async () => {
+    const zones = await readZoneZip(new Uint8Array(readFileSync(FX + 'zone.zip')));
+    const links = parseLinkCsv(new Uint8Array(readFileSync(FX + 'link.csv'))).map((l) => ({ ...l, baseDate: '2026-03-22' }));
+    await expect(replaceSchoolZones(zones, links)).rejects.toThrow(/기준일/);
+  });
+
+  it('학교 연계가 이전의 90% 미만이면 거부한다', async () => {
+    const zones = await readZoneZip(new Uint8Array(readFileSync(FX + 'zone.zip')));
+    const links = parseLinkCsv(new Uint8Array(readFileSync(FX + 'link.csv')));
+    await replaceSchoolZones(zones, links);
+    await expect(replaceSchoolZones(zones, links.slice(0, 2))).rejects.toThrow(/90%/);
+    expect(await prisma.schoolZoneSchool.count()).toBe(5);
   });
 });

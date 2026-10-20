@@ -33,8 +33,12 @@ beforeAll(async () => {
     VALUES ('UT-SZQ-1', '테스트초통학구역', 'general', '서울특별시강남서초교육지원청', '2025-09-22',
             ST_Multi(ST_MakeEnvelope(127.024, 37.4945, 127.028, 37.4985, 4326)))`;
   await prisma.schoolZoneSchool.create({ data: { hakgudoId: 'UT-SZQ-1', schId: 'B1', schoolName: '테스트초등학교', eduOffice: '서울특별시교육청', isPrimary: true, schoolId } });
+  await prisma.ingestionRun.deleteMany({ where: { source: 'school-zone' } });
+  await prisma.ingestionRun.create({ data: { source: 'school-zone', targetKey: '2025-09-22', status: 'OK', finishedAt: new Date('2026-10-20T16:30:00Z') } });
+  await prisma.ingestionRun.create({ data: { source: 'school-zone', targetKey: 'loading', status: 'ERROR', finishedAt: new Date('2026-10-22T00:00:00Z') } });
 });
 afterAll(async () => {
+  await prisma.ingestionRun.deleteMany({ where: { source: 'school-zone' } });
   await prisma.$executeRaw`DELETE FROM "SchoolZone" WHERE "hakgudoId" = 'UT-SZQ-1'`;
   await prisma.property.deleteMany({ where: { name: { startsWith: 'UT-SZQ' } } });
   await prisma.school.deleteMany({ where: { sourceId: 'UT-SZQ-S1' } });
@@ -47,6 +51,8 @@ describe('getSchoolZoneView', () => {
     expect(v.zoneName).toBe('테스트초통학구역');
     expect(v.eduName).toBe('서울특별시강남서초교육지원청');
     expect(v.primary).toEqual([{ name: '테스트초등학교', href: `/school/11650/${schoolId}`, distanceLabel: '약 280m' }]);
+    // 조회 시점 = 마지막 성공 적재(KST). 실패한 실행은 무시한다.
+    expect(v.loadedAtLabel).toBe('2026-10-21');
   });
   it('학구 밖이면 null', async () => {
     expect(await getSchoolZoneView(outsideId)).toBeNull();

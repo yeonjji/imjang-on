@@ -8,7 +8,7 @@ import type { SchoolZoneView } from '@/lib/insights/school-zone';
 (globalThis as unknown as { React: typeof React }).React = React;
 
 const general: SchoolZoneView = {
-  zoneName: '서울대청초통학구역', kind: 'general', kindLabel: null, eduName: '서울특별시강남서초교육지원청', baseDateLabel: '2025-09-22',
+  zoneName: '서울대청초통학구역', kind: 'general', kindLabel: null, eduName: '서울특별시강남서초교육지원청', baseDateLabel: '2025-09-22', loadedAtLabel: '2026-10-21',
   primary: [{ name: '서울대청초등학교', href: '/school/11680/458', distanceLabel: '약 290m' }], others: [],
 };
 const html = (v: SchoolZoneView | null) => renderToStaticMarkup(createElement(SchoolZoneSection, { view: v, id: 'school-zone' }));
@@ -66,5 +66,9 @@ describe('SchoolZoneSection', () => {
   it('단정·평가 문구가 없다', () => {
     const h = html(general);
     for (const w of ['배정됩니다', '우수', '좋은 학교', '명문']) expect(h).not.toContain(w);
+  });
+  it('임장ON 조회 시점을 표시한다(없으면 생략)', () => {
+    expect(html(general)).toContain('2026-10-21 조회');
+    expect(html({ ...general, loadedAtLabel: null })).not.toContain(' 조회');
   });
 });

@@ -23,6 +23,8 @@ export interface LinkInput {
   schId: string;
   schoolName: string;
   eduOffice: string;
+  /** 데이터기준일자. 통학구역 SHP의 기준일과 같은 판인지 적재 때 대조한다. */
+  baseDate?: string;
 }
 
 export function classifyZoneKind(name: string): ZoneKind {
@@ -41,10 +43,21 @@ export function normalizeEduOffice(name: string): string {
   return OFFICE_ALIAS[name] ?? name;
 }
 
-/** 광역통학구역의 기본 학교 = 학구명이 학교 약칭('가남초')으로 시작. 그 외 유형은 모두 기본. */
+/**
+ * 광역통학구역의 기본 학교 = '광역' 앞 학구명에 이름이 나온 학교. 학교가 여럿 나오는 학구가 있다
+ * (실측 5곳: '창녕초명덕초광역…', '진남초남포초산양초광역…'). 부분 문자열 오인('진남초' 안의 '남초')을
+ * 막기 위해 학구명 맨 앞이거나 바로 앞 글자가 '초'(앞 학교 약칭의 끝)일 때만 일치로 본다.
+ * 그 외 유형은 모두 기본.
+ */
 export function isPrimarySchool(zoneName: string, kind: ZoneKind, schoolName: string): boolean {
   if (kind !== 'wide') return true;
-  return zoneName.startsWith(schoolName.replace(/초등학교.*$/, '초'));
+  const head = zoneName.split('광역')[0];
+  const short = schoolName.replace(/초등학교.*$/, '초');
+  // 약칭은 항상 '초'로 끝나므로 끝 경계는 자연히 맞는다. 시작 경계만 확인한다.
+  for (let i = head.indexOf(short); i >= 0; i = head.indexOf(short, i + 1)) {
+    if (i === 0 || head[i - 1] === '초') return true;
+  }
+  return false;
 }
 
 export function markPrimaries(zones: ZoneInput[], links: LinkInput[]): (LinkInput & { isPrimary: boolean })[] {
@@ -76,11 +89,17 @@ export function parseLinkCsv(bytes: Uint8Array): LinkInput[] {
     if (i < 0) throw new Error(`link csv: '${n}' 열이 없다`);
     return i;
   };
-  const [iZone, iSch, iName, iKind, iOffice] = ['학구ID', '학교ID', '학교명', '학교급구분', '시도교육청명'].map(col);
+  const [iZone, iSch, iName, iKind, iOffice, iDate] = ['학구ID', '학교ID', '학교명', '학교급구분', '시도교육청명', '데이터기준일자'].map(col);
   return lines
     .map((l) => l.split(',').map((c) => c.trim()))
     .filter((c) => c[iKind] === '초등학교')
-    .map((c) => ({ hakgudoId: c[iZone], schId: c[iSch], schoolName: c[iName], eduOffice: normalizeEduOffice(c[iOffice]) }));
+    .map((c) => ({
+      hakgudoId: c[iZone],
+      schId: c[iSch],
+      schoolName: c[iName],
+      eduOffice: normalizeEduOffice(c[iOffice]),
+      baseDate: c[iDate],
+    }));
 }
 
 const toArrayBuffer = (u: Uint8Array): ArrayBuffer => u.slice().buffer;

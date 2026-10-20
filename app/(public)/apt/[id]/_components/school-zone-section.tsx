@@ -50,8 +50,9 @@ export function SchoolZoneSection({ view, id }: { view: SchoolZoneView | null; i
 
       <div className="mt-4 border-t border-[var(--color-line)] pt-3 text-xs leading-relaxed text-[var(--color-muted)]">
         <p>
-          출처: 재단법인 한국지방교육행정연구재단 학구도(기준일 {v.baseDateLabel}) · 학구명: {v.zoneName} · 직선거리는
-          임장ON 계산(단지 대표 좌표와 학교 위치 사이)
+          출처: 재단법인 한국지방교육행정연구재단 학구도(기준일 {v.baseDateLabel})
+          {v.loadedAtLabel ? ` · ${v.loadedAtLabel} 조회` : ''} · 학구명: {v.zoneName} · 직선거리는 임장ON 계산(단지 대표
+          좌표와 학교 위치 사이)
         </p>
         <SourceCaption ids={['kedi-school-zone']} className="mt-1" />
       </div>

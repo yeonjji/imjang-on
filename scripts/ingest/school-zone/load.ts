@@ -38,6 +38,14 @@ export async function replaceSchoolZones(
   opts: { srid?: number } = {},
 ): Promise<{ zones: number; links: number; matched: number }> {
   const srid = opts.srid ?? 5186;
+  // 두 데이터셋은 따로 배포된다. 판이 섞이면 바뀐 배정 학교가 새 기준일로 표시되므로 막는다.
+  const zoneDates = new Set(zones.map((z) => z.baseDate));
+  const linkDates = new Set(links.map((l) => l.baseDate).filter((d): d is string => !!d));
+  for (const d of linkDates) {
+    if (!zoneDates.has(d)) {
+      throw new Error(`학구도 기준일 불일치: 통학구역 ${[...zoneDates].join(',')} / 학교연계 ${[...linkDates].join(',')}`);
+    }
+  }
   const ids = new Set(zones.map((z) => z.hakgudoId));
   const seen = new Set<string>();
   const rows = markPrimaries(zones, links).filter((l) => {
@@ -52,6 +60,10 @@ export async function replaceSchoolZones(
       const prev = await tx.schoolZone.count();
       if (prev > 0 && ids.size < prev * MIN_KEEP_RATIO) {
         throw new Error(`학구 ${ids.size}개 < 이전 ${prev}개의 90% — 적재 거부`);
+      }
+      const prevLinks = await tx.schoolZoneSchool.count();
+      if (prevLinks > 0 && rows.length < prevLinks * MIN_KEEP_RATIO) {
+        throw new Error(`학교 연계 ${rows.length}건 < 이전 ${prevLinks}건의 90% — 적재 거부`);
       }
       await tx.$executeRaw`DELETE FROM "SchoolZone"`; // SchoolZoneSchool은 CASCADE
       for (const z of zones) {

@@ -12,5 +12,15 @@ export async function getSchoolZoneView(propertyId: bigint): Promise<SchoolZoneV
     JOIN "SchoolZoneSchool" s ON s."hakgudoId" = z."hakgudoId"
     LEFT JOIN "School" sc ON sc.id = s."schoolId"
     WHERE p.id = ${propertyId} AND p.location IS NOT NULL`;
-  return buildSchoolZoneView(rows.map((r) => ({ ...r, distanceM: r.distanceM === null ? null : Number(r.distanceM) })));
+  if (rows.length === 0) return null;
+  // 조회 시점 = 마지막 성공 적재(공통 규칙: 임장ON 조회 시점 표시)
+  const lastRun = await prisma.ingestionRun.findFirst({
+    where: { source: 'school-zone', status: 'OK' },
+    orderBy: { finishedAt: 'desc' },
+    select: { finishedAt: true },
+  });
+  return buildSchoolZoneView(
+    rows.map((r) => ({ ...r, distanceM: r.distanceM === null ? null : Number(r.distanceM) })),
+    lastRun?.finishedAt ?? null,
+  );
 }
