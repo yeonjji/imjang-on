@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>청약 결과 섹션 시안</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --blue:#2563eb; --blue-dark:#1e3a8a; --sky-soft:#e0f2fe; --bg:#f7fbff; --soft:#f1f7ff; --text:#172033; --muted:#64748b; --line:#dbeafe; }
+  body { margin:0; background:var(--bg); font-family: Pretendard, 'Noto Sans KR', -apple-system, sans-serif; color:var(--text); }
+  .board { box-sizing:border-box; padding:32px; width:880px; }
+  .board.mobile { width:390px; padding:16px; }
+  .tag { font-size:13px; color:var(--muted); margin:0 0 10px; }
+  .stub { border:1px dashed var(--line); border-radius:22px; padding:14px 24px; color:var(--muted); font-size:14px; background:#fff; margin-bottom:16px; }
+  .card { background:#fff; border-radius:22px; padding:24px; box-shadow:0 1px 3px rgba(30,58,138,.06),0 8px 24px rgba(37,99,235,.05); }
+  .mobile .card { padding:18px; }
+  .head { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:14px; }
+  h2 { margin:0; font-size:20px; font-weight:700; color:var(--blue-dark); }
+  h3 { margin:20px 0 8px; font-size:15px; font-weight:700; }
+  .meta { font-size:13px; color:var(--muted); }
+  .summary { background:var(--soft); border-radius:16px; padding:16px 18px; font-size:15px; line-height:1.6; }
+  .summary b { font-size:20px; color:var(--blue-dark); }
+  .summary .s { font-size:12px; color:var(--muted); }
+  .scroll { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th { text-align:right; font-weight:500; color:var(--muted); font-size:12.5px; padding:8px 6px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th:first-child, td:first-child { text-align:left; }
+  td { text-align:right; padding:9px 6px; border-bottom:1px solid var(--soft); white-space:nowrap; }
+  td.hi { font-weight:700; color:var(--blue-dark); }
+  td.under { color:#9a3412; }
+  .muted { color:var(--muted); }
+  .foot { margin-top:16px; padding-top:12px; border-top:1px solid var(--line); font-size:12px; color:var(--muted); line-height:1.6; }
+</style>
+</head>
+<body>
+
+<div class="board" id="A">
+  <p class="tag">A. 경쟁 공고 · 역삼센트럴자이 (2025-12 접수, APT)</p>
+  <div class="stub">공급 세대 (기존 섹션)</div>
+  <section class="card">
+    <div class="head"><h2>청약 결과</h2><span class="meta">1순위 · 일반공급 기준</span></div>
+    <div class="summary">1순위 해당지역 전체 <b>487.09대 1</b> · 최고 59.98㎡ <b>1,692.33대 1</b><br><span class="s">임장ON 계산: 1순위 해당지역 접수 합 21,432건 ÷ 일반공급 44세대</span></div>
+    <h3>주택형별 경쟁률</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>주택형</th><th>공급</th><th>해당지역 접수</th><th>해당지역 경쟁률</th><th>기타지역</th></tr></thead>
+      <tbody>
+        <tr><td>59.98㎡</td><td>6</td><td>10,154</td><td class="hi">1,692.33 : 1</td><td class="muted">—</td></tr>
+        <tr><td>84.97㎡ A</td><td>19</td><td>8,883</td><td class="hi">467.53 : 1</td><td class="muted">—</td></tr>
+        <tr><td>84.96㎡ B</td><td>6</td><td>693</td><td>115.50 : 1</td><td class="muted">—</td></tr>
+        <tr><td>84.98㎡ C</td><td>6</td><td>846</td><td>141.00 : 1</td><td class="muted">—</td></tr>
+        <tr><td>84.96㎡ D</td><td>2</td><td>308</td><td>154.00 : 1</td><td class="muted">—</td></tr>
+        <tr><td>122.99㎡</td><td>5</td><td>548</td><td>109.60 : 1</td><td class="muted">—</td></tr>
+      </tbody>
+    </table></div>
+    <p class="meta" style="margin:6px 0 0">— : 앞 순위에서 마감돼 접수하지 않음</p>
+    <h3>당첨 가점 <span class="meta" style="font-weight:400">해당지역 · 가점제 당첨자</span></h3>
+    <div class="scroll"><table>
+      <thead><tr><th>주택형</th><th>최저</th><th>평균</th><th>최고</th></tr></thead>
+      <tbody>
+        <tr><td>59.98㎡</td><td>70</td><td>70</td><td>70</td></tr>
+        <tr><td>84.97㎡ A</td><td>69</td><td>70.07</td><td>74</td></tr>
+        <tr><td>84.96㎡ B</td><td>69</td><td>71</td><td>79</td></tr>
+        <tr><td>84.98㎡ C</td><td>69</td><td>69</td><td>69</td></tr>
+        <tr><td>84.96㎡ D</td><td>73</td><td>73.5</td><td>74</td></tr>
+        <tr><td>122.99㎡</td><td>69</td><td>70.75</td><td>72</td></tr>
+      </tbody>
+    </table></div>
+    <h3>특별공급 유형별</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>유형</th><th>배정</th><th>접수</th><th>경쟁률</th></tr></thead>
+      <tbody>
+        <tr><td>생애최초</td><td>7</td><td>4,884</td><td class="hi">697.71 : 1</td></tr>
+        <tr><td>신혼부부</td><td>17</td><td>4,382</td><td>257.76 : 1</td></tr>
+        <tr><td>다자녀</td><td>9</td><td>1,629</td><td>181.00 : 1</td></tr>
+        <tr><td>노부모</td><td>2</td><td>87</td><td>43.50 : 1</td></tr>
+      </tbody>
+    </table></div>
+    <div class="foot">출처: 한국부동산원 청약홈 · 2026-10-20 조회 · 특별공급 경쟁률은 임장ON 계산(접수 ÷ 배정, 기관추천 제외)<br>은행 전산 사정으로 접수건수가 일부 변동될 수 있으며, 최종 결과는 청약홈에서 확인하세요.</div>
+  </section>
+</div>
+
+<div class="board" id="B">
+  <p class="tag">B. 미달 공고 · 대전 소제지구 A3BL 중흥S-클래스 우미린 (2026-05 접수, APT)</p>
+  <div class="stub">공급 세대 (기존 섹션)</div>
+  <section class="card">
+    <div class="head"><h2>청약 결과</h2><span class="meta">일반공급 기준</span></div>
+    <div class="summary">1순위 해당지역 전체 <b>0.39대 1</b> · 2순위까지 최종 미달 <b>545세대</b><br><span class="s">임장ON 계산: 1순위 해당지역 접수 합 402건 ÷ 일반공급 1,027세대 · 미달 세대는 청약홈 공식 집계</span></div>
+    <h3>주택형별 경쟁률</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>주택형</th><th>공급</th><th>1순위 해당</th><th>1순위 기타</th><th>2순위</th></tr></thead>
+      <tbody>
+        <tr><td>84.95㎡ A</td><td>419</td><td class="under">미달 236세대</td><td class="under">미달 218세대</td><td class="under">미달 164세대</td></tr>
+        <tr><td>84.99㎡ B</td><td>94</td><td class="under">미달 90세대</td><td class="under">미달 90세대</td><td class="under">미달 86세대</td></tr>
+        <tr><td>84.96㎡ C</td><td>184</td><td class="under">미달 140세대</td><td class="under">미달 136세대</td><td class="under">미달 116세대</td></tr>
+        <tr><td>84.95㎡ D</td><td>99</td><td class="under">미달 95세대</td><td class="under">미달 95세대</td><td class="under">미달 95세대</td></tr>
+        <tr><td>84.95㎡ E</td><td>10</td><td>1.00 : 1</td><td class="muted">—</td><td class="muted">—</td></tr>
+        <tr><td>84.99㎡ F</td><td>9</td><td class="hi">3.56 : 1</td><td class="muted">—</td><td class="muted">—</td></tr>
+        <tr><td>109.97㎡ A</td><td>42</td><td>1.79 : 1</td><td class="muted">—</td><td class="muted">—</td></tr>
+        <tr><td>109.95㎡ B</td><td>134</td><td class="under">미달 104세대</td><td class="under">미달 98세대</td><td class="under">미달 78세대</td></tr>
+        <tr><td>135.94㎡ A</td><td>30</td><td class="under">미달 11세대</td><td class="under">미달 10세대</td><td class="under">미달 3세대</td></tr>
+        <tr><td>135.93㎡ T</td><td>6</td><td class="under">미달 5세대</td><td class="under">미달 5세대</td><td class="under">미달 3세대</td></tr>
+      </tbody>
+    </table></div>
+    <p class="meta" style="margin:6px 0 0">미달 세대는 앞 단계부터 누적한 잔여 세대(청약홈 공식값) · — : 앞 순위 마감</p>
+    <h3>당첨 가점 <span class="meta" style="font-weight:400">가점제 당첨자가 있는 주택형만</span></h3>
+    <div class="scroll"><table>
+      <thead><tr><th>주택형</th><th>지역</th><th>최저</th><th>평균</th><th>최고</th></tr></thead>
+      <tbody>
+        <tr><td>84.99㎡ F</td><td>해당지역</td><td>44</td><td>51.75</td><td>58</td></tr>
+        <tr><td>84.95㎡ E</td><td>기타지역</td><td>56</td><td>56</td><td>56</td></tr>
+      </tbody>
+    </table></div>
+    <div class="foot">출처: 한국부동산원 청약홈 · 2026-10-20 조회<br>은행 전산 사정으로 접수건수가 일부 변동될 수 있으며, 최종 결과는 청약홈에서 확인하세요.</div>
+  </section>
+</div>
+
+<div class="board" id="C">
+  <p class="tag">C. 오피스텔·도시형 · 왕십리역 어반홈스 B동 (한 표만)</p>
+  <div class="stub">공급 세대 (기존 섹션)</div>
+  <section class="card">
+    <div class="head"><h2>청약 결과</h2><span class="meta">오피스텔·도시형생활주택</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>타입</th><th>구분</th><th>공급</th><th>접수</th><th>경쟁률</th></tr></thead>
+      <tbody><tr><td>1</td><td>전체</td><td>14</td><td>41</td><td class="hi">2.93 : 1</td></tr></tbody>
+    </table></div>
+    <div class="foot">출처: 한국부동산원 청약홈 · 2026-10-20 조회<br>은행 전산 사정으로 접수건수가 일부 변동될 수 있으며, 최종 결과는 청약홈에서 확인하세요.</div>
+  </section>
+</div>
+
+<div class="board mobile" id="D">
+  <p class="tag">D. 모바일 390px · A와 같은 공고 (표는 가로 스크롤)</p>
+  <section class="card">
+    <div class="head"><h2>청약 결과</h2><span class="meta">일반공급</span></div>
+    <div class="summary">1순위 해당지역 전체 <b>487.09대 1</b><br>최고 59.98㎡ <b>1,692.33대 1</b><br><span class="s">임장ON 계산: 접수 합 21,432 ÷ 공급 44</span></div>
+    <h3>주택형별 경쟁률</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>주택형</th><th>공급</th><th>해당 접수</th><th>경쟁률</th></tr></thead>
+      <tbody>
+        <tr><td>59.98㎡</td><td>6</td><td>10,154</td><td class="hi">1,692.33 : 1</td></tr>
+        <tr><td>84.97㎡ A</td><td>19</td><td>8,883</td><td class="hi">467.53 : 1</td></tr>
+        <tr><td>84.96㎡ B</td><td>6</td><td>693</td><td>115.50 : 1</td></tr>
+      </tbody>
+    </table></div>
+    <h3>당첨 가점</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>주택형</th><th>최저</th><th>평균</th><th>최고</th></tr></thead>
+      <tbody><tr><td>59.98㎡</td><td>70</td><td>70</td><td>70</td></tr><tr><td>84.97㎡ A</td><td>69</td><td>70.07</td><td>74</td></tr></tbody>
+    </table></div>
+    <div class="foot">출처: 한국부동산원 청약홈 · 2026-10-20 조회 · 접수건수는 일부 변동될 수 있으며 최종 결과는 청약홈에서 확인하세요.</div>
+  </section>
+</div>
+
+</body>
+</html>
