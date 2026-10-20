@@ -30,6 +30,8 @@ import { TransactionFlagsView } from '../../apt/[id]/_components/transaction-fla
 import { NearbyPriceComparison } from '../../apt/[id]/_components/nearby-price-comparison';
 import { DongTransactionSection } from '../../apt/[id]/_components/dong-transaction-section';
 import { DetailSidebar } from '../../apt/[id]/_components/detail-sidebar';
+import { BuildingRegisterSection } from '../../apt/[id]/_components/building-register-section';
+import { getBuildingRegisterView } from '@/lib/building-register-query';
 import { getDongTransactions, umdOfProperty } from '@/lib/transaction/dong';
 import { propertyMetaDescription } from '@/lib/seo/blurb';
 import { JsonLd, residenceSchema, breadcrumbSchema, aptProvenanceNodes } from '@/lib/seo/json-ld';
@@ -175,6 +177,7 @@ export default async function OffiDetailPage({ params }: Params) {
   const now = new Date();
   const unitMix = complexFacts ? buildUnitMix(complexFacts) : null;
   const showComplex = shouldRenderComplexInfo(complexFacts, now);
+  const building = await safe(getBuildingRegisterView(propId, 'OFFICETEL', now), null, 'getBuildingRegisterView');
 
   const offiFaq = composeDetailFaq(
     buildAptFaq({ property, areaSummary, unifiedTotalCount: unified.totalCount }),
@@ -260,6 +263,7 @@ export default async function OffiDetailPage({ params }: Params) {
           />
           <AreaComparison id="area" areas={areaSummary} />
           <ComplexInfoSection id="complex" facts={complexFacts} unitMix={unitMix} now={now} />
+          <BuildingRegisterSection id="building-register" view={building} />
           <SameFloorObservation id="same-floor" pair={sameFloor} />
           <FloorPremiumView id="floor-premium" data={floorPremium} />
           <TransactionFlagsView id="data-notes" data={flags} />
@@ -272,7 +276,7 @@ export default async function OffiDetailPage({ params }: Params) {
           <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>
-          <DetailSidebar property={property} showComplex={showComplex} showDong={dongTx.length > 0} />
+          <DetailSidebar property={property} showComplex={showComplex} showDong={dongTx.length > 0} showBuilding={building !== null} />
         </aside>
       </div>
     </div>

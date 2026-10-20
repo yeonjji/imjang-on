@@ -21,6 +21,8 @@ import { MaintenanceCostSection } from './_components/maintenance-cost-section';
 import { getMaintenanceCostView } from '@/lib/maintenance-cost-query';
 import { SchoolZoneSection } from './_components/school-zone-section';
 import { getSchoolZoneView } from '@/lib/school-zone-query';
+import { BuildingRegisterSection } from './_components/building-register-section';
+import { getBuildingRegisterView } from '@/lib/building-register-query';
 import { SameFloorObservation } from './_components/same-floor-observation';
 import { FloorPremiumView } from './_components/floor-premium';
 import { TransactionFlagsView } from './_components/transaction-flags';
@@ -186,6 +188,7 @@ export default async function AptDetailPage({ params }: Params) {
     'getMaintenanceCostView',
   );
   const schoolZone = await safe(getSchoolZoneView(propId), null, 'getSchoolZoneView');
+  const building = await safe(getBuildingRegisterView(propId, 'APARTMENT', now), null, 'getBuildingRegisterView');
 
   const aptFaq = composeDetailFaq(
     buildAptFaq({ property, areaSummary, unifiedTotalCount: unified.totalCount }),
@@ -272,6 +275,7 @@ export default async function AptDetailPage({ params }: Params) {
           <AreaComparison id="area" areas={areaSummary} />
           <ComplexInfoSection id="complex" facts={complexFacts} unitMix={unitMix} now={now} />
           <MaintenanceCostSection id="maintenance-cost" view={maintenance} />
+          <BuildingRegisterSection id="building-register" view={building} />
           <SameFloorObservation id="same-floor" pair={sameFloor} />
           <FloorPremiumView id="floor-premium" data={floorPremium} />
           <TransactionFlagsView id="data-notes" data={flags} />
@@ -293,7 +297,7 @@ export default async function AptDetailPage({ params }: Params) {
           <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>
-          <DetailSidebar property={property} showComplex={showComplex} showDong={dongTx.length > 0} showMaintenance={maintenance !== null} showSchoolZone={schoolZone !== null} />
+          <DetailSidebar property={property} showComplex={showComplex} showDong={dongTx.length > 0} showMaintenance={maintenance !== null} showSchoolZone={schoolZone !== null} showBuilding={building !== null} />
         </aside>
       </div>
     </div>

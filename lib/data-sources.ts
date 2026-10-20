@@ -20,7 +20,8 @@ export type DataSourceId =
   | 'hf-jeonse-guarantee'
   | 'molit-apt-complex'
   | 'kapt-maintenance-cost'
-  | 'kedi-school-zone';
+  | 'kedi-school-zone'
+  | 'molit-building-register';
 
 export type DataSourceCategory =
   | '부동산 거래'
@@ -176,6 +177,13 @@ export const DATA_SOURCES: Record<DataSourceId, DataSource> = {
     dataset: '학구도(초등학교 통학구역)',
     url: 'https://www.data.go.kr/data/15099520/fileData.do',
     category: '교육·보육',
+  },
+  'molit-building-register': {
+    id: 'molit-building-register',
+    provider: '국토교통부',
+    dataset: '건축HUB 건축물대장정보',
+    url: 'https://www.data.go.kr/data/15134735/openapi.do',
+    category: '부동산 거래',
   },
 };
 

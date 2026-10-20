@@ -34,3 +34,12 @@ test('villa detail: 주변 생활 인프라 블록이 렌더된다', async ({ pa
   await expect(poi.getByRole('heading', { name: '주변 생활 인프라' })).toBeVisible();
   await expect(poi.getByText('주차장').first()).toBeVisible();
 });
+
+test('villa detail: 건축물 정보와 근린생활시설 안내', async ({ page }) => {
+  const id = await idByName('서초빌라');
+  await page.goto(`/villa/${id}`);
+  const sec = page.locator('#building-register');
+  await expect(sec).toBeVisible();
+  await expect(sec.getByText('세대당 0.86대')).toBeVisible();
+  await expect(sec.getByText(/근린생활시설 용도가 포함되어 있습니다/)).toBeVisible();
+});
