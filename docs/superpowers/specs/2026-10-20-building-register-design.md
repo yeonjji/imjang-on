@@ -1,8 +1,8 @@
 # 3단계 · 아파트·오피스텔·빌라 상세 건축물 정보(건축물대장) 설계
 
 - 작성일: 2026-10-20
-- 상태: 초안. 사용자 검토 대기, UI 시안 확인 중 (**시안 확정 전 개발 금지**)
-- UI 시안(검토용): `docs/superpowers/mockups/2026-10-20-building-register.html` (A 아파트 · B 오피스텔 · C 빌라(근린생활시설 포함) · D 모바일)
+- 상태: 승인(2026-10-20). UI 시안 확정
+- UI 시안(확정본): `docs/superpowers/mockups/2026-10-20-building-register.html` (A 아파트 · B 오피스텔 · C 빌라(근린생활시설 포함) · D 모바일)
 - 상위 문서: [로드맵](2026-10-15-detail-public-data-roadmap.md) · [데이터·필드·섹션 계획](2026-10-15-detail-public-data-section-plan.md) 3단계(검토 ④⑤⑥ 포함)
 - 운영계정 트래픽 증설 신청 완료(2026-10-20, 사용자)
 
