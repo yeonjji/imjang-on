@@ -99,3 +99,13 @@ test('apt detail: 배정 초등학교 섹션이 지하철역 위에 렌더된다
   await expect(sec.getByText(/동·호수에 따라 다를 수 있습니다/)).toBeVisible();
   await expect(page.getByRole('link', { name: '배정 초등학교' })).toBeVisible();
 });
+
+test('apt detail: 건축물 정보 섹션(단지 정보와 겹치지 않는 항목)', async ({ page }) => {
+  await page.goto(`/apt/${propertyId}`);
+  const sec = page.locator('#building-register');
+  await expect(sec).toBeVisible();
+  await expect(sec.getByRole('heading', { name: '건축물 정보' })).toBeVisible();
+  await expect(sec.getByText('159.96%')).toBeVisible();
+  await expect(sec.getByText('15개 동 적용')).toBeVisible();
+  await expect(page.getByRole('link', { name: '건축물 정보' })).toBeVisible();
+});

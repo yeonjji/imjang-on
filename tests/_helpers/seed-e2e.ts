@@ -122,6 +122,7 @@ async function main() {
   await prisma.aptMaintenanceCostStat.deleteMany({ where: { sigunguCode: '11650' } });
   await prisma.aptComplex.deleteMany({ where: { kaptCode: 'E2E-KAPT-1' } });
   await prisma.$executeRaw`DELETE FROM "SchoolZone" WHERE "hakgudoId" = 'E2E-Z1'`;
+  await prisma.buildingRegister.deleteMany();
   await prisma.transaction.deleteMany();
   await prisma.property.deleteMany();
   await prisma.region.deleteMany();
@@ -379,6 +380,15 @@ async function main() {
     lng: 127.0258,
     lat: 37.4964,
     builtYear: 2015,
+  });
+
+  // 건축물 정보 e2e — 아파트(시안 A 값)·빌라(시안 C 값, 근린생활시설 포함)
+  const brNow = new Date();
+  await prisma.buildingRegister.create({
+    data: { propertyId: p.id, status: 'matched', bcRat: 16.94, vlRat: 159.96, seismicApplied: 15, mainBuildingCount: 15, structure: '철근콘크리트구조', groundFloors: 27, undergroundFloors: 1, zoningKind: '용도구역', zoningName: '지구단위계획구역', fetchedAt: brNow },
+  });
+  await prisma.buildingRegister.create({
+    data: { propertyId: villa.id, status: 'matched', useAprDate: new Date('2019-08-30T00:00:00Z'), groundFloors: 6, undergroundFloors: 1, households: 14, parkingTotal: 12, elevators: 1, bcRat: 59.8, vlRat: 187.33, mainPurpose: '공동주택', etcPurpose: '공동주택, 제1종근린생활시설(소매점)', structure: '철근콘크리트구조', seismicApplied: 1, mainBuildingCount: 1, zoningKind: '용도지역', zoningName: '제2종일반주거지역', hasNeighborhoodFacility: true, registerCreatedAt: new Date('2022-08-13T00:00:00Z'), fetchedAt: brNow },
   });
 
   await seedChildcare();
