@@ -221,6 +221,35 @@ model AptMaintenanceCostStat {
   @@id([sigunguCode, yearMonth])
 }
 
+/// 초등학교 통학구역(학구도). 반기 배포(3·9월) 파일을 통째로 교체 적재한다. geom은 raw SQL로만 쓴다.
+model SchoolZone {
+  hakgudoId String   @id @db.VarChar(19)
+  name      String   @db.VarChar(120)
+  /// 'general' | 'shared' | 'shared_oneway' | 'wide' (학구명에서 분류)
+  kind      String   @db.VarChar(16)
+  /// 교육지원청명. 확인 안내 문구에 쓴다.
+  eduName   String?  @db.VarChar(60)
+  baseDate  DateTime @db.Date
+  geom      Unsupported("geometry(MultiPolygon,4326)")
+  schools   SchoolZoneSchool[]
+}
+
+model SchoolZoneSchool {
+  hakgudoId  String  @db.VarChar(19)
+  schId      String  @db.VarChar(19)
+  /// 원문 학교명("(휴교)" 등 부가 표기 포함)
+  schoolName String  @db.VarChar(60)
+  /// 시·도 교육청명(별칭 정규화 후). School.eduOffice와 매칭한다.
+  eduOffice  String  @db.VarChar(60)
+  /// 우리 School 매칭 결과. 확실할 때만 채운다(링크·거리용).
+  schoolId   BigInt?
+  /// 광역통학구역의 기본 학교. 일반·공동은 모두 true.
+  isPrimary  Boolean
+  zone       SchoolZone @relation(fields: [hakgudoId], references: [hakgudoId], onDelete: Cascade)
+
+  @@id([hakgudoId, schId])
+}
+
 enum DealType {
   SALE
   JEONSE
