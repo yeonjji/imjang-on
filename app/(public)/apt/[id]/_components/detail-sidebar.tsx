@@ -11,6 +11,7 @@ const ANCHORS = [
   { href: '#complex', label: '단지 정보', needsComplex: true },
   { href: '#maintenance-cost', label: '관리비', needsMaintenance: true },
   { href: '#nearby', label: '주변 단지 비교' },
+  { href: '#school-zone', label: '배정 초등학교', needsSchoolZone: true },
   { href: '#poi', label: '주변 생활 인프라' },
 ];
 
@@ -19,11 +20,13 @@ export function DetailSidebar({
   showComplex = false,
   showDong = false,
   showMaintenance = false,
+  showSchoolZone = false,
 }: {
   property: Property;
   showComplex?: boolean;
   showDong?: boolean;
   showMaintenance?: boolean;
+  showSchoolZone?: boolean;
 }) {
   return (
     <div className="sticky top-24 flex flex-col gap-4">
@@ -42,7 +45,8 @@ export function DetailSidebar({
             (a) =>
               (!a.needsComplex || showComplex) &&
               (!a.needsDong || showDong) &&
-              (!a.needsMaintenance || showMaintenance),
+              (!a.needsMaintenance || showMaintenance) &&
+              (!a.needsSchoolZone || showSchoolZone),
           ).map((a) => (
             <li key={a.href}>
               <a

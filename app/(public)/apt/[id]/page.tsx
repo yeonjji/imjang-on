@@ -19,6 +19,8 @@ import { AreaComparison } from './_components/area-comparison';
 import { ComplexInfoSection } from './_components/complex-info-section';
 import { MaintenanceCostSection } from './_components/maintenance-cost-section';
 import { getMaintenanceCostView } from '@/lib/maintenance-cost-query';
+import { SchoolZoneSection } from './_components/school-zone-section';
+import { getSchoolZoneView } from '@/lib/school-zone-query';
 import { SameFloorObservation } from './_components/same-floor-observation';
 import { FloorPremiumView } from './_components/floor-premium';
 import { TransactionFlagsView } from './_components/transaction-flags';
@@ -183,6 +185,7 @@ export default async function AptDetailPage({ params }: Params) {
     null,
     'getMaintenanceCostView',
   );
+  const schoolZone = await safe(getSchoolZoneView(propId), null, 'getSchoolZoneView');
 
   const aptFaq = composeDetailFaq(
     buildAptFaq({ property, areaSummary, unifiedTotalCount: unified.totalCount }),
@@ -281,6 +284,7 @@ export default async function AptDetailPage({ params }: Params) {
               sido={shortSido}
             />
           )}
+          <SchoolZoneSection id="school-zone" view={schoolZone} />
           <NearbySubway data={subway} />
           <NearbyInfra categories={infra} />
           <BoardBriefingSection />
@@ -289,7 +293,7 @@ export default async function AptDetailPage({ params }: Params) {
           <MainSourceBlock id="molit-rtms" />
         </main>
         <aside>
-          <DetailSidebar property={property} showComplex={showComplex} showDong={dongTx.length > 0} showMaintenance={maintenance !== null} />
+          <DetailSidebar property={property} showComplex={showComplex} showDong={dongTx.length > 0} showMaintenance={maintenance !== null} showSchoolZone={schoolZone !== null} />
         </aside>
       </div>
     </div>
