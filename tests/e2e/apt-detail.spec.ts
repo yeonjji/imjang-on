@@ -89,3 +89,13 @@ test('apt detail: 관리비 섹션이 단지 정보 아래에 렌더된다', asy
   await expect(sec.getByText(/2026년 8월 부과분/).first()).toBeVisible();
   await expect(page.getByRole('link', { name: '관리비' })).toBeVisible();
 });
+
+test('apt detail: 배정 초등학교 섹션이 지하철역 위에 렌더된다', async ({ page }) => {
+  await page.goto(`/apt/${propertyId}`);
+  const sec = page.locator('#school-zone');
+  await expect(sec).toBeVisible();
+  await expect(sec.getByRole('heading', { name: '배정 초등학교' })).toBeVisible();
+  await expect(sec.getByText('E2E 거마초등학교')).toBeVisible();
+  await expect(sec.getByText(/동·호수에 따라 다를 수 있습니다/)).toBeVisible();
+  await expect(page.getByRole('link', { name: '배정 초등학교' })).toBeVisible();
+});

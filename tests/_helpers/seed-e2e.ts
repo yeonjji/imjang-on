@@ -121,6 +121,7 @@ async function main() {
   await prisma.aptMaintenanceCost.deleteMany({ where: { kaptCode: 'E2E-KAPT-1' } });
   await prisma.aptMaintenanceCostStat.deleteMany({ where: { sigunguCode: '11650' } });
   await prisma.aptComplex.deleteMany({ where: { kaptCode: 'E2E-KAPT-1' } });
+  await prisma.$executeRaw`DELETE FROM "SchoolZone" WHERE "hakgudoId" = 'E2E-Z1'`;
   await prisma.transaction.deleteMany();
   await prisma.property.deleteMany();
   await prisma.region.deleteMany();
@@ -238,6 +239,16 @@ async function main() {
     SET location = ST_SetSRID(ST_MakePoint(127.026, 37.4965), 4326)::geography
     WHERE id = ${p.id}
   `;
+
+  // 배정 초등학교 e2e — 래미안서초 좌표를 덮는 학구 1개 + 시드 학교(E2E 거마초) 연결
+  await prisma.$executeRaw`
+    INSERT INTO "SchoolZone" ("hakgudoId", name, kind, "eduName", "baseDate", geom)
+    VALUES ('E2E-Z1', 'E2E거마초통학구역', 'general', '서울특별시강남서초교육지원청', '2025-09-22',
+            ST_Multi(ST_MakeEnvelope(127.024, 37.4945, 127.028, 37.4985, 4326)))`;
+  const geoma = await prisma.school.findUniqueOrThrow({ where: { sourceId: 'E2E_SCH_0001' }, select: { id: true } });
+  await prisma.schoolZoneSchool.create({
+    data: { hakgudoId: 'E2E-Z1', schId: 'E2E-B1', schoolName: 'E2E 거마초등학교', eduOffice: '서울특별시교육청', isPrimary: true, schoolId: geoma.id },
+  });
 
   const types = [DealType.SALE, DealType.JEONSE, DealType.WOLSE];
   const now = Date.now();
