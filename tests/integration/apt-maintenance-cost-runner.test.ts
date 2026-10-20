@@ -81,6 +81,22 @@ describe('runCollect 우선순위·재시도', () => {
   });
 });
 
+describe('빈 응답 재시도 간격', () => {
+  it('빈 응답은 마지막 수집 후 7일이 지나야 다시 받는다', async () => {
+    const day = 86_400_000;
+    await prisma.aptMaintenanceCost.createMany({
+      data: [
+        row(`${PREFIX}0`, YM, { commonTotal: null, fetchedAt: new Date(Date.now() - 1 * day) }), // 1일 전 → 건너뜀
+        row(`${PREFIX}1`, YM, { commonTotal: null, fetchedAt: new Date(Date.now() - 8 * day) }), // 8일 전 → 재시도
+        ...codes.slice(2).map((c) => row(c, YM)),
+      ],
+    });
+    const seen = new Set<string>();
+    await runCollect({ months: [YM], kaptCodes: codes, concurrency: 1, fetchItem: async (op, k, ym) => { seen.add(k); return fakeFetch(op, k, ym); } });
+    expect([...seen]).toEqual([`${PREFIX}1`]);
+  });
+});
+
 describe('runCollect', () => {
   it('단지마다 31번 호출해 complete 행을 저장한다', async () => {
     let calls = 0;

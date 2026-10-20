@@ -19,6 +19,7 @@ export const MAINTENANCE_COST_SOURCE = 'apt-maintenance-cost';
 const DEFAULT_CONCURRENCY = 3; // 동시 6에서 429 실측(2026-10-15)
 const MIN_STAT_SAMPLE = 5;
 const EMPTY_RETRY_MS = 60 * 86_400_000;
+const EMPTY_RETRY_INTERVAL_MS = 7 * 86_400_000;
 const DEFAULT_MAX_MINUTES = 100;
 
 export type FetchItem = (op: CostOp, kaptCode: string, yearMonth: string) => Promise<unknown>;
@@ -104,8 +105,11 @@ export async function runCollect(opts: {
     });
     const done = new Set<string>();
     const emptyRetry = new Set<string>();
+    // 다시 받는 간격은 7일. 빈 응답 상당수는 공개 지연이 아니라 미공개 단지라(2026-10-20 실측: 1,632곳
+    // 재수집 중 6곳만 값이 생김) 매일 받으면 시간 예산의 1/3을 쓴다.
+    const retryBefore = Date.now() - EMPTY_RETRY_INTERVAL_MS;
     for (const r of existing) {
-      if (r.commonTotal !== null || r.fetchedAt >= retryUntil) done.add(r.kaptCode);
+      if (r.commonTotal !== null || r.fetchedAt >= retryUntil || r.fetchedAt.getTime() > retryBefore) done.add(r.kaptCode);
       else emptyRetry.add(r.kaptCode);
     }
     // 한도가 하루 수천 건이라 한 달치를 다 받기 전에 다음 달로 넘어갈 수 있다(운영 증설 전 약 43일/월).
