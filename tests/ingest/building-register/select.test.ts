@@ -35,4 +35,17 @@ describe('selectTarget', () => {
     expect(selectTarget({ type: 'OFFICETEL', name: 'x', builtYear: 2019, recap: [], titles: [main({ mainPurpsCdNm: '업무시설', etcPurps: '업무시설(오피스텔)' })] }).status).toBe('matched');
     expect(selectTarget({ type: 'OFFICETEL', name: 'x', builtYear: 2019, recap: [], titles: [main({ mainPurpsCdNm: '공장', etcPurps: '지식산업센터' })] }).status).toBe('purpose_mismatch');
   });
+
+  it('비아파트: 총괄표제부 1건 필지에 용도가 다른 건물이 섞이면 용도가 맞는 건물만 남긴다', () => {
+    const r = selectTarget({ type: 'MULTIPLEX', name: 'x', builtYear: 2019, recap: [{ useAprDay: '' }], titles: [main({ etcPurps: '다세대주택' }), main({ mainPurpsCdNm: '제2종근린생활시설', etcPurps: '제2종근린생활시설' })] });
+    expect(r.status).toBe('matched');
+    if (r.status === 'matched') expect(r.mains.map((t) => t.mainPurpsCdNm)).toEqual(['공동주택']);
+    const o = selectTarget({ type: 'OFFICETEL', name: 'x', builtYear: 2019, recap: [{}], titles: [main({ mainPurpsCdNm: '업무시설', etcPurps: '오피스텔' }), main({ mainPurpsCdNm: '공장', etcPurps: '지식산업센터' })] });
+    if (o.status === 'matched') expect(o.mains.map((t) => t.mainPurpsCdNm)).toEqual(['업무시설']);
+    else throw new Error(o.status);
+  });
+  it('건물명이 두 글자 미만이면 이름 매칭에 쓰지 않는다', () => {
+    const titles = [main({ bldNm: 'A' }), main({ bldNm: '다라맨션' })];
+    expect(selectTarget({ type: 'ROW_HOUSE', name: 'A동빌라', builtYear: 2019, recap: [], titles }).status).toBe('ambiguous');
+  });
 });

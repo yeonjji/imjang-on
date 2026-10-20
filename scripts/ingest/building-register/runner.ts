@@ -89,7 +89,9 @@ export async function runCollect(opts: {
       return;
     }
     let recap: Rec[];
-    let titles: Rec[];
+    let titles: Rec[] = [];
+    let jijigu: Rec[] = [];
+    let chosen: { recap: Rec | null; mains: Rec[] };
     try {
       recap = await fetchItems('getBrRecapTitleInfo', k.key);
       titles = await fetchItems('getBrTitleInfo', k.key);
@@ -98,14 +100,22 @@ export async function runCollect(opts: {
         await save(t.id, sel.status, k.key);
         return;
       }
-      const jijigu = await fetchItems('getBrJijiguInfo', k.key);
-      const fields = normalizeRegister(sel, jijigu, titles.filter((x) => !isMain(x)));
-      await save(t.id, 'matched', k.key, fields, { recap: sel.recap, mains: sel.mains, jijigu });
-      matched++;
+      jijigu = await fetchItems('getBrJijiguInfo', k.key);
+      chosen = sel;
     } catch (err) {
       if (err instanceof QuotaExceededError) throw err;
       logger.warn({ err, propertyId: String(t.id) }, 'building-register api error');
       await save(t.id, 'api_error', k.key);
+      return;
+    }
+    const fields = normalizeRegister(chosen, jijigu, titles.filter((x) => !isMain(x)));
+    try {
+      await save(t.id, 'matched', k.key, fields, { recap: chosen.recap, mains: chosen.mains, jijigu });
+      matched++;
+    } catch (err) {
+      // 저장 실패는 같은 응답이면 또 실패한다 — api_error(매일 재시도)가 아니라 save_error로 남겨 재호출하지 않는다.
+      logger.warn({ err, propertyId: String(t.id) }, 'building-register save failed');
+      await save(t.id, 'save_error', k.key);
     }
   };
 

@@ -67,4 +67,17 @@ describe('buildBuildingView', () => {
     expect(v.createdLabel).toBe('2022-08-13');
     expect(v.fetchedLabel).toBe('2026-10-20');
   });
+
+  it('내진: 모든 동이 적용일 때만 "몇 개 동 중"(일부만이면 미적용으로 읽히지 않게)', () => {
+    const all = buildBuildingView({ ...base, seismicApplied: 15, mainBuildingCount: 15 }, 'APARTMENT', NOW)!;
+    expect(all.tiles.find((t) => t.label === '내진설계')).toEqual({ label: '내진설계', value: '15개 동 적용', sub: '주건축물 15개 동 중' });
+    const some = buildBuildingView({ ...base, seismicApplied: 15, mainBuildingCount: 17 }, 'APARTMENT', NOW)!;
+    expect(some.tiles.find((t) => t.label === '내진설계')).toEqual({ label: '내진설계', value: '15개 동 적용' });
+  });
+  it('세대와 호가 함께 있으면 둘을 합친 수로 나눈다(총 주차대수가 둘 다를 위한 값)', () => {
+    const v = buildBuildingView({ ...base, groundFloors: 40, households: 500, units: 300, parkingTotal: 1200 }, 'OFFICETEL', NOW)!;
+    expect(v.tiles.find((t) => t.label === '주차')).toEqual({ label: '주차', value: '세대·호당 1.50대', sub: '총 1,200대' });
+    expect(v.tiles.find((t) => t.label === '규모')!.sub).toBe('500세대 · 300호');
+    expect(v.formula).toBe('세대·호당 주차 = 총 주차대수 ÷ (세대수 + 호수)');
+  });
 });

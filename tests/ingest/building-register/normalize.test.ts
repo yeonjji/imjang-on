@@ -31,4 +31,13 @@ describe('normalizeRegister', () => {
     expect(r.parkingTotal).toBeNull();
     expect(r.zoningName).toBeNull();
   });
+
+  it('컬럼 범위를 넘는 값은 자르거나 비운다(저장 실패 방지)', () => {
+    const r = normalizeRegister({ recap: null, mains: [m({ etcPurps: '가'.repeat(400), bcRat: 120, vlRat: 12345, strctCdNm: '구'.repeat(80) })] }, [{ jijiguGbCdNm: '용도지역코드', jijiguCdNm: '지'.repeat(90), reprYn: '1' }], []);
+    expect(r.etcPurpose!.length).toBe(300);
+    expect(r.structure!.length).toBe(60);
+    expect(r.zoningName!.length).toBe(60);
+    expect(r.bcRat).toBeNull();
+    expect(r.vlRat).toBeNull();
+  });
 });

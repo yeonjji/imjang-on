@@ -23,7 +23,8 @@ function pick(type: PropertyKind, name: string, recap: Rec[], mains: Rec[]): { r
   if (!n) return null;
   const hits = mains.filter((t) => {
     const b = norm(str(t.bldNm));
-    return b !== '' && (b.includes(n) || n.includes(b));
+    // 한두 글자 건물명('A', '1')은 아무 이름에나 포함되므로 쓰지 않는다
+    return b.length >= 2 && (b.includes(n) || n.includes(b));
   });
   if (hits.length === 0 || new Set(hits.map((t) => str(t.bldNm))).size !== 1) return null;
   return { recap: null, mains: hits };
@@ -40,8 +41,18 @@ export function selectTarget(input: { type: PropertyKind; name: string; builtYea
   if (input.builtYear === null || years.length === 0) return { status: 'year_unknown' };
   if (!years.some((y) => Math.abs(y - input.builtYear!) <= 1)) return { status: 'year_mismatch' };
 
-  const purpose = chosen.mains.map((t) => `${str(t.mainPurpsCdNm)} ${str(t.etcPurps)}`).join(' ');
-  const ok = input.type === 'OFFICETEL' ? /오피스텔|업무|공동주택/.test(purpose) : purpose.includes('주택');
-  if (!ok) return { status: 'purpose_mismatch' };
-  return { status: 'matched', ...chosen };
+  const purposeOk = (t: Rec) => {
+    const p = `${str(t.mainPurpsCdNm)} ${str(t.etcPurps)}`;
+    return input.type === 'OFFICETEL' ? /오피스텔|업무|공동주택/.test(p) : p.includes('주택');
+  };
+  if (input.type === 'APARTMENT') {
+    // 아파트는 상가동·관리동까지 단지의 주건축물로 둔다(동 수·내진 집계용). 하나라도 주택이면 통과.
+    if (!chosen.mains.some(purposeOk)) return { status: 'purpose_mismatch' };
+    return { status: 'matched', ...chosen };
+  }
+  // 비아파트는 같은 필지의 상가동·지식산업센터가 섞이지 않도록 용도가 맞는 건물만 남긴다
+  // (근린생활시설 안내·주용도는 '바로 그 건물' 기준이어야 한다).
+  const mains = chosen.mains.filter(purposeOk);
+  if (mains.length === 0) return { status: 'purpose_mismatch' };
+  return { status: 'matched', recap: chosen.recap, mains };
 }

@@ -21,6 +21,10 @@ function mode(values: string[]): string | null {
   for (const [v, n] of c) if (best === null || n > c.get(best)!) best = v;
   return best;
 }
+/** 컬럼 폭(VARCHAR)에 맞춰 자른다 — 넘치면 저장이 실패해 단지가 영영 숨는다. */
+const cut = (v: string | null, max: number) => (v === null ? null : v.slice(0, max));
+/** 건폐율은 100% 이하, 용적률은 DECIMAL(7,2) 범위 안만. 그 밖은 원자료 오류로 버린다. */
+const rate = (v: number | null, max: number) => (v === null || v > max ? null : v);
 const parking = (t: Rec) => num(t.indrAutoUtcnt) + num(t.oudrAutoUtcnt) + num(t.indrMechUtcnt) + num(t.oudrMechUtcnt);
 
 export interface RegisterFields {
@@ -57,9 +61,9 @@ export function normalizeRegister(sel: { recap: Rec | null; mains: Rec[] }, jiji
 
   return {
     useAprDate: (recap && date(recap.useAprDay)) || useDates[0] || null,
-    structure: mode(mains.map((t) => str(t.strctCdNm))),
-    mainPurpose,
-    etcPurpose: etcSource ? str(etcSource.etcPurps) || null : null,
+    structure: cut(mode(mains.map((t) => str(t.strctCdNm))), 60),
+    mainPurpose: cut(mainPurpose, 60),
+    etcPurpose: cut(etcSource ? str(etcSource.etcPurps) || null : null, 300),
     groundFloors: pos(Math.max(0, ...mains.map((t) => num(t.grndFlrCnt)))),
     undergroundFloors: pos(Math.max(0, ...mains.map((t) => num(t.ugrndFlrCnt)))),
     mainBuildingCount: mains.length,
@@ -67,11 +71,11 @@ export function normalizeRegister(sel: { recap: Rec | null; mains: Rec[] }, jiji
     units: pos(recap ? num(recap.hoCnt) : 0) ?? pos(sum((t) => num(t.hoCnt))),
     elevators: pos(sum((t) => num(t.rideUseElvtCnt) + num(t.emgenUseElvtCnt))),
     parkingTotal: pos(recap ? num(recap.totPkngCnt) : 0) ?? pos(sum(parking) + attached.reduce((s, t) => s + parking(t), 0)),
-    bcRat: pos(recap ? num(recap.bcRat) : 0) ?? (single ? pos(num(single.bcRat)) : null),
-    vlRat: pos(recap ? num(recap.vlRat) : 0) ?? (single ? pos(num(single.vlRat)) : null),
+    bcRat: rate(pos(recap ? num(recap.bcRat) : 0) ?? (single ? pos(num(single.bcRat)) : null), 100),
+    vlRat: rate(pos(recap ? num(recap.vlRat) : 0) ?? (single ? pos(num(single.vlRat)) : null), 9999.99),
     seismicApplied: mains.filter((t) => str(t.rserthqkDsgnApplyYn) === '1').length,
-    zoningKind: zoningName && repr ? str(repr.jijiguGbCdNm).replace(/코드$/, '') || null : null,
-    zoningName,
+    zoningKind: cut(zoningName && repr ? str(repr.jijiguGbCdNm).replace(/코드$/, '') || null : null, 20),
+    zoningName: cut(zoningName, 60),
     hasNeighborhoodFacility: mains.some((t) => `${str(t.mainPurpsCdNm)} ${str(t.etcPurps)}`.includes('근린생활시설')),
     registerCreatedAt: mains.length ? date(mains[0].crtnDay) : null,
   };

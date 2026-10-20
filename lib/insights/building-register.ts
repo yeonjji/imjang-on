@@ -66,7 +66,9 @@ export function buildBuildingView(r: BuildingRegisterRow, type: BuildingProperty
     if (r.bcRat !== null) tiles.push({ label: '건폐율', value: pct(r.bcRat), sub: '대지 중 건물이 덮은 비율' });
     if (r.vlRat !== null) tiles.push({ label: '용적률', value: pct(r.vlRat), sub: '대지 대비 연면적' });
     if (seismic > 0) {
-      tiles.push({ label: '내진설계', value: `${seismic}개 동 적용`, ...(r.mainBuildingCount ? { sub: `주건축물 ${r.mainBuildingCount}개 동 중` } : {}) });
+      // '몇 개 동 중'은 전부 적용일 때만 — 일부만이면 나머지가 '미적용'으로 읽히는데 0은 미기재일 수 있다.
+      const all = r.mainBuildingCount !== null && seismic === r.mainBuildingCount;
+      tiles.push({ label: '내진설계', value: `${seismic}개 동 적용`, ...(all ? { sub: `주건축물 ${r.mainBuildingCount}개 동 중` } : {}) });
     }
     if (zoning) rows.push(zoning);
     if (r.structure) rows.push({ label: '구조', value: r.structure });
@@ -78,19 +80,26 @@ export function buildBuildingView(r: BuildingRegisterRow, type: BuildingProperty
       tiles.push({ label: '사용승인', value: `${age}년차`, sub: `${r.useAprDate.getUTCFullYear()}년 ${r.useAprDate.getUTCMonth() + 1}월` });
     }
     const isOffi = type === 'OFFICETEL';
-    const den = isOffi ? (r.units ?? r.households) : (r.households ?? r.units);
-    const denUnit = den === null ? null : isOffi && r.units ? '호' : r.households ? '세대' : '호';
+    const hh = r.households ?? 0;
+    const ho = r.units ?? 0;
+    // 세대와 호가 함께 있는 건물(주거+오피스텔·상가 호실)은 총 주차대수가 둘 다를 위한 값이라 합친 수로 나눈다.
+    const mixed = hh > 0 && ho > 0;
+    const den = mixed ? hh + ho : isOffi ? ho || hh || null : hh || ho || null;
+    const per = mixed ? '세대·호당' : (isOffi ? ho : !hh) ? '호당' : '세대당';
+    const denLabel = mixed ? '(세대수 + 호수)' : per === '호당' ? '호수' : '세대수';
     if (r.groundFloors !== null) {
-      const sub = [r.undergroundFloors !== null ? `지하 ${r.undergroundFloors}층` : null, den !== null ? `${den.toLocaleString('ko-KR')}${denUnit}` : null]
-        .filter(Boolean)
-        .join(' · ');
+      const count = mixed
+        ? `${hh.toLocaleString('ko-KR')}세대 · ${ho.toLocaleString('ko-KR')}호`
+        : den !== null
+          ? `${den.toLocaleString('ko-KR')}${per === '호당' ? '호' : '세대'}`
+          : null;
+      const sub = [r.undergroundFloors !== null ? `지하 ${r.undergroundFloors}층` : null, count].filter(Boolean).join(' · ');
       tiles.push({ label: '규모', value: `지상 ${r.groundFloors}층`, ...(sub ? { sub } : {}) });
     }
     if (r.parkingTotal !== null) {
       if (den) {
-        const per = denUnit === '호' ? '호당' : '세대당';
         tiles.push({ label: '주차', value: `${per} ${(r.parkingTotal / den).toFixed(2)}대`, sub: `총 ${r.parkingTotal.toLocaleString('ko-KR')}대` });
-        formula = `${per} 주차 = 총 주차대수 ÷ ${denUnit === '호' ? '호수' : '세대수'}`;
+        formula = `${per} 주차 = 총 주차대수 ÷ ${denLabel}`;
       } else {
         tiles.push({ label: '주차', value: `총 ${r.parkingTotal.toLocaleString('ko-KR')}대` });
       }

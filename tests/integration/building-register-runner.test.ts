@@ -87,4 +87,16 @@ describe('runCollect', () => {
     const r = await runCollect({ propertyIds: only(), deadline: Date.now() - 1, fetchItems: fake });
     expect(r).toMatchObject({ processed: 0, timeUp: true });
   });
+
+  it('저장 실패는 api_error가 아니라 save_error로 남기고 다시 받지 않는다', async () => {
+    const huge: FetchItems = async (op, key) => {
+      if (op === 'getBrJijiguInfo') return [{ jijiguGbCdNm: '용도지역코드', jijiguCdNm: '제2종일반주거지역', reprYn: '1', note: '\u0000' }];
+      return fake(op, key);
+    };
+    await runCollect({ propertyIds: [ids.OK], fetchItems: huge });
+    expect((await prisma.buildingRegister.findUniqueOrThrow({ where: { propertyId: ids.OK } })).status).toBe('save_error');
+    let calls = 0;
+    await runCollect({ propertyIds: [ids.OK], fetchItems: async (...a) => { calls++; return fake(...a); } });
+    expect(calls).toBe(0);
+  });
 });

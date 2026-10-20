@@ -64,7 +64,7 @@ model LegalDong {
 /// 단지(Property) 1곳당 건축물대장 매칭 결과 1행. status가 'matched'일 때만 화면에 쓴다.
 model BuildingRegister {
   propertyId BigInt   @id
-  /// 'matched' | 'multi_pair' | 'bad_key' | 'not_found' | 'ambiguous' | 'year_mismatch' | 'year_unknown' | 'purpose_mismatch' | 'api_error'
+  /// 'matched' | 'multi_pair' | 'bad_key' | 'not_found' | 'ambiguous' | 'year_mismatch' | 'year_unknown' | 'purpose_mismatch' | 'api_error' | 'save_error'
   status     String   @db.VarChar(20)
   bjdCode    String?  @db.Char(10)
   platGbCd   String?  @db.Char(1)
@@ -155,6 +155,15 @@ model BuildingRegister {
   - 빈 값 행 숨김
 - **e2e:** 시드 1단지(아파트) + 1단지(빌라 근생)
 - **실데이터 QA:** 유형별 매칭된 페이지 각 1곳 + 부천 단지(숨김 확인)
+
+## 6-1. 최종 리뷰 반영 (2026-10-20)
+
+- **같은 필지의 다른 건물이 섞이지 않게:** 비아파트는 채택 후 주용도·기타용도가 유형 조건을 통과하는 주건축물만 남긴다. 근린생활시설 안내와 주용도는 '바로 그 건물' 기준이다. 남는 건물이 없으면 `purpose_mismatch`다. 아파트는 상가동·관리동을 포함한 단지의 주건축물을 그대로 둔다.
+- **건물명 매칭:** 두 글자 미만의 건물명('A', '1')은 쓰지 않는다.
+- **내진설계 타일:** '주건축물 M개 동 중'은 모든 동이 적용일 때만 붙인다. 일부만 적용이면 나머지가 '미적용'으로 읽히는데, 0은 미기재일 수 있다.
+- **세대와 호가 함께 있는 건물**(주거 + 오피스텔·상가 호실, 표본 비아파트 매칭의 약 26%): 총 주차대수가 둘 다를 위한 값이므로 '세대·호당 = 총 주차대수 ÷ (세대수 + 호수)'로 나눈다. 규모 줄에는 'N세대 · M호'로 쓴다.
+- **저장 실패:** 컬럼 폭과 숫자 범위를 넘는 값은 정규화 단계에서 자르거나 비운다(건폐율 100% 초과, 용적률 9999.99% 초과는 null). 그래도 저장에 실패하면 `save_error`로 남기고 다시 호출하지 않는다(`api_error`만 재시도).
+- 재검증: 표본 400곳 실응답에서 채택률 변화 없음(아파트 93·오피스텔 91·연립 96·다세대 86). 빌라 근생 안내는 21 → 19건(다른 건물이 섞인 2건 제외).
 
 ## 7. 범위 밖
 
