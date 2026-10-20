@@ -37,6 +37,8 @@
     "ingest:subway": "dotenv -e .env.local -- tsx scripts/ingest-subway.ts",
     "ingest:maintenance-cost": "dotenv -e .env.local -- tsx scripts/ingest/apt-maintenance-cost/runner.ts",
     "ingest:school-zone": "dotenv -e .env.local -- tsx scripts/ingest/school-zone/runner.ts",
+    "ingest:legal-dong": "dotenv -e .env.local -- tsx scripts/ingest/legal-dong/runner.ts",
+    "ingest:building-register": "dotenv -e .env.local -- tsx scripts/ingest/building-register/runner.ts",
     "dashboard:refresh": "dotenv -e .env.local -- tsx scripts/dashboard/refresh-snapshot.ts"
   },
   "dependencies": {
