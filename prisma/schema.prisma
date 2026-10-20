@@ -250,6 +250,50 @@ model SchoolZoneSchool {
   @@id([hakgudoId, schId])
 }
 
+/// 국토교통부 법정동코드(존재분). (시군구코드, 동 이름) → 법정동 코드 조회표. 연 1회 교체.
+model LegalDong {
+  code        String @id @db.Char(10)
+  sigunguCode String @db.Char(5)
+  /// 시군구명 뒤의 이름: '정자동', '덕산읍 두촌리'
+  name        String @db.VarChar(60)
+
+  @@index([sigunguCode, name])
+}
+
+/// 단지(Property) 1곳당 건축물대장 매칭 결과 1행. status가 'matched'일 때만 화면에 쓴다.
+model BuildingRegister {
+  propertyId BigInt   @id
+  /// 'matched' | 'multi_pair' | 'bad_key' | 'not_found' | 'ambiguous' | 'year_mismatch' | 'year_unknown' | 'purpose_mismatch' | 'api_error'
+  status     String   @db.VarChar(20)
+  bjdCode    String?  @db.Char(10)
+  platGbCd   String?  @db.Char(1)
+  bun        String?  @db.Char(4)
+  ji         String?  @db.Char(4)
+
+  useAprDate      DateTime? @db.Date
+  structure       String?   @db.VarChar(60)
+  mainPurpose     String?   @db.VarChar(60)
+  etcPurpose      String?   @db.VarChar(300)
+  groundFloors    Int?      // 동이 여럿이면 최고
+  undergroundFloors Int?
+  mainBuildingCount Int?
+  households      Int?
+  units           Int?      // 호수(오피스텔)
+  elevators       Int?      // 승용+비상, 0이면 null
+  parkingTotal    Int?      // 총괄 totPkngCnt, 없으면 표제부 자주식 합(옥내+옥외)
+  bcRat           Decimal?  @db.Decimal(6, 2)
+  vlRat           Decimal?  @db.Decimal(7, 2)
+  seismicApplied  Int?      // 내진설계 '적용'(1)인 주건축물 수
+  zoningKind      String?   @db.VarChar(20)  // 지역지구 대표의 구분명('용도지역' 등)
+  zoningName      String?   @db.VarChar(60)
+  hasNeighborhoodFacility Boolean @default(false)
+  registerCreatedAt DateTime? @db.Date       // crtnDay(대장 생성일)
+  raw        Json?
+  fetchedAt  DateTime
+
+  @@index([status])
+}
+
 enum DealType {
   SALE
   JEONSE
