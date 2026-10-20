@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>건축물 정보 섹션 시안</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --blue:#2563eb; --blue-dark:#1e3a8a; --sky-soft:#e0f2fe; --bg:#f7fbff; --soft:#f1f7ff; --text:#172033; --muted:#64748b; --line:#dbeafe; }
+  body { margin:0; background:var(--bg); font-family: Pretendard, 'Noto Sans KR', -apple-system, sans-serif; color:var(--text); }
+  .board { box-sizing:border-box; padding:32px; width:880px; }
+  .board.mobile { width:390px; padding:16px; }
+  .tag { font-size:13px; color:var(--muted); margin:0 0 10px; }
+  .stub { border:1px dashed var(--line); border-radius:22px; padding:14px 24px; color:var(--muted); font-size:14px; background:#fff; margin-bottom:16px; }
+  .card { background:#fff; border-radius:22px; padding:24px; box-shadow:0 1px 3px rgba(30,58,138,.06),0 8px 24px rgba(37,99,235,.05); }
+  .mobile .card { padding:20px; }
+  .head { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:16px; }
+  h2 { margin:0; font-size:20px; font-weight:700; color:var(--blue-dark); }
+  .meta { font-size:13px; color:var(--muted); }
+  .tiles { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+  .mobile .tiles { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .tile { background:var(--soft); border-radius:16px; padding:16px; }
+  .tile .l { font-size:12px; color:var(--muted); margin:0; }
+  .tile .v { font-size:18px; font-weight:800; color:var(--blue-dark); margin:4px 0 0; }
+  .tile .s { font-size:12px; color:var(--muted); margin:2px 0 0; }
+  dl { margin:18px 0 0; display:grid; grid-template-columns:120px 1fr; border-top:1px solid var(--line); }
+  .mobile dl { grid-template-columns:96px 1fr; }
+  dt, dd { margin:0; padding:11px 2px; border-bottom:1px solid var(--soft); font-size:14px; line-height:1.55; }
+  dt { color:var(--muted); }
+  .info { margin-top:16px; background:var(--soft); border-radius:16px; padding:14px 16px; font-size:14px; line-height:1.65; }
+  .foot { margin-top:16px; padding-top:12px; border-top:1px solid var(--line); font-size:12px; color:var(--muted); line-height:1.6; }
+</style>
+</head>
+<body>
+
+<div class="board" id="A">
+  <p class="tag">A. 아파트 · 양주 e편한세상옥정리더스가든(15개 동) — 단지 정보·관리비와 겹치지 않는 항목만</p>
+  <div class="stub">단지 정보 · 관리비 (기존 섹션)</div>
+  <section class="card">
+    <div class="head"><h2>건축물 정보</h2><span class="meta">건축물대장 기준</span></div>
+    <div class="tiles">
+      <div class="tile"><p class="l">건폐율</p><p class="v">16.94%</p><p class="s">대지 중 건물이 덮은 비율</p></div>
+      <div class="tile"><p class="l">용적률</p><p class="v">159.96%</p><p class="s">대지 대비 연면적</p></div>
+      <div class="tile"><p class="l">내진설계</p><p class="v">15개 동 적용</p><p class="s">주건축물 15개 동 중</p></div>
+    </div>
+    <dl>
+      <dt>지역지구</dt><dd>지구단위계획구역 <span class="meta">(용도구역)</span></dd>
+      <dt>구조</dt><dd>철근콘크리트구조</dd>
+      <dt>최고층</dt><dd>지상 27층 · 지하 1층</dd>
+    </dl>
+    <div class="foot">출처: 국토교통부 건축HUB 건축물대장 · 대장 생성일 2024-05-03 · 2026-10-20 조회</div>
+  </section>
+</div>
+
+<div class="board" id="B">
+  <p class="tag">B. 오피스텔 · 의정부 민락2지구 중흥에스-클래스 트와이스(697호)</p>
+  <div class="stub">가격 흐름 · 면적별 비교 (기존 섹션)</div>
+  <section class="card">
+    <div class="head"><h2>건축물 정보</h2><span class="meta">건축물대장 기준</span></div>
+    <div class="tiles">
+      <div class="tile"><p class="l">사용승인</p><p class="v">6년차</p><p class="s">2020년 3월</p></div>
+      <div class="tile"><p class="l">규모</p><p class="v">지상 10층</p><p class="s">지하 2층 · 697호</p></div>
+      <div class="tile"><p class="l">주차</p><p class="v">호당 0.95대</p><p class="s">총 660대</p></div>
+      <div class="tile"><p class="l">승강기</p><p class="v">17대</p></div>
+      <div class="tile"><p class="l">건폐율</p><p class="v">59.9%</p></div>
+      <div class="tile"><p class="l">용적률</p><p class="v">396.26%</p></div>
+    </div>
+    <dl>
+      <dt>주용도</dt><dd>업무시설 <span class="meta">— 기타: 업무시설(오피스텔), 근린생활시설</span></dd>
+      <dt>지역지구</dt><dd>준주거지역 <span class="meta">(용도지역)</span></dd>
+      <dt>구조</dt><dd>철근콘크리트구조</dd>
+      <dt>내진설계</dt><dd>적용</dd>
+    </dl>
+    <div class="foot">출처: 국토교통부 건축HUB 건축물대장 · 대장 생성일 2022-09-09 · 2026-10-20 조회<br>임장ON 계산: 호당 주차 = 총 주차대수 ÷ 호수</div>
+  </section>
+</div>
+
+<div class="board" id="C">
+  <p class="tag">C. 빌라(다세대) · 서울 구로 고척헤리츠(14세대) — 표제부에 근린생활시설 포함</p>
+  <div class="stub">가격 흐름 · 면적별 비교 (기존 섹션)</div>
+  <section class="card">
+    <div class="head"><h2>건축물 정보</h2><span class="meta">건축물대장 기준</span></div>
+    <div class="tiles">
+      <div class="tile"><p class="l">사용승인</p><p class="v">7년차</p><p class="s">2019년 8월</p></div>
+      <div class="tile"><p class="l">규모</p><p class="v">지상 6층</p><p class="s">지하 1층 · 14세대</p></div>
+      <div class="tile"><p class="l">주차</p><p class="v">세대당 0.86대</p><p class="s">총 12대</p></div>
+      <div class="tile"><p class="l">승강기</p><p class="v">1대</p></div>
+      <div class="tile"><p class="l">건폐율</p><p class="v">59.8%</p></div>
+      <div class="tile"><p class="l">용적률</p><p class="v">187.33%</p></div>
+    </div>
+    <dl>
+      <dt>주용도</dt><dd>공동주택 <span class="meta">— 기타: 공동주택(도시형생활주택-단지형다세대주택), 제1종근린생활시설(소매점)</span></dd>
+      <dt>지역지구</dt><dd>제2종일반주거지역 <span class="meta">(용도지역)</span></dd>
+      <dt>구조</dt><dd>철근콘크리트구조</dd>
+      <dt>내진설계</dt><dd>적용</dd>
+    </dl>
+    <div class="info">건축물대장 표제부에 근린생활시설 용도가 포함되어 있습니다. 실제 계약 대상 호실의 용도와 주거 이용 관련 사항은 건축물대장 전유부 및 관계 기관을 통해 확인하시기 바랍니다.</div>
+    <div class="foot">출처: 국토교통부 건축HUB 건축물대장 · 대장 생성일 2022-08-13 · 2026-10-20 조회<br>임장ON 계산: 세대당 주차 = 총 주차대수 ÷ 세대수</div>
+  </section>
+</div>
+
+<div class="board mobile" id="D">
+  <p class="tag">D. 모바일 390px · C와 같은 단지</p>
+  <section class="card">
+    <div class="head"><h2>건축물 정보</h2><span class="meta">건축물대장 기준</span></div>
+    <div class="tiles">
+      <div class="tile"><p class="l">사용승인</p><p class="v">7년차</p><p class="s">2019년 8월</p></div>
+      <div class="tile"><p class="l">규모</p><p class="v">지상 6층</p><p class="s">지하 1층 · 14세대</p></div>
+      <div class="tile"><p class="l">주차</p><p class="v">세대당 0.86대</p><p class="s">총 12대</p></div>
+      <div class="tile"><p class="l">승강기</p><p class="v">1대</p></div>
+      <div class="tile"><p class="l">건폐율</p><p class="v">59.8%</p></div>
+      <div class="tile"><p class="l">용적률</p><p class="v">187.33%</p></div>
+    </div>
+    <dl>
+      <dt>주용도</dt><dd>공동주택 <span class="meta">— 기타: 공동주택(도시형생활주택-단지형다세대주택), 제1종근린생활시설(소매점)</span></dd>
+      <dt>지역지구</dt><dd>제2종일반주거지역</dd>
+      <dt>구조</dt><dd>철근콘크리트구조</dd>
+      <dt>내진설계</dt><dd>적용</dd>
+    </dl>
+    <div class="info">건축물대장 표제부에 근린생활시설 용도가 포함되어 있습니다. 실제 계약 대상 호실의 용도와 주거 이용 관련 사항은 건축물대장 전유부 및 관계 기관을 통해 확인하시기 바랍니다.</div>
+    <div class="foot">출처: 국토교통부 건축HUB 건축물대장 · 2026-10-20 조회 · 임장ON 계산: 세대당 주차 = 총 주차 ÷ 세대수</div>
+  </section>
+</div>
+
+</body>
+</html>
