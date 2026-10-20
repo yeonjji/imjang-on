@@ -73,7 +73,7 @@ export function markPrimaries(zones: ZoneInput[], links: LinkInput[]): (LinkInpu
   return out;
 }
 
-function decodeText(bytes: Uint8Array): string {
+export function decodeText(bytes: Uint8Array): string {
   try {
     return new TextDecoder('utf-8', { fatal: true }).decode(bytes).replace(/^﻿/, '');
   } catch {
