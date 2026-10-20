@@ -19,7 +19,8 @@ export type DataSourceId =
   | 'kinfa-loan'
   | 'hf-jeonse-guarantee'
   | 'molit-apt-complex'
-  | 'kapt-maintenance-cost';
+  | 'kapt-maintenance-cost'
+  | 'kedi-school-zone';
 
 export type DataSourceCategory =
   | '부동산 거래'
@@ -168,6 +169,13 @@ export const DATA_SOURCES: Record<DataSourceId, DataSource> = {
     dataset: '공동주택관리정보시스템(K-apt) 관리비 공개',
     url: 'https://www.data.go.kr/data/15057937/openapi.do',
     category: '부동산 거래',
+  },
+  'kedi-school-zone': {
+    id: 'kedi-school-zone',
+    provider: '재단법인 한국지방교육행정연구재단',
+    dataset: '학구도(초등학교 통학구역)',
+    url: 'https://www.data.go.kr/data/15099520/fileData.do',
+    category: '교육·보육',
   },
 };
 
