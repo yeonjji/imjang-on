@@ -15,6 +15,9 @@ async function school(name: string, eduOffice: string, lng: number, lat: number)
 let near: bigint; let gaNear: bigint;
 
 beforeAll(async () => {
+  // 이 테스트는 학구 테이블 전체를 교체한다. 앞서 남은 학구(실데이터 적재·e2e 시드)가 있으면
+  // 90% 가드가 정상적으로 적재를 거부하므로, 시작 상태를 비워 둔다.
+  await prisma.$executeRaw`DELETE FROM "SchoolZone"`;
   await prisma.school.deleteMany({ where: { sourceId: { startsWith: PFX } } });
   near = await school('테스트초등학교', '서울특별시교육청', 127.026, 37.4966);      // 학구1 안
   gaNear = await school('가람초등학교', '서울특별시교육청', 127.051, 37.5005);      // 학구2 옆
