@@ -18,7 +18,7 @@ import { SubscriptionSidebar } from './_components/subscription-sidebar';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { subscriptionSource } from '@/lib/data-sources';
-import { JsonLd, breadcrumbSchema } from '@/lib/seo/json-ld';
+import { JsonLd, breadcrumbSchema, subscriptionPageSchema } from '@/lib/seo/json-ld';
 import { subscriptionBlurb } from '@/lib/seo/blurb';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
@@ -91,23 +91,7 @@ export default async function SubscriptionDetailPage({ params }: Params) {
     <div className="mx-auto max-w-[1180px] px-6 py-12">
       <JsonLd
         data={[
-          notice.receiptBegin || notice.receiptEnd
-            ? {
-                '@context': 'https://schema.org',
-                '@type': 'Event',
-                name: `${notice.name} 청약 공고`,
-                url: `${SITE_URL}/subscription/${notice.id}`,
-                ...(notice.regionName ? { location: { '@type': 'Place', name: notice.regionName } } : {}),
-                ...(notice.receiptBegin ? { startDate: notice.receiptBegin.toISOString().slice(0, 10) } : {}),
-                ...(notice.receiptEnd ? { endDate: notice.receiptEnd.toISOString().slice(0, 10) } : {}),
-              }
-            : {
-                '@context': 'https://schema.org',
-                '@type': 'WebPage',
-                name: `${notice.name} 청약 공고`,
-                url: `${SITE_URL}/subscription/${notice.id}`,
-                ...(notice.regionName ? { about: notice.regionName } : {}),
-              },
+          subscriptionPageSchema({ id: notice.id, name: notice.name, regionName: notice.regionName }),
           breadcrumbSchema([
             { name: '홈', url: `${SITE_URL}/` },
             { name: '청약·분양', url: `${SITE_URL}/subscription` },

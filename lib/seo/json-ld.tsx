@@ -214,6 +214,20 @@ export function financialProductSchema(input: {
 }
 
 /** JSON-LD를 <script>로 렌더한다. 페이지/레이아웃에서 직접 사용. */
+/**
+ * 청약 공고 상세. Event로 표시하지 않는다 — 접수 기간은 사람이 참석하는 행사가 아니라서
+ * Search Console이 장소 주소·가격·출연자 등 이벤트 필드 누락 경고를 냈다(2026-10, 9건).
+ */
+export function subscriptionPageSchema(input: { id: bigint | number; name: string; regionName: string | null }): Json {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: `${input.name} 청약 공고`,
+    url: `${SITE_URL}/subscription/${input.id}`,
+    ...(input.regionName ? { about: input.regionName } : {}),
+  };
+}
+
 export function JsonLd({ data }: { data: Json | Json[] }) {
   return (
     <script
