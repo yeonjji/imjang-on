@@ -103,3 +103,19 @@ describe('faqSchema', () => {
     expect(ans.text).toBe(items[0].a);
   });
 });
+
+describe('subscriptionPageSchema', () => {
+  it('청약 공고는 Event가 아니라 WebPage다(접수 기간은 참석하는 행사가 아님 — Search Console 이벤트 경고 9건)', async () => {
+    const { subscriptionPageSchema } = await import('@/lib/seo/json-ld');
+    const s = subscriptionPageSchema({ id: 9290n, name: '명지국제신도시 A2블록', regionName: '부산 강서구' });
+    expect(s['@type']).toBe('WebPage');
+    expect(s.name).toBe('명지국제신도시 A2블록 청약 공고');
+    expect(s.url).toMatch(/\/subscription\/9290$/);
+    expect(s.about).toBe('부산 강서구');
+    expect(s).not.toHaveProperty('startDate');
+  });
+  it('지역이 없으면 about을 넣지 않는다', async () => {
+    const { subscriptionPageSchema } = await import('@/lib/seo/json-ld');
+    expect(subscriptionPageSchema({ id: 1n, name: 'x', regionName: null })).not.toHaveProperty('about');
+  });
+});
