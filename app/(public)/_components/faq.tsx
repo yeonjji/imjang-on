@@ -60,7 +60,7 @@ export function Faq({
       <FaqList items={finalItems} title={title} />
       {items && (
         // 상세는 페이지 값 문항만 보여주므로 공통 질문은 /faq로 보낸다.
-        <Link href="/faq" className="mt-3 inline-block text-sm font-semibold text-[var(--color-blue)] hover:underline">
+        <Link href="/faq" prefetch={false} className="mt-3 inline-block text-sm font-semibold text-[var(--color-blue)] hover:underline">
           자주 묻는 질문 전체 보기 →
         </Link>
       )}
