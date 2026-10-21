@@ -88,6 +88,11 @@ export interface SimpleResultsView {
 
 export type ResultsView = AptResultsView | SimpleResultsView;
 
+export interface SubscriptionResultsData {
+  view: ResultsView;
+  fetchedLabel: string;
+}
+
 // 해당지역 → 기타경기 → 기타지역: 미달 누적이 이 순서로 진행된다.
 const REGION_ORDER = ['01', '03', '02'];
 const REGION_LABEL: Record<string, string> = { '01': '해당지역', '03': '기타경기', '02': '기타지역' };
