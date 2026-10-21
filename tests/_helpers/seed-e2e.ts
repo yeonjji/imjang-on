@@ -480,8 +480,11 @@ async function seedSubscription() {
   const old = await prisma.subscriptionNotice.findMany({ where: { sourceKey: 'E2E-SUB-1' } });
   await prisma.subscriptionResult.deleteMany({ where: { noticeId: { in: old.map((n) => n.id) } } });
   await prisma.subscriptionNotice.deleteMany({ where: { sourceKey: 'E2E-SUB-1' } });
+  // id를 고정한다: 빈 DB에서 자동 증가 id(1,2,3…)는 운영 기준 410 목록(lib/subscription/gone-ids.ts)과 겹쳐
+  // 미들웨어가 410을 낸다(CI에서 실제로 발생).
   const n = await prisma.subscriptionNotice.create({
     data: {
+      id: 990_000_001n,
       source: 'APPLYHOME', category: 'APT', sourceKey: 'E2E-SUB-1', houseManageNo: 'E2E-SUB-1',
       name: 'E2E 센트럴자이', regionName: '서울특별시 강남구', totalSupply: 87,
       receiptBegin: new Date('2025-12-15'), receiptEnd: new Date('2025-12-18'), winnerDate: new Date('2025-12-24'),
