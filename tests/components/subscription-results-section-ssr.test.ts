@@ -46,7 +46,8 @@ describe('SubscriptionResultsSection', () => {
     expect(h).toContain('임장ON 계산: 1순위 해당지역 접수 합 10,154건 ÷ 일반공급 6세대');
     expect(h).toContain('최고 59.98㎡');
     expect(h).toContain('1,692.33 : 1');
-    expect(h).toContain('— : 앞 순위에서 마감돼 접수하지 않음');
+    expect(h).toContain('— : 앞 순위 마감(경쟁률 미산정)');
+    expect(h).not.toContain('접수하지 않음');
     expect(h).toContain('당첨 가점');
     expect(h).toContain('해당지역 · 가점제 당첨자');
     expect(h).toContain('특별공급 유형별');
@@ -67,6 +68,26 @@ describe('SubscriptionResultsSection', () => {
     expect(h).not.toContain('최고 ');
     expect(h).not.toContain('당첨 가점');
     expect(h).not.toContain('특별공급 유형별');
+  });
+
+  it('미달 공고 요약에는 최고 경쟁률을 넣지 않는다(시안 B)', () => {
+    const v = buildResultsView(
+      'APT',
+      [cmp('084.0000A', 1, '01', '(△5)', '1', 6), cmp('084.0000F', 1, '01', '3.56', '32', 9)],
+      null,
+      null,
+    );
+    const h = html(v);
+    expect(h).toContain('최종 미달');
+    expect(h).not.toContain('최고 ');
+  });
+
+  it('전체 요약 경쟁률이 없어도 최종 미달은 보인다', () => {
+    const v = buildResultsView('APT', [cmp('084.0000A', 1, '01', '4.05', '1', 67), cmp('084.0000B', 1, '01', '(△5)', '1', 6)], null, null);
+    const h = html(v);
+    expect(h).not.toContain('1순위 해당지역 전체');
+    expect(h).not.toContain('임장ON 계산: 1순위');
+    expect(h).toContain('최종 미달');
   });
 
   it('오피스텔: 한 표, 유형 라벨', () => {

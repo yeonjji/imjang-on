@@ -61,27 +61,41 @@ const note = 'mt-1.5 text-[13px] text-[var(--color-muted)]';
 function AptBlocks({ v }: { v: AptResultsView }) {
   const s = v.summary;
   const hasRank2 = v.columns.includes('2순위');
+  // 미달 공고 요약에는 최고 경쟁률을 넣지 않는다(시안 B).
+  const summaryTop = s.shortfall > 0 ? null : s.top;
   return (
     <>
-      {s.overall && (
+      {(s.overall || summaryTop || s.shortfall > 0) && (
         <div className="rounded-2xl bg-[var(--color-soft)] px-[18px] py-4 text-[15px] leading-relaxed">
-          1순위 해당지역 전체 <b className="text-xl text-[var(--color-blue-dark)]">{s.overall}대 1</b>
-          {s.top && (
+          {[
+            s.overall && (
+              <span key="o">
+                1순위 해당지역 전체 <b className="text-xl text-[var(--color-blue-dark)]">{s.overall}대 1</b>
+              </span>
+            ),
+            summaryTop && (
+              <span key="t">
+                최고 {summaryTop.type} <b className="text-xl text-[var(--color-blue-dark)]">{summaryTop.rate}대 1</b>
+              </span>
+            ),
+            s.shortfall > 0 && (
+              <span key="s">
+                {hasRank2 ? '2순위까지 ' : ''}최종 미달{' '}
+                <b className="text-xl text-orange-800">{s.shortfall.toLocaleString('ko-KR')}세대</b>
+              </span>
+            ),
+          ]
+            .filter(Boolean)
+            .flatMap((el, i) => (i === 0 ? [el] : [' · ', el]))}
+          {s.overall && (
             <>
-              {' '}· 최고 {s.top.type} <b className="text-xl text-[var(--color-blue-dark)]">{s.top.rate}대 1</b>
+              <br />
+              <span className="text-xs text-[var(--color-muted)]">
+                임장ON 계산: 1순위 해당지역 접수 합 {s.requests.toLocaleString('ko-KR')}건 ÷ 일반공급{' '}
+                {s.supply.toLocaleString('ko-KR')}세대{s.shortfall > 0 ? ' · 미달 세대는 청약홈 공식 집계' : ''}
+              </span>
             </>
           )}
-          {s.shortfall > 0 && (
-            <>
-              {' '}· {hasRank2 ? '2순위까지 ' : ''}최종 미달{' '}
-              <b className="text-xl text-orange-800">{s.shortfall.toLocaleString('ko-KR')}세대</b>
-            </>
-          )}
-          <br />
-          <span className="text-xs text-[var(--color-muted)]">
-            임장ON 계산: 1순위 해당지역 접수 합 {s.requests.toLocaleString('ko-KR')}건 ÷ 일반공급{' '}
-            {s.supply.toLocaleString('ko-KR')}세대{s.shortfall > 0 ? ' · 미달 세대는 청약홈 공식 집계' : ''}
-          </span>
         </div>
       )}
 
@@ -91,7 +105,7 @@ function AptBlocks({ v }: { v: AptResultsView }) {
         <p className={note}>
           {[
             v.hasShort ? '미달 세대는 앞 단계부터 누적한 잔여 세대(청약홈 공식값)' : null,
-            v.hasDash ? '— : 앞 순위에서 마감돼 접수하지 않음' : null,
+            v.hasDash ? '— : 앞 순위 마감(경쟁률 미산정)' : null,
           ]
             .filter(Boolean)
             .join(' · ')}

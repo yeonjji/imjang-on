@@ -115,6 +115,18 @@ describe('buildResultsView — APT', () => {
     expect(v.hasShort).toBe(true);
   });
 
+  it('해당지역 배정 비율이 있는 공고(공식 경쟁률 ≠ 접수÷공급)는 전체 요약 경쟁률을 내지 않는다', () => {
+    const rows = [
+      cmp('084.0000A', 1, '01', '4.05', '81', 67),
+      cmp('084.0000A', 1, '03', '3.00', '60', 67),
+      cmp('084.0000B', 1, '01', '(△5)', '1', 6),
+    ];
+    const v = buildResultsView('APT', rows, null, null);
+    if (v?.kind !== 'apt') throw new Error('apt view expected');
+    expect(v.summary.overall).toBeNull();
+    expect(v.summary.shortfall).toBe(5);
+  });
+
   it('기타경기 지역이 있으면 해당 → 기타경기 → 기타지역 순서', () => {
     const rows = [
       cmp('084.0000 ', 1, '01', '3.00', '30', 10),
@@ -211,7 +223,7 @@ describe('buildResultsView — 그 외 유형', () => {
       kindHeader: '구분',
       rows: [
         { type: '1', kind: '거주자우선', supply: '182', req: '270', rate: '7.50 : 1' },
-        { type: '1', kind: '기타', supply: '182', req: '125', rate: '미달 14세대' },
+        { type: '1', kind: '기타', supply: '', req: '125', rate: '미달 14세대' },
       ],
     });
   });

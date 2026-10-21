@@ -129,6 +129,9 @@ function buildApt(competition: Row[], scores: Row[], special: Row[]): AptResults
   let top: { type: string; value: number } | null = null;
   let hasDash = false;
   let hasShort = false;
+  // 해당지역에 공급 일부만 배정하는 공고(대규모택지 등)는 공식 해당지역 경쟁률이 접수÷공급과 다르다.
+  // 이때 '접수 합 ÷ 공급 합'은 실제보다 낮게 읽히므로 전체 요약 경쟁률을 내지 않는다.
+  let quotaMismatch = false;
   const rows: AptResultsView['rows'] = [];
 
   for (const [ty, list] of types) {
@@ -142,6 +145,7 @@ function buildApt(competition: Row[], scores: Row[], special: Row[]): AptResults
     const localReq = num(local?.REQ_CNT);
     requests += localReq;
     const localRate = parseRate(local?.CMPET_RATE);
+    if (localRate.kind === 'rate' && sup > 0 && Math.abs(localRate.value - localReq / sup) > 0.01) quotaMismatch = true;
     if (localRate.kind === 'rate' && (!top || localRate.value > top.value))
       top = { type: label, value: localRate.value };
 
@@ -202,7 +206,7 @@ function buildApt(competition: Row[], scores: Row[], special: Row[]): AptResults
     summary: {
       requests,
       supply,
-      overall: supply > 0 ? fixed2(requests / supply) : null,
+      overall: supply > 0 && !quotaMismatch ? fixed2(requests / supply) : null,
       top: top ? { type: top.type, rate: fixed2(top.value) } : null,
       shortfall,
     },
@@ -220,16 +224,24 @@ function buildApt(competition: Row[], scores: Row[], special: Row[]): AptResults
 function buildSimple(category: string, competition: Row[]): SimpleResultsView {
   const pubPriv = category === 'PUB_PRIV_RENT';
   const officetel = category === 'OFFICETEL_ETC';
+  const seen = new Set<string>();
   const rows = competition
     .filter((r) => !pubPriv || num(r.SPSPLY_KND_HSHLDCO) > 0 || num(r.REQ_CNT) > 0)
-    .map((r) => ({
+    .map((r) => {
+      // SUPLY_HSHLDCO는 주택형 전체 공급이라 구분(거주자우선·기타) 행마다 반복된다 → 첫 행에만 표시.
+      const ty = String(r.HOUSE_TY ?? '').trim();
+      const repeat = !pubPriv && seen.has(ty);
+      seen.add(ty);
+      return { r, repeat };
+    })
+    .map(({ r, repeat }) => ({
       type: houseTypeLabel(r.HOUSE_TY),
       kind: pubPriv
         ? String(r.SPSPLY_KND_NM ?? '').trim()
         : officetel
           ? String(r.RESIDNT_PRIOR_SENM ?? '').trim()
           : null,
-      supply: int(num(pubPriv ? r.SPSPLY_KND_HSHLDCO : r.SUPLY_HSHLDCO)),
+      supply: repeat ? '' : int(num(pubPriv ? r.SPSPLY_KND_HSHLDCO : r.SUPLY_HSHLDCO)),
       req: int(num(r.REQ_CNT)),
       rate: formatRate(parseRate(r.CMPET_RATE)),
     }));
