@@ -1010,6 +1010,19 @@ model SubscriptionUnit {
   @@index([noticeId])
 }
 
+/// 청약 공고 1건의 공식 결과(청약홈). 원 응답을 오퍼레이션별로 보관하고, 화면은 이 원값에서 계산한다.
+model SubscriptionResult {
+  noticeId    BigInt   @id
+  /// 'ok' | 'empty'(결과 없음) | 'api_error'
+  status      String   @db.VarChar(12)
+  competition Json?
+  scores      Json?
+  special     Json?
+  fetchedAt   DateTime
+
+  @@index([status])
+}
+
 model SubwayStation {
   id          BigInt                                @id @default(autoincrement())
   name        String                                @db.VarChar(60)
