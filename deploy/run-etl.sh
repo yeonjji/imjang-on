@@ -16,6 +16,8 @@ case "${1:?job key required}" in
     for s in apt urbty remndr pblpvt opt lh; do
       $DC pnpm tsx scripts/ingest/subscriptions/runner.ts --source="$s" || echo "WARN: subscriptions $s failed"
     done
+    # 청약 결과(경쟁률·가점·특별공급): 공고 수집 뒤, 30분 예산
+    $DC pnpm tsx scripts/ingest/subscription-results/runner.ts || echo "WARN: subscription-results failed"
     ;;
   amenities)
     # school=NEIS_API_KEY / childcare=CHILDCARE_API_KEY 필요(미설정 시 해당 소스만 실패, 나머지 정상)
