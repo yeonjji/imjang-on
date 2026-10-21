@@ -397,6 +397,7 @@ async function main() {
   await seedLoans();
   await seedEvCharger();
   await seedGuides();
+  await seedSubscription();
 
   console.log('e2e seed done. propertyId =', String(p.id), 'officetelId =', String(offi.id), 'villaId =', String(villa.id));
   await prisma.$disconnect();
@@ -471,6 +472,32 @@ async function seedGuides() {
         publishedAt: new Date('2026-06-29'),
       },
     ],
+  });
+}
+
+// 청약 결과 e2e — 접수가 끝난 APT 공고 1건 + 경쟁률·가점·특별공급(역삼센트럴자이 표본 일부)
+async function seedSubscription() {
+  const old = await prisma.subscriptionNotice.findMany({ where: { sourceKey: 'E2E-SUB-1' } });
+  await prisma.subscriptionResult.deleteMany({ where: { noticeId: { in: old.map((n) => n.id) } } });
+  await prisma.subscriptionNotice.deleteMany({ where: { sourceKey: 'E2E-SUB-1' } });
+  const n = await prisma.subscriptionNotice.create({
+    data: {
+      source: 'APPLYHOME', category: 'APT', sourceKey: 'E2E-SUB-1', houseManageNo: 'E2E-SUB-1',
+      name: 'E2E 센트럴자이', regionName: '서울특별시 강남구', totalSupply: 87,
+      receiptBegin: new Date('2025-12-15'), receiptEnd: new Date('2025-12-18'), winnerDate: new Date('2025-12-24'),
+      rawJson: {},
+    },
+  });
+  const c = (ty: string, rank: number, secd: string, rate: string, req: string, sup: number) => ({
+    HOUSE_TY: ty, SUBSCRPT_RANK_CODE: rank, RESIDE_SECD: secd, CMPET_RATE: rate, REQ_CNT: req, SUPLY_HSHLDCO: sup,
+  });
+  await prisma.subscriptionResult.create({
+    data: {
+      noticeId: n.id, status: 'ok', fetchedAt: new Date(),
+      competition: [c('059.9800 ', 1, '01', '1692.33', '10154', 6), c('059.9800 ', 1, '02', '-', '0', 6), c('084.9700A', 1, '01', '467.53', '8883', 19), c('084.9700A', 1, '02', '-', '0', 19)],
+      scores: [{ HOUSE_TY: '059.9800 ', RESIDE_SENM: '해당지역', LWET_SCORE: '70', AVRG_SCORE: '70', TOP_SCORE: '70' }],
+      special: [{ HOUSE_TY: '059.9800 ', LFE_FRST_HSHLDCO: 1, CRSPAREA_LFE_FRST_CNT: 3431, ETC_AREA_LFE_FRST_CNT: 626 }],
+    },
   });
 }
 
