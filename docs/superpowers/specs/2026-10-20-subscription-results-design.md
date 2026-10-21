@@ -1,8 +1,8 @@
 # 4단계 · 청약 상세 청약 결과(경쟁률·당첨가점) 설계
 
 - 작성일: 2026-10-20
-- 상태: 초안. 사용자 검토 대기, UI 시안 확인 중 (**시안 확정 전 개발 금지**)
-- UI 시안(검토용): `docs/superpowers/mockups/2026-10-20-subscription-results.html` (A 경쟁 공고 · B 미달 공고 · C 오피스텔·도시형 · D 모바일)
+- 상태: 승인(2026-10-21). UI 시안 확정
+- UI 시안(확정본): `docs/superpowers/mockups/2026-10-20-subscription-results.html` (A 경쟁 공고 · B 미달 공고 · C 오피스텔·도시형 · D 모바일)
 - 상위 문서: [로드맵](2026-10-15-detail-public-data-roadmap.md) · [데이터·필드·섹션 계획](2026-10-15-detail-public-data-section-plan.md) 4단계(검토 ⑦ 포함)
 
 ## 1. 표본 실측 (2026-10-20)
