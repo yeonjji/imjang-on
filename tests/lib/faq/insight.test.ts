@@ -70,7 +70,7 @@ const sz = (over: Partial<SchoolZoneView> = {}): SchoolZoneView => ({
   eduName: '서울특별시강남서초교육지원청',
   baseDateLabel: '2025-09-22',
   loadedAtLabel: null,
-  primary: [{ name: '서초초등학교', href: null, distanceLabel: '420m' }],
+  primary: [{ name: '서초초등학교', href: null, distanceLabel: '약 420m' }],
   others: [],
   ...over,
 });
@@ -86,7 +86,7 @@ describe('schoolZoneFaq', () => {
   it('여러 학교·광역, 교육지원청 미상', () => {
     const a = schoolZoneFaq('힐스테이트', sz({
       kind: 'shared', kindLabel: '공동통학구역', eduName: null,
-      primary: [{ name: 'A초등학교', href: null, distanceLabel: '300m' }, { name: 'B초등학교', href: null, distanceLabel: null }],
+      primary: [{ name: 'A초등학교', href: null, distanceLabel: '약 300m' }, { name: 'B초등학교', href: null, distanceLabel: null }],
       others: [{ name: 'C초등학교', href: null, distanceLabel: null }],
     }))!.a;
     expect(a).toContain('공동통학구역으로, 학구도상 A초등학교·B초등학교가 함께 지정돼 있습니다.');
@@ -179,7 +179,13 @@ describe('subscriptionResultsFaq', () => {
       { HOUSE_TY: '6', RESIDNT_PRIOR_SENM: '기타', SUPLY_HSHLDCO: 280, REQ_CNT: '125', CMPET_RATE: '(△14)' },
     ], null, null);
     const a = subscriptionResultsFaq('힐스테이트', data(v))!.a;
-    expect(a).toBe('가장 높은 경쟁률은 타입 1(거주자우선) 7.50대 1이었습니다. 1개 타입·구분에서 미달이 났습니다(청약홈 공식값).');
+    expect(a).toBe('가장 높은 곳은 타입 1(거주자우선)로 7.50대 1이었습니다. 1개 타입·구분에서 미달이 났습니다(청약홈 공식값).');
+  });
+  it("구분이 '전체'면 괄호 생략, 주택형 뒤 조사", () => {
+    const o = buildResultsView('OFFICETEL_ETC', [{ HOUSE_TY: '83B', RESIDNT_PRIOR_SENM: '전체', SUPLY_HSHLDCO: 3, REQ_CNT: '30', CMPET_RATE: '10.00' }], null, null);
+    expect(subscriptionResultsFaq('A', data(o))!.a).toBe('가장 높은 곳은 타입 83B로 10.00대 1이었습니다.');
+    const r = buildResultsView('REMNANT', [{ HOUSE_TY: '074.6900 ', SUPLY_HSHLDCO: 1, REQ_CNT: '75', CMPET_RATE: '75.00' }], null, null);
+    expect(subscriptionResultsFaq('A', data(r))!.a).toBe('가장 높은 곳은 74.69㎡로 75.00대 1이었습니다.');
   });
   it('결과 없음이면 null', () => {
     expect(subscriptionResultsFaq('A', null)).toBeNull();

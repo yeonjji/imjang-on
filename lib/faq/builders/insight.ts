@@ -45,7 +45,7 @@ export function schoolZoneFaq(name: string, v: SchoolZoneView | null): FaqItem |
     const p = v.primary[0];
     s.push(
       p.distanceLabel
-        ? `학구도상 ${p.name} 통학구역에 속하며, 단지 대표 위치에서 직선거리로 약 ${p.distanceLabel}입니다(임장ON 계산).`
+        ? `학구도상 ${p.name} 통학구역에 속하며, 단지 대표 위치에서 직선거리로 ${p.distanceLabel}입니다(임장ON 계산).`
         : `학구도상 ${p.name} 통학구역에 속합니다.`,
     );
   } else {
@@ -122,12 +122,12 @@ export function subscriptionResultsFaq(name: string, d: SubscriptionResultsData 
     if (low) s.push(`당첨 가점 최저는 ${low.low}점(${low.type}, ${low.region})이었습니다.`);
   } else {
     const label = (r: (typeof v.rows)[number]) =>
-      `${v.typeHeader === '타입' ? `타입 ${r.type}` : r.type}${r.kind ? `(${r.kind})` : ''}`;
+      `${v.typeHeader === '타입' ? `타입 ${r.type}` : r.type}${r.kind && r.kind !== '전체' ? `(${r.kind})` : ''}`;
     const top = v.rows
       .map((r) => ({ r, n: rateNum(r.rate) }))
       .filter((x) => x.n !== null)
       .sort((a, b) => b.n! - a.n!)[0];
-    if (top) s.push(`가장 높은 경쟁률은 ${label(top.r)} ${rateText(top.r.rate)}이었습니다.`);
+    if (top) s.push(`가장 높은 곳은 ${josa(label(top.r), '으로', '로')} ${rateText(top.r.rate)}이었습니다.`);
     const short = v.rows.filter((r) => r.rate.startsWith('미달')).length;
     if (short > 0) {
       const unit = `${v.typeHeader}${v.kindHeader ? `·${v.kindHeader}` : ''}`;
