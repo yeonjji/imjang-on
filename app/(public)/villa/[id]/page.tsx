@@ -58,6 +58,7 @@ import { RelatedGuides } from '../../_components/related-guides';
 import { Faq } from '../../_components/faq';
 import { composeDetailFaq } from '@/lib/faq/compose';
 import { buildAptFaq } from '@/lib/faq/builders/apt';
+import { buildingFaq } from '@/lib/faq/builders/insight';
 
 export const revalidate = 86_400;
 // 동적 세그먼트는 generateStaticParams가 없으면 revalidate가 무시되고 매 요청 동적 렌더된다.
@@ -184,7 +185,10 @@ export default async function VillaDetailPage({ params }: Params) {
   const building = await safe(getBuildingRegisterView(propId, property.propertyType === PropertyType.ROW_HOUSE ? 'ROW_HOUSE' : 'MULTIPLEX', now), null, 'getBuildingRegisterView');
 
   const villaFaq = composeDetailFaq(
-    buildAptFaq({ property, areaSummary, unifiedTotalCount: unified.totalCount }),
+    [
+      ...buildAptFaq({ property, areaSummary, unifiedTotalCount: unified.totalCount }),
+      buildingFaq(property.name, building),
+    ],
   );
 
   const addr = propertyAddress(property, property.region);

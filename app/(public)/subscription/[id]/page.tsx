@@ -29,6 +29,7 @@ import { RelatedGuides } from '../../_components/related-guides';
 import { Faq } from '../../_components/faq';
 import { composeDetailFaq } from '@/lib/faq/compose';
 import { buildSubscriptionFaq } from '@/lib/faq/builders/subscription';
+import { subscriptionResultsFaq } from '@/lib/faq/builders/insight';
 
 export const revalidate = 21_600;
 // 동적 세그먼트는 generateStaticParams가 없으면 revalidate가 무시되고 매 요청 동적 렌더된다.
@@ -76,8 +77,8 @@ export default async function SubscriptionDetailPage({ params }: Params) {
     getSubscriptionResults(noticeId, notice.category).catch(() => null),
   ]);
 
-  const subscriptionFaq = composeDetailFaq(
-    buildSubscriptionFaq({
+  const subscriptionFaq = composeDetailFaq([
+    ...buildSubscriptionFaq({
       name: notice.name,
       regionName: notice.regionName,
       totalSupply: notice.totalSupply,
@@ -87,7 +88,8 @@ export default async function SubscriptionDetailPage({ params }: Params) {
       moveInYm: notice.moveInYm,
       unitCount: notice.units.length,
     }),
-  );
+    subscriptionResultsFaq(notice.name, results),
+  ]);
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-12">
