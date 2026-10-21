@@ -192,7 +192,6 @@ export default async function AptDetailPage({ params }: Params) {
 
   const aptFaq = composeDetailFaq(
     buildAptFaq({ property, areaSummary, unifiedTotalCount: unified.totalCount }),
-    'apt',
   );
 
   const addr = propertyAddress(property, property.region);

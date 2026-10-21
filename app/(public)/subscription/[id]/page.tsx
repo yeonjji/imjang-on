@@ -87,7 +87,6 @@ export default async function SubscriptionDetailPage({ params }: Params) {
       moveInYm: notice.moveInYm,
       unitCount: notice.units.length,
     }),
-    'subscription',
   );
 
   return (

@@ -181,7 +181,6 @@ export default async function OffiDetailPage({ params }: Params) {
 
   const offiFaq = composeDetailFaq(
     buildAptFaq({ property, areaSummary, unifiedTotalCount: unified.totalCount }),
-    'officetel',
   );
 
   const addr = propertyAddress(property, property.region);

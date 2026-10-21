@@ -185,7 +185,6 @@ export default async function VillaDetailPage({ params }: Params) {
 
   const villaFaq = composeDetailFaq(
     buildAptFaq({ property, areaSummary, unifiedTotalCount: unified.totalCount }),
-    'villa',
   );
 
   const addr = propertyAddress(property, property.region);
