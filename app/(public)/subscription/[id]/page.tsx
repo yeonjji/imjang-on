@@ -15,6 +15,8 @@ import { ScheduleTimeline } from './_components/schedule-timeline';
 import { UnitSupplyTable } from './_components/unit-supply-table';
 import { PriceComparison } from './_components/price-comparison';
 import { SubscriptionSidebar } from './_components/subscription-sidebar';
+import { SubscriptionResultsSection } from './_components/subscription-results-section';
+import { getSubscriptionResults } from '@/lib/subscription-results-query';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { MainSourceBlock } from '@/components/ui/main-source-block';
 import { subscriptionSource } from '@/lib/data-sources';
@@ -63,7 +65,7 @@ export default async function SubscriptionDetailPage({ params }: Params) {
   if (!notice) notFound();
 
   const coord = await getSubscriptionLatLng(noticeId);
-  const [nearbyApts, infra, subway] = await Promise.all([
+  const [nearbyApts, infra, subway, results] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([]),
     coord
       ? getNearbyInfra(coord.lat, coord.lng, { includeChildcare: true })
@@ -71,6 +73,7 @@ export default async function SubscriptionDetailPage({ params }: Params) {
     coord
       ? getNearbySubwayStations(coord.lat, coord.lng)
       : Promise.resolve({ stations: [], fallback: false }),
+    getSubscriptionResults(noticeId, notice.category).catch(() => null),
   ]);
 
   const subscriptionFaq = composeDetailFaq(
@@ -114,6 +117,7 @@ export default async function SubscriptionDetailPage({ params }: Params) {
         <main className="flex min-w-0 flex-col gap-8">
           <ScheduleTimeline notice={notice} />
           <UnitSupplyTable units={notice.units} />
+          <SubscriptionResultsSection data={results} category={notice.category} />
           <PriceComparison address={notice.address} />
           <SourceCaption ids={['applyhome', 'lh-presub']} />
 

@@ -9,12 +9,12 @@ const RATE_LIMIT_BACKOFF_MS = 5_000;
 const ODCLOUD_BASE = 'https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1';
 const LH_BASE = 'https://apis.data.go.kr/B552555';
 
-function requireKey(): string {
+export function requireKey(): string {
   if (!env.PUBLIC_DATA_KEY) throw new Error('PUBLIC_DATA_KEY is required');
   return env.PUBLIC_DATA_KEY;
 }
 
-async function fetchJson(url: string): Promise<any> {
+export async function fetchJson(url: string): Promise<any> {
   let attempt = 0;
   while (true) {
     attempt++;
