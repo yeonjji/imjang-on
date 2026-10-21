@@ -32,7 +32,9 @@ export function houseTypeLabel(raw: unknown): string {
   const s = String(raw ?? '').trim();
   const m = /^(\d{2,3}\.\d+)\s*([A-Za-z0-9]*)$/.exec(s);
   if (!m) return s;
-  const area = Number(m[1]).toFixed(2);
+  // 반올림하면 84.9973이 85.00(국민주택규모 초과처럼)으로 보인다 → 청약홈처럼 소수 둘째 자리 아래는 버린다.
+  const [i, f] = m[1].split('.');
+  const area = `${Number(i)}.${(f + '00').slice(0, 2)}`;
   return m[2] ? `${area}㎡ ${m[2]}` : `${area}㎡`;
 }
 

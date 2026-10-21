@@ -49,7 +49,9 @@ describe('houseTypeLabel', () => {
   it('면적형', () => {
     expect(houseTypeLabel('084.9700A')).toBe('84.97㎡ A');
     expect(houseTypeLabel('059.9800 ')).toBe('59.98㎡');
-    expect(houseTypeLabel('105.5065C')).toBe('105.51㎡ C');
+    expect(houseTypeLabel('105.5065C')).toBe('105.50㎡ C');
+    // 반올림하면 85㎡ 초과처럼 보인다 — 청약홈 표기처럼 버림
+    expect(houseTypeLabel('084.9973B')).toBe('84.99㎡ B');
   });
   it('그 외는 원문', () => {
     expect(houseTypeLabel('69A1')).toBe('69A1');
