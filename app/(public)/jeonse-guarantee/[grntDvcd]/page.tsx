@@ -57,7 +57,6 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
       trtBankCont: product.trtBankCont,
       updatedAt: product.updatedAt,
     }),
-    'jeonse-guarantee',
   );
   const regions = await getProductRegions(grntDvcd);
 

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { FAQ, type FaqCategory, type FaqItem } from '@/lib/faq/data';
 import { faqSchema, JsonLd } from '@/lib/seo/json-ld';
 
@@ -57,6 +58,13 @@ export function Faq({
   return (
     <>
       <FaqList items={finalItems} title={title} />
+      {items && (
+        // 상세는 페이지 값 문항만 보여주므로 공통 질문은 /faq로 보낸다.
+        <Link href="/faq" prefetch={false} className="mt-3 inline-block text-sm font-semibold hover:underline">
+          {/* 전역 a { color: inherit }가 레이어 밖이라 링크 자체의 색 유틸리티를 이긴다 → 안쪽 span에 색 */}
+          <span className="text-[var(--color-blue)]">자주 묻는 질문 전체 보기 →</span>
+        </Link>
+      )}
       <JsonLd data={faqSchema(finalItems)} />
     </>
   );

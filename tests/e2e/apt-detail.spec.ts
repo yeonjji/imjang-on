@@ -109,3 +109,11 @@ test('apt detail: 건축물 정보 섹션(단지 정보와 겹치지 않는 항�
   await expect(sec.getByText('15개 동 적용')).toBeVisible();
   await expect(page.getByRole('link', { name: '건축물 정보' })).toBeVisible();
 });
+
+test('apt detail: FAQ는 단지 값 문항만(공통 문항 없음) + 관리비·학구도 해석 문항 + /faq 링크', async ({ page }) => {
+  await page.goto(`/apt/${propertyId}`);
+  await expect(page.getByText(/관리비는 같은 .+ 아파트와 비교하면 어느 수준인가요\?/)).toBeVisible();
+  await expect(page.getByText(/어느 초등학교 통학구역인가요\?/)).toBeVisible();
+  await expect(page.getByText('실거래가와 호가는 어떻게 다른가요?')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: '자주 묻는 질문 전체 보기 →' })).toHaveAttribute('href', '/faq');
+});

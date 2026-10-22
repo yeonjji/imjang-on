@@ -116,7 +116,6 @@ export default async function SchoolDetailPage({ params }: Params) {
       eduOffice: school.eduOffice,
       address: school.address,
     }),
-    'school',
   );
 
   return (

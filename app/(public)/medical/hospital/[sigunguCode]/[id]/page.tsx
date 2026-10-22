@@ -102,7 +102,6 @@ export default async function HospitalDetailPage({ params }: Params) {
           }
         : null,
     }),
-    'hospital',
   );
 
   return (

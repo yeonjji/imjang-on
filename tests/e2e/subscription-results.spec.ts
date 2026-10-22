@@ -24,3 +24,11 @@ test('subscription detail: 청약 결과 섹션(경쟁률·가점·특별공급)
   await expect(sec.getByRole('cell', { name: '생애최초' })).toBeVisible();
   await expect(sec.getByText(/최종 결과는 청약홈에서 확인하세요/)).toBeVisible();
 });
+
+test('subscription detail: FAQ에 청약 경쟁률 해석 문항', async ({ page }) => {
+  await page.goto(`/subscription/${noticeId}`);
+  const q = page.getByText('E2E 센트럴자이 청약 경쟁률은 어땠나요?');
+  await expect(q).toBeVisible();
+  await q.click();
+  await expect(page.getByText(/가장 높은 주택형은 59\.98㎡로 1,692\.33대 1이었습니다/)).toBeVisible();
+});

@@ -68,7 +68,6 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
       targetTags: product.targetTags,
       updatedAt: product.updatedAt,
     }),
-    'finance',
   );
 
   return (

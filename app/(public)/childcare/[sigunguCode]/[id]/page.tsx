@@ -118,7 +118,6 @@ export default async function ChildcareDetailPage({ params }: Params) {
       staffCount: item.staffCount,
       regionFullName: regionDisplay.fullName,
     }),
-    'childcare',
   );
 
   return (
