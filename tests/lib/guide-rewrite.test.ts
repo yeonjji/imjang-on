@@ -43,3 +43,21 @@ describe('content/guides 초안 전부', () => {
     }
   });
 });
+
+describe('content/guides 렌더(가이드 본문과 같은 react-markdown + GFM)', () => {
+  it('굵게가 닫히지 않아 ** 가 화면에 남는 곳이 없다', async () => {
+    const React = await import('react');
+    const { renderToStaticMarkup } = await import('react-dom/server');
+    const { default: ReactMarkdown } = await import('react-markdown');
+    const { default: remarkGfm } = await import('remark-gfm');
+    const leftovers: string[] = [];
+    for (const f of readdirSync('content/guides').filter((x) => x.endsWith('.md'))) {
+      const { body } = parseGuideDraft(readFileSync(`content/guides/${f}`, 'utf8'));
+      const html = renderToStaticMarkup(
+        React.createElement(ReactMarkdown, { remarkPlugins: [[remarkGfm, { singleTilde: false }]] }, body),
+      );
+      for (const m of html.matchAll(/.{0,15}\*\*.{0,15}/g)) leftovers.push(`${f}: ${m[0]}`);
+    }
+    expect(leftovers).toEqual([]);
+  });
+});

@@ -16,17 +16,19 @@ import { revalidatePaths } from '@/scripts/ingest/revalidator';
 export interface ApplyResult {
   wouldUpdate: string[];
   updated: string[];
+  /** 재검증 요청 성공 여부(실패하면 최대 하루 옛 본문이 보인다 — 수동 확인 필요) */
+  revalidated: boolean;
   skipped: { slug: string; reason: string }[];
 }
 
 export async function applyGuideRewrites(opts: {
   dir: string;
   apply: boolean;
-  revalidate?: (paths: string[]) => Promise<void>;
+  revalidate?: (paths: string[], routes: string[]) => Promise<boolean>;
 }): Promise<ApplyResult> {
   const revalidate = opts.revalidate ?? revalidatePaths;
   const files = readdirSync(opts.dir).filter((f) => f.endsWith('.md')).sort();
-  const result: ApplyResult = { wouldUpdate: [], updated: [], skipped: [] };
+  const result: ApplyResult = { wouldUpdate: [], updated: [], skipped: [], revalidated: false };
   const targets: { slug: string; draft: GuideDraft }[] = [];
   const failures: string[] = [];
 
@@ -58,16 +60,18 @@ export async function applyGuideRewrites(opts: {
   if (!opts.apply) return result;
 
   const reviewedAt = new Date();
-  await prisma.$transaction(
+  const counts = await prisma.$transaction(
     targets.map((t) =>
-      prisma.guide.update({
-        where: { slug: t.slug },
+      // 검증과 쓰기 사이에 상태가 바뀌어도 게시된 글만 바꾼다.
+      prisma.guide.updateMany({
+        where: { slug: t.slug, status: 'PUBLISHED' },
         data: { title: t.draft.title, summary: t.draft.summary, body: t.draft.body, reviewedAt },
       }),
     ),
   );
-  result.updated = result.wouldUpdate;
-  await revalidate(['/guide', ...result.updated.map((s) => `/guide/${s}`)]);
+  result.updated = targets.filter((_, i) => counts[i].count === 1).map((t) => t.slug);
+  // 한글 slug 경로를 직접 넘기지 않고 동적 라우트 형태로 무효화한다(admin 게시 경로와 같은 방식).
+  result.revalidated = await revalidate(['/guide'], ['/guide/[slug]']);
   return result;
 }
 
