@@ -8,7 +8,7 @@ import { ChildcareCard } from './_components/childcare-card';
 import { ChildcarePagination } from './_components/childcare-pagination';
 import { SiblingTabs } from '../_components/sibling-tabs';
 import type { Metadata } from 'next';
-import { Faq } from '../_components/faq';
+import { CategoryFaq } from '../_components/faq';
 import { getChildcareHubSummary } from '@/lib/hub-summary/childcare';
 import { HubIntro } from '../_components/hub-intro';
 
@@ -95,7 +95,7 @@ export default async function ChildcareListPage({ searchParams }: Props) {
         </main>
       </div>
 
-      <Faq category="childcare" />
+      <CategoryFaq category="childcare" />
     </div>
   );
 }

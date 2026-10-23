@@ -8,7 +8,7 @@ import { SiblingTabs } from '../../_components/sibling-tabs';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { getMedicalRegionBreakdown } from '@/lib/hub-summary/medical';
 import type { Metadata } from 'next';
-import { Faq } from '../../_components/faq';
+import { CategoryFaq } from '../../_components/faq';
 import { HubIntro } from '../../_components/hub-intro';
 
 export const revalidate = 86_400;
@@ -117,7 +117,7 @@ export default async function HospitalListPage({ searchParams }: Props) {
         </main>
       </div>
 
-      <Faq category="hospital" />
+      <CategoryFaq category="hospital" />
     </div>
   );
 }

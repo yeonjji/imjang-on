@@ -8,7 +8,7 @@ import { SchoolCard } from './_components/school-card';
 import { SchoolPagination } from './_components/school-pagination';
 import { SiblingTabs } from '../_components/sibling-tabs';
 import type { Metadata } from 'next';
-import { Faq } from '../_components/faq';
+import { CategoryFaq } from '../_components/faq';
 import { getSchoolHubSummary } from '@/lib/hub-summary/school';
 import { HubIntro } from '../_components/hub-intro';
 
@@ -96,7 +96,7 @@ export default async function SchoolListPage({ searchParams }: Props) {
         </main>
       </div>
 
-      <Faq category="school" />
+      <CategoryFaq category="school" />
     </div>
   );
 }

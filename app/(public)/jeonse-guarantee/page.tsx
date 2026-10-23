@@ -6,7 +6,7 @@ import { getSidoList, getSigunguList } from '@/lib/region';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { JeonseFinder } from './_components/jeonse-finder';
 import { FinanceTabs } from '../_components/finance-tabs';
-import { Faq } from '../_components/faq';
+import { CategoryFaq } from '../_components/faq';
 
 export const metadata: Metadata = {
   title: '맞춤 전세보증 찾기 — 주거금융',
@@ -55,7 +55,7 @@ export default async function JeonseGuaranteePage() {
         <SourceCaption ids={['hf-jeonse-guarantee']} />
       </div>
 
-      <Faq category="jeonse-guarantee" />
+      <CategoryFaq category="jeonse-guarantee" />
     </div>
   );
 }

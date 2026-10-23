@@ -5,7 +5,7 @@ import { formatAsOf } from '@/lib/format';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { LoanExplorer } from './_components/loan-explorer';
 import { FinanceTabs } from '../_components/finance-tabs';
-import { Faq } from '../_components/faq';
+import { CategoryFaq } from '../_components/faq';
 
 export const metadata: Metadata = {
   title: '서민금융 대출상품 — 주거금융',
@@ -51,7 +51,7 @@ export default async function FinancePage() {
         <SourceCaption ids={['kinfa-loan']} />
       </div>
 
-      <Faq category="finance" />
+      <CategoryFaq category="finance" />
     </div>
   );
 }

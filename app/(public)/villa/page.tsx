@@ -3,7 +3,7 @@ import { PropertyCard } from '../_components/property-card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { PropertyType } from '@prisma/client';
 import type { Metadata } from 'next';
-import { Faq } from '../_components/faq';
+import { CategoryFaq } from '../_components/faq';
 import { HubIntro } from '../_components/hub-intro';
 import { getPropertyHubStats } from '@/lib/hub-summary/property';
 
@@ -48,7 +48,7 @@ export default async function VillaHubPage() {
 
       <SourceCaption ids={['molit-rtms']} />
 
-      <Faq category="villa" />
+      <CategoryFaq category="villa" />
     </section>
   );
 }
