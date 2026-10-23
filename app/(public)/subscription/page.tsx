@@ -7,7 +7,7 @@ import { SubscriptionMobileFilterSheet } from './_components/subscription-mobile
 import { SubscriptionList } from './_components/subscription-list';
 import { SourceCaption } from '@/components/ui/source-caption';
 import type { Metadata } from 'next';
-import { Faq } from '../_components/faq';
+import { CategoryFaq } from '../_components/faq';
 import { getSubscriptionHubSummary } from '@/lib/hub-summary/subscription';
 import { HubIntro } from '../_components/hub-intro';
 
@@ -92,7 +92,7 @@ export default async function SubscriptionPage({
         </main>
       </div>
 
-      <Faq category="subscription" />
+      <CategoryFaq category="subscription" />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { PropertyCard } from '../_components/property-card';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { PropertyType } from '@prisma/client';
 import type { Metadata } from 'next';
-import { Faq } from '../_components/faq';
+import { CategoryFaq } from '../_components/faq';
 import { HubIntro } from '../_components/hub-intro';
 
 export const metadata: Metadata = {
@@ -49,7 +49,7 @@ export default async function AptHubPage() {
 
       <SourceCaption ids={['molit-rtms']} />
 
-      <Faq category="apt" />
+      <CategoryFaq category="apt" />
     </section>
   );
 }
