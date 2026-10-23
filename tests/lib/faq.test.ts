@@ -7,7 +7,7 @@ const STATS: FaqStats = {
   apt: 44573, officetel: 17547, villa: 214574, maintenanceComplexes: 12544,
   subscriptionNotices: 5917, subscriptionResults: 5436, remnantNotices: 1724, arbitraryNotices: 687,
   loanProducts: 318, jeonseProducts: 47, hospitals: 79772, pharmacies: 25760, schools: 12567,
-  childcare: 24672, childcarePublic: 6650, parks: 17281, parkings: 17752, evStations: 106477, asOf: '2026-10-23',
+  childcare: 24672, childcarePublic: 6650, parks: 17281, publicParkings: 9876, evStations: 106477, asOf: '2026-10-23',
 };
 const FORBIDDEN = /하는 것이 좋습니다|바람직|꼼꼼히|유리|추천/;
 
@@ -40,6 +40,22 @@ describe('FAQ 레지스트리 무결성', () => {
       expect(FAQ_PAGE_ORDER, `${c} 순서`).toContain(c);
     }
     expect(new Set(FAQ_PAGE_ORDER).size).toBe(FAQ_PAGE_ORDER.length);
+  });
+});
+
+describe('사이트가 실제로 하는 일과 맞는 문장(리뷰 지적)', () => {
+  const a = (c: FaqCategory, q: RegExp, st: FaqStats | null = STATS) => resolveFaq(c, st).find((i) => q.test(i.q))!.a;
+  it('약국 운영시간은 아직 제공하지 않는다', () => {
+    for (const st of [STATS, null]) {
+      expect(a('pharmacy', /어디서 가져오나요/, st)).not.toContain('운영시간을 정리');
+      expect(a('pharmacy', /어디서 가져오나요/, st)).toContain('운영시간은 아직 제공하지 않아');
+    }
+  });
+  it('병원 요일별 진료시간은 공개한 병원만', () => {
+    expect(a('hospital', /야간·주말/)).toContain('진료시간을 공개한 병원은');
+  });
+  it('LH 공고는 LH 청약플러스에서 신청', () => {
+    expect(a('subscription', /신청도 임장ON/)).toContain('LH 청약플러스');
   });
 });
 

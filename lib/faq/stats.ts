@@ -24,7 +24,8 @@ export interface FaqStats {
   childcare: number;
   childcarePublic: number;
   parks: number;
-  parkings: number;
+  /** 공영 주차장(주차장 표준데이터에는 민영도 있다) */
+  publicParkings: number;
   evStations: number;
   /** 계산한 날(KST) */
   asOf: string;
@@ -38,25 +39,30 @@ export async function queryFaqStats(): Promise<FaqStats> {
            count(*) FILTER (WHERE "propertyType" = 'OFFICETEL') AS officetel,
            count(*) FILTER (WHERE "propertyType" IN ('ROW_HOUSE', 'MULTIPLEX')) AS villa
     FROM "Property" WHERE "redirectToId" IS NULL`;
-  const [mc] = await prisma.$queryRaw<{ c: bigint }[]>`SELECT count(DISTINCT "kaptCode") AS c FROM "AptMaintenanceCost"`;
+  // 관리비 섹션이 실제로 보이는 단지: 단지(Property)와 연결되고 공용관리비 값이 있는 kaptCode.
+  const [mc] = await prisma.$queryRaw<{ c: bigint }[]>`
+    SELECT count(DISTINCT m."kaptCode") AS c FROM "AptMaintenanceCost" m
+    JOIN "AptComplex" a ON a."kaptCode" = m."kaptCode"
+    WHERE a."propertyId" IS NOT NULL AND m."commonTotal" > 0`;
   const [sub] = await prisma.$queryRaw<{ total: bigint; remnant: bigint; arbitrary: bigint }[]>`
     SELECT count(*) AS total,
            count(*) FILTER (WHERE category = 'REMNANT') AS remnant,
            count(*) FILTER (WHERE category = 'ARBITRARY') AS arbitrary
-    FROM "SubscriptionNotice"`;
-  // 목록 기본값과 같게 운영중지(휴지)는 뺀다.
+    FROM "SubscriptionNotice" WHERE source = 'APPLYHOME'`;
+  // 목록 기본 필터와 같게(lib/childcare.ts buildChildcareWhere): 정상·재개·상태 없음.
   const [cc] = await prisma.$queryRaw<{ total: bigint; pub: bigint }[]>`
     SELECT count(*) AS total, count(*) FILTER (WHERE "crType" = '국공립') AS pub
-    FROM "Childcare" WHERE status IS DISTINCT FROM '휴지'`;
+    FROM "Childcare" WHERE status IN ('정상', '재개') OR status IS NULL`;
   const [results, loans, jeonse, hospitals, pharmacies, schools, parks, parkings, ev] = await Promise.all([
     prisma.subscriptionResult.count({ where: { status: 'ok' } }),
     prisma.loanProduct.count(),
     prisma.jeonseGuaranteeProduct.count(),
-    prisma.hospital.count(),
-    prisma.pharmacy.count(),
+    // 병원·약국 목록은 시군구가 있는 행만 보여준다(lib/hospital, lib/pharmacy).
+    prisma.hospital.count({ where: { sigunguCode: { not: null } } }),
+    prisma.pharmacy.count({ where: { sigunguCode: { not: null } } }),
     prisma.school.count(),
     prisma.park.count(),
-    prisma.parking.count(),
+    prisma.parking.count({ where: { prkplceSe: { contains: '공영' } } }),
     prisma.evCharger.count(),
   ]);
   return {
@@ -76,7 +82,7 @@ export async function queryFaqStats(): Promise<FaqStats> {
     childcare: n(cc.total),
     childcarePublic: n(cc.pub),
     parks,
-    parkings,
+    publicParkings: parkings,
     evStations: ev,
     asOf: kstDate(new Date()),
   };
@@ -85,7 +91,7 @@ export async function queryFaqStats(): Promise<FaqStats> {
 /** 하루 캐시. 캐시 래퍼가 없는 환경(테스트·스크립트)이나 래퍼 오류면 직접 조회, 그것도 실패하면 null(숫자 없는 문장). */
 export async function getFaqStats(): Promise<FaqStats | null> {
   try {
-    return await unstable_cache(queryFaqStats, ['faq-stats-v1'], { revalidate: 86_400 })();
+    return await unstable_cache(queryFaqStats, ['faq-stats-v2'], { revalidate: 86_400 })();
   } catch {
     try {
       return await queryFaqStats();
