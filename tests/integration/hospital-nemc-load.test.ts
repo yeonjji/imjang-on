@@ -43,6 +43,18 @@ describe('loadNemcHours', () => {
   });
 });
 
+describe('loadNemcHours 중복', () => {
+  it('두 기관이 같은 병원에 붙으면 둘 다 버리고 duplicate로 센다', async () => {
+    const r = await loadNemcHours(
+      [n('UT가나의원', 'UT도 UT시 가나로 1 (UT동)', { openMon: 900, closeMon: 1800 }),
+       { ...n('UT가나의원', 'UT도 UT시 가나로 1', { openMon: 1000, closeMon: 1900 }), hpid: 'H-other' }],
+      { complete: false, fetchedAt: new Date() },
+    );
+    expect(r).toMatchObject({ received: 2, matched: 0, duplicate: 1 });
+    expect(await prisma.hospitalNemcHours.findUnique({ where: { hospitalId: a } })).toBeNull();
+  });
+});
+
 describe('runCollect', () => {
   const xml = (items: string, total: number) =>
     `<response><header><resultCode>00</resultCode></header><body><items>${items}</items><totalCount>${total}</totalCount></body></response>`;
@@ -53,6 +65,20 @@ describe('runCollect', () => {
     });
     expect(r.complete).toBe(false);
     expect(await prisma.hospitalNemcHours.findUnique({ where: { hospitalId: b } })).not.toBeNull();
+  });
+  it('중간 페이지가 빈 목록이면(완료 전) complete=false — 정리하지 않는다', async () => {
+    const r = await runCollect(async (p) =>
+      p === 1 ? xml('<item><hpid>H1</hpid><dutyName>UT다라의원</dutyName><dutyAddr>UT도 UT시 다라로 2</dutyAddr></item>', 12000) : xml('', 12000));
+    expect(r.complete).toBe(false);
+  });
+  it('totalCount가 없으면 complete=false', async () => {
+    const r = await runCollect(async () =>
+      '<response><header><resultCode>00</resultCode></header><body><items><item><hpid>H1</hpid><dutyName>UT다라의원</dutyName><dutyAddr>UT도 UT시 다라로 2</dutyAddr></item></items></body></response>');
+    expect(r.complete).toBe(false);
+  });
+  it('받은 수가 totalCount에 도달하면 complete=true', async () => {
+    const r = await runCollect(async () => xml('<item><hpid>H1</hpid><dutyName>UT다라의원</dutyName><dutyAddr>UT도 UT시 다라로 2</dutyAddr></item>', 1));
+    expect(r.complete).toBe(true);
   });
   it('0건이면 throw(\'OK · 0건\' 금지)', async () => {
     await expect(runCollect(async () => xml('', 0))).rejects.toThrow(/0건/);

@@ -7,7 +7,7 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { notify } from '@/scripts/ingest/notify';
 import { parseNemcPage, type NemcHospital } from '@/lib/hospital/nemc';
-import { fetchNemcPage, PAGE_SIZE } from './http';
+import { fetchNemcPage } from './http';
 import { loadNemcHours, type LoadResult } from './load';
 
 export const HOSPITAL_NEMC_SOURCE = 'hospital-nemc';
@@ -29,7 +29,9 @@ export async function runCollect(
     }
     pages = p;
     items.push(...page.items);
-    if (p * PAGE_SIZE >= page.totalCount || page.items.length === 0) { complete = true; break; }
+    // 다 받았을 때만 완주로 본다. 빈 중간 페이지·totalCount 누락을 완주로 보면 정리 단계가 대량 삭제한다.
+    if (page.totalCount > 0 && items.length >= page.totalCount) { complete = true; break; }
+    if (page.items.length === 0) break;
   }
   if (items.length === 0) throw new Error('hospital-nemc 수집 0건 — 호출 실패로 본다');
   const result = await loadNemcHours(items, { complete, fetchedAt });

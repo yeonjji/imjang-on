@@ -9,13 +9,15 @@ interface Props {
   tel: string | null;
 }
 
-const ymd = (d: Date) => new Date(d).toISOString().slice(0, 10);
+// 조회일은 한국 날짜로(수집은 토 19:00 UTC = 일 04:00 KST).
+const ymd = (d: Date) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(new Date(d));
 
 export function HospitalTabOperation({ detail, transits, hours, tel }: Props) {
   if (!detail && !transits.length && !hours) {
     return <p className="py-8 text-center text-sm text-[var(--color-muted)]">운영·교통 정보가 등록되어 있지 않습니다.</p>;
   }
-  const hira = hours?.source === 'hira';
+  // 국립중앙의료원 출처가 아니면 심평원 문구를 그대로 둔다(시간이 아예 없어도 점심·휴진 문구는 기존처럼).
+  const hira = hours?.source !== 'nemc';
   const days = hours?.days ?? [];
   // 점심·일요일·공휴일 휴진 문구는 심평원 값이라 심평원 출처일 때만 보인다(출처를 섞지 않는다).
   const hasHourInfo =

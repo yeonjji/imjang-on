@@ -32,6 +32,18 @@ describe('진료시간 탭', () => {
     expect(html).toContain('09:00 ~ 18:00');
     expect(html).not.toContain('국립중앙의료원');
   });
+  it('시간은 어디에도 없고 심평원 점심·휴진 문구만 있으면 그대로 보인다(기존 화면 유지)', () => {
+    const detail = { lunchWeekday: '13:00~14:00', closedSunday: '휴진' } as never;
+    const html = renderToStaticMarkup(createElement(HospitalTabOperation, { detail, transits: [], hours: null, tel: null }));
+    expect(html).toContain('점심(평일): 13:00~14:00');
+    expect(html).toContain('일요일: 휴진');
+  });
+  it('조회일은 한국 날짜(토 19:00 UTC 수집 → 일요일)', () => {
+    const html = renderToStaticMarkup(createElement(HospitalTabOperation, {
+      detail: null, transits: [], hours: effectiveHours(null, { ...nemc, fetchedAt: new Date('2026-10-24T19:00:00Z') } as never), tel: null,
+    }));
+    expect(html).toContain('2026-10-25 조회');
+  });
   it('진료시간도 상세도 교통도 없으면 기존 빈 문구', () => {
     const html = renderToStaticMarkup(createElement(HospitalTabOperation, { detail: null, transits: [], hours: null, tel: null }));
     expect(html).toContain('운영·교통 정보가 등록되어 있지 않습니다.');
