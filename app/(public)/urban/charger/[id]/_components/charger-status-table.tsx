@@ -15,6 +15,8 @@ const STAT_ICON: Record<string, string> = {
   '3': '🔵',
   '4': '🟡',
   '5': '🔧',
+  '6': '🟣',
+  '9': '⚪',
 };
 
 const CHGER_TYPE_LABELS: Record<string, string> = {
@@ -100,11 +102,11 @@ export function ChargerStatusTable({ units, statId }: Props) {
           </button>
         )}
         {state.kind === 'error' && (
-          <p className="mt-2 text-sm text-[var(--color-text)]">실시간 상태를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+          <p className="mt-2 text-sm text-[var(--color-text)]">환경부 충전소 서버에서 상태를 받아오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
         )}
         {state.kind === 'loaded' && state.statuses.length === 0 && (
           <p className="rounded-xl bg-[var(--color-soft)] px-4 py-3 text-sm text-[var(--color-text)]">
-            이 충전소는 실시간 상태 정보를 제공하지 않습니다.
+            환경부 충전소 정보에서 이 충전소의 현재 상태가 조회되지 않습니다. 운영이 중단되었거나 정보가 바뀌었을 수 있습니다.
           </p>
         )}
       </div>

@@ -9,5 +9,9 @@ export async function GET(req: Request) {
     return Response.json({ error: 'invalid statId' }, { status: 400 });
   }
   const statuses = await fetchChargerStatus(statId);
+  // 일시 실패(시간 초과·한도 초과 등)는 502 — 화면이 '미제공'이 아니라 '다시 시도'를 안내한다.
+  if (statuses === null) {
+    return Response.json({ error: 'upstream unavailable' }, { status: 502 });
+  }
   return Response.json({ statuses }, { headers: { 'Cache-Control': 'private, max-age=60' } });
 }
