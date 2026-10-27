@@ -81,6 +81,11 @@ describe('--apply', () => {
     expect(lines[1].old.saleLastPrice).toBe(300000);
   });
 
+  it('바뀔 행이 없으면 백업 파일을 만들지 않고 경로도 보고하지 않는다', async () => {
+    const r = await runReaggregate({ target: { kind: 'ids', ids: [ids[2]] }, apply: true, backupDir: dir, pauseMs: 0 });
+    expect(r).toMatchObject({ changed: 0, backupFile: undefined });
+  });
+
   it('백업 디렉터리 없이 --apply는 거부한다', async () => {
     await expect(runReaggregate({ target: { kind: 'ids', ids }, apply: true })).rejects.toThrow(/backupDir/);
   });

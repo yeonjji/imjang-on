@@ -92,7 +92,7 @@ export async function runReaggregate(o: ReaggOptions): Promise<ReaggResult> {
   if (resume && checkpointFile && existsSync(checkpointFile)) {
     lastId = BigInt(JSON.parse(readFileSync(checkpointFile, 'utf8')).lastId);
   }
-  let batches = 0; let scanned = 0; let changed = 0;
+  let batches = 0; let scanned = 0; let changed = 0; let wroteBackup = false;
   let stoppedBy: ReaggResult['stoppedBy'] = 'done';
   try {
     for (;;) {
@@ -109,6 +109,7 @@ export async function runReaggregate(o: ReaggOptions): Promise<ReaggResult> {
       if (apply && diffs.length > 0) {
         // 백업을 먼저 디스크에 남긴다 — UPDATE 뒤에 죽어도 되돌릴 수 있게.
         appendFileSync(backupFile!, diffs.map((d) => JSON.stringify({ id: String(d.id), old: d.old })).join('\n') + '\n');
+        wroteBackup = true;
         changed += await updatePropertyAggregates(diffs.map((d) => d.id));
       } else {
         changed += diffs.length;
@@ -122,7 +123,7 @@ export async function runReaggregate(o: ReaggOptions): Promise<ReaggResult> {
   } finally {
     rmSync(lockFile, { force: true });
   }
-  const result: ReaggResult = { apply, batches, scanned, changed, lastId: batches ? String(lastId) : null, stoppedBy, backupFile, ms: Date.now() - t0 };
+  const result: ReaggResult = { apply, batches, scanned, changed, lastId: batches ? String(lastId) : null, stoppedBy, backupFile: wroteBackup ? backupFile : undefined, ms: Date.now() - t0 };
   logger.info(result, 'reaggregate done');
   return result;
 }
@@ -152,32 +153,43 @@ export async function rollbackFromBackup(file: string, batchSize = 500): Promise
   return n;
 }
 
-function arg(name: string): string | undefined {
-  return process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=').slice(1).join('=');
-}
-const flag = (name: string) => process.argv.includes(`--${name}`);
-
-async function main() {
-  const rb = arg('rollback');
-  if (rb) { console.log(JSON.stringify({ restored: await rollbackFromBackup(rb) })); return; }
+/** 명령행 인자 해석(테스트 가능하게 분리). rollback이 있으면 그것만 수행한다. */
+export function parseReaggArgs(argv: string[]): { rollback?: string; options?: ReaggOptions } {
+  const arg = (name: string) => argv.find((a) => a.startsWith(`--${name}=`))?.split('=').slice(1).join('=');
+  const flag = (name: string) => argv.includes(`--${name}`);
+  const num = (name: string) => (arg(name) != null ? Number(arg(name)) : undefined);
+  const rollback = arg('rollback');
+  if (rollback) return { rollback };
   const t = arg('target') ?? 'all';
+  if (!['all', 'ids', 'cancelled-apartments'].includes(t)) throw new Error(`알 수 없는 --target=${t}`);
   const target: ReaggTarget =
     t === 'ids' ? { kind: 'ids', ids: (arg('ids') ?? '').split(',').filter(Boolean).map((x) => BigInt(x)) }
     : t === 'cancelled-apartments' ? { kind: 'cancelled-apartments' }
     : { kind: 'all' };
-  const r = await runReaggregate({
-    target,
-    apply: flag('apply'),
-    enqueueDiff: flag('enqueue-diff'),
-    batchSize: Number(arg('batch-size')) || undefined,
-    pauseMs: arg('pause-ms') != null ? Number(arg('pause-ms')) : undefined,
-    maxBatches: Number(arg('max-batches')) || undefined,
-    backupDir: arg('backup-dir'),
-    checkpointFile: arg('checkpoint'),
-    resume: flag('resume'),
-    stopFile: arg('stop-file'),
-    minFreeGb: arg('min-free-gb') != null ? Number(arg('min-free-gb')) : undefined,
-  });
+  if (target.kind === 'ids' && target.ids.length === 0) throw new Error('--target=ids에는 --ids=1,2,3이 필요하다');
+  return {
+    options: {
+      target,
+      apply: flag('apply'),
+      enqueueDiff: flag('enqueue-diff'),
+      batchSize: num('batch-size'),
+      pauseMs: num('pause-ms'),
+      maxBatches: num('max-batches'),
+      backupDir: arg('backup-dir'),
+      checkpointFile: arg('checkpoint'),
+      resume: flag('resume'),
+      stopFile: arg('stop-file'),
+      minFreeGb: num('min-free-gb'),
+    },
+  };
+}
+
+async function main() {
+  const { rollback, options } = parseReaggArgs(process.argv);
+  if (rollback) { console.log(JSON.stringify({ restored: await rollbackFromBackup(rollback) })); return; }
+  // undefined 값은 기본값을 쓰게 뺀다
+  const o = Object.fromEntries(Object.entries(options!).filter(([, v]) => v !== undefined)) as unknown as ReaggOptions;
+  const r = await runReaggregate(o);
   console.log(JSON.stringify(r));
 }
 

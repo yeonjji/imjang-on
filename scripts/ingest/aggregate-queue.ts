@@ -43,7 +43,9 @@ export interface DrainResult {
   processed: number;
   changed: number;
   remaining: number;
-  stoppedBy: 'empty' | 'maxBatches' | 'deadline';
+  stoppedBy: 'empty' | 'maxBatches' | 'deadline' | 'error';
+  /** stoppedBy=error일 때 실패 사유. 실패한 묶음은 롤백되어 대기열에 남는다. */
+  error?: string;
 }
 
 /**
@@ -60,10 +62,13 @@ export async function drainAggregateQueue(opts: {
   const { batchSize = 2000, maxBatches = Infinity, deadline, pauseMs = 0 } = opts;
   let batches = 0; let processed = 0; let changed = 0;
   let stoppedBy: DrainResult['stoppedBy'] = 'empty';
+  let error: string | undefined;
   for (;;) {
     if (batches >= maxBatches) { stoppedBy = 'maxBatches'; break; }
     if (deadline && Date.now() > deadline) { stoppedBy = 'deadline'; break; }
-    const r = await prisma.$transaction(async (t) => {
+    let r: { n: number; c: number } | null;
+    try {
+      r = await prisma.$transaction(async (t) => {
       const rows = await t.$queryRaw<{ propertyId: bigint }[]>`
         SELECT "propertyId" FROM "PropertyAggregateQueue"
         ORDER BY "propertyId"
@@ -74,13 +79,20 @@ export async function drainAggregateQueue(opts: {
       const c = await updatePropertyAggregates(ids, t);
       await t.$executeRaw`DELETE FROM "PropertyAggregateQueue" WHERE "propertyId" = ANY(${ids}::bigint[])`;
       return { n: ids.length, c };
-    }, { timeout: 300_000, maxWait: 30_000 });
+      }, { timeout: 300_000, maxWait: 30_000 });
+    } catch (err) {
+      // 묶음 트랜잭션은 롤백되어 항목이 대기열에 남는다 → 다음 실행이 다시 처리(누락 없음).
+      // 예외를 던지지 않고 결과로 알린다 — 수집기(runner) 끝에서 호출돼도 수집 결과·알림을 막지 않게.
+      stoppedBy = 'error'; error = String(err);
+      logger.error({ err }, 'aggregate queue batch failed — left in queue');
+      break;
+    }
     if (!r) break;
     batches++; processed += r.n; changed += r.c;
     if (pauseMs > 0) await new Promise((res) => setTimeout(res, pauseMs));
   }
   const remaining = await prisma.propertyAggregateQueue.count();
-  const result = { batches, processed, changed, remaining, stoppedBy };
+  const result: DrainResult = { batches, processed, changed, remaining, stoppedBy, ...(error ? { error } : {}) };
   logger.info(result, 'aggregate queue drained');
   return result;
 }

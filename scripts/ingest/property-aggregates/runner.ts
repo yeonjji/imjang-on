@@ -41,6 +41,7 @@ async function main() {
       summary = { scanned: r.scanned, diff: r.changed, enqueued: process.argv.includes('--enqueue-diff'), ms: r.ms };
     } else {
       summary = await runDaily({ maxMinutes: Number(arg('max-minutes')) || undefined });
+      if (summary.stoppedBy === 'error') throw new Error(`대기열 비우기 실패(항목은 대기열에 남음): ${summary.error}`);
     }
     await prisma.ingestionRun.update({ where: { id: run.id }, data: { status: 'OK', finishedAt: new Date() } });
     const warn = mode === 'check' ? Number(summary.diff) > 0 : Number(summary.remaining) > 0;

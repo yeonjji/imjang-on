@@ -213,7 +213,7 @@ async function main() {
 
   // 집계는 대기열이 보장한다(단위마다 같은 트랜잭션에서 넣음). 여기서는 쌓인 대기열을 비운다.
   // 실패하거나 30분 예산을 넘겨도 대기열에 남아 property-aggregates 잡이 이어서 처리한다.
-  await drainAggregateQueue({ deadline: Date.now() + 30 * 60_000 });
+  const drained = await drainAggregateQueue({ deadline: Date.now() + 30 * 60_000 });
 
   if (args.mode === 'daily') {
     const paths: string[] = [];
@@ -227,9 +227,12 @@ async function main() {
     await revalidatePaths(paths);
   }
 
-  const summary = { totalUpserted, skipped, failed, properties: affectedPropertyIds.size };
+  const summary = {
+    totalUpserted, skipped, failed, properties: affectedPropertyIds.size,
+    aggregated: drained.processed, aggregateQueueRemaining: drained.remaining, aggregateStop: drained.stoppedBy,
+  };
   logger.info(summary, 'runner done');
-  await notify(failed === 0 ? 'info' : failed >= 5 ? 'warn' : 'info', 'ETL run complete', summary);
+  await notify(drained.stoppedBy === 'error' ? 'warn' : failed === 0 ? 'info' : failed >= 5 ? 'warn' : 'info', 'ETL run complete', summary);
 
   await prisma.$disconnect();
 }
