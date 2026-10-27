@@ -10,6 +10,7 @@ import {
   getTransactionFlags,
   getUnifiedTransactions,
   getTransactionCounts,
+  getCancelledTransactionCounts,
 } from '@/lib/transaction';
 import { getDongTransactions } from '@/lib/transaction/dong';
 import { updatePropertyAggregates } from '@/scripts/ingest/aggregator';
@@ -139,6 +140,10 @@ describe('내역 표는 해제 거래를 표시한다', () => {
 
   it('탭 건수는 내역 표와 같은 기준(해제 포함)', async () => {
     expect(await getTransactionCounts(p)).toEqual({ SALE: 4, JEONSE: 1, WOLSE: 0 });
+  });
+
+  it('해제 건수는 거래유형별로 따로(두 형태 모두)', async () => {
+    expect(await getCancelledTransactionCounts(p)).toEqual({ SALE: 2, JEONSE: 0, WOLSE: 0 });
   });
 });
 

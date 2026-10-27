@@ -2,7 +2,7 @@ import { prisma } from '@/lib/db';
 import type { DealType, Prisma } from '@prisma/client';
 import type { MonthPoint } from '@/lib/price-chart';
 import { pctChange } from '@/lib/price-chart';
-import { validDealSql, cancelledDealSql, withValidDeal, isCancelledDeal } from '@/lib/transaction/valid-deal';
+import { validDealSql, cancelledDealSql, withValidDeal, isCancelledDeal, CANCELLED_DEAL_WHERE } from '@/lib/transaction/valid-deal';
 
 // 해제 거래 처리 기준(lib/transaction/valid-deal.ts): 통계·비교·헤드라인은 유효 거래만,
 // 내역 표(getUnifiedTransactions·getTransactionsByType)와 탭 건수(getTransactionCounts)는 해제 포함 + 표시.
@@ -17,6 +17,18 @@ export async function getTransactionCounts(propertyId: bigint) {
   for (const r of rows) {
     result[r.dealType] = r._count;
   }
+  return result;
+}
+
+/** 거래유형별 해제 거래 건수 — 내역 표의 '정상 N건 · 해제 N건' 표시용(getTransactionCounts는 해제 포함 전체). */
+export async function getCancelledTransactionCounts(propertyId: bigint): Promise<Record<DealType, number>> {
+  const rows = await prisma.transaction.groupBy({
+    by: ['dealType'],
+    where: { AND: [{ propertyId }, CANCELLED_DEAL_WHERE] },
+    _count: true,
+  });
+  const result: Record<DealType, number> = { SALE: 0, JEONSE: 0, WOLSE: 0 };
+  for (const r of rows) result[r.dealType] = r._count;
   return result;
 }
 

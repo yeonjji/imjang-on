@@ -12,6 +12,11 @@ export const VALID_DEAL_WHERE: Prisma.TransactionWhereInput = {
   OR: [{ cancelType: null }, { cancelType: { not: CANCELLED_TYPE } }],
 };
 
+/** 해제 거래 Prisma 조건(유효 거래의 반대). 내역 표의 해제 건수용. */
+export const CANCELLED_DEAL_WHERE: Prisma.TransactionWhereInput = {
+  OR: [{ cancelType: CANCELLED_TYPE }, { cancelDate: { not: null } }],
+};
+
 export function withValidDeal(where: Prisma.TransactionWhereInput): Prisma.TransactionWhereInput {
   return { AND: [where, VALID_DEAL_WHERE] };
 }
