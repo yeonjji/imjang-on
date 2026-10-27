@@ -1,24 +1,15 @@
 // app/(public)/medical/hospital/[sigunguCode]/[id]/_components/hospital-summary-cards.tsx
 'use client';
 import type { ComponentProps } from 'react';
-import { formatHospitalHours } from '@/lib/hospital/utils';
 import type { HospitalFacility, HospitalDetail } from '@prisma/client';
 
-// getDay() 반환값(0=일,1=월,...,6=토)에 대응하는 open/close 키
-const DAY_KEYS = [
-  ['openSun', 'closeSun'],
-  ['openMon', 'closeMon'],
-  ['openTue', 'closeTue'],
-  ['openWed', 'closeWed'],
-  ['openThu', 'closeThu'],
-  ['openFri', 'closeFri'],
-  ['openSat', 'closeSat'],
-] as const;
 
 interface Props {
   totalDoctors: number | null;
   facility: HospitalFacility | null;
   detail: HospitalDetail | null;
+  /** 요일별 진료시간(인덱스 = Date#getDay, 0=일). effectiveHours에서 만든다 — 탭과 같은 값. */
+  weekHours: (string | null)[] | null;
 }
 
 function SummaryCard({ icon, label, value, sub }: { icon: string; label: string; value: string; sub?: string }) {
@@ -32,7 +23,7 @@ function SummaryCard({ icon, label, value, sub }: { icon: string; label: string;
   );
 }
 
-export function HospitalSummaryCards({ totalDoctors, facility, detail }: Props) {
+export function HospitalSummaryCards({ totalDoctors, facility, detail, weekHours }: Props) {
   const cards: ComponentProps<typeof SummaryCard>[] = [];
 
   if (totalDoctors != null) {
@@ -61,16 +52,12 @@ export function HospitalSummaryCards({ totalDoctors, facility, detail }: Props) 
         sub: detail.parkingFee === 'Y' ? '유료' : detail.parkingFee === 'N' ? '무료' : undefined,
       });
     }
-    const dayIdx = new Date().getDay();
-    const [openKey, closeKey] = DAY_KEYS[dayIdx];
-    // 시작·종료가 모두 유효하고 앞뒤가 맞을 때만 표기한다(모순 값으로 오늘 진료시간을 안내하지 않는다).
-    const timeStr = formatHospitalHours(detail[openKey], detail[closeKey]);
-    if (timeStr) {
-      cards.push({
-        icon: '🕐', label: '오늘 진료',
-        value: timeStr,
-      });
-    }
+  }
+
+  // 시작·종료가 모두 유효하고 앞뒤가 맞을 때만 값이 있다(모순 값으로 오늘 진료시간을 안내하지 않는다).
+  const timeStr = weekHours?.[new Date().getDay()] ?? null;
+  if (timeStr) {
+    cards.push({ icon: '🕐', label: '오늘 진료', value: timeStr });
   }
 
   if (cards.length === 0) return null;

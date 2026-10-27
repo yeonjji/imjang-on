@@ -32,5 +32,6 @@ case "${1:?job key required}" in
   subway)           $DC pnpm ingest:subway ;;  # 레일포털에서 자동 다운로드→적재
   apt-maintenance-cost) $DC pnpm tsx scripts/ingest/apt-maintenance-cost/runner.ts ;;  # 일일 한도까지 진행, 다음 날 이어 받음
   building-register) $DC pnpm tsx scripts/ingest/building-register/runner.ts ;;  # 100분 예산, 다음 날 이어 받음
+  hospital-nemc)     $DC pnpm tsx scripts/ingest/hospital-nemc/runner.ts ;;  # 주 1회 전국 진료시간
   *) echo "unknown job: $1" >&2; exit 2 ;;
 esac

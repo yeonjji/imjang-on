@@ -1,6 +1,7 @@
 // 약국 상세의 계산값: 영업 연차, 같은 읍면동 약국 중 개설 순서, 도보권 일요일 진료 병·의원 수.
 // 진료시간(HospitalDetail)은 의원의 약 31%만 공개돼 있어, 0을 "없음"으로 단정하지 않는다(호출부가 0이면 숨김).
 import { prisma } from '@/lib/db';
+import { effectiveHoursJoin } from '@/lib/hospital/hours';
 
 export function pharmacyYears(openedAt: Date | null, nowYear: number): number | null {
   if (!openedAt) return null;
@@ -34,10 +35,11 @@ export async function getPharmacyDong(p: {
 export async function countSundayClinicsNearby(lat: number, lng: number, radius = 500): Promise<number> {
   const rows = await prisma.$queryRaw<{ n: number }[]>`
     SELECT count(*)::int AS n
-    FROM "Hospital" h JOIN "HospitalDetail" d ON d."hospitalId" = h.id
+    FROM "Hospital" h
+    ${effectiveHoursJoin('h')}
     WHERE h.location IS NOT NULL
       AND ST_DWithin(h.location, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography, ${radius})
-      AND d."openSun" BETWEEN 0 AND 2400 AND d."closeSun" BETWEEN 0 AND 2400 AND d."closeSun" > d."openSun"
+      AND e."openSun" BETWEEN 0 AND 2400 AND e."closeSun" BETWEEN 0 AND 2400 AND e."closeSun" > e."openSun"
   `;
   return rows[0]?.n ?? 0;
 }

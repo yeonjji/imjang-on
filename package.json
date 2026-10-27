@@ -40,6 +40,7 @@
     "ingest:school-zone": "dotenv -e .env.local -- tsx scripts/ingest/school-zone/runner.ts",
     "ingest:legal-dong": "dotenv -e .env.local -- tsx scripts/ingest/legal-dong/runner.ts",
     "ingest:building-register": "dotenv -e .env.local -- tsx scripts/ingest/building-register/runner.ts",
+    "ingest:hospital-nemc": "dotenv -e .env.local -- tsx scripts/ingest/hospital-nemc/runner.ts",
     "dashboard:refresh": "dotenv -e .env.local -- tsx scripts/dashboard/refresh-snapshot.ts"
   },
   "dependencies": {

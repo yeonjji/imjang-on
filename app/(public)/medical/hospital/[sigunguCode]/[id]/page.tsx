@@ -22,6 +22,7 @@ import { RelatedGuides } from '@/app/(public)/_components/related-guides';
 import { Faq } from '@/app/(public)/_components/faq';
 import { composeDetailFaq } from '@/lib/faq/compose';
 import { buildHospitalFaq } from '@/lib/faq/builders/hospital';
+import { effectiveHours } from '@/lib/hospital/hours';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
 import { mapImageUrl } from '@/lib/seo/static-map';
 import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
@@ -85,6 +86,13 @@ export default async function HospitalDetailPage({ params }: Params) {
   const others = otherList.rows.filter(h => h.id !== hospital.id).slice(0, 4);
   const { narrative } = await loadHospitalInsight(hospitalId);
 
+  // 진료시간: 심평원 우선, 없으면 국립중앙의료원. 탭·카드·FAQ가 같은 값을 쓴다.
+  const hours = effectiveHours(hospital.detail, hospital.nemcHours);
+  const weekHours = hours ? [0, 1, 2, 3, 4, 5, 6].map((d) => hours.at(d)) : null;
+  const hoursView = hours
+    ? { source: hours.source, days: hours.days, monday: hours.monday, note: hours.note, fetchedAt: hours.fetchedAt }
+    : null;
+
   const hospitalFaq = composeDetailFaq(
     buildHospitalFaq({
       name: hospital.name,
@@ -93,10 +101,9 @@ export default async function HospitalDetailPage({ params }: Params) {
       sido: hospital.sido,
       depts: hospital.depts,
       totalDoctors: hospital.totalDoctors,
+      hours: hours ? { monday: hours.monday, source: hours.source } : null,
       detail: hospital.detail
         ? {
-            openMon: hospital.detail.openMon,
-            closeMon: hospital.detail.closeMon,
             erDayOpen: hospital.detail.erDayOpen,
             erNightOpen: hospital.detail.erNightOpen,
           }
@@ -156,13 +163,14 @@ export default async function HospitalDetailPage({ params }: Params) {
           totalDoctors={hospital.totalDoctors}
           facility={hospital.facility}
           detail={hospital.detail}
+          weekHours={weekHours}
         />
       </div>
 
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex flex-col gap-6">
-          <HospitalTabs hospital={hospital} />
-          <SourceCaption ids={['hira']} />
+          <HospitalTabs hospital={hospital} hours={hoursView} />
+          <SourceCaption ids={hours?.source === 'nemc' ? ['hira', 'nemc'] : ['hira']} />
           {sameDept && <HospitalSameDept data={sameDept} />}
           {coord && (
             <Card id="map">

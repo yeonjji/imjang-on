@@ -69,6 +69,18 @@ beforeAll(async () => {
   await prisma.$executeRaw`UPDATE "Hospital" SET location = ST_SetSRID(ST_MakePoint(124.5000, 33.0000), 4326)::geography WHERE "sourceId" IN ('UT-PR6-H1','UT-PR6-H3','UT-PR6-H5','UT-PR6-H6')`;
   await prisma.$executeRaw`UPDATE "Hospital" SET location = ST_SetSRID(ST_MakePoint(124.5030, 33.0000), 4326)::geography WHERE "sourceId" = 'UT-PR6-H2'`;
   await prisma.$executeRaw`UPDATE "Hospital" SET location = ST_SetSRID(ST_MakePoint(124.5400, 33.0000), 4326)::geography WHERE "sourceId" = 'UT-PR6-H4'`;
+
+  // 국립중앙의료원(nemc) 진료시간: H7은 심평원 시간 없이 nemc만(토요일·야간·일요일 진료),
+  // H1은 nemc에 일요일이 없지만 심평원 값이 있으므로 심평원 일요일이 그대로 쓰여야 한다(심평원 우선).
+  const h7 = await mk('UT-PR6-H7', 'UT등대내과의원', '의원');
+  await prisma.hospitalDept.create({ data: { hospitalId: h7.id, deptCode: '01', deptName: '내과' } });
+  await prisma.$executeRaw`UPDATE "Hospital" SET location = ST_SetSRID(ST_MakePoint(124.5001, 33.0001), 4326)::geography WHERE id = ${h7.id}`;
+  await prisma.hospitalNemcHours.createMany({
+    data: [
+      { hospitalId: h7.id, hpid: 'UT-H7', fetchedAt: new Date(), openMon: 900, closeMon: 2100, openSat: 900, closeSat: 1300, openSun: 1000, closeSun: 1300 },
+      { hospitalId: h1.id, hpid: 'UT-H1', fetchedAt: new Date(), openMon: 900, closeMon: 1800 },
+    ],
+  });
 });
 
 afterAll(async () => {
@@ -126,15 +138,16 @@ describe('약국 동네 맥락', () => {
     expect(await getPharmacyDong({ sigunguCode: '99999', eupmyeondong: '없는동', openedAt: null })).toBeNull();
   });
   it('도보권(500m) 일요일 진료: 진료시간 공개분 중 일요일 유효 시간대만, 3km 밖 제외', async () => {
-    expect(await countSundayClinicsNearby(33.0, 124.5)).toBe(1);
+    expect(await countSundayClinicsNearby(33.0, 124.5)).toBe(2); // H1(심평원 일요일, nemc엔 없음) + H7(nemc 일요일)
   });
 });
 
 describe('getSameDeptNearby', () => {
   it('반경 1km 같은 진료과·같은 종별(이곳 포함), 진료시간 공개분 중 토요일·평일 20시 이후', async () => {
     expect(await getSameDeptNearby({ typeName: '의원' }, '내과', 33.0, 124.5)).toEqual({
-      // H1·H2·H5·H6: 시간 전부 null인 H5는 '공개'에서 제외, 20:00 정각 종료 H6은 야간 아님
-      dept: '내과', typeName: '의원', total: 4, withHours: 3, saturday: 2, night: 1,
+      // H1·H2·H5·H6·H7: 시간 전부 null인 H5는 '공개'에서 제외, 20:00 정각 종료 H6은 야간 아님,
+      // H7은 nemc 시간으로 공개·토요일·야간에 포함. H1은 nemc가 있어도 심평원 값(야간 21:00) 그대로.
+      dept: '내과', typeName: '의원', total: 5, withHours: 4, saturday: 3, night: 2,
     });
   });
   it('혼자면 null', async () => {

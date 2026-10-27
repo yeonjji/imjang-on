@@ -13,6 +13,7 @@ seed-regions|*-04-05 18:00:00
 subway|*-01,04,07,10-01 03:00:00
 apt-maintenance-cost|*-*-* 17:00:00
 building-register|*-*-* 21:00:00
+hospital-nemc|Sat *-*-* 19:00:00
 '
 sudo cp /opt/imjang/deploy/systemd/imjang-etl@.service /etc/systemd/system/
 while IFS='|' read -r job cal; do
@@ -31,6 +32,6 @@ EOF
   sudo systemctl enable "imjang-etl@${job}.timer" >/dev/null 2>&1
 done <<< "$JOBS"
 sudo systemctl daemon-reload
-sudo systemctl start imjang-etl@transactions-daily.timer imjang-etl@subscriptions.timer imjang-etl@loan.timer imjang-etl@jeonse-guarantee.timer imjang-etl@amenities.timer imjang-etl@board-posts.timer imjang-etl@seed-regions.timer imjang-etl@subway.timer imjang-etl@apt-maintenance-cost.timer imjang-etl@building-register.timer
+sudo systemctl start imjang-etl@transactions-daily.timer imjang-etl@subscriptions.timer imjang-etl@loan.timer imjang-etl@jeonse-guarantee.timer imjang-etl@amenities.timer imjang-etl@board-posts.timer imjang-etl@seed-regions.timer imjang-etl@subway.timer imjang-etl@apt-maintenance-cost.timer imjang-etl@building-register.timer imjang-etl@hospital-nemc.timer
 echo "=== 설치된 타이머 ==="
 systemctl list-timers "imjang-etl@*" --all --no-pager

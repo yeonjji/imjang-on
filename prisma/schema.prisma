@@ -754,6 +754,7 @@ model Hospital {
   specialTreatments HospitalSpecialTreatment[]
   specialties       HospitalSpecialty[]
   staff             HospitalStaff[]
+  nemcHours         HospitalNemcHours?
   @@index([typeCode])
   @@index([sigunguCode])
   @@index([sigunguCode, typeCode])
@@ -913,6 +914,31 @@ model HospitalStaff {
   staffCount Int?
   @@unique([hospitalId, staffCode])
   @@index([hospitalId])
+}
+
+/// 국립중앙의료원 병·의원 찾기 진료시간. 심평원(HospitalDetail)과 섞지 않는다 — 표시 우선순위는 lib/hospital/hours.ts.
+model HospitalNemcHours {
+  hospitalId BigInt   @id
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hpid       String   @db.VarChar(20)
+  openMon  Int?
+  closeMon Int?
+  openTue  Int?
+  closeTue Int?
+  openWed  Int?
+  closeWed Int?
+  openThu  Int?
+  closeThu Int?
+  openFri  Int?
+  closeFri Int?
+  openSat  Int?
+  closeSat Int?
+  openSun  Int?
+  closeSun Int?
+  openHol  Int?
+  closeHol Int?
+  note      String?  @db.VarChar(300)
+  fetchedAt DateTime
 }
 
 model Pharmacy {
