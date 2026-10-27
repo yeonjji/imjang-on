@@ -32,4 +32,9 @@ describe('GET /api/ev-status', () => {
     });
     expect(fetchMock).toHaveBeenCalledWith('ME174001');
   });
+
+  it('외부 API 조회에 실패하면 502 — 빈 목록(미제공)과 구분한다', async () => {
+    fetchMock.mockResolvedValue(null);
+    expect((await get('?statId=ME174001')).status).toBe(502);
+  });
 });
