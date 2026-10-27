@@ -33,5 +33,7 @@ case "${1:?job key required}" in
   apt-maintenance-cost) $DC pnpm tsx scripts/ingest/apt-maintenance-cost/runner.ts ;;  # 일일 한도까지 진행, 다음 날 이어 받음
   building-register) $DC pnpm tsx scripts/ingest/building-register/runner.ts ;;  # 100분 예산, 다음 날 이어 받음
   hospital-nemc)     $DC pnpm tsx scripts/ingest/hospital-nemc/runner.ts ;;  # 주 1회 전국 진료시간
+  property-aggregates) $DC pnpm tsx scripts/ingest/property-aggregates/runner.ts --mode=daily ;;  # 12개월 경계 + 재집계 대기열 비우기(S2)
+  property-aggregate-check) $DC pnpm tsx scripts/ingest/property-aggregates/runner.ts --mode=check ;;  # 주간 차이 점검(dry-run, S5 전까지 대기열에 안 넣음)
   *) echo "unknown job: $1" >&2; exit 2 ;;
 esac

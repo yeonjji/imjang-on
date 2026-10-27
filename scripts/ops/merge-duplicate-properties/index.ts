@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import type { PropertyType } from '@prisma/client';
 import { updatePropertyAggregates } from '@/scripts/ingest/aggregator';
+import { enqueuePropertyAggregates } from '@/scripts/ingest/aggregate-queue';
 import { computeHash } from '@/scripts/ingest/transactions/runner';
 import type { NormalizedTransaction } from '@/scripts/ingest/types';
 import { planGroupMerge, hashInputFromDbRow } from './core';
@@ -155,6 +156,8 @@ export async function mergeDuplicateProperties(opts: { apply: boolean; limit?: n
               areaTypes: [],
             },
           });
+          // 생존자 재집계를 같은 트랜잭션에서 대기열에 남긴다 — 아래 즉시 집계 전에 죽어도 누락되지 않게(D1).
+          await enqueuePropertyAggregates(t, [plan.survivor.id]);
         },
         // 기본 5,000ms interactive-transaction 타임아웃은 운영 SSH 터널 위에서 거래가
         // 수백 건인 패자를 옮길 때 넘기기 쉽다(P2028). 넉넉히 잡는다.

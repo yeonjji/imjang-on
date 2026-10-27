@@ -1153,3 +1153,12 @@ model Guide {
   @@index([status, publishedAt(sort: Desc)])
   @@index([category, status])
 }
+
+/// 매물 재집계 대기열(S2). 거래를 바꾸는 트랜잭션 안에서 넣고, 집계 작업이 FOR UPDATE SKIP LOCKED로 비운다.
+/// 프로세스가 중간에 죽어도 집계 대상이 사라지지 않게 하는 것이 목적(D1). FK는 두지 않는다(잠금 상호작용 최소화).
+model PropertyAggregateQueue {
+  propertyId BigInt   @id
+  enqueuedAt DateTime @default(now())
+
+  @@index([enqueuedAt])
+}
