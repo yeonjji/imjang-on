@@ -1,5 +1,4 @@
 import type { FaqItem } from '@/lib/faq/data';
-import { formatHospitalHours } from '@/lib/hospital/utils';
 
 const HIRA = '건강보험심사평가원';
 
@@ -10,9 +9,9 @@ export interface HospitalFaqInput {
   sido: string | null;
   depts: { deptName: string }[];
   totalDoctors: number | null;
+  /** lib/hospital/hours.ts effectiveHours 결과 — 탭·카드와 같은 값 */
+  hours: { monday: string | null; source: 'hira' | 'nemc' } | null;
   detail: {
-    openMon: number | null;
-    closeMon: number | null;
     erDayOpen: string | null;
     erNightOpen: string | null;
   } | null;
@@ -35,13 +34,12 @@ export function buildHospitalFaq(h: HospitalFaqInput): FaqItem[] {
     });
   }
 
-  // 원자료에 종료<시작 같은 모순 값이 있어, 앞뒤가 맞는 구간일 때만 진료시간 FAQ를 낸다.
-  const monHours = formatHospitalHours(h.detail?.openMon, h.detail?.closeMon);
-  if (monHours) {
+  // monday는 앞뒤가 맞는 구간일 때만 값이 있다(effectiveHours가 formatHospitalHours로 거름).
+  if (h.hours?.monday) {
     items.push({
       q: `${name}의 진료시간은 어떻게 되나요?`,
-      a: `평일(월) 기준 ${monHours}에 진료합니다. 요일별 진료시간·점심시간은 병원 사정으로 달라질 수 있어 방문 전 확인을 권장합니다.`,
-      source: HIRA,
+      a: `평일(월) 기준 ${h.hours.monday}에 진료합니다. 요일별 진료시간·점심시간은 병원 사정으로 달라질 수 있어 방문 전 확인을 권장합니다.`,
+      source: h.hours.source === 'nemc' ? '국립중앙의료원' : HIRA,
     });
   }
 

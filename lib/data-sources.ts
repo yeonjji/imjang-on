@@ -6,6 +6,7 @@ export type DataSourceId =
   | 'applyhome'
   | 'lh-presub'
   | 'hira'
+  | 'nemc'
   | 'neis'
   | 'childcare'
   | 'kepco-ev'
@@ -71,6 +72,13 @@ export const DATA_SOURCES: Record<DataSourceId, DataSource> = {
     provider: '건강보험심사평가원',
     dataset: '전국 병원·약국 정보',
     url: 'https://www.data.go.kr',
+    category: '의료',
+  },
+  nemc: {
+    id: 'nemc',
+    provider: '국립중앙의료원',
+    dataset: '전국 병·의원 찾기',
+    url: 'https://www.data.go.kr/data/15000736/openapi.do',
     category: '의료',
   },
   neis: {

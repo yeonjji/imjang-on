@@ -8,7 +8,8 @@ const base = {
   sido: '서울특별시',
   depts: [{ deptName: '내과' }, { deptName: '가정의학과' }],
   totalDoctors: 5,
-  detail: { openMon: 900, closeMon: 1800, erDayOpen: 'N', erNightOpen: 'N' },
+  hours: { monday: '09:00 ~ 18:00', source: 'hira' as const },
+  detail: { erDayOpen: 'N', erNightOpen: 'N' },
 };
 
 describe('buildHospitalFaq', () => {
@@ -24,8 +25,8 @@ describe('buildHospitalFaq', () => {
     expect(q!.a).toContain('18:00');
   });
 
-  it('omits 진료시간 when detail is null but keeps >= 2 dynamic (depts + doctors)', () => {
-    const items = buildHospitalFaq({ ...base, detail: null });
+  it('omits 진료시간 when hours is null but keeps >= 2 dynamic (depts + doctors)', () => {
+    const items = buildHospitalFaq({ ...base, hours: null, detail: null });
     expect(items.some((i) => i.q.includes('진료시간'))).toBe(false);
     expect(items.length).toBeGreaterThanOrEqual(2);
   });

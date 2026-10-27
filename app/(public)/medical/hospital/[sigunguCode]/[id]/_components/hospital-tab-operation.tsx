@@ -1,65 +1,69 @@
-import { formatHospitalHours } from '@/lib/hospital/utils';
 import type { HospitalWithRelations } from '@/lib/hospital';
-
-const DAYS = [
-  { label: '월', open: 'openMon', close: 'closeMon' },
-  { label: '화', open: 'openTue', close: 'closeTue' },
-  { label: '수', open: 'openWed', close: 'closeWed' },
-  { label: '목', open: 'openThu', close: 'closeThu' },
-  { label: '금', open: 'openFri', close: 'closeFri' },
-  { label: '토', open: 'openSat', close: 'closeSat' },
-  { label: '일', open: 'openSun', close: 'closeSun' },
-] as const;
+import type { HoursView } from '@/lib/hospital/hours';
 
 interface Props {
   detail: HospitalWithRelations['detail'];
   transits: HospitalWithRelations['transits'];
+  /** 진료시간 표시 우선순위(심평원 우선, 없으면 국립중앙의료원) — lib/hospital/hours.ts */
+  hours: HoursView | null;
+  tel: string | null;
 }
 
-export function HospitalTabOperation({ detail, transits }: Props) {
-  if (!detail && !transits.length) {
+const ymd = (d: Date) => new Date(d).toISOString().slice(0, 10);
+
+export function HospitalTabOperation({ detail, transits, hours, tel }: Props) {
+  if (!detail && !transits.length && !hours) {
     return <p className="py-8 text-center text-sm text-[var(--color-muted)]">운영·교통 정보가 등록되어 있지 않습니다.</p>;
   }
-  // 신뢰할 수 있는 구간이 없는 요일은 생략한다(모순 값을 '휴진'으로 단정하지 않는다).
-  const dayHours = detail
-    ? DAYS.map(d => ({ label: d.label, hours: formatHospitalHours(detail[d.open], detail[d.close]) }))
-        .filter((d): d is typeof d & { hours: string } => d.hours != null)
-    : [];
+  const hira = hours?.source === 'hira';
+  const days = hours?.days ?? [];
+  // 점심·일요일·공휴일 휴진 문구는 심평원 값이라 심평원 출처일 때만 보인다(출처를 섞지 않는다).
   const hasHourInfo =
-    dayHours.length > 0 ||
-    !!(detail?.lunchWeekday || detail?.lunchSaturday || detail?.closedSunday || detail?.closedHoliday);
+    days.length > 0 ||
+    !!hours?.note ||
+    (hira && !!(detail?.lunchWeekday || detail?.lunchSaturday || detail?.closedSunday || detail?.closedHoliday));
   return (
     <div className="flex flex-col gap-6">
+      {hasHourInfo && (
+        <section>
+          <h3 className="mb-3 text-sm font-bold text-[var(--color-blue-dark)]">진료시간</h3>
+          {days.length > 0 && (
+            <div className="divide-y divide-[var(--color-line)] rounded-xl border border-[var(--color-line)]">
+              {days.map(d => (
+                <div key={d.label} className="flex items-center justify-between px-4 py-2.5 text-sm">
+                  <span className="font-semibold text-[var(--color-blue-dark)]">{d.label}</span>
+                  <span className="text-[var(--color-muted)]">{d.hours}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {hira && detail?.lunchWeekday && (
+            <p className="mt-2 text-xs text-[var(--color-muted)]">점심(평일): {detail.lunchWeekday}</p>
+          )}
+          {hira && detail?.lunchSaturday && (
+            <p className="mt-1 text-xs text-[var(--color-muted)]">점심(토요일): {detail.lunchSaturday}</p>
+          )}
+          {hira && detail?.closedSunday && (
+            <p className="mt-1 text-xs text-[var(--color-muted)]">일요일: {detail.closedSunday}</p>
+          )}
+          {hira && detail?.closedHoliday && (
+            <p className="mt-1 text-xs text-[var(--color-muted)]">공휴일: {detail.closedHoliday}</p>
+          )}
+          {hours?.source === 'nemc' && (
+            <>
+              {hours.note && <p className="mt-2 text-sm">안내: {hours.note}</p>}
+              <p className="mt-2 text-xs leading-relaxed text-[var(--color-muted)]">
+                출처: 국립중앙의료원 전국 병·의원 찾기{hours.fetchedAt ? ` · ${ymd(hours.fetchedAt)} 조회` : ''}
+                <br />
+                진료시간은 바뀔 수 있으니 방문 전 {tel ? `전화(${tel})로` : '전화로'} 확인하세요.
+              </p>
+            </>
+          )}
+        </section>
+      )}
+
       {detail && (
         <>
-          {hasHourInfo && (
-            <section>
-              <h3 className="mb-3 text-sm font-bold text-[var(--color-blue-dark)]">진료시간</h3>
-              {dayHours.length > 0 && (
-                <div className="divide-y divide-[var(--color-line)] rounded-xl border border-[var(--color-line)]">
-                  {dayHours.map(d => (
-                    <div key={d.label} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                      <span className="w-6 font-semibold text-[var(--color-blue-dark)]">{d.label}</span>
-                      <span className="text-[var(--color-muted)]">{d.hours}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {detail.lunchWeekday && (
-                <p className="mt-2 text-xs text-[var(--color-muted)]">점심(평일): {detail.lunchWeekday}</p>
-              )}
-              {detail.lunchSaturday && (
-                <p className="mt-1 text-xs text-[var(--color-muted)]">점심(토요일): {detail.lunchSaturday}</p>
-              )}
-              {detail.closedSunday && (
-                <p className="mt-1 text-xs text-[var(--color-muted)]">일요일: {detail.closedSunday}</p>
-              )}
-              {detail.closedHoliday && (
-                <p className="mt-1 text-xs text-[var(--color-muted)]">공휴일: {detail.closedHoliday}</p>
-              )}
-            </section>
-          )}
-
           {(detail.erDayOpen != null || detail.erNightOpen != null) && (
             <section>
               <h3 className="mb-3 text-sm font-bold text-[var(--color-blue-dark)]">응급실</h3>

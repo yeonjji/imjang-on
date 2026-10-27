@@ -5,6 +5,7 @@ import { HospitalTabDiagnosis } from './hospital-tab-diagnosis';
 import { HospitalTabFacility } from './hospital-tab-facility';
 import { HospitalTabOperation } from './hospital-tab-operation';
 import type { HospitalWithRelations } from '@/lib/hospital';
+import type { HoursView } from '@/lib/hospital/hours';
 
 type TabKey = 'diagnosis' | 'facility' | 'operation';
 
@@ -14,9 +15,9 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'operation', label: '🕐 운영·교통' },
 ];
 
-interface Props { hospital: HospitalWithRelations; }
+interface Props { hospital: HospitalWithRelations; hours: HoursView | null; }
 
-export function HospitalTabs({ hospital }: Props) {
+export function HospitalTabs({ hospital, hours }: Props) {
   const [active, setActive] = useState<TabKey>('diagnosis');
   return (
     <Card>
@@ -58,7 +59,7 @@ export function HospitalTabs({ hospital }: Props) {
         />
       </div>
       <div hidden={active !== 'operation'}>
-        <HospitalTabOperation detail={hospital.detail} transits={hospital.transits} />
+        <HospitalTabOperation detail={hospital.detail} transits={hospital.transits} hours={hours} tel={hospital.tel} />
       </div>
     </Card>
   );

@@ -14,6 +14,7 @@ export async function getHospitalById(id: bigint) {
       specialTreatments: { orderBy: { searchName: 'asc' } },
       specialties: { orderBy: { searchName: 'asc' } },
       staff: true,
+      nemcHours: true,
     },
   });
 }
