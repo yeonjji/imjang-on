@@ -52,7 +52,7 @@ export function HospitalTabOperation({ detail, transits, hours, tel }: Props) {
           {hours?.source === 'nemc' && (
             <>
               {hours.note && <p className="mt-2 text-sm">안내: {hours.note}</p>}
-              <p className="mt-2 text-xs leading-relaxed text-[var(--color-muted)]">
+              <p className="mt-2 break-keep text-xs leading-relaxed text-[var(--color-muted)]">
                 출처: 국립중앙의료원 전국 병·의원 찾기{hours.fetchedAt ? ` · ${ymd(hours.fetchedAt)} 조회` : ''}
                 <br />
                 진료시간은 바뀔 수 있으니 방문 전 {tel ? `전화(${tel})로` : '전화로'} 확인하세요.
