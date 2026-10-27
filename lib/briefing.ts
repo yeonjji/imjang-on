@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { withValidDeal } from '@/lib/transaction/valid-deal';
 import { DealType, Prisma } from '@prisma/client';
 import { formatDate } from '@/lib/format';
 import { typeToSlug, type AreaRange, type PropertyTypeSlug } from '@/lib/property';
@@ -151,7 +152,8 @@ export async function getMarketBriefing(now: Date = new Date()): Promise<MarketB
   // 1) 수집일 창: 오늘(KST) createdAt 이상. 0건이면 최신 createdAt 날짜로 폴백.
   let start = kstDayStartUtc(now);
   let isFallback = false;
-  const saleWhere = (gte: Date): Prisma.TransactionWhereInput => ({ dealType: DealType.SALE, createdAt: { gte } });
+  // 해제 신고된 거래는 브리핑 집계에서 뺀다(lib/transaction/valid-deal.ts).
+  const saleWhere = (gte: Date): Prisma.TransactionWhereInput => withValidDeal({ dealType: DealType.SALE, createdAt: { gte } });
 
   let txCount = await prisma.transaction.count({ where: saleWhere(start) });
   let refDate = refDateFromStart(start);
@@ -211,12 +213,12 @@ export async function getMarketBriefing(now: Date = new Date()): Promise<MarketB
   const [recentGroups, prevGroups] = await Promise.all([
     prisma.transaction.groupBy({
       by: ['sigunguCode'],
-      where: { dealType: DealType.SALE, contractDate: { gte: recentStart, lt: recentEnd } },
+      where: withValidDeal({ dealType: DealType.SALE, contractDate: { gte: recentStart, lt: recentEnd } }),
       _count: { _all: true },
     }),
     prisma.transaction.groupBy({
       by: ['sigunguCode'],
-      where: { dealType: DealType.SALE, contractDate: { gte: prevStart, lt: prevEnd } },
+      where: withValidDeal({ dealType: DealType.SALE, contractDate: { gte: prevStart, lt: prevEnd } }),
       _count: { _all: true },
     }),
   ]);

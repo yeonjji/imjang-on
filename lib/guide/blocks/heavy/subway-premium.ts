@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { validDealSql } from '@/lib/transaction/valid-deal';
 import { lastContractDate, round } from './shared';
 
 /** 도보권 반경. `lib/subway/nearby.ts`의 RADIUS_METERS와 같은 값이어야 한다. */
@@ -43,7 +44,7 @@ export async function computeSubwayPremium(): Promise<SubwayPremiumResult> {
       JOIN prop pr ON pr.id = t."propertyId"
       WHERE t."dealType" = 'SALE' AND t."propertyType" = 'APARTMENT'
         AND t."contractDate" >= (CURRENT_DATE - INTERVAL '12 months')
-        AND t."dealAmount" IS NOT NULL AND t."cancelDate" IS NULL AND t."exclusiveArea" > 0
+        AND t."dealAmount" IS NOT NULL AND ${validDealSql('t')} AND t."exclusiveArea" > 0
     ), bysgg AS (
       SELECT AVG(ppp) FILTER (WHERE walkable) AS w,
              COUNT(*) FILTER (WHERE walkable) AS nw,

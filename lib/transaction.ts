@@ -2,6 +2,10 @@ import { prisma } from '@/lib/db';
 import type { DealType, Prisma } from '@prisma/client';
 import type { MonthPoint } from '@/lib/price-chart';
 import { pctChange } from '@/lib/price-chart';
+import { validDealSql, cancelledDealSql, withValidDeal, isCancelledDeal } from '@/lib/transaction/valid-deal';
+
+// 해제 거래 처리 기준(lib/transaction/valid-deal.ts): 통계·비교·헤드라인은 유효 거래만,
+// 내역 표(getUnifiedTransactions·getTransactionsByType)와 탭 건수(getTransactionCounts)는 해제 포함 + 표시.
 
 export async function getTransactionCounts(propertyId: bigint) {
   const rows = await prisma.transaction.groupBy({
@@ -60,6 +64,7 @@ export async function getMonthlyChartData(propertyId: bigint): Promise<ChartData
       FROM "Transaction"
       WHERE "propertyId" = ${propertyId}
         AND "contractDate" >= NOW() - INTERVAL '24 months'
+        AND ${validDealSql()}
     ) t
     WHERE val IS NOT NULL
     GROUP BY 1, 2
@@ -117,6 +122,7 @@ export async function getLatestTransactionsByType(
     FROM "Transaction"
     WHERE "propertyId" = ${propertyId}
       AND (CASE WHEN "dealType" = 'SALE' THEN "dealAmount" ELSE "deposit" END) IS NOT NULL
+      AND ${validDealSql()}
     ORDER BY "dealType", "contractDate" DESC, id DESC
   `;
   const out: Partial<Record<DealType, LatestTransaction>> = {};
@@ -140,6 +146,8 @@ export interface UnifiedTxRow {
   dealAmount: number | null;
   deposit: number | null;
   monthlyRent: number | null;
+  /** 해제 신고된 거래(통계 제외, 내역 표에 '해제' 배지). */
+  cancelled: boolean;
 }
 
 export interface AreaSummaryItem {
@@ -183,6 +191,7 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
       WHERE "propertyId" = ${propertyId}
         AND "dealType" = 'SALE'
         AND "dealAmount" IS NOT NULL
+        AND ${validDealSql()}
     ),
     latest AS (
       SELECT DISTINCT ON (area_pyeong)
@@ -220,6 +229,7 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
         AND "dealType" = 'JEONSE'
         AND "deposit" IS NOT NULL
         AND "contractDate" >= NOW() - INTERVAL '12 months'
+        AND ${validDealSql()}
       GROUP BY area_pyeong
     )
     SELECT
@@ -310,6 +320,7 @@ export async function getSameFloorComparison(propertyId: bigint): Promise<SameFl
         AND "dealType" = 'SALE'
         AND "dealAmount" IS NOT NULL
         AND "floor" IS NOT NULL
+        AND ${validDealSql()}
     ),
     recent AS (
       SELECT DISTINCT ON (pyeong, "floor") pyeong, "floor", price, "contractDate"
@@ -380,6 +391,7 @@ export async function getFloorPremium(propertyId: bigint): Promise<FloorPremium 
         AND "dealAmount" IS NOT NULL
         AND "floor" IS NOT NULL
         AND "exclusiveArea" > 0
+        AND ${validDealSql()}
     )
     SELECT
       pyeong,
@@ -425,7 +437,7 @@ export async function getTransactionFlags(propertyId: bigint): Promise<Transacti
       FROM "Transaction"
       WHERE "propertyId" = ${propertyId}
         AND "dealType" = 'SALE'
-        AND "cancelDate" IS NOT NULL
+        AND ${cancelledDealSql()}
         AND "contractDate" >= NOW() - INTERVAL '12 months'
     `,
     prisma.$queryRaw<Array<{ pyeong: number; date: Date; price: number; dev_pct: number }>>`
@@ -438,7 +450,7 @@ export async function getTransactionFlags(propertyId: bigint): Promise<Transacti
         WHERE "propertyId" = ${propertyId}
           AND "dealType" = 'SALE'
           AND "dealAmount" IS NOT NULL
-          AND "cancelDate" IS NULL
+          AND ${validDealSql()}
           AND "contractDate" >= NOW() - INTERVAL '12 months'
       ),
       med AS (
@@ -469,13 +481,15 @@ export async function getTransactionFlags(propertyId: bigint): Promise<Transacti
 
 export async function getUnifiedTransactions(
   propertyId: bigint,
-  params: { page?: number; perPage?: number; dealType?: DealType },
+  params: { page?: number; perPage?: number; dealType?: DealType; includeCancelled?: boolean },
 ): Promise<{ rows: UnifiedTxRow[]; totalCount: number }> {
-  const { page = 1, perPage = 15, dealType } = params;
-  const where: Prisma.TransactionWhereInput = {
+  // includeCancelled: 내역 표는 true(해제 거래도 배지와 함께 보여준다), 통계·요약 문장 근거는 false.
+  const { page = 1, perPage = 15, dealType, includeCancelled = true } = params;
+  const base: Prisma.TransactionWhereInput = {
     propertyId,
     ...(dealType ? { dealType } : {}),
   };
+  const where = includeCancelled ? base : withValidDeal(base);
   const [rawRows, totalCount] = await Promise.all([
     prisma.transaction.findMany({
       where,
@@ -491,6 +505,8 @@ export async function getUnifiedTransactions(
         dealAmount: true,
         deposit: true,
         monthlyRent: true,
+        cancelType: true,
+        cancelDate: true,
       },
     }),
     prisma.transaction.count({ where }),
@@ -505,6 +521,7 @@ export async function getUnifiedTransactions(
       dealAmount: t.dealAmount !== null ? Number(t.dealAmount) : null,
       deposit: t.deposit !== null ? Number(t.deposit) : null,
       monthlyRent: t.monthlyRent !== null ? Number(t.monthlyRent) : null,
+      cancelled: isCancelledDeal(t),
     })),
     totalCount,
   };

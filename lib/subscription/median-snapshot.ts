@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import { validDealSql } from '@/lib/transaction/valid-deal';
 
 export const SIGUNGU_MEDIAN_KEY = 'subscription_sigungu_median';
 
@@ -59,7 +60,7 @@ export async function computeSigunguMedians(): Promise<Record<string, SigunguMed
         -- dealAmount=0은 결측이 아니라 degenerate 값이라 IS NOT NULL만으로는 안 걸러진다.
         -- lib/briefing.ts:176-181이 최저가 조회에 dealAmount: { gt: 0 }을 쓰는 이유와 같다 —
         -- 0원 거래가 섞이면 percentile_cont가 아래로 끌려 시군구 중위가가 왜곡된다.
-        AND t."dealAmount" > 0 AND t."cancelDate" IS NULL
+        AND t."dealAmount" > 0 AND ${validDealSql('t')}
       GROUP BY rm.sido, rm.sigungu
       HAVING COUNT(*) >= ${MIN_SAMPLE}
     )

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { validDealSql } from '@/lib/transaction/valid-deal';
 import { lastContractDate } from './shared';
 
 export interface PriceTrendPoint {
@@ -30,7 +31,7 @@ export async function computePriceTrend(): Promise<PriceTrendResult> {
     WHERE "propertyType" = 'APARTMENT' AND "dealType" = 'SALE'
       AND "contractDate" >= (date_trunc('month', CURRENT_DATE) - INTERVAL '24 months')
       AND "contractDate" < date_trunc('month', CURRENT_DATE)
-      AND "dealAmount" IS NOT NULL AND "cancelDate" IS NULL AND "exclusiveArea" > 0
+      AND "dealAmount" IS NOT NULL AND ${validDealSql()} AND "exclusiveArea" > 0
     GROUP BY 1
     ORDER BY 1
   `;

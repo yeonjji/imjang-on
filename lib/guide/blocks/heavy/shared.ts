@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { validDealSql } from '@/lib/transaction/valid-deal';
 
 /**
  * 무거운 블록의 데이터 기준일 = 집계에 쓰인 **최신 계약일**.
@@ -8,7 +9,7 @@ import { prisma } from '@/lib/db';
 export async function lastContractDate(): Promise<string | null> {
   const rows = await prisma.$queryRaw<Array<{ d: Date | null }>>`
     SELECT MAX("contractDate") AS d FROM "Transaction"
-    WHERE "propertyType" = 'APARTMENT' AND "dealType" = 'SALE' AND "cancelDate" IS NULL
+    WHERE "propertyType" = 'APARTMENT' AND "dealType" = 'SALE' AND ${validDealSql()}
   `;
   const d = rows[0]?.d;
   return d ? d.toISOString().slice(0, 10) : null;
