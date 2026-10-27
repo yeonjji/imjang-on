@@ -49,7 +49,7 @@ model HospitalNemcHours {
 ```
 
 - `HospitalDetail`을 쓰지 않는 이유: 심평원 파일을 수동으로 다시 적재하면(ingest-hospital) 덮어써지고, 요일마다 출처가 섞인다.
-- RLS: 신규 테이블이라 마이그레이션에 RLS 활성화 문을 함께 넣는다(기존 규칙).
+- RLS 문은 넣지 않는다(OCI 자가호스팅 이후 마이그레이션 관례, 예: 20261021 SubscriptionResult).
 
 ## 3. 수집
 
@@ -67,7 +67,7 @@ model HospitalNemcHours {
 
 `lib/hospital/hours.ts`의 `effectiveHours(detail, nemc)` 하나가 정한다.
 
-- 심평원 `HospitalDetail`에 **유효한 요일 진료시간이 하나라도 있으면** → 심평원 값만 쓴다(요일별로 섞지 않는다). 출처 `hira`.
+- 심평원 `HospitalDetail`의 요일 시작·종료 14칸(월~일) 중 **하나라도 값이 있으면** → 심평원 값만 쓴다(요일별로 섞지 않는다). 출처 `hira`. 기존 `with_hours` 집계와 같은 기준이라 화면과 SQL 집계가 같은 판정을 한다.
 - 없고 `HospitalNemcHours`가 있으면 → 국립중앙의료원 값. 출처 `nemc`, 조회일 `fetchedAt`.
 - 둘 다 없으면 → null(섹션 숨김, 기존 동작).
 
@@ -79,6 +79,7 @@ model HospitalNemcHours {
 | 오늘 진료 카드 | `hospital-summary-cards.tsx` | 같은 결과에서 오늘 요일 |
 | 상세 FAQ | `lib/faq/builders/hospital.ts` | 월요일 시간을 같은 결과에서 |
 | 같은 진료과 주변 집계(진료시간 공개 수·토요일·평일 20시 이후) | `lib/hospital/context.ts` SQL | `HospitalNemcHours` LEFT JOIN, 심평원 요일 값이 하나라도 있으면 심평원, 아니면 nemc(같은 규칙을 SQL로) |
+| 약국 상세 '주변 일요일 진료 의원 수' | `lib/pharmacy/context.ts` `countSundayClinicsNearby` | 같은 규칙 |
 
 - 상단 요약 문장(`lib/insights/hospital.ts`)은 진료시간을 쓰지 않는다(2026-10-27 확인) → 변경 없음.
 - 심평원 출처일 때 화면은 지금과 같다. 점심·일요일·공휴일 휴진 문구(`lunchWeekday` 등)는 심평원일 때만 나온다.
