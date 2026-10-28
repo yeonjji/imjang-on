@@ -22,6 +22,7 @@ import { prisma } from '@/lib/db';
 import { reconcileScope, rollbackReconcileRun, type ApiTx } from '@/scripts/ingest/transactions/reconcile';
 import { bulkRollback, planBulkRollback } from '@/scripts/ingest/transactions/reconcile-rollback';
 import { updatePropertyAggregates } from '@/scripts/ingest/aggregator';
+import { setHalt, HALT_SOURCE } from '@/scripts/ingest/transactions/halt';
 import { drainAggregateQueue } from '@/scripts/ingest/aggregate-queue';
 
 const REGION = '9991600000';
@@ -58,7 +59,8 @@ async function clean() {
   await prisma.transactionArchive.deleteMany({ where: { sigunguCode: SGG } });
   const runs = (await prisma.ingestionRun.findMany({ where: { source: SOURCE }, select: { id: true } })).map((r) => r.id);
   await prisma.reconcileInsert.deleteMany({ where: { runId: { in: runs } } });
-  await prisma.ingestionRun.deleteMany({ where: { source: SOURCE } });
+  await prisma.ingestionRun.deleteMany({ where: { source: { in: [SOURCE, HALT_SOURCE] } } });
+  await prisma.ingestionRun.deleteMany({ where: { source: 'molit-ut-bulk' } });
   await prisma.transaction.deleteMany({ where: { regionCode: REGION } });
 }
 
@@ -88,6 +90,7 @@ beforeEach(async () => {
     (await reconcileAt('202603', [api({ day: '2026-03-05', amount: 300 }), api({ day: '2026-03-06', amount: 310, ...O }), api({ day: '2026-03-20', amount: 320 })], H(3))).runId,
   ];
   await drainAggregateQueue();
+  await setHalt('test: 일괄 롤백 준비'); // --apply는 수집 정지 상태에서만 된다
 });
 afterAll(async () => {
   await clean();
@@ -120,6 +123,24 @@ describe('기간 일괄 롤백', () => {
     expect(lines.filter((l) => l.event === 'run').map((l) => l.runId)).toEqual([...runs].reverse().map(String));
     expect(lines[0]).toMatchObject({ apply: true, filter: { since: T0.toISOString() }, expected: { runs: 3 } });
     expect(lines.at(-1)).toMatchObject({ stoppedBy: 'done', verify: { ok: true } });
+    // 되돌린 실행은 완료로 남지 않아 다음 수집이 그 범위를 다시 처리한다
+    expect((await prisma.ingestionRun.findMany({ where: { id: { in: runs } } })).map((x) => x.status)).toEqual(['ERROR', 'ERROR', 'ERROR']);
+  });
+
+  it('--apply는 수집이 정지돼 있지 않으면 아무것도 쓰지 않고 거부한다', async () => {
+    await prisma.ingestionRun.deleteMany({ where: { source: HALT_SOURCE } });
+    const before = await snapTx();
+    const r = await bulkRollback({ since: T0 }, { apply: true, auditDir: dir, lockFile: lockFile() });
+    expect(r).toMatchObject({ stoppedBy: 'not-halted', rolledBack: 0 });
+    expect(await snapTx()).toBe(before);
+  });
+
+  it('--apply는 진행 중인 수집 단위가 있으면 거부한다', async () => {
+    await prisma.ingestionRun.create({ data: { source: 'molit-ut-bulk', targetKey: '99916-202610', status: 'RUNNING' } });
+    const before = await snapTx();
+    const r = await bulkRollback({ since: T0 }, { apply: true, auditDir: dir, lockFile: lockFile() });
+    expect(r).toMatchObject({ stoppedBy: 'collection-running', rolledBack: 0 });
+    expect(await snapTx()).toBe(before);
   });
 
   it('--apply에는 감사 로그 디렉터리가 필요하다', async () => {

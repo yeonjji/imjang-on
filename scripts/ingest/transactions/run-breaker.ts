@@ -12,6 +12,8 @@
  * - 가드 비율 = 가드에 걸린 범위 / 끝난 범위(적용·무변경·가드·오류).
  * - 오류 = 예외로 끝난 범위 수(절대값).
  * 비율 기준은 표본이 작을 때 흔들리지 않도록 끝난 범위·행 수가 하한 이상일 때만 본다.
+ * 다만 극단값(보관 10%·삽입 50% 초과)은 작은 표본(3범위·300행)에서도 바로 멈춘다 — 표본 하한에 닿기 전에
+ * 범위 가드가 막지 못하는 삽입이 쌓이는 것을 막는다(보관은 범위 가드가 범위마다 max(10, 20%)로 묶는다).
  */
 export interface BreakerLimits {
   /** 비율 판정을 시작할 최소 끝난 범위 수 */
@@ -22,11 +24,17 @@ export interface BreakerLimits {
   maxArchiveRate: number;
   maxInsertRate: number;
   maxErrors: number;
+  /** 작은 표본에서도 멈추는 극단 기준 */
+  extremeMinScopes: number;
+  extremeMinRows: number;
+  extremeArchiveRate: number;
+  extremeInsertRate: number;
 }
 
 /**
  * 기본값 근거: 운영 dry-run 30범위(2026-10-28) 가드 0%, 보관 0.6%, 삽입 8.4%(유형 최대 11.8%), 리허설 156범위 가드·오류 0.
  * 가드 5%·보관 2%·오류 5건은 리허설 보고의 중단 기준, 삽입은 관측 최대의 약 2배.
+ * 극단 기준: 범위 하나의 관측 최대(보관 6.8%·삽입 19.6%)보다 충분히 높게 — 첫 3범위에서 정상 데이터로는 닿지 않는다.
  */
 export const DEFAULT_LIMITS: BreakerLimits = {
   minScopes: 20,
@@ -35,6 +43,10 @@ export const DEFAULT_LIMITS: BreakerLimits = {
   maxArchiveRate: 0.02,
   maxInsertRate: 0.25,
   maxErrors: 5,
+  extremeMinScopes: 3,
+  extremeMinRows: 300,
+  extremeArchiveRate: 0.1,
+  extremeInsertRate: 0.5,
 };
 
 export type ScopeOutcome =
@@ -54,7 +66,7 @@ export interface BreakerTotals {
 }
 
 export interface BreakerTrip {
-  reason: 'errors' | 'guard-rate' | 'archive-rate' | 'insert-rate';
+  reason: 'errors' | 'guard-rate' | 'archive-rate' | 'insert-rate' | 'extreme-archive-rate' | 'extreme-insert-rate';
   /** 기준을 넘긴 값과 기준 */
   value: number;
   limit: number;
@@ -86,6 +98,10 @@ export class RunBreaker {
     const mk = (reason: BreakerTrip['reason'], value: number, limit: number): BreakerTrip =>
       ({ reason, value, limit, totals: { ...t }, at: new Date().toISOString() });
     if (t.errors >= l.maxErrors) return mk('errors', t.errors, l.maxErrors);
+    if (t.finished >= l.extremeMinScopes) {
+      if (t.dbRows >= l.extremeMinRows && t.archived / t.dbRows > l.extremeArchiveRate) return mk('extreme-archive-rate', t.archived / t.dbRows, l.extremeArchiveRate);
+      if (t.apiRows >= l.extremeMinRows && t.inserted / t.apiRows > l.extremeInsertRate) return mk('extreme-insert-rate', t.inserted / t.apiRows, l.extremeInsertRate);
+    }
     if (t.finished < l.minScopes) return null;
     if (t.guarded / t.finished > l.maxGuardRate) return mk('guard-rate', t.guarded / t.finished, l.maxGuardRate);
     if (t.dbRows >= l.minRows && t.archived / t.dbRows > l.maxArchiveRate) return mk('archive-rate', t.archived / t.dbRows, l.maxArchiveRate);

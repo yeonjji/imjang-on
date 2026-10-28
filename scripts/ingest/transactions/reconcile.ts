@@ -355,6 +355,8 @@ export async function rollbackReconcileRun(runId: bigint): Promise<{ removed: nu
       FROM "TransactionArchive" a WHERE a."runId" = ${runId} AND a."reason" = 'cancel-date' AND x.id = a."transactionId"`;
     await t.transactionArchive.deleteMany({ where: { runId } });
     await t.reconcileInsert.deleteMany({ where: { runId } });
+    // 되돌린 실행은 완료(OK)로 남기지 않는다 — 다음 수집이 '이미 끝난 범위'로 건너뛰지 않고 다시 처리하게(doneRunFilter는 OK만 본다).
+    await t.ingestionRun.update({ where: { id: runId }, data: { status: 'ERROR', errorMessage: `rolled back at ${new Date().toISOString()}` } });
     await enqueuePropertyAggregates(t, props.map((p) => p.pid));
     logger.info({ runId: String(runId), removed, restored }, 'reconcile run rolled back');
     return { removed, restored };

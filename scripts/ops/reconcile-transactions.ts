@@ -9,7 +9,11 @@
  *   # 기간 단위 일괄 롤백(기본 dry-run: 대상·예상 변경·충돌만 출력). 실제 롤백은 --apply + 감사 로그 디렉터리
  *   pnpm tsx scripts/ops/reconcile-transactions.ts --rollback-since=2026-11-01T00:00:00Z [--rollback-until=…] [--source=molit-apt-trade] [--sgg=11440]
  *   ... --apply --audit-dir=/opt/imjang/backups/reconcile-rollback
- *   (재정합 타이머를 멈춘 뒤 실행한다 — 전후 거래 수 검증이 다른 쓰기와 섞이지 않게)
+ *   (--apply는 수집 정지 상태에서만 된다 — 아래 --set-halt 먼저. 전후 거래 수 검증이 다른 쓰기와 섞이지 않게)
+ *   # 수집 정지 상태: 차단기가 멈추면 자동으로 정지된다. 원인을 확인한 뒤 사유와 함께 해제한다
+ *   pnpm tsx scripts/ops/reconcile-transactions.ts --halt-status
+ *   pnpm tsx scripts/ops/reconcile-transactions.ts --set-halt --reason="일괄 롤백 준비"
+ *   pnpm tsx scripts/ops/reconcile-transactions.ts --clear-halt --reason="원인: … 확인, 조치: …"
  *
  * dry-run에서는 매물을 만들지 않는다. 아직 없는 매물의 원천 행은 newPropertyRows로 세고(실제 실행에서는 삽입) 계획에서 뺀다.
  */
@@ -21,10 +25,12 @@ import { ADAPTERS, fetchAll, getOffsetMonths, resolveApiRows } from '@/scripts/i
 import { getSigunguTargets } from '@/scripts/ingest/transactions/sigungu';
 import { dryRunReconcile, rollbackReconcileRun } from '@/scripts/ingest/transactions/reconcile';
 import { bulkRollback, type BulkRollbackFilter } from '@/scripts/ingest/transactions/reconcile-rollback';
+import { getHalt, setHalt, clearHalt } from '@/scripts/ingest/transactions/halt';
 
 export interface ReconcileCliArgs {
   rollbackRun?: bigint;
   bulkRollback?: { filter: BulkRollbackFilter; apply: boolean; auditDir?: string };
+  halt?: { action: 'status' } | { action: 'set' | 'clear'; reason: string };
   apis: ApiType[];
   sgg: string[] | 'all';
   months: string[];
@@ -35,6 +41,15 @@ export function parseReconcileArgs(argv: string[], now = new Date()): ReconcileC
   const arg = (name: string) => argv.find((a) => a.startsWith(`--${name}=`))?.split('=').slice(1).join('=');
   const rb = arg('rollback-run');
   if (rb) return { rollbackRun: BigInt(rb), apis: [], sgg: [], months: [] };
+  const none = { apis: [], sgg: [], months: [] };
+  if (argv.includes('--halt-status')) return { halt: { action: 'status' }, ...none };
+  for (const action of ['set', 'clear'] as const) {
+    if (argv.includes(`--${action}-halt`)) {
+      const reason = arg('reason')?.trim();
+      if (!reason) throw new Error(`--${action}-halt에는 --reason="…"이 필요하다`);
+      return { halt: { action, reason }, ...none };
+    }
+  }
   const since = arg('rollback-since');
   if (since) {
     const date = (name: string, v: string) => { const d = new Date(v); if (Number.isNaN(d.getTime())) throw new Error(`--${name} 날짜 형식 오류: ${v}`); return d; };
@@ -91,12 +106,18 @@ async function dryRun(a: ReconcileCliArgs) {
 async function main() {
   const a = parseReconcileArgs(process.argv);
   if (a.rollbackRun != null) { console.log(JSON.stringify(await rollbackReconcileRun(a.rollbackRun))); return; }
+  if (a.halt) {
+    if (a.halt.action === 'set') await setHalt(`manual:${a.halt.reason}`);
+    if (a.halt.action === 'clear') await clearHalt(a.halt.reason);
+    console.log(JSON.stringify(await getHalt(), (_k, v) => (typeof v === 'bigint' ? String(v) : v), 2));
+    return;
+  }
   if (a.bulkRollback) {
     const r = await bulkRollback(a.bulkRollback.filter, { apply: a.bulkRollback.apply, auditDir: a.bulkRollback.auditDir });
     const { plan, ...rest } = r;
     console.log(JSON.stringify({ ...rest, expected: plan.expected, conflicts: plan.conflicts, targets: plan.targets }, (_k, v) => (typeof v === 'bigint' ? String(v) : v), 2));
     if (!a.bulkRollback.apply) console.log('\n[DRY-RUN] 실제 롤백은 --apply --audit-dir=…');
-    if (r.stoppedBy === 'conflict' || r.stoppedBy === 'error' || (r.verify && !r.verify.ok)) process.exitCode = 1;
+    if (!['dry-run', 'done'].includes(r.stoppedBy) || (r.verify && !r.verify.ok)) process.exitCode = 1;
     return;
   }
   console.log(JSON.stringify(await dryRun(a)));

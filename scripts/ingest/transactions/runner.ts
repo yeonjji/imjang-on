@@ -5,6 +5,7 @@ import { findOrCreateProperty } from '@/scripts/ingest/property-matcher';
 import { drainAggregateQueue } from '@/scripts/ingest/aggregate-queue';
 import { reconcileScope, area2, type ApiTx, type ReconcileResult } from './reconcile';
 import { RunBreaker, type ScopeOutcome } from './run-breaker';
+import { getHalt, setHalt } from './halt';
 import { revalidatePaths, propertyPath } from '@/scripts/ingest/revalidator';
 import { notify } from '@/scripts/ingest/notify';
 
@@ -158,6 +159,16 @@ function dedupeAdjacentSgg(keys: IngestTaskKey[]): IngestTaskKey[] {
 
 async function main() {
   const args = parseArgs();
+  // 차단기로 정지된 상태면 원인 확인·해제 전까지 원천을 부르지 않는다(halt.ts). 해제: reconcile-transactions --clear-halt --reason=…
+  const halt = await getHalt();
+  if (halt.active) {
+    const info = { mode: args.mode, haltedSince: halt.since, reason: halt.reason };
+    logger.error(info, 'transactions ETL is halted — not running (clear with scripts/ops/reconcile-transactions.ts --clear-halt --reason=…)');
+    await notify('warn', 'ETL halted — skipped', info);
+    process.exitCode = 1;
+    await prisma.$disconnect();
+    return;
+  }
   const apis = args.api === 'all' ? (Object.keys(ADAPTERS) as ApiType[]) : [args.api];
   const months =
     args.mode === 'daily'
@@ -251,8 +262,12 @@ async function main() {
   logger.info(summary, 'runner done');
   await notify(drained.stoppedBy === 'error' || guarded > 0 || failed >= 5 || breaker.tripped ? 'warn' : 'info',
     breaker.tripped ? 'ETL run stopped by breaker' : 'ETL run complete', summary);
-  // 차단기로 멈춘 실행은 실패로 끝내 systemd·알림에 드러나게 한다(이미 끝난 범위는 그대로, 재실행이 나머지를 이어 간다).
-  if (breaker.tripped) process.exitCode = 1;
+  // 차단기로 멈춘 실행은 실패로 끝내 systemd·알림에 드러나게 하고, 정지를 기록해 다음 예약 실행도 원인 확인 전까지 돌지 않게 한다.
+  // 이미 끝난 범위는 그대로다(필요하면 기간 단위 롤백). 해제 후 재실행하면 남은 범위를 이어 간다.
+  if (breaker.tripped) {
+    await setHalt(`breaker:${breaker.trip!.reason}`, { trip: breaker.trip, mode: args.mode, notStarted: out.notStarted.length });
+    process.exitCode = 1;
+  }
 
   await prisma.$disconnect();
 }

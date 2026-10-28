@@ -21,10 +21,17 @@ describe('RunBreaker — 실행 전체 누적 기준', () => {
     expect(b.trip!.totals).toMatchObject({ finished: 20, dbRows: 2000, archived: 41 });
   });
 
-  it('여러 범위에 흩어진 이상(범위마다 가드 아래 보관 15%)도 누적으로 잡는다', () => {
+  it('여러 범위에 흩어진 이상(범위마다 가드 아래 보관 15%)은 극단 기준으로 3범위 만에 잡는다', () => {
     const b = new RunBreaker();
     const r = feed(b, Array.from({ length: 30 }, () => done(100, 15, 15))); // 범위 가드(max(10,20%))는 통과하는 수준
-    expect(r.indexOf(true)).toBe(19); // 표본 하한(20범위·2,000행)에 닿는 순간 멈춤
+    expect(r.indexOf(true)).toBe(2);
+    expect(b.trip!.reason).toBe('extreme-archive-rate');
+  });
+
+  it('극단 기준 아래로 흩어진 이상(범위마다 보관 5%)은 표본 하한에서 2% 기준으로 잡는다', () => {
+    const b = new RunBreaker();
+    const r = feed(b, Array.from({ length: 30 }, () => done(100, 0, 5)));
+    expect(r.indexOf(true)).toBe(19); // 20범위·2,000행에 닿는 순간
     expect(b.trip!.reason).toBe('archive-rate');
   });
 
@@ -59,6 +66,25 @@ describe('RunBreaker — 실행 전체 누적 기준', () => {
   it('표본이 작으면 비율로 멈추지 않는다(초반 한두 범위로 오판 방지)', () => {
     const b = new RunBreaker();
     feed(b, [done(10, 0, 5), done(10, 0, 5)]); // 50%지만 2범위·20행
+    expect(b.tripped).toBe(false);
+  });
+
+  it('표본 하한 전이라도 극단적 삽입(원천이 행을 두 번씩 보냄 등)은 3범위·300행에서 멈춘다', () => {
+    const b = new RunBreaker();
+    const r = feed(b, Array.from({ length: 10 }, () => done(200, 250, 0, 450))); // 범위마다 원천 행의 55%를 새로 넣음
+    expect(r.indexOf(true)).toBe(2);
+    expect(b.trip).toMatchObject({ reason: 'extreme-insert-rate', totals: { finished: 3 } });
+  });
+
+  it('표본 하한 전이라도 극단적 보관(누적 10% 초과)은 멈춘다', () => {
+    const b = new RunBreaker();
+    feed(b, Array.from({ length: 3 }, () => done(200, 0, 21)));
+    expect(b.trip).toMatchObject({ reason: 'extreme-archive-rate' }); // 63 / 600 = 10.5%
+  });
+
+  it('운영 dry-run의 범위별 최대치(삽입 19.6%·보관 6.8%)로는 극단 기준에 닿지 않는다', () => {
+    const b = new RunBreaker();
+    feed(b, [done(219, 43, 0, 260), done(59, 5, 4, 60), done(1901, 235, 7, 2128), done(443, 80, 9, 514)]);
     expect(b.tripped).toBe(false);
   });
 

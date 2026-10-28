@@ -25,6 +25,12 @@ describe('parseReconcileArgs', () => {
     expect(() => parseReconcileArgs(['--rollback-since=어제'], now)).toThrow(/날짜/);
     expect(() => parseReconcileArgs(['--rollback-since=2026-11-02', '--rollback-until=2026-11-01'], now)).toThrow(/뒤여야/);
   });
+  it('정지 상태 명령: 조회, 설정·해제는 사유 필수', () => {
+    expect(parseReconcileArgs(['--halt-status'], now).halt).toEqual({ action: 'status' });
+    expect(parseReconcileArgs(['--clear-halt', '--reason=원인 확인'], now).halt).toEqual({ action: 'clear', reason: '원인 확인' });
+    expect(() => parseReconcileArgs(['--clear-halt'], now)).toThrow(/reason/);
+    expect(() => parseReconcileArgs(['--set-halt', '--reason= '], now)).toThrow(/reason/);
+  });
   it('알 수 없는 api·월 형식은 거부', () => {
     expect(() => parseReconcileArgs(['--api=foo', '--sgg=all', '--months=202606'], now)).toThrow(/api/);
     expect(() => parseReconcileArgs(['--sgg=all', '--months=2026-06'], now)).toThrow(/months/);

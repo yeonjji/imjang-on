@@ -11,6 +11,7 @@
  * - 중간 실패·강제 종료: 끝난 실행은 되돌려진 채로, 나머지는 그대로 남는다(실행마다 트랜잭션). 같은 명령을 다시 돌리면 남은 것만 한다.
  * - 검증: 전후 거래 수 변화 = 복원 − 삭제, 되돌린 실행의 기록이 남지 않음, 대기열을 비운 뒤 관련 매물 집계 차이 0.
  * - 감사 로그(JSONL): 시작(조건·계획) · 실행마다(실행 ID·범위·건수·결과) · 끝(합계·검증).
+ * - 수집과의 충돌 방지: --apply는 수집이 정지(halt.ts)돼 있고, 최근 3시간 안에 시작해 아직 끝나지 않은 수집 단위가 없을 때만 한다.
  */
 import { appendFileSync, closeSync, mkdirSync, openSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -18,6 +19,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { rollbackReconcileRun } from './reconcile';
+import { getHalt } from './halt';
 import { drainAggregateQueue } from '@/scripts/ingest/aggregate-queue';
 import { diffPropertyAggregates } from '@/scripts/ingest/aggregator';
 
@@ -65,7 +67,7 @@ export interface BulkRollbackResult {
   rolledBack: number;
   removed: number;
   restored: number;
-  stoppedBy: 'done' | 'dry-run' | 'conflict' | 'error';
+  stoppedBy: 'done' | 'dry-run' | 'conflict' | 'not-halted' | 'collection-running' | 'error';
   error?: string;
   verify?: { txDelta: number; expectedTxDelta: number; leftoverRecords: number; aggregateDiffs: number; ok: boolean };
   auditFile?: string;
@@ -154,6 +156,16 @@ export async function bulkRollback(
     if (!apply) {
       audit('end', { stoppedBy: 'dry-run' });
       return { ...base, stoppedBy: 'dry-run' };
+    }
+    // 롤백 중 예약 수집이 끼어들지 않게: 정지 상태여야 하고, 진행 중인 수집 단위가 없어야 한다.
+    if (!(await getHalt()).active) {
+      audit('end', { stoppedBy: 'not-halted' });
+      return { ...base, stoppedBy: 'not-halted', error: '수집을 먼저 정지하라(reconcile-transactions --set-halt --reason=…)' };
+    }
+    const running = await prisma.ingestionRun.count({ where: { source: { startsWith: 'molit-' }, status: 'RUNNING', startedAt: { gte: new Date(Date.now() - 3 * 3_600_000) } } });
+    if (running > 0) {
+      audit('end', { stoppedBy: 'collection-running', running });
+      return { ...base, stoppedBy: 'collection-running', error: `진행 중인 수집 단위 ${running}개 — 끝난 뒤 다시 실행하라` };
     }
 
     const runIds = plan.targets.map((t) => t.runId);
