@@ -44,8 +44,8 @@
 |---|---|---|---|
 | P1 | **API 일일 한도 확인** | 공공데이터포털 → 마이페이지 → 데이터활용 → Open API → 활용신청 현황 → 국토교통부 실거래가 6종(아파트 매매·전월세, 오피스텔 매매·전월세, 연립다세대 매매·전월세) 각각 '상세' → 트래픽(일일 허용량), 계정 유형(개발/운영) 확인. 박스 `.env.production`의 `PUBLIC_DATA_KEY`가 그 계정 키인지 확인(키 값은 화면에 출력하지 않고 앞 4자리만 대조) | API마다 **일 3,000회 이상**(예상 최대 약 2,100회/일, 아래). 개발계정 기준 10,000회 |
 | P2 | 예상 호출량 확인 | 지금 일일 3,072범위/일(실측, API당 512). S3 후 일일은 같고(5,000건 한 번 호출이라 1,000건 넘는 범위는 오히려 줄어듦), 재확인이 최대 1,550범위/일. 첫 바퀴에 상한이 한 API에 몰리면 그 API 하루 약 1,712~2,100회. D0 점검 dry-run 약 30회 | P1 한도의 70% 이하 |
-| P3 | **외부 백업** | 정기 백업이 없다(`pg-dump-backup` 워크플로는 Supabase 시절 것, 7/19 이후 수동 비활성). 박스 디스크(여유 13GB)에 두지 않고 **로컬로 바로 받는다**: `ssh <box> 'cd /opt/imjang/deploy && docker compose --env-file .env.production exec -T db sh -c "pg_dump -U \$POSTGRES_USER -d \$POSTGRES_DB -Fc -Z6"' > imjang-YYYYMMDD.dump` (전체 DB 6.8GB, 덤프 예상 1~1.5GB). 수집 타이머가 돌지 않는 시간(예: 02:00~14:00 UTC)에 | 파일 크기가 0이 아니고 `pg_restore -l`이 목록을 읽음 |
-| P4 | **복원 검증** | 로컬 docker DB에 새 데이터베이스(`imjang_restore_check`)를 만들어 `pg_restore -d … --no-owner` → 아래 대조 쿼리를 운영(읽기 전용)과 복원본에서 똑같이 돌려 비교 → 끝나면 복원 DB 삭제. 덤프 파일은 암호화 저장소에 보관, 배포 후 7일 지나면 삭제 | `Transaction`·`Property`·`Region` 건수와 `sum(id)`, `Transaction.sum("dealAmount")`, `Property.sum("txCountTotal")`가 일치(덤프 시점과 대조 쿼리 사이에 수집이 돌지 않게) |
+| P3 | **외부 백업**(2026-10-28 1회 실시·검증 완료 — §8) | 정기 백업이 없다(`pg-dump-backup` 워크플로는 Supabase 시절 것, 7/19 이후 수동 비활성). 박스 디스크에 두지 않고 **로컬로 바로 받는다**(읽기 전용 세션·낮은 CPU 우선순위): `ssh <box> 'cd /opt/imjang/deploy && docker compose --env-file .env.production exec -T db sh -c "PGOPTIONS=\"-c default_transaction_read_only=on\" nice -n 19 pg_dump -U \$POSTGRES_USER -d \$POSTGRES_DB -Fc -Z3 --exclude-table-data=\"\\\"EmailSignup\\\"\""' > ~/imjang-backups/imjang-prod-YYYYMMDD.dump` (`umask 077`). 실측 96초·880MB. **덤프 중 박스 CPU 평균 87%·최대 100%, 응답 평균 96ms·최대 0.69초** → 이용이 적은 시간, 수집 타이머가 없는 시간(02:00~14:00 UTC)에. 배포 직전 다시 받는다 | 덤프 전·후 운영 대조 출력이 같음(그 사이 변경 없음 = 덤프와 일치) |
+| P4 | **복원 검증**(2026-10-28 실시·일치) | 운영과 **같은 이미지**(`imresamu/postgis:17-3.5` — 운영은 PostgreSQL 17·PostGIS 3.5, 로컬 개발 DB는 16이라 쓰지 않는다)로 별도 컨테이너를 띄워 `template0`에서 만든 빈 DB에 `pg_restore --no-owner --no-acl -j 4`(이미지 기본 DB는 tiger·topology 스키마가 미리 있어 오류 3건) → `~/imjang-backups/verify.sql`(전 테이블 정확한 행 수, 스키마 지문, 핵심 집계, 행 내용 해시)을 운영(읽기 전용)과 복원본에서 돌려 `diff` → 끝나면 복원 컨테이너·볼륨 삭제 | `diff` 출력 없음 |
 | P5 | 디스크·WAL | `df -BG /`, `SELECT pg_size_pretty(sum(size)) FROM pg_ls_waldir()` | 여유 **12GB 이상**(ISR 캐시 톱니 최저점 기준). WAL은 `max_wal_size` 1GB 안에서 재활용(아카이브·슬롯 없음) |
 | P6 | 머지 준비 | 0-1 절차대로 #346 기준을 main으로 → 닫았다 다시 열어 CI → 초록. 같은 커밋 로컬 `pnpm build` | CI check·e2e 통과(통합 테스트는 로그에서 실패 0 확인 — CI는 통합 실패를 continue-on-error로 넘긴다) |
 | P7 | 알림 확인 | Discord 웹훅으로 ETL 알림이 오는지 최근 일일 알림 확인 | 최근 24시간 일일 알림 수신 |
@@ -117,7 +117,7 @@ sudo mkdir -p /opt/imjang/backups/{reagg,reconcile-rollback} && sudo chown -R ub
 
 | 코드 | 상황 | 절차 |
 |---|---|---|
-| R1 | 마이그레이션 실패(배포가 `migrate deploy`에서 멈춤 — 웹은 옛 버전 유지, ETL 이미지는 새 코드) | ① 수집 타이머 정지 상태 유지(2단계에서 이미 정지) ② 실패 원인 확인(`$DC run --rm etl pnpm prisma migrate status`) ③ 반쯤 만들어진 새 테이블만 정리(`DROP TABLE IF EXISTS "PropertyAggregateQueue"`·`"TransactionArchive"`·`"ReconcileInsert"` — 셋 다 새 테이블이라 기존 데이터 영향 없음) 후 `prisma migrate resolve --rolled-back <이름>` ④ main을 되돌리는 PR(revert) 머지 → 재배포로 ETL 이미지도 옛 코드로 ⑤ 수집 타이머 재개 |
+| R1 | 마이그레이션 실패(배포가 `migrate deploy`에서 멈춤 — 웹은 옛 버전 유지, ETL 이미지는 새 코드) | (운영 복제본에서 실패를 일부러 만들어 검증, §8-3) ① 수집 타이머 정지 유지(2단계) ② `$DC run --rm etl pnpm prisma migrate status`로 **실패한 마이그레이션 하나**를 확인. 마이그레이션은 하나씩 트랜잭션으로 적용돼, 실패한 것은 객체를 남기지 않고 앞서 성공한 것(예: S2 대기열 테이블)은 그대로 남는다 ③ **테이블을 지우지 않는다.** 성공한 마이그레이션의 테이블을 지우면 기록(적용됨)과 실제가 어긋난다. 실패한 마이그레이션의 객체가 혹시 남아 있으면 `SELECT count(*)`로 0행인지 확인한 뒤 그 객체만 지운다(행이 있으면 지우지 말고 중단 — `TransactionArchive`는 거래 원본 보관이라 지우면 복구 수단을 잃는다) ④ `$DC run --rm etl pnpm prisma migrate resolve --rolled-back <실패한 이름>` ⑤ 둘 중 하나: (a) 원인을 고쳐 같은 코드 재배포(실패한 마이그레이션만 다시 적용) 또는 (b) revert PR 머지·재배포 — 옛 코드는 남은 S2 기록·테이블을 무시한다("No pending migrations", "schema is up to date" 확인) ⑥ 수집 타이머 재개 |
 | R2 | 앱 이상(화면·성능), 데이터는 정상 | ① `--set-halt` ② S3 변경이 이미 있으면 **먼저 R4로 재정합 일괄 롤백**(revert하면 롤백 도구가 사라진다) ③ 재집계를 했으면 R3 ④ revert PR 머지·배포. 새 테이블은 남겨도 무해 ⑤ 타이머 재개 |
 | R3 | 재집계 결과 이상 | `$OPS scripts/ops/reaggregate-properties.ts --rollback=/backups/reagg/<파일>.jsonl` (묶음마다 UPDATE 전에 백업이 기록돼 있다) → 같은 대상 dry-run으로 원래 변경 수가 다시 보이는지 |
 | R4 | 재정합 결과 이상 | ① `--halt-status`(아니면 `--set-halt`) ② `--rollback-since=<시각> [--rollback-until] [--source] [--sgg]` dry-run: 대상·예상·충돌 ③ 충돌이 있으면 기간·범위를 좁힌다 ④ `--apply --audit-dir=/backups/reconcile-rollback` ⑤ `verify.ok` 확인(아니면 감사 로그로 남은 실행 확인 후 같은 명령 재실행 — 끝난 실행은 건너뛴다) ⑥ 원인 수정 → §3 → 해제 |
@@ -135,6 +135,8 @@ sudo mkdir -p /opt/imjang/backups/{reagg,reconcile-rollback} && sudo chown -R ub
 | D+9 이후 | 주간 점검을 `--enqueue-diff`로 전환(별도 승인) | 주간 차이 0 근처 |
 | D+30 | 7~12개월 전 첫 바퀴 완료, P3 덤프 삭제 | — |
 
+**재집계 대기열 확인(검토 결과)**: D0~D+2 사이 `property-aggregates` 타이머가 없어도 집계가 빠지지 않는다 — 재정합이 넣은 대기열은 같은 수집 프로세스 끝에서 비우고(하루 2회), 일괄 롤백도 스스로 비운다. 12개월 경계(타이머만 처리)는 D+1 S5가 전부 다시 계산하고, D+2 첫 타이머가 최근 3일을 겹쳐 본다(`overlapDays=3`). 단 ① 실행 단위 롤백(`--rollback-run`)은 대기열에 넣기만 하므로 직후 `$DC run --rm etl pnpm tsx scripts/ingest/property-aggregates/runner.ts --mode=daily`로 비운다(정지 상태에서는 수집이 돌지 않아 대기열이 그대로 남는다) ② 타이머 시작(D+2)은 **S5 완료 후 3일 안**이어야 경계가 빠지지 않는다(늦어지면 S5 대상 dry-run으로 차이 확인).
+
 **타이머 정지·재개 순서 요약**: (정지) `transactions-daily` — D0 2단계 / (재개) D0 16단계 / (신규 시작) `transactions-recheck`·`property-aggregates`·`property-aggregate-check` — D+2. 다른 ETL(청약·관리비·건축물대장 등)은 거래 테이블을 쓰지 않아 그대로 둔다.
 
 ## 7. 남은 위험(배포를 막지는 않음)
@@ -142,3 +144,29 @@ sudo mkdir -p /opt/imjang/backups/{reagg,reconcile-rollback} && sudo chown -R ub
 - 차단기 기준은 표본에서 정한 상수다. 첫 주기 결과로 조정할 수 있다(배포 필요).
 - 단지명 변경으로 매물이 갈리는 기존 문제, 병합 도구 재작성(`--apply` 차단 유지), 거래 0건 새 매물 정리는 후속 과제.
 - 정기 외부 백업이 없다 — 이번 배포와 별개로 박스 밖 정기 백업 수단을 정해야 한다.
+
+## 8. 사전 백업·복원 검증 결과 (2026-10-28 08:24~08:45 UTC)
+- **보관:** `~/imjang-backups/imjang-prod-20261028.dump`(운영자 로컬, 저장소 밖, 권한 600·폴더 700, FileVault 암호화 디스크). 저장소·공개 경로에 없음. 복원용 임시 비밀번호 파일은 검증 뒤 삭제.
+- **사전 확인:** 로컬 여유 226GB·Docker 413GB, 운영 load 0.58·수집 없음(다음 15:00 UTC). 개인정보가 있을 수 있는 `EmailSignup`은 스키마만(데이터 제외 — 운영도 0행).
+
+### 8-1. 덤프
+| 항목 | 값 |
+|---|---|
+| 방식 | 읽기 전용 세션, `nice -n 19`, `-Fc -Z3`, SSH로 로컬에 직접 저장(박스 디스크 사용 0) |
+| 시간·크기 | 96초 · 880MB(49개 테이블 데이터) |
+| 운영 영향(10초 간격 14샘플, 덤프 전후 대조 포함 약 2.5분) | load 평균 2.74·최대 3.66, CPU 평균 87%·최대 100%, 앱 응답 평균 96ms·최대 0.69초, 디스크 여유 14GB |
+| 일관성 | 덤프 전·후 운영 대조 출력이 완전히 같음 |
+
+### 8-2. 복원 대조(운영 vs 복원본, `verify.sql` 출력 `diff` = 차이 없음)
+| 항목 | 값(운영 = 복원본) |
+|---|---|
+| 테이블 | 50개, 전체 11,904,047행(테이블별 정확한 행 수 일치) |
+| 스키마 | 컬럼 873 · 인덱스 169 · 제약 67 지문 일치, 확장 pg_trgm 1.6·plpgsql 1.0·postgis 3.5.3, 마이그레이션 48개(마지막 `20261027000000_add_hospital_nemc_hours`) |
+| Transaction | 8,133,304행, id 합·금액·보증금·월세·면적 합, 해제 35,690·해제일 32,821, 계약일 2023-01-01~2026-10-26, **행 내용 해시** 일치 |
+| Property | 278,926행, 집계 컬럼 합 12종·리다이렉트 2,080·면적대 수, **행 내용 해시**(위치 좌표 포함) 일치 |
+| Region | 23,848행 해시 일치 |
+| 복원 시간 | 52초(4병렬), 복원 DB 5.2GB, 오류 0(`template0` 기반 DB) |
+
+### 8-3. 마이그레이션 리허설(복원본 사본)
+- **정상 적용:** 2개 1초. 기존 데이터(집계·행 해시) 변화 없음, 새 테이블 3개(0행)·컬럼 12·인덱스 7·제약 3만 늘어남.
+- **실패 주입**(S3 테이블 이름 충돌): S2 적용 완료, S3 실패(P3018) — S3 객체는 남지 않음(트랜잭션 롤백). `migrate resolve --rolled-back` 후 (a) 옛 코드 마이그레이션 폴더로 `deploy`·`status` → "No pending", "up to date"(S2 테이블을 지울 필요 없음), (b) 원인 제거 후 같은 코드 재배포 → 정상 적용과 같은 상태(기록 1행 차이만). → R1 절차를 '테이블 삭제'에서 '실패한 것만 rolled-back 표시'로 고쳤다.
