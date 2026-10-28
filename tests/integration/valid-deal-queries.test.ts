@@ -148,6 +148,17 @@ describe('내역 표는 해제 거래를 표시한다', () => {
 });
 
 describe('매물 집계(updatePropertyAggregates)', () => {
+  it('같은 계약일 거래가 여럿이면 최근가는 id가 큰 쪽으로 결정적(화면 최근 실거래와 같은 기준)', async () => {
+    const tie = (await prisma.property.create({ data: { propertyType: PropertyType.APARTMENT, name: 'UT동일일자', nameNorm: 'UT동일일자', regionCode: REGION, address: 'UT' } })).id;
+    // 같은 날 3건 — id 순서로 넣어 마지막(가장 큰 id)이 70000
+    for (const amount of [50000, 60000, 70000]) await prisma.transaction.create({ data: tx(tie, { days: 7, amount }) });
+    for (let i = 0; i < 5; i++) {
+      await updatePropertyAggregates([tie]);
+      expect((await prisma.property.findUniqueOrThrow({ where: { id: tie } })).saleLastPrice).toBe(70000n);
+    }
+    expect((await getLatestTransactionsByType(tie)).SALE?.amountManwon).toBe(70000);
+  });
+
   it('누적·12개월·최근가는 유효 거래 기준', async () => {
     await updatePropertyAggregates([p]);
     const x = await prisma.property.findUniqueOrThrow({ where: { id: p } });

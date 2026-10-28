@@ -19,6 +19,8 @@ export type AggColumn = (typeof AGG_COLUMNS)[number];
 /**
  * 대상 매물의 '올바른' 집계값 CTE(agg). 유효 거래(해제 제외, lib/transaction/valid-deal.ts)만 센다.
  * 대상 매물을 ids로 LEFT JOIN해, 유효 거래가 0건인 매물도 0/null 행을 만든다(낡은 값 잔존 방지).
+ * 최근가(saleLastPrice 등)는 계약일 → id 역순으로 고른다 — 같은 날 여러 건일 때 결정적이어야 dry-run·적용·화면(getLatestTransactionsByType)이
+ * 같은 거래를 가리킨다(S4 리허설에서 계약일만 정렬해 25행이 실행마다 달라지는 것을 발견).
  * 면적대(areaTypes)는 통계가 아니라 '이 단지에 있는 평형' 정보라 해제 거래도 포함하고, 10㎡ 미만은 이상치로 뺀다.
  */
 function aggCte(propertyIds: bigint[]): Prisma.Sql {
@@ -46,17 +48,17 @@ function aggCte(propertyIds: bigint[]): Prisma.Sql {
         MAX(v."contractDate") AS "lastTxAt",
         (COUNT(v.id) FILTER (WHERE v."dealType"='SALE' AND v."contractDate" >= NOW() - INTERVAL '12 months'))::int AS "saleCount12m",
         (AVG(v."dealAmount") FILTER (WHERE v."dealType"='SALE' AND v."contractDate" >= NOW() - INTERVAL '12 months'))::bigint AS "saleAvgPrice12m",
-        (array_agg(v."dealAmount" ORDER BY v."contractDate" DESC) FILTER (WHERE v."dealType"='SALE'))[1]::bigint AS "saleLastPrice",
+        (array_agg(v."dealAmount" ORDER BY v."contractDate" DESC, v.id DESC) FILTER (WHERE v."dealType"='SALE'))[1]::bigint AS "saleLastPrice",
         MAX(v."contractDate") FILTER (WHERE v."dealType"='SALE') AS "saleLastAt",
         (COUNT(v.id) FILTER (WHERE v."dealType"='JEONSE' AND v."contractDate" >= NOW() - INTERVAL '12 months'))::int AS "jeonseCount12m",
         (AVG(v."deposit") FILTER (WHERE v."dealType"='JEONSE' AND v."contractDate" >= NOW() - INTERVAL '12 months'))::bigint AS "jeonseAvgDeposit12m",
-        (array_agg(v."deposit" ORDER BY v."contractDate" DESC) FILTER (WHERE v."dealType"='JEONSE'))[1]::bigint AS "jeonseLastDeposit",
+        (array_agg(v."deposit" ORDER BY v."contractDate" DESC, v.id DESC) FILTER (WHERE v."dealType"='JEONSE'))[1]::bigint AS "jeonseLastDeposit",
         MAX(v."contractDate") FILTER (WHERE v."dealType"='JEONSE') AS "jeonseLastAt",
         (COUNT(v.id) FILTER (WHERE v."dealType"='WOLSE' AND v."contractDate" >= NOW() - INTERVAL '12 months'))::int AS "wolseCount12m",
         (AVG(v."deposit") FILTER (WHERE v."dealType"='WOLSE' AND v."contractDate" >= NOW() - INTERVAL '12 months'))::bigint AS "wolseAvgDeposit12m",
         (AVG(v."monthlyRent") FILTER (WHERE v."dealType"='WOLSE' AND v."contractDate" >= NOW() - INTERVAL '12 months'))::int AS "wolseAvgRent12m",
-        (array_agg(v."deposit" ORDER BY v."contractDate" DESC) FILTER (WHERE v."dealType"='WOLSE'))[1]::bigint AS "wolseLastDeposit",
-        (array_agg(v."monthlyRent" ORDER BY v."contractDate" DESC) FILTER (WHERE v."dealType"='WOLSE'))[1]::int AS "wolseLastRent",
+        (array_agg(v."deposit" ORDER BY v."contractDate" DESC, v.id DESC) FILTER (WHERE v."dealType"='WOLSE'))[1]::bigint AS "wolseLastDeposit",
+        (array_agg(v."monthlyRent" ORDER BY v."contractDate" DESC, v.id DESC) FILTER (WHERE v."dealType"='WOLSE'))[1]::int AS "wolseLastRent",
         MAX(v."contractDate") FILTER (WHERE v."dealType"='WOLSE') AS "wolseLastAt"
       FROM ids
       LEFT JOIN valid v ON v."propertyId" = ids.pid
