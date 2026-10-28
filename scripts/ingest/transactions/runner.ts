@@ -4,6 +4,7 @@ import { fetchPage } from '@/scripts/ingest/http';
 import { findOrCreateProperty } from '@/scripts/ingest/property-matcher';
 import { drainAggregateQueue } from '@/scripts/ingest/aggregate-queue';
 import { reconcileScope, area2, type ApiTx, type ReconcileResult } from './reconcile';
+import { RunBreaker, type ScopeOutcome } from './run-breaker';
 import { revalidatePaths, propertyPath } from '@/scripts/ingest/revalidator';
 import { notify } from '@/scripts/ingest/notify';
 
@@ -201,33 +202,29 @@ async function main() {
   );
   skipped = apis.length * months.length * sigunguIds.length - taskKeys.length;
 
-  const tasks: Array<() => Promise<void>> = taskKeys.map((k) => async () => {
-    try {
-      const r = await runOne(
-        ADAPTERS[k.api as ApiType],
-        k.sgg,
-        sigunguToRegionCode.get(k.sgg)!,
-        k.yyyymm,
-      );
-      // 가드에 걸린 범위는 아무것도 쓰지 않았다 — 계획 수치를 합치지 않는다.
-      if (r.status === 'skipped') { rec.guarded[r.skipReason!] = (rec.guarded[r.skipReason!] ?? 0) + 1; return; }
-      totalUpserted += r.inserted;
-      r.affectedPropertyIds.forEach((id) => affectedPropertyIds.add(id));
-      rec.archived += r.archived.cancel + r.archived.correction;
-      rec.orphans += r.orphans; rec.propertyMismatch += r.propertyMismatch; rec.cancelDateRepaired += r.cancelDateRepaired;
-      rec.outOfScope += r.outOfScope; rec.outOfMonth += r.outOfMonth;
-    } catch (err) {
-      failed++;
-      logger.error({ err, api: k.source, sgg: k.sgg, yyyymm: k.yyyymm }, 'sigungu-month failed');
-    }
-  });
   // --limit: 한 실행이 처리할 타깃(시군구·월) 수 상한. 대량 write가 누적되면 Supabase가
   // 디스크 압박으로 read-only(25006)로 빠지므로, 짧게 나눠 실행해 스파이크를 낮춘다.
   // resume(doneKeys)가 이어주므로 여러 번 돌리면 전체가 완료된다.
-  const pending = args.limit ? tasks.slice(0, args.limit) : tasks;
-  logger.info({ pending: pending.length, total: tasks.length, limit: args.limit ?? null }, 'tasks to run this pass');
+  const pending = args.limit ? taskKeys.slice(0, args.limit) : taskKeys;
+  logger.info({ pending: pending.length, total: taskKeys.length, limit: args.limit ?? null }, 'tasks to run this pass');
+  // 실행 전체 누적 이상 감지 — 기준을 넘으면 새 범위를 시작하지 않는다(run-breaker.ts)
+  const breaker = new RunBreaker();
   // Supabase pooler 동시 연결 제약 — 5로 두면 connection pool / statement timeout 빈발
-  await runWithLimit(pending, 2);
+  const out = await runScopeTasks(
+    pending,
+    (k) => runOne(ADAPTERS[k.api as ApiType], k.sgg, sigunguToRegionCode.get(k.sgg)!, k.yyyymm),
+    { concurrency: 2, breaker, label: (k) => ({ api: k.source, sgg: k.sgg, yyyymm: k.yyyymm }) },
+  );
+  failed = out.failed.length;
+  for (const { result: r } of out.done) {
+    // 가드에 걸린 범위는 아무것도 쓰지 않았다 — 계획 수치를 합치지 않는다.
+    if (r.status === 'skipped') { rec.guarded[r.skipReason!] = (rec.guarded[r.skipReason!] ?? 0) + 1; continue; }
+    totalUpserted += r.inserted;
+    r.affectedPropertyIds.forEach((id) => affectedPropertyIds.add(id));
+    rec.archived += r.archived.cancel + r.archived.correction;
+    rec.orphans += r.orphans; rec.propertyMismatch += r.propertyMismatch; rec.cancelDateRepaired += r.cancelDateRepaired;
+    rec.outOfScope += r.outOfScope; rec.outOfMonth += r.outOfMonth;
+  }
 
   // 집계는 대기열이 보장한다(단위마다 같은 트랜잭션에서 넣음). 여기서는 쌓인 대기열을 비운다.
   // 실패하거나 30분 예산을 넘겨도 대기열에 남아 property-aggregates 잡이 이어서 처리한다.
@@ -248,12 +245,52 @@ async function main() {
   const guarded = Object.values(rec.guarded).reduce((a, b) => a + b, 0);
   const summary = {
     mode: args.mode, totalUpserted, skipped, failed, properties: affectedPropertyIds.size, ...rec,
+    breaker: breaker.trip, notStarted: out.notStarted.length,
     aggregated: drained.processed, aggregateQueueRemaining: drained.remaining, aggregateStop: drained.stoppedBy,
   };
   logger.info(summary, 'runner done');
-  await notify(drained.stoppedBy === 'error' || guarded > 0 || failed >= 5 ? 'warn' : 'info', 'ETL run complete', summary);
+  await notify(drained.stoppedBy === 'error' || guarded > 0 || failed >= 5 || breaker.tripped ? 'warn' : 'info',
+    breaker.tripped ? 'ETL run stopped by breaker' : 'ETL run complete', summary);
+  // 차단기로 멈춘 실행은 실패로 끝내 systemd·알림에 드러나게 한다(이미 끝난 범위는 그대로, 재실행이 나머지를 이어 간다).
+  if (breaker.tripped) process.exitCode = 1;
 
   await prisma.$disconnect();
+}
+
+/**
+ * 범위들을 동시성 제한으로 돈다. 범위를 **시작하기 전에** 차단기를 보고, 멈춰 있으면 시작하지 않는다(notStarted).
+ * 진행 중인 범위는 끝까지 간다. 끝난 범위는 차단기에 기록하고, 처음 기준을 넘는 순간 사유·누적값·시점·마지막 범위를 남긴다.
+ */
+export async function runScopeTasks<K>(
+  keys: K[],
+  run: (k: K) => Promise<ReconcileResult>,
+  opts: { concurrency: number; breaker: RunBreaker; label: (k: K) => Record<string, unknown> },
+): Promise<{ done: Array<{ key: K; result: ReconcileResult }>; failed: K[]; notStarted: K[] }> {
+  const done: Array<{ key: K; result: ReconcileResult }> = [];
+  const failed: K[] = [];
+  const notStarted: K[] = [];
+  const tasks = keys.map((k) => async () => {
+    if (opts.breaker.tripped) { notStarted.push(k); return; }
+    let outcome: ScopeOutcome;
+    try {
+      const result = await run(k);
+      done.push({ key: k, result });
+      outcome = result.status === 'skipped' ? { kind: 'guarded' }
+        : { kind: 'done', db: result.db, api: result.api, inserted: result.inserted, archived: result.archived.cancel + result.archived.correction };
+    } catch (err) {
+      failed.push(k);
+      outcome = { kind: 'error' };
+      logger.error({ err, ...opts.label(k) }, 'sigungu-month failed');
+    }
+    const before = opts.breaker.trip; // 기록 직전과 비교 — 동시에 끝난 다른 범위가 먼저 멈췄으면 다시 남기지 않는다
+    opts.breaker.record(outcome);
+    if (!before && opts.breaker.trip) {
+      logger.error({ ...opts.breaker.trip, lastScope: opts.label(k), remaining: keys.length - done.length - failed.length },
+        'run breaker tripped — no new scopes will start (finished scopes are kept)');
+    }
+  });
+  await runWithLimit(tasks, opts.concurrency);
+  return { done, failed, notStarted };
 }
 
 export async function runOne(

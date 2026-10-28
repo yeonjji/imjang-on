@@ -250,6 +250,11 @@ export async function dryRunReconcile(s: ReconcileScope): Promise<ReconcileResul
 }
 
 /** 재정합이 넣는 행의 rawHash. 범위(source·시군구)를 넣어 다른 범위와 겹치지 않게 하고, 같은 키 안에서는 순번으로 구분한다. */
+/** 범위 자문 잠금(트랜잭션 끝까지). 재정합과 롤백이 같은 키를 쓴다. */
+async function lockScope(t: Prisma.TransactionClient, source: string, sgg: string, yyyymm: string) {
+  await t.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`reconcile:${source}:${sgg}:${yyyymm}`}))`;
+}
+
 const newHash = (s: ReconcileScope, t: ApiTx, ordinal: number) =>
   createHash('sha256').update(`reconcile:v1|${s.source}|${s.sigunguCode}|${reconcileKey(t)}|${ordinal}`).digest('hex');
 
@@ -277,8 +282,8 @@ async function pickHashes(t: Db, s: ReconcileScope, inserts: ApiTx[], scopeHashe
  */
 export async function reconcileScope(s: ReconcileScope, runId: bigint): Promise<ReconcileResult> {
   return prisma.$transaction(async (t) => {
-    // 같은 범위를 동시에 재정합하지 않는다(일일·재확인·수동 실행이 겹쳐도 직렬화).
-    await t.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`reconcile:${s.source}:${s.sigunguCode}:${s.yyyymm}`}))`;
+    // 같은 범위를 동시에 재정합하지 않는다(일일·재확인·수동 실행·롤백이 겹쳐도 직렬화).
+    await lockScope(t, s.source, s.sigunguCode, s.yyyymm);
     const p = await prepare(t, s); // 잠금 뒤 재조회 — 앞선 실행의 결과를 본다
     const { db, plan } = p;
     const skip = guard(s, p);
@@ -327,6 +332,9 @@ export async function reconcileScope(s: ReconcileScope, runId: bigint): Promise<
 export async function rollbackReconcileRun(runId: bigint): Promise<{ removed: number; restored: number }> {
   return prisma.$transaction(async (t) => {
     const run = await t.ingestionRun.findUniqueOrThrow({ where: { id: runId }, select: { source: true, targetKey: true } });
+    // 같은 범위의 재정합과 겹치지 않게 같은 잠금을 잡는다(targetKey = '<시군구>-<YYYYMM>', runner.runOne).
+    const [sgg, yyyymm] = run.targetKey.split('-');
+    await lockScope(t, run.source, sgg, yyyymm);
     const laterRuns = (await t.ingestionRun.findMany({
       where: { source: run.source, targetKey: run.targetKey, id: { gt: runId } }, select: { id: true },
     })).map((r) => r.id);

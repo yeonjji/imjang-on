@@ -43,7 +43,7 @@ const seedDb = async (o: F = {}) => {
   return prisma.transaction.create({ data: { ...f, rawHash: `UT-REC-${++seq}`.padEnd(64, '0'), propertyType: PropertyType.APARTMENT, regionCode: REGION, sigunguCode: SGG, source: SOURCE } });
 };
 const scope = (a: ApiTx[], o: Partial<ReconcileScope> = {}): ReconcileScope => ({ source: SOURCE, sigunguCode: SGG, yyyymm: YM, api: a, complete: true, totalCount: a.length, ...o });
-const newRun = () => prisma.ingestionRun.create({ data: { source: SOURCE, targetKey: `${SGG}:${YM}`, status: 'RUNNING' } }).then((r) => r.id);
+const newRun = () => prisma.ingestionRun.create({ data: { source: SOURCE, targetKey: `${SGG}-${YM}`, status: 'RUNNING' } }).then((r) => r.id);
 /** 범위 전체 거래를 비교 가능한 형태로(createdAt 포함 — 복원이 원래 행 그대로인지). */
 const snapshot = async () => JSON.stringify(
   await prisma.transaction.findMany({ where: { regionCode: REGION }, orderBy: { id: 'asc' } }),
