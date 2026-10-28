@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 import { fetchPage } from '@/scripts/ingest/http';
 import { findOrCreateProperty } from '@/scripts/ingest/property-matcher';
 import { drainAggregateQueue } from '@/scripts/ingest/aggregate-queue';
-import { reconcileScope, type ApiTx, type ReconcileResult } from './reconcile';
+import { reconcileScope, area2, type ApiTx, type ReconcileResult } from './reconcile';
 import { revalidatePaths, propertyPath } from '@/scripts/ingest/revalidator';
 import { notify } from '@/scripts/ingest/notify';
 
@@ -362,7 +362,7 @@ export function toApiTx(row: NormalizedTransaction, propertyId: bigint, regionCo
       sigunguCode: row.sigunguCode,
       dealType: row.dealType,
       contractDate: row.contractDate,
-      exclusiveArea: row.exclusiveArea,
+      exclusiveArea: area2(row.exclusiveArea), // 저장값 = 재정합 키(Prisma의 number 변환에 기대지 않는다)
       floor: row.floor,
       buildYear: row.buildYear,
       dealAmount: row.dealAmount,

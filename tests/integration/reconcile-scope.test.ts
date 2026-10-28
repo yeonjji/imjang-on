@@ -15,7 +15,7 @@ vi.mock('@/scripts/ingest/aggregate-queue', async (importActual) => {
 });
 
 import { prisma } from '@/lib/db';
-import { reconcileScope, rollbackReconcileRun, dryRunReconcile, legacyHash, type ApiTx, type ReconcileScope } from '@/scripts/ingest/transactions/reconcile';
+import { reconcileScope, rollbackReconcileRun, dryRunReconcile, legacyHash, area2, type ApiTx, type ReconcileScope } from '@/scripts/ingest/transactions/reconcile';
 import { drainAggregateQueue } from '@/scripts/ingest/aggregate-queue';
 
 // S3 재정합: 실제 DB에서 가드·적용·멱등·보관/복원·중단·동시 실행·S1/S2 집계 연결.
@@ -233,6 +233,24 @@ describe('적용 — 필수 사례', () => {
     expect(r2).toMatchObject({ status: 'unchanged', inserted: 0, orphans: 0 });
     expect(await snapshot()).toBe(after1);
   });
+
+  it('면적 셋째 자리 5(84.975 등)도 재실행 때 정정으로 오인하지 않는다(멱등)', async () => {
+    const a = [api({ exclusiveArea: 84.975 }), api({ exclusiveArea: 8.075, floor: 2 }), api({ exclusiveArea: 1.005, floor: 3 })];
+    await reconcileScope(scope(a), await newRun());
+    const r = await reconcileScope(scope(a), await newRun());
+    expect(r).toMatchObject({ status: 'unchanged', inserted: 0, archived: { cancel: 0, correction: 0 } });
+  });
+
+  it('area2는 DB Decimal(6,2) 저장값과 모든 값에서 같다(1.000~99.999 셋째 자리 전부)', async () => {
+    const vals = Array.from({ length: 99_000 }, (_, i) => (1000 + i) / 1000);
+    // 옛 수집기처럼 number 그대로 넣어 기존 행의 저장 규칙을 재현한다
+    const data = vals.map((v, i) => ({ ...api().data, exclusiveArea: v, contractDate: D('2026-01-01'), rawHash: `UT-AREA-${String(i).padStart(6, '0')}`.padEnd(64, 'x') }));
+    for (let i = 0; i < data.length; i += 10_000) await prisma.transaction.createMany({ data: data.slice(i, i + 10_000) });
+    const rows = await prisma.transaction.findMany({ where: { rawHash: { startsWith: 'UT-AREA-' } }, select: { rawHash: true, exclusiveArea: true } });
+    const stored = new Map(rows.map((r) => [r.rawHash, r.exclusiveArea.toFixed(2)]));
+    const bad = vals.filter((v, i) => stored.get(`UT-AREA-${String(i).padStart(6, '0')}`.padEnd(64, 'x')) !== area2(v));
+    expect(bad).toEqual([]);
+  }, 120_000);
 
   it('dry-run은 결과만 보고하고 쓰지 않는다', async () => {
     await seedDb();

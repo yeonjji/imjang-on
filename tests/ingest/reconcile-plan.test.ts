@@ -18,6 +18,14 @@ describe('reconcileKey·area2', () => {
     expect(area2(84.994)).toBe('84.99');
     expect(area2(30.2)).toBe('30.20');
   });
+  it('DB 저장과 같은 규칙: 유효숫자 16자리 → 둘째 자리 반올림(84.975는 이진수로 84.97499…라 84.97로 저장된다)', () => {
+    // 리허설에서 원천 84.975가 매번 '정정'으로 보관·재삽입되던 원인(2026-10-28)
+    expect(area2(84.975)).toBe('84.97');
+    expect(area2(8.075)).toBe('8.07');
+    expect(area2(1.005)).toBe('1.01');
+    expect(area2(84.9751)).toBe('84.98');
+    expect(area2(66.335)).toBe('66.33'); // 66.33499999999999
+  });
   it('해제 여부가 키에 들어간다(해제본과 정상본은 다른 키)', () => {
     expect(reconcileKey(api())).not.toBe(reconcileKey(api(O)));
   });

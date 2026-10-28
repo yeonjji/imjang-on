@@ -54,10 +54,14 @@ export interface ReconcilePlan {
 const isCancelled = (t: RecFields) => t.cancelType === CANCELLED_TYPE || t.cancelDate != null;
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
 
-/** Decimal(6,2) 저장과 같은 반올림(half up). 부동소수 오차를 피하려고 문자열로 자른다. */
+/**
+ * number를 Decimal(6,2)에 넣을 때 실제 저장되는 값. Prisma는 number를 유효숫자 16자리로 바꾼 뒤 DB가 둘째 자리에서 반올림한다
+ * (84.975 → 84.97499999999999 → 84.97, 1.005 → 1.005000000000000 → 1.01). 1.000~99.999 전부와 리허설 원천 값으로 실측 일치(2026-10-28).
+ * 키를 이 규칙으로 만들어야 기존 행과 맞고, 새 행은 이 문자열로 넣어 저장값 = 키가 되게 한다(toApiTx).
+ */
 export function area2(x: number): string {
   const neg = x < 0;
-  const [i, f = ''] = Math.abs(x).toFixed(6).split('.');
+  const [i, f = ''] = Math.abs(x).toPrecision(16).split('.');
   let cents = BigInt(i) * 100n + BigInt((f + '00').slice(0, 2));
   if (Number(f[2] ?? '0') >= 5) cents += 1n;
   const s = `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
