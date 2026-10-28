@@ -28,6 +28,7 @@ export async function findOrCreateProperty(input: MatcherInput) {
       regionCode: { startsWith: input.sigunguCode },
       redirectToId: null,
     },
+    orderBy: { id: 'asc' }, // 같은 이름이 여럿이면 실행마다 같은 매물로(재정합이 매번 다르게 보지 않게)
   });
   if (exact) return exact;
 
@@ -38,6 +39,7 @@ export async function findOrCreateProperty(input: MatcherInput) {
       regionCode: { startsWith: input.sigunguCode },
       redirectToId: null,
     },
+    orderBy: { id: 'asc' },
     take: 5,
   });
   if (candidates.length === 1) return candidates[0];

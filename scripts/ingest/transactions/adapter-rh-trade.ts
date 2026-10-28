@@ -1,6 +1,7 @@
 import { parseXml, getItems, getTotalCount, parseCommaNumber, parseYmd } from '@/scripts/ingest/xml-parse';
 import { PropertyType, DealType } from '@prisma/client';
 import type { Adapter, NormalizedTransaction } from '@/scripts/ingest/types';
+import { parseCancelType, parseCancelDate } from './molit-date';
 
 function classifyHouseType(houseType: unknown): PropertyType {
   const s = String(houseType ?? '').trim();
@@ -29,8 +30,9 @@ export const adapterRhTrade: Adapter = {
       dealingType: item.dealingGbn ? String(item.dealingGbn) : null,
       buyerType: item.buyerGbn ? String(item.buyerGbn) : null,
       sellerType: item.slerGbn ? String(item.slerGbn) : null,
-      cancelDate: null,
-      cancelType: null,
+      // S3: 오피스텔·연립다세대 매매도 해제 필드를 준다(아파트와 같은 규칙).
+      cancelDate: parseCancelDate(item.cdealDay),
+      cancelType: parseCancelType(item.cdealType),
       deposit: null,
       monthlyRent: null,
       contractTerm: null,

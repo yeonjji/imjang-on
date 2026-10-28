@@ -16,6 +16,19 @@ describe('ETL 타이머 배선', () => {
     expect(startLine).toContain(`imjang-etl@${job}.timer`);
     expect(etl).toMatch(new RegExp(`^\\s+${job.replace(/-/g, '\\-')}\\)`, 'm'));
   });
+  it('S3 재확인 잡: 매일 상한만큼, 2~6개월 전은 7일·7~12개월 전은 30일 주기', () => {
+    expect(jobs).toContain('transactions-recheck');
+    const block = etl.slice(etl.indexOf('  transactions-recheck)'), etl.indexOf(';;', etl.indexOf('  transactions-recheck)')));
+    expect(block).toContain('--mode=recheck --offsets=2-6 --window-days=7 --limit=');
+    expect(block).toContain('--mode=recheck --offsets=7-12 --window-days=30 --limit=');
+    expect(block).toContain('exit $rc'); // 앞 단계 실패를 숨기지 않는다
+  });
+  it('거래 수집(daily·recheck)은 같은 잠금으로 직렬화된다(매물 중복 생성 경쟁 방지)', () => {
+    const daily = etl.slice(etl.indexOf('  transactions-daily)'), etl.indexOf(';;', etl.indexOf('  transactions-daily)')));
+    expect(daily).toContain('$TX_LOCK $DC pnpm ingest:run');
+    const block = etl.slice(etl.indexOf('  transactions-recheck)'), etl.indexOf(';;', etl.indexOf('  transactions-recheck)')));
+    expect(block.match(/\$TX_LOCK \$DC pnpm ingest:run/g)).toHaveLength(2);
+  });
   it('주간 점검은 S5 전까지 대기열에 넣지 않는다(dry-run)', () => {
     const line = etl.split('\n').find((l) => l.trim().startsWith('property-aggregate-check)'))!;
     expect(line).toContain('--mode=check');

@@ -2,7 +2,8 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { fetchPage } from '@/scripts/ingest/http';
 import { findOrCreateProperty } from '@/scripts/ingest/property-matcher';
-import { drainAggregateQueue, enqueuePropertyAggregates } from '@/scripts/ingest/aggregate-queue';
+import { drainAggregateQueue } from '@/scripts/ingest/aggregate-queue';
+import { reconcileScope, type ApiTx, type ReconcileResult } from './reconcile';
 import { revalidatePaths, propertyPath } from '@/scripts/ingest/revalidator';
 import { notify } from '@/scripts/ingest/notify';
 
@@ -15,13 +16,12 @@ import { adapterRhRent } from './adapter-rh-rent';
 import { doneRunFilter, buildDoneKeys } from './resume';
 import { getSigunguTargets } from './sigungu';
 
-import type { Prisma } from '@prisma/client';
 import type { Adapter, ApiType, Mode, NormalizedTransaction } from '@/scripts/ingest/types';
 import { createHash } from 'node:crypto';
 import { getRangeMonths } from './months';
 import { parseXml, assertNormalResponse } from '@/scripts/ingest/xml-parse';
 
-const ADAPTERS: Record<ApiType, Adapter> = {
+export const ADAPTERS: Record<ApiType, Adapter> = {
   'apt-trade': adapterAptTrade,
   'apt-rent': adapterAptRent,
   'offi-trade': adapterOffiTrade,
@@ -38,6 +38,10 @@ interface RunArgs {
   limit?: number;
   from?: string;
   to?: string;
+  /** recheck: 다시 확인할 월 오프셋 범위(예: '2-6' = 2~6개월 전) */
+  offsets?: string;
+  /** recheck: 이 기간(일) 안에 완료한 범위는 건너뛴다 */
+  windowDays: number;
 }
 
 function parseArgs(): RunArgs {
@@ -50,7 +54,12 @@ function parseArgs(): RunArgs {
   const limit = get('limit') !== undefined ? Number(get('limit')) : undefined;
   const from = get('from');
   const to = get('to');
-  return { api, mode, months, monthOffset, limit, from, to };
+  const offsets = get('offsets');
+  if (mode === 'recheck' && !offsets) throw new Error('--mode=recheck에는 --offsets=2-6 형식이 필요하다');
+  const windowDays = Number(get('window-days') ?? '7');
+  if (!Number.isInteger(windowDays) || windowDays < 1) throw new Error(`--window-days는 1 이상의 정수: ${get('window-days')}`);
+  if (limit !== undefined && (!Number.isInteger(limit) || limit < 1)) throw new Error(`--limit는 1 이상의 정수: ${get('limit')}`);
+  return { api, mode, months, monthOffset, limit, from, to, offsets, windowDays };
 }
 
 export interface IngestTaskKey {
@@ -152,6 +161,8 @@ async function main() {
   const months =
     args.mode === 'daily'
       ? getDailyMonths()
+      : args.mode === 'recheck'
+        ? getOffsetMonths(args.offsets!, new Date())
       : args.from && args.to
         ? getRangeMonths(args.from, args.to)
         : args.monthOffset !== undefined
@@ -167,7 +178,7 @@ async function main() {
 
   const sources = apis.map((a) => ADAPTERS[a].source);
   const doneRuns = await prisma.ingestionRun.findMany({
-    where: { source: { in: sources }, status: 'OK', ...doneRunFilter(args.mode, new Date()) },
+    where: { source: { in: sources }, status: 'OK', ...doneRunFilter(args.mode, new Date(), args.windowDays) },
     select: { source: true, targetKey: true },
   });
   // daily: 오늘(KST) 완료분만 스킵 → 날짜가 바뀌면 이번달·전달 전체 재처리(self-heal 유지)
@@ -179,6 +190,8 @@ async function main() {
   let failed = 0;
   let skipped = 0;
   const affectedPropertyIds = new Set<bigint>();
+  // 재정합 집계(알림·로그용)
+  const rec = { archived: 0, orphans: 0, propertyMismatch: 0, cancelDateRepaired: 0, outOfScope: 0, outOfMonth: 0, guarded: {} as Record<string, number> };
 
   const taskKeys = buildIngestTaskKeys(
     apis.map((a) => ({ api: a, source: ADAPTERS[a].source })),
@@ -190,14 +203,19 @@ async function main() {
 
   const tasks: Array<() => Promise<void>> = taskKeys.map((k) => async () => {
     try {
-      const upserted = await runOne(
+      const r = await runOne(
         ADAPTERS[k.api as ApiType],
         k.sgg,
         sigunguToRegionCode.get(k.sgg)!,
         k.yyyymm,
-        affectedPropertyIds,
       );
-      totalUpserted += upserted;
+      // 가드에 걸린 범위는 아무것도 쓰지 않았다 — 계획 수치를 합치지 않는다.
+      if (r.status === 'skipped') { rec.guarded[r.skipReason!] = (rec.guarded[r.skipReason!] ?? 0) + 1; return; }
+      totalUpserted += r.inserted;
+      r.affectedPropertyIds.forEach((id) => affectedPropertyIds.add(id));
+      rec.archived += r.archived.cancel + r.archived.correction;
+      rec.orphans += r.orphans; rec.propertyMismatch += r.propertyMismatch; rec.cancelDateRepaired += r.cancelDateRepaired;
+      rec.outOfScope += r.outOfScope; rec.outOfMonth += r.outOfMonth;
     } catch (err) {
       failed++;
       logger.error({ err, api: k.source, sgg: k.sgg, yyyymm: k.yyyymm }, 'sigungu-month failed');
@@ -215,7 +233,7 @@ async function main() {
   // 실패하거나 30분 예산을 넘겨도 대기열에 남아 property-aggregates 잡이 이어서 처리한다.
   const drained = await drainAggregateQueue({ deadline: Date.now() + 30 * 60_000 });
 
-  if (args.mode === 'daily') {
+  if (args.mode !== 'backfill') {
     const paths: string[] = [];
     const props = await prisma.property.findMany({
       where: { id: { in: Array.from(affectedPropertyIds) } },
@@ -227,70 +245,120 @@ async function main() {
     await revalidatePaths(paths);
   }
 
+  const guarded = Object.values(rec.guarded).reduce((a, b) => a + b, 0);
   const summary = {
-    totalUpserted, skipped, failed, properties: affectedPropertyIds.size,
+    mode: args.mode, totalUpserted, skipped, failed, properties: affectedPropertyIds.size, ...rec,
     aggregated: drained.processed, aggregateQueueRemaining: drained.remaining, aggregateStop: drained.stoppedBy,
   };
   logger.info(summary, 'runner done');
-  await notify(drained.stoppedBy === 'error' ? 'warn' : failed === 0 ? 'info' : failed >= 5 ? 'warn' : 'info', 'ETL run complete', summary);
+  await notify(drained.stoppedBy === 'error' || guarded > 0 || failed >= 5 ? 'warn' : 'info', 'ETL run complete', summary);
 
   await prisma.$disconnect();
 }
 
-async function runOne(
+export async function runOne(
   adapter: Adapter,
   sigungu: string,
   regionCode: string,
   yyyymm: string,
-  affectedProps: Set<bigint>,
-): Promise<number> {
+): Promise<ReconcileResult> {
   const targetKey = `${sigungu}-${yyyymm}`;
   const run = await prisma.ingestionRun.create({
     data: { source: adapter.source, targetKey, status: 'RUNNING' },
   });
 
   try {
-    const rows = await fetchAll(adapter, sigungu, yyyymm);
+    const { rows, totalCount, complete } = await fetchAll(adapter, sigungu, yyyymm);
 
-    // 시군구 내 기존 매물 일괄 로드 → findOrCreateProperty의 findFirst N번 → 1번으로 축소
-    // redirectToId: null — 병합으로 리다이렉트된 패자는 캐시에서 제외한다. 안 그러면
-    // (type, name) 키가 생존자/패자 중 findMany가 마지막으로 돌려준 쪽으로 고정되어,
-    // 패자로 확정되면 그날 이후의 거래가 전부 301된 행에 쌓여 영영 복구 불가능해진다.
-    const existingProps = await prisma.property.findMany({
-      where: { regionCode: { startsWith: sigungu }, redirectToId: null },
+    const { api, excluded } = await resolveApiRows(adapter, sigungu, regionCode, rows, { create: true });
+
+    // 원천과 DB를 범위 단위로 맞춘다(삽입·보관·해제일 수정·대기열·완료 기록이 한 트랜잭션). reconcile.ts 참고.
+    const r = await reconcileScope({ source: adapter.source, sigunguCode: sigungu, yyyymm, api, complete, totalCount, excluded }, run.id);
+    if (r.status === 'skipped') {
+      // 가드에 걸리면 아무것도 쓰지 않았다 — OK가 아니므로 다음 실행이 다시 시도한다.
+      await prisma.ingestionRun.update({
+        where: { id: run.id },
+        data: { status: 'ERROR', errorMessage: `reconcile skipped: ${r.skipReason} (api=${r.api}, db=${r.db}, total=${totalCount})`, finishedAt: new Date() },
+      });
+      logger.warn({ source: adapter.source, sgg: sigungu, yyyymm, ...r, affectedPropertyIds: undefined }, 'sigungu-month guarded');
+      return r;
+    }
+    logger.info({ source: adapter.source, sgg: sigungu, yyyymm, status: r.status, inserted: r.inserted, archived: r.archived, orphans: r.orphans }, 'sigungu-month ok');
+    return r;
+  } catch (err) {
+    await prisma.ingestionRun.update({
+      where: { id: run.id },
+      data: { status: 'ERROR', errorMessage: String(err), finishedAt: new Date() },
     });
-    const propCache = new Map<string, (typeof existingProps)[0]>();
-    for (const p of existingProps) {
-      propCache.set(`${p.propertyType}:${p.name}`, p);
-    }
+    throw err;
+  }
+}
 
-    // 행별 property 확정 (캐시 miss 시에만 findOrCreateProperty 호출)
-    type Resolved = { row: NormalizedTransaction; property: (typeof existingProps)[0] };
-    const resolved: Resolved[] = [];
-    for (const row of rows) {
-      if (!row.name) continue;
-      const key = `${row.propertyType}:${row.name}`;
-      let property = propCache.get(key);
-      if (!property) {
-        property = await findOrCreateProperty({
-          propertyType: row.propertyType,
-          name: row.name,
-          sigunguCode: row.sigunguCode,
-          regionCode,
-          address: buildAddress(row),
-          buildYear: row.buildYear,
-          roadName: row.roadName,
-        });
-        propCache.set(key, property);
-      }
-      resolved.push({ row, property });
-    }
+/**
+ * 원천 행의 매물을 확정해 ApiTx로 만든다. 단지명이 없는 행은 excluded로 센다.
+ * create=false(운영 dry-run)면 매물을 만들지 않고, 없는 매물의 행은 unknownProperty로 세어 뺀다(쓰기 없음).
+ */
+export async function resolveApiRows(
+  adapter: Adapter, sigungu: string, regionCode: string, rows: NormalizedTransaction[], opts: { create: boolean },
+): Promise<{ api: ApiTx[]; excluded: number; unknownProperty: number }> {
+  // 시군구 내 기존 매물 일괄 로드 → findOrCreateProperty의 findFirst N번 → 1번으로 축소
+  // redirectToId: null — 병합으로 리다이렉트된 패자는 캐시에서 제외한다. 안 그러면
+  // (type, name) 키가 생존자/패자 중 findMany가 마지막으로 돌려준 쪽으로 고정되어,
+  // 패자로 확정되면 그날 이후의 거래가 전부 301된 행에 쌓여 영영 복구 불가능해진다.
+  const existingProps = await prisma.property.findMany({
+    where: { regionCode: { startsWith: sigungu }, redirectToId: null },
+    select: { id: true, propertyType: true, name: true, regionCode: true },
+    orderBy: { id: 'asc' },
+  });
+  // 같은 이름이 여럿이면 가장 오래된 매물(findOrCreateProperty와 같은 기준) — 실행마다 같은 매물로 확정한다.
+  const propCache = new Map<string, { id: bigint; regionCode: string }>();
+  for (const p of existingProps) {
+    const k = `${p.propertyType}:${p.name}`;
+    if (!propCache.has(k)) propCache.set(k, p);
+  }
 
-    const data = resolved.map(({ row, property }) => ({
-      rawHash: computeHash(row, property.id),
-      propertyId: property.id,
+  // 행별 property 확정 (캐시 miss 시에만 findOrCreateProperty 호출)
+  const api: ApiTx[] = [];
+  let excluded = 0;
+  let unknownProperty = 0;
+  for (const row of rows) {
+    if (!row.name) { excluded++; continue; }
+    const key = `${row.propertyType}:${row.name}`;
+    let property = propCache.get(key);
+    if (!property) {
+      if (!opts.create) { unknownProperty++; continue; }
+      property = await findOrCreateProperty({
+        propertyType: row.propertyType,
+        name: row.name,
+        sigunguCode: row.sigunguCode,
+        regionCode,
+        address: buildAddress(row),
+        buildYear: row.buildYear,
+        roadName: row.roadName,
+      });
+      propCache.set(key, property);
+    }
+    api.push(toApiTx(row, property.id, property.regionCode, adapter.source));
+  }
+  return { api, excluded, unknownProperty };
+}
+
+export function toApiTx(row: NormalizedTransaction, propertyId: bigint, regionCode: string, source: string): ApiTx {
+  return {
+    propertyId,
+    dealType: row.dealType,
+    contractDate: row.contractDate,
+    exclusiveArea: row.exclusiveArea,
+    floor: row.floor,
+    dealAmount: row.dealAmount,
+    deposit: row.deposit,
+    monthlyRent: row.monthlyRent,
+    cancelType: row.cancelType,
+    cancelDate: row.cancelDate,
+    data: {
+      propertyId,
       propertyType: row.propertyType,
-      regionCode: property.regionCode,
+      regionCode,
       sigunguCode: row.sigunguCode,
       dealType: row.dealType,
       contractDate: row.contractDate,
@@ -314,57 +382,26 @@ async function runOne(
       umd: row.umd,
       jibun: row.jibun,
       roadName: row.roadName,
-      source: adapter.source,
+      source,
       externalKey: row.externalKey,
-    }));
-    const upserted = await saveTaskTransactions(prisma, run.id, data);
-
-    for (const { property } of resolved) {
-      affectedProps.add(property.id);
-    }
-
-    logger.info({ source: adapter.source, sgg: sigungu, yyyymm, upserted }, 'sigungu-month ok');
-    return upserted;
-  } catch (err) {
-    await prisma.ingestionRun.update({
-      where: { id: run.id },
-      data: { status: 'ERROR', errorMessage: String(err), finishedAt: new Date() },
-    });
-    throw err;
-  }
+    },
+  };
 }
+
+/** 한 범위에 받을 수 있는 최대 페이지(1,000건/페이지). 넘으면 불완전으로 본다(조용히 자르지 않는다). */
+const MAX_PAGES = 100;
 
 /**
- * 한 단위(시군구·월)의 거래 저장 + 재집계 대기열 넣기 + 단위 완료(OK) 기록을 **한 트랜잭션**으로.
- * 이전에는 실행 끝에서 한 번만 집계해, 그 전에 프로세스가 끝나면 OK인 단위의 매물이 영구히 집계에서 빠졌다(D1).
- * 이제 중간에 죽어도 (a) 트랜잭션이 롤백되어 단위가 OK가 아니므로 재실행이 다시 처리하거나
- * (b) 커밋되었으면 대기열에 매물이 남아 drainAggregateQueue가 집계한다.
+ * 원천 한 범위(시군구·월)를 끝까지 받는다. complete = 받은 건수가 totalCount와 같다.
+ * 페이지 오류·비정상 응답은 예외(assertNormalResponse). 빈 페이지·건수 부족·페이지 상한은 complete=false.
  */
-export async function saveTaskTransactions(
-  db: typeof prisma,
-  runId: bigint,
-  data: Prisma.TransactionCreateManyInput[],
-): Promise<number> {
-  return db.$transaction(
-    async (t) => {
-      // rawHash unique → skipDuplicates로 멱등(재정합 방식은 S3)
-      const { count } = await t.transaction.createMany({ skipDuplicates: true, data });
-      await enqueuePropertyAggregates(t, data.map((d) => d.propertyId as bigint));
-      await t.ingestionRun.update({
-        where: { id: runId },
-        data: { status: 'OK', rowsUpserted: count, finishedAt: new Date() },
-      });
-      return count;
-    },
-    { timeout: 120_000, maxWait: 30_000 },
-  );
-}
-
-async function fetchAll(adapter: Adapter, sigungu: string, yyyymm: string): Promise<NormalizedTransaction[]> {
+export async function fetchAll(
+  adapter: Adapter, sigungu: string, yyyymm: string, fetch: typeof fetchPage = fetchPage,
+): Promise<{ rows: NormalizedTransaction[]; totalCount: number; complete: boolean }> {
   const all: NormalizedTransaction[] = [];
-  let pageNo = 1;
-  while (true) {
-    const xml = await fetchPage({
+  let totalCount = 0;
+  for (let pageNo = 1; pageNo <= MAX_PAGES; pageNo++) {
+    const xml = await fetch({
       operation: adapter.endpoint,
       lawdCd: sigungu,
       dealYmd: yyyymm,
@@ -372,12 +409,13 @@ async function fetchAll(adapter: Adapter, sigungu: string, yyyymm: string): Prom
       numOfRows: 1000,
     });
     assertNormalResponse(parseXml(xml));
-    const { rows, totalCount } = adapter.parseRows(xml, sigungu);
-    all.push(...rows);
-    if (all.length >= totalCount || rows.length < 1000 || pageNo > 10) break;
-    pageNo++;
+    const page = adapter.parseRows(xml, sigungu);
+    if (pageNo === 1) totalCount = page.totalCount;
+    else if (page.totalCount !== totalCount) return { rows: all, totalCount, complete: false }; // 받는 중 원천이 바뀜
+    all.push(...page.rows);
+    if (all.length >= totalCount || page.rows.length === 0) break;
   }
-  return all;
+  return { rows: all, totalCount, complete: all.length === totalCount };
 }
 
 /**
@@ -412,6 +450,15 @@ export function computeHash(row: NormalizedTransaction, propertyId: bigint): str
 function getMonthByOffset(offset: number): string {
   const now = new Date();
   return ymd(new Date(now.getFullYear(), now.getMonth() - offset, 1));
+}
+
+/** '2-6' → 2~6개월 전의 YYYYMM 목록(KST 기준이 아닌 박스 시각 — getDailyMonths와 같은 규칙). */
+export function getOffsetMonths(range: string, now: Date): string[] {
+  const m = /^(\d+)-(\d+)$/.exec(range);
+  if (!m || Number(m[1]) > Number(m[2])) throw new Error(`--offsets 형식 오류: ${range} (예: 2-6)`);
+  const out: string[] = [];
+  for (let i = Number(m[1]); i <= Number(m[2]); i++) out.push(ymd(new Date(now.getFullYear(), now.getMonth() - i, 1)));
+  return out;
 }
 
 function getDailyMonths(): string[] {

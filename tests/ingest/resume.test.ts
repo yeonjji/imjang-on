@@ -28,6 +28,12 @@ describe('doneRunFilter', () => {
     expect(doneRunFilter('daily', now)).toEqual({ finishedAt: { gte: new Date('2026-06-02T15:00:00Z') } });
   });
 
+  it('recheck 모드는 최근 windowDays일 안의 완료분을 건너뛴다(매일 나눠 돌리고 주기마다 다시)', () => {
+    const now = new Date('2026-06-10T10:00:00Z');
+    expect(doneRunFilter('recheck', now, 7)).toEqual({ finishedAt: { gte: new Date('2026-06-03T10:00:00Z') } });
+    expect(doneRunFilter('recheck', now, 30)).toEqual({ finishedAt: { gte: new Date('2026-05-11T10:00:00Z') } });
+  });
+
   it('backfill 모드는 날짜 제한 없음(빈 객체)', () => {
     expect(doneRunFilter('backfill', new Date('2026-06-03T10:00:00Z'))).toEqual({});
   });
