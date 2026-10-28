@@ -3,67 +3,125 @@ import { PropertyType, DealType } from '@prisma/client';
 import { fetchAll, getOffsetMonths, toApiTx } from '@/scripts/ingest/transactions/runner';
 import type { Adapter, NormalizedTransaction } from '@/scripts/ingest/types';
 
-// 원천 완전 수신 판단: 페이지 상한으로 조용히 자르지 않고, 건수가 totalCount와 같을 때만 complete.
-const row = (n: number) => ({ name: `단지${n}` }) as unknown as NormalizedTransaction;
+// 원천 완전 수신: 5,000건 한 번 호출 우선, 안 되면 1,000건 페이지로 처음부터. 건수가 totalCount와 같을 때만 complete.
 const OK = '<response><header><resultCode>000</resultCode><resultMsg>OK</resultMsg></header><body></body></response>';
-/** pages[i] = i+1 페이지의 { 행 수, totalCount }. 'err'면 비정상 응답. */
-function fake(pages: Array<{ n: number; total: number } | 'err'>) {
-  let i = 0;
-  const calls: number[] = [];
+const ERR = '<response><header><resultCode>99</resultCode><resultMsg>SERVICE ERROR</resultMsg></header></response>';
+
+/**
+ * 가짜 원천: total건 데이터를 (pageNo, numOfRows)로 자른다. cap은 API가 실제로 돌려주는 최대 건수(요청보다 작으면 줄여 보냄).
+ * fault(호출 정보)가 값을 돌려주면 그 응답으로 바꾼다.
+ */
+function fakeApi(total: number, o: {
+  cap?: number;
+  fault?: (c: { n: number; pageNo: number; numOfRows: number }) => 'err' | { rows: number[]; total: number } | undefined;
+} = {}) {
+  const calls: Array<{ pageNo: number; numOfRows: number }> = [];
   const adapter = {
     endpoint: 'X', source: 'x',
-    parseRows: (xml: string) => { const p = JSON.parse(xml.slice(OK.length)); return { rows: Array.from({ length: p.n }, (_, k) => row(k)), totalCount: p.total }; },
+    parseRows: (xml: string) => {
+      const p = JSON.parse(xml.slice(OK.length)) as { rows: number[]; total: number };
+      return { rows: p.rows.map((k) => ({ name: `단지${k}` }) as unknown as NormalizedTransaction), totalCount: p.total };
+    },
   } as unknown as Adapter;
-  const fetch = (async (o: { pageNo: number }) => {
-    calls.push(o.pageNo);
-    const p = pages[i++];
-    if (p === 'err') return '<response><header><resultCode>22</resultCode><resultMsg>LIMITED</resultMsg></header></response>';
-    return OK + JSON.stringify(p);
+  const fetch = (async ({ pageNo, numOfRows }: { pageNo: number; numOfRows: number }) => {
+    calls.push({ pageNo, numOfRows });
+    const f = o.fault?.({ n: calls.length, pageNo, numOfRows });
+    if (f === 'err') return ERR;
+    const size = Math.min(numOfRows, o.cap ?? Infinity);
+    const body = f ?? { rows: Array.from({ length: Math.max(0, Math.min(size, total - (pageNo - 1) * size)) }, (_, i) => (pageNo - 1) * size + i), total };
+    return OK + JSON.stringify(body);
   }) as never;
   return { adapter, fetch, calls };
 }
+const names = (r: { rows: NormalizedTransaction[] }) => r.rows.map((x) => x.name);
+const expectAll = (r: { rows: NormalizedTransaction[] }, total: number) =>
+  expect(names(r)).toEqual(Array.from({ length: total }, (_, k) => `단지${k}`));
 
-describe('fetchAll — 완전 수신 여부', () => {
-  it('여러 페이지를 끝까지 받으면 complete', async () => {
-    const f = fake([{ n: 1000, total: 2300 }, { n: 1000, total: 2300 }, { n: 300, total: 2300 }]);
+describe('fetchAll — 단일 호출 우선 + 페이지 전환', () => {
+  it('정상: 5,000건 이하면 numOfRows=5000 한 번 호출로 끝난다', async () => {
+    const f = fakeApi(3506);
     const r = await fetchAll(f.adapter, '11110', '202606', f.fetch);
-    expect(r).toMatchObject({ totalCount: 2300, complete: true });
-    expect(r.rows).toHaveLength(2300);
-    expect(f.calls).toEqual([1, 2, 3]);
+    expect(r).toMatchObject({ totalCount: 3506, complete: true, mode: 'single' });
+    expectAll(r, 3506);
+    expect(f.calls).toEqual([{ pageNo: 1, numOfRows: 5000 }]);
   });
 
-  it('11페이지 이상도 받는다(옛 10페이지 상한 제거)', async () => {
-    const f = fake([...Array.from({ length: 11 }, () => ({ n: 1000, total: 11500 })), { n: 500, total: 11500 }]);
-    const r = await fetchAll(f.adapter, '11110', '202606', f.fetch);
-    expect(r).toMatchObject({ complete: true });
-    expect(r.rows).toHaveLength(11500);
+  it('거래 0건(totalCount 0)도 한 번 호출로 complete', async () => {
+    const f = fakeApi(0);
+    expect(await fetchAll(f.adapter, '11110', '202606', f.fetch)).toMatchObject({ rows: [], complete: true, mode: 'single' });
+    expect(f.calls).toHaveLength(1);
   });
 
-  it('중간 페이지가 비면(누락) 불완전', async () => {
-    const f = fake([{ n: 1000, total: 2300 }, { n: 0, total: 2300 }]);
-    expect(await fetchAll(f.adapter, '11110', '202606', f.fetch)).toMatchObject({ complete: false });
+  it('5,000건 초과: 1,000건 페이지로 처음부터 다시 받아 complete(중복·누락 없음)', async () => {
+    const f = fakeApi(7300);
+    const r = await fetchAll(f.adapter, '11110', '202606', f.fetch);
+    expect(r).toMatchObject({ totalCount: 7300, complete: true, mode: 'paged' });
+    expectAll(r, 7300);
+    expect(f.calls).toEqual([{ pageNo: 1, numOfRows: 5000 }, ...Array.from({ length: 8 }, (_, i) => ({ pageNo: i + 1, numOfRows: 1000 }))]);
   });
 
-  it('페이지 행 수가 모자라 건수가 totalCount에 못 미치면 불완전', async () => {
-    const f = fake([{ n: 1000, total: 2300 }, { n: 800, total: 2300 }, { n: 0, total: 2300 }]);
+  it('API가 요청 건수를 1,000건으로 줄여 보내도 페이지 수집으로 전체를 받는다', async () => {
+    const f = fakeApi(2300, { cap: 1000 });
     const r = await fetchAll(f.adapter, '11110', '202606', f.fetch);
-    expect(r).toMatchObject({ complete: false });
-    expect(r.rows).toHaveLength(1800);
+    expect(r).toMatchObject({ complete: true, mode: 'paged' });
+    expectAll(r, 2300);
+  });
+
+  it('API가 100건으로 줄여 보내도(페이지 크기보다 작음) 끝까지 받는다', async () => {
+    const f = fakeApi(2300, { cap: 100 });
+    const r = await fetchAll(f.adapter, '11110', '202606', f.fetch);
+    expect(r).toMatchObject({ complete: true, mode: 'paged' });
+    expectAll(r, 2300);
+  });
+
+  it('부분 수신: 페이지 수집 중 빈 페이지가 오면 불완전', async () => {
+    const f = fakeApi(7300, { fault: ({ pageNo, numOfRows }) => (numOfRows === 1000 && pageNo === 4 ? { rows: [], total: 7300 } : undefined) });
+    expect(await fetchAll(f.adapter, '11110', '202606', f.fetch)).toMatchObject({ complete: false, mode: 'paged' });
+  });
+
+  it('부분 수신: 한 번 호출이 totalCount보다 적게 오고 페이지 수집도 모자라면 불완전', async () => {
+    // 원천이 totalCount=2300이라 하지만 실제로 2,000건만 내준다
+    const f = fakeApi(2000, { fault: ({ pageNo, numOfRows }) => {
+      const size = numOfRows === 5000 ? 5000 : 1000;
+      const rows = Array.from({ length: Math.max(0, Math.min(size, 2000 - (pageNo - 1) * size)) }, (_, i) => (pageNo - 1) * size + i);
+      return { rows, total: 2300 };
+    } });
+    const r = await fetchAll(f.adapter, '11110', '202606', f.fetch);
+    expect(r).toMatchObject({ totalCount: 2300, complete: false });
+    expect(r.rows.length).toBeLessThan(2300);
+  });
+
+  it('API가 페이지 번호를 무시하고 같은 페이지를 반복하면 불완전(건수가 맞아도 중복으로 채우지 않는다)', async () => {
+    const f = fakeApi(2000, { fault: ({ numOfRows }) => (numOfRows === 5000 ? { rows: Array.from({ length: 1000 }, (_, i) => i), total: 2000 }
+      : { rows: Array.from({ length: 1000 }, (_, i) => i), total: 2000 }) });
+    expect(await fetchAll(f.adapter, '11110', '202606', f.fetch)).toMatchObject({ complete: false, mode: 'paged' });
   });
 
   it('받는 중 totalCount가 바뀌면 불완전', async () => {
-    const f = fake([{ n: 1000, total: 2300 }, { n: 1000, total: 2301 }]);
+    const f = fakeApi(7300, { fault: ({ pageNo, numOfRows }) => (numOfRows === 1000 && pageNo === 2 ? { rows: Array.from({ length: 1000 }, (_, i) => 1000 + i), total: 7301 } : undefined) });
     expect(await fetchAll(f.adapter, '11110', '202606', f.fetch)).toMatchObject({ complete: false });
   });
 
-  it('비정상 응답(오류 코드)은 예외 — 단위가 ERROR로 남아 재실행된다', async () => {
-    const f = fake([{ n: 1000, total: 2300 }, 'err']);
+  it('받은 건수가 totalCount보다 많으면 불완전', async () => {
+    const f = fakeApi(10, { fault: () => ({ rows: Array.from({ length: 11 }, (_, i) => i), total: 10 }) });
+    expect(await fetchAll(f.adapter, '11110', '202606', f.fetch)).toMatchObject({ complete: false, mode: 'single' });
+  });
+
+  it('API 오류(첫 호출): 예외 — 단위가 ERROR로 남고 DB는 바뀌지 않는다', async () => {
+    const f = fakeApi(100, { fault: ({ n }) => (n === 1 ? 'err' : undefined) });
     await expect(fetchAll(f.adapter, '11110', '202606', f.fetch)).rejects.toThrow();
   });
 
-  it('거래 0건(totalCount 0)은 complete', async () => {
-    const f = fake([{ n: 0, total: 0 }]);
-    expect(await fetchAll(f.adapter, '11110', '202606', f.fetch)).toMatchObject({ rows: [], complete: true });
+  it('API 오류(페이지 수집 중): 예외', async () => {
+    const f = fakeApi(7300, { fault: ({ pageNo, numOfRows }) => (numOfRows === 1000 && pageNo === 3 ? 'err' : undefined) });
+    await expect(fetchAll(f.adapter, '11110', '202606', f.fetch)).rejects.toThrow();
+  });
+
+  it('페이지 상한(100쪽)을 넘는 범위는 불완전(조용히 자르지 않는다)', async () => {
+    const f = fakeApi(10_050, { cap: 100 });
+    const r = await fetchAll(f.adapter, '11110', '202606', f.fetch);
+    expect(r).toMatchObject({ complete: false, mode: 'paged' });
+    expect(r.rows).toHaveLength(10_000);
   });
 });
 

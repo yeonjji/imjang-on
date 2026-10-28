@@ -388,34 +388,55 @@ export function toApiTx(row: NormalizedTransaction, propertyId: bigint, regionCo
   };
 }
 
-/** 한 범위에 받을 수 있는 최대 페이지(1,000건/페이지). 넘으면 불완전으로 본다(조용히 자르지 않는다). */
+/** 한 번에 요청하는 건수. 운영 최대 범위가 3,506행(2026-10-28)이라 대부분 호출 한 번으로 끝난다. */
+export const SINGLE_CALL_ROWS = 5000;
+/** 한 번에 다 오지 않을 때의 페이지 크기(이전부터 쓰던 값). */
+export const PAGE_ROWS = 1000;
+/** 페이지 수집 상한. 넘으면 불완전으로 본다(조용히 자르지 않는다). */
 const MAX_PAGES = 100;
 
+type FetchResult = { rows: NormalizedTransaction[]; totalCount: number; complete: boolean; mode: 'single' | 'paged' };
+
 /**
- * 원천 한 범위(시군구·월)를 끝까지 받는다. complete = 받은 건수가 totalCount와 같다.
- * 페이지 오류·비정상 응답은 예외(assertNormalResponse). 빈 페이지·건수 부족·페이지 상한은 complete=false.
+ * 원천 한 범위(시군구·월)를 받는다. complete = 받은 건수가 totalCount와 같고 모든 페이지가 정상이다.
+ * 1) numOfRows=5000으로 한 번 호출 → 받은 건수 = totalCount면 끝(페이지 경계의 중복·누락 위험이 없다).
+ * 2) 아니면(5,000건 초과, API가 요청 건수를 줄여 보냄 등) 처음부터 1,000건 페이지로 다시 받는다.
+ *    페이지마다 totalCount가 같아야 하고, 앞 페이지와 똑같은 페이지(페이지 번호 무시)·빈 페이지·건수 초과는 불완전이다.
+ * 오류 응답은 예외(assertNormalResponse) — 단위가 ERROR로 남는다. 불완전이면 호출자가 DB를 바꾸지 않는다(재정합 가드).
  */
 export async function fetchAll(
   adapter: Adapter, sigungu: string, yyyymm: string, fetch: typeof fetchPage = fetchPage,
-): Promise<{ rows: NormalizedTransaction[]; totalCount: number; complete: boolean }> {
-  const all: NormalizedTransaction[] = [];
-  let totalCount = 0;
-  for (let pageNo = 1; pageNo <= MAX_PAGES; pageNo++) {
-    const xml = await fetch({
-      operation: adapter.endpoint,
-      lawdCd: sigungu,
-      dealYmd: yyyymm,
-      pageNo,
-      numOfRows: 1000,
-    });
+): Promise<FetchResult> {
+  const get = async (pageNo: number, numOfRows: number) => {
+    const xml = await fetch({ operation: adapter.endpoint, lawdCd: sigungu, dealYmd: yyyymm, pageNo, numOfRows });
     assertNormalResponse(parseXml(xml));
-    const page = adapter.parseRows(xml, sigungu);
-    if (pageNo === 1) totalCount = page.totalCount;
-    else if (page.totalCount !== totalCount) return { rows: all, totalCount, complete: false }; // 받는 중 원천이 바뀜
-    all.push(...page.rows);
-    if (all.length >= totalCount || page.rows.length === 0) break;
+    return adapter.parseRows(xml, sigungu);
+  };
+
+  const first = await get(1, SINGLE_CALL_ROWS);
+  if (first.rows.length === first.totalCount) {
+    return { rows: first.rows, totalCount: first.totalCount, complete: true, mode: 'single' };
   }
-  return { rows: all, totalCount, complete: all.length === totalCount };
+  if (first.rows.length > first.totalCount) {
+    return { rows: first.rows, totalCount: first.totalCount, complete: false, mode: 'single' };
+  }
+
+  // 한 번에 다 오지 않았다 → 페이지 수집. 첫 호출과 섞지 않고 1쪽부터 다시 받는다(페이지 크기가 달라 경계가 어긋난다).
+  const totalCount = first.totalCount;
+  const all: NormalizedTransaction[] = [];
+  let prevRows: string | null = null;
+  for (let pageNo = 1; pageNo <= MAX_PAGES; pageNo++) {
+    const page = await get(pageNo, PAGE_ROWS);
+    const incomplete = { rows: all, totalCount, complete: false, mode: 'paged' as const };
+    if (page.totalCount !== totalCount) return incomplete; // 받는 중 원천이 바뀜
+    if (page.rows.length === 0) return incomplete; // 다 받기 전에 빈 페이지
+    const rowsKey = JSON.stringify(page.rows); // 헤더의 pageNo는 요청을 따라 바뀔 수 있어 행 내용으로 비교
+    if (rowsKey === prevRows) return incomplete; // 페이지 번호를 무시하고 같은 페이지를 돌려줌
+    prevRows = rowsKey;
+    all.push(...page.rows);
+    if (all.length >= totalCount) break;
+  }
+  return { rows: all, totalCount, complete: all.length === totalCount, mode: 'paged' };
 }
 
 /**

@@ -2,9 +2,14 @@ import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vites
 import { PropertyType, DealType } from '@prisma/client';
 
 // 수집기 한 단위(runOne): 원천 응답(모킹) → 매물 확정 → 재정합 → 단위 기록. 원천 API·지오코더만 가짜.
-const pages: { xml: string[] } = { xml: [] };
+// xml: 요청 건수와 무관한 페이지 목록. byRows: 요청 건수(numOfRows)별 페이지 목록(있으면 우선).
+const pages: { xml: string[]; byRows?: Record<number, string[]> } = { xml: [] };
+const calls: Array<{ pageNo: number; numOfRows: number }> = [];
 vi.mock('@/scripts/ingest/http', () => ({
-  fetchPage: vi.fn(async ({ pageNo }: { pageNo: number }) => pages.xml[pageNo - 1]),
+  fetchPage: vi.fn(async ({ pageNo, numOfRows }: { pageNo: number; numOfRows: number }) => {
+    calls.push({ pageNo, numOfRows });
+    return (pages.byRows?.[numOfRows] ?? pages.xml)[pageNo - 1];
+  }),
 }));
 vi.mock('@/scripts/ingest/geocoder', async (importActual) => ({
   ...(await importActual<object>()),
@@ -45,7 +50,7 @@ beforeAll(async () => {
     update: {},
   });
 });
-beforeEach(clean);
+beforeEach(async () => { pages.byRows = undefined; calls.length = 0; await clean(); });
 afterAll(async () => {
   await clean();
   await prisma.region.deleteMany({ where: { code: REGION } });
@@ -102,6 +107,28 @@ describe('runOne — 재정합 수집', () => {
     pages.xml = ['<response><header><resultCode>99</resultCode><resultMsg>SERVICE ERROR</resultMsg></header></response>'];
     await expect(runOne(ADAPTERS['apt-trade'], SGG, REGION, '202606')).rejects.toThrow();
     expect(await txs()).toEqual(before);
+    expect((await runs()).at(-1)!.status).toBe('ERROR');
+  });
+
+  it('정상 수신은 numOfRows=5000 한 번 호출', async () => {
+    pages.xml = [xml([{ day: 3, amount: 100000 }])];
+    await runOne(ADAPTERS['apt-trade'], SGG, REGION, '202606');
+    expect(calls).toEqual([{ pageNo: 1, numOfRows: 5000 }]);
+  });
+
+  it('한 번 호출이 일부만 오면(API가 건수를 줄임) 1,000건 페이지로 다시 받아 정상 적용', async () => {
+    const a = { day: 3, amount: 100000 }; const b = { day: 9, amount: 110000 };
+    pages.byRows = { 5000: [xml([a], 2)], 1000: [xml([a], 2), xml([b], 2)] };
+    const r = await runOne(ADAPTERS['apt-trade'], SGG, REGION, '202606');
+    expect(r).toMatchObject({ status: 'applied', inserted: 2 });
+    expect(calls.map((c) => c.numOfRows)).toEqual([5000, 1000, 1000]);
+  });
+
+  it('페이지 수집 중 API 오류면 아무것도 쓰지 않고 단위 ERROR', async () => {
+    const a = { day: 3, amount: 100000 };
+    pages.byRows = { 5000: [xml([a], 2)], 1000: [xml([a], 2), '<response><header><resultCode>99</resultCode><resultMsg>ERR</resultMsg></header></response>'] };
+    await expect(runOne(ADAPTERS['apt-trade'], SGG, REGION, '202606')).rejects.toThrow();
+    expect(await txs()).toHaveLength(0);
     expect((await runs()).at(-1)!.status).toBe('ERROR');
   });
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { prisma } from '@/lib/db';
 import { PropertyType, DealType } from '@prisma/client';
-import { mergeDuplicateProperties } from '@/scripts/ops/merge-duplicate-properties';
+import { mergeDuplicateProperties, MERGE_APPLY_BLOCKED_MESSAGE } from '@/scripts/ops/merge-duplicate-properties';
 import { computeHash } from '@/scripts/ingest/transactions/runner';
 import type { NormalizedTransaction } from '@/scripts/ingest/types';
 import { assertLocalDatabase } from '../_helpers/assert-local-db';
@@ -45,6 +45,10 @@ function tx(propertyId: bigint, day: number, area: number, amount: number) {
     source: 'TEST',
   };
 }
+
+// --apply는 S3 재정합과 호환되지 않아 차단돼 있다(MergeApplyBlockedError). 아래 apply 동작 테스트는
+// 병합 도구를 재정합 키 기준으로 고친 뒤 다시 켠다 — 그때까지 건너뛴다(삭제하지 않고 남겨 둠).
+const itApply = it.skip;
 
 describe('mergeDuplicateProperties', () => {
   // 이 파일은 Property_dedupe_key 인덱스가 막는 바로 그 중복 상태(같은 type/nameNorm/
@@ -113,7 +117,36 @@ describe('mergeDuplicateProperties', () => {
     expect(a.id < b.id).toBe(true);
   });
 
-  it('패자 둘의 거래 내용이 같으면 하나만 옮기고 나머지는 삭제한다', async () => {
+  it('--apply는 차단된다: 명확한 오류, DB 변경 없음(거래·매물·대기열 그대로)', async () => {
+    const a = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '차단', nameNorm: '차단', regionCode: REGION, address: '역삼동 9' },
+    });
+    const b = await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '차단', nameNorm: '차단', regionCode: REGION, address: '역삼동 9' },
+    });
+    await prisma.transaction.create({ data: tx(b.id, 7, 84.9, 99000) });
+    const snap = async () => JSON.stringify({
+      p: await prisma.property.findMany({ where: { id: { in: [a.id, b.id] } }, orderBy: { id: 'asc' } }),
+      t: await prisma.transaction.findMany({ where: { regionCode: REGION }, orderBy: { id: 'asc' } }),
+      q: await prisma.propertyAggregateQueue.count(),
+    }, (_k, v) => (typeof v === 'bigint' ? String(v) : v));
+    const before = await snap();
+    await expect(mergeDuplicateProperties({ apply: true })).rejects.toThrow(MERGE_APPLY_BLOCKED_MESSAGE);
+    await expect(mergeDuplicateProperties({ apply: true, limit: 1 })).rejects.toThrow(/차단/);
+    expect(await snap()).toBe(before);
+  });
+
+  it('차단 후에도 dry-run은 그대로 동작한다', async () => {
+    await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '허용', nameNorm: '허용', regionCode: REGION, address: '역삼동 8' },
+    });
+    await prisma.property.create({
+      data: { propertyType: PropertyType.APARTMENT, name: '허용', nameNorm: '허용', regionCode: REGION, address: '역삼동 8' },
+    });
+    expect(await mergeDuplicateProperties({ apply: false })).toMatchObject({ groups: 1, losers: 1 });
+  });
+
+  itApply('패자 둘의 거래 내용이 같으면 하나만 옮기고 나머지는 삭제한다', async () => {
     const a = await prisma.property.create({
       data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
     });
@@ -135,7 +168,7 @@ describe('mergeDuplicateProperties', () => {
     expect((await prisma.transaction.findFirst())!.propertyId).toBe(a.id);
   });
 
-  it('거래를 생존자로 옮기고 해시를 재계산한다', async () => {
+  itApply('거래를 생존자로 옮기고 해시를 재계산한다', async () => {
     const a = await prisma.property.create({
       data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
     });
@@ -166,7 +199,7 @@ describe('mergeDuplicateProperties', () => {
     expect(moved.rawHash).toBe(expected);
   });
 
-  it('생존자에 같은 거래가 이미 있으면 패자 쪽을 삭제한다', async () => {
+  itApply('생존자에 같은 거래가 이미 있으면 패자 쪽을 삭제한다', async () => {
     const a = await prisma.property.create({
       data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
     });
@@ -183,7 +216,7 @@ describe('mergeDuplicateProperties', () => {
     expect(await prisma.transaction.count()).toBe(1);
   });
 
-  it('패자에 redirectToId를 세우고 삭제하지 않는다', async () => {
+  itApply('패자에 redirectToId를 세우고 삭제하지 않는다', async () => {
     const a = await prisma.property.create({
       data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
     });
@@ -198,7 +231,7 @@ describe('mergeDuplicateProperties', () => {
     expect(loser!.redirectToId).toBe(a.id);
   });
 
-  it('생존자 집계를 다시 계산한다', async () => {
+  itApply('생존자 집계를 다시 계산한다', async () => {
     const a = await prisma.property.create({
       data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
     });
@@ -214,7 +247,7 @@ describe('mergeDuplicateProperties', () => {
     expect(survivor!.txCountTotal).toBe(2);
   });
 
-  it('주소가 다르면 같은 그룹으로 묶지 않는다', async () => {
+  itApply('주소가 다르면 같은 그룹으로 묶지 않는다', async () => {
     await prisma.property.create({
       data: { propertyType: PropertyType.APARTMENT, name: '동신', nameNorm: '동신', regionCode: REGION, address: '금동 10' },
     });
@@ -227,7 +260,7 @@ describe('mergeDuplicateProperties', () => {
     expect(await prisma.property.count({ where: { redirectToId: { not: null } } })).toBe(0);
   });
 
-  it('이미 리다이렉트된 행은 그룹에서 제외한다', async () => {
+  itApply('이미 리다이렉트된 행은 그룹에서 제외한다', async () => {
     const a = await prisma.property.create({
       data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
     });
@@ -242,7 +275,7 @@ describe('mergeDuplicateProperties', () => {
   // I3(a): updatePropertyAggregates는 Transaction을 propertyId로 GROUP BY하는 CTE와
   // 조인한다. 패자는 거래가 0건이 되므로 CTE에 행이 안 생겨 UPDATE...FROM이 매칭할 게
   // 없는 조용한 no-op이 된다 — 명시적으로 리셋하지 않으면 병합 이전 집계값이 그대로 남는다.
-  it('패자의 집계를 병합 후 초기값으로 리셋한다', async () => {
+  itApply('패자의 집계를 병합 후 초기값으로 리셋한다', async () => {
     const a = await prisma.property.create({
       data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
     });
@@ -271,7 +304,7 @@ describe('mergeDuplicateProperties', () => {
 
   // M6: X → loser → survivor 체인을 두면 populate-url-redirects가 한 홉만 보고
   // X의 목적지를 loser의 URL로 스냅샷해 잘못된 301을 굳힌다. 병합 시 체인을 즉시 collapse해야 한다.
-  it('기존에 패자를 가리키던 리다이렉트를 생존자로 재연결한다', async () => {
+  itApply('기존에 패자를 가리키던 리다이렉트를 생존자로 재연결한다', async () => {
     const a = await prisma.property.create({
       data: { propertyType: PropertyType.APARTMENT, name: '래미안', nameNorm: '래미안', regionCode: REGION, address: '역삼동 1' },
     });
@@ -294,7 +327,7 @@ describe('mergeDuplicateProperties', () => {
   // I2: 운영 SSH 터널 위에서 한 그룹의 $transaction이 타임아웃 등으로 던지면(P2028),
   // try/catch 없이는 프로세스 전체가 죽어 --limit에 offset이 없는 탓에 나머지 그룹이
   // 영영 처리되지 않는다. 첫 그룹에서만 실패를 유도해 나머지가 이어지는지 확인한다.
-  it('한 그룹이 실패해도 나머지 그룹을 계속 처리한다', async () => {
+  itApply('한 그룹이 실패해도 나머지 그룹을 계속 처리한다', async () => {
     // nameNorm 오름차순 정렬이라 '가나'가 '래미안'보다 먼저 처리된다.
     const failA = await prisma.property.create({
       data: { propertyType: PropertyType.APARTMENT, name: '가나', nameNorm: '가나', regionCode: REGION, address: '역삼동 1' },
