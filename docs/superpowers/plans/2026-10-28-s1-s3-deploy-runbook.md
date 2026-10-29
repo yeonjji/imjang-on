@@ -64,6 +64,22 @@
 
 ## 2. D0 체크리스트 (ETL 없는 시간대, 예: 02:00 UTC 시작 · 소요 약 1시간)
 
+**D0 날짜 조건(박스 타이머 기준, 2026-10-29 확인):** 화~금, 매월 1일 제외. 월요일 02:00 UTC는 `board-posts`(게시글 생성), 매월 1일 02:00 UTC는 `amenities`(생활시설 대량 적재)가 배포 창과 겹친다.
+
+### 2-0. 배포 직전 백업과 데이터 동결 (D0 이른 오전)
+백업과 배포 사이에 S1~S3가 다루는 데이터가 바뀌지 않게, **수집 타이머를 백업 전에 멈춘다.**
+
+| # | 할 일 | 명령 | 통과 기준 |
+|---|---|---|---|
+| B1 | 실행 중인 ETL 없음 | `systemctl list-units 'imjang-etl@*' --state=active` | 없음. `building-register`(21:00 UTC 시작, 최대 약 100분)가 끝난 뒤 — 보통 22:40 UTC(07:40 KST) 이후 |
+| B2 | **수집 타이머 정지**(기존 2단계를 여기로 앞당김) | `sudo systemctl stop imjang-etl@transactions-daily.timer` | `inactive` |
+| B3 | 백업 | P3 명령(로컬로 직접) | 종료 0, 크기 약 0.9GB |
+| B4 | 백업 확인 | 덤프 직후 운영에서 `verify.sql` 실행 → 덤프 직전 출력과 `diff` | 차이 없음. 시간이 되면 P4 복원 검증(약 3분)까지 |
+| B5 | **배포 직전 변동 확인**(2단계 3번 머지 직전) | `verify.sql`을 다시 실행해 B4 출력과 비교 | 거래·매물·지역 항목(행 수·집계·행 해시)과 `IngestionRun` 행 수가 같다. 다르면 원인 확인 후 B3부터 다시 |
+
+- **백업 뒤에도 바뀔 수 있는 것(정상):** 웹의 이메일 구독(`EmailSignup`)·관리자 게시글·가이드 편집(`Post`·`Guide`)·화면 캐시(`DashboardSnapshot`). S1~S3와 무관한 테이블이고, 롤백 R5는 이 테이블들을 복원하지 않으므로 그 사이 기록을 잃지 않는다. 배포 창 동안 관리자 편집과 DB를 쓰는 수동 GitHub 워크플로(`generate-guides`·`generate-board-topic`·`restructure-articles`·`coord-quality`·`ingest-apt-complex` — 모두 일정 없음) 실행은 하지 않는다.
+- **바뀌면 안 되는 것:** `Transaction`·`Property`·`Region`은 거래 수집(정지됨)과 D0 작업만 바꾼다(다른 ETL·웹은 쓰지 않음 — 코드 확인). D0 작업의 변경은 재집계 백업·재정합 감사 로그로 되돌린다.
+
 박스에서 쓰는 약칭:
 ```bash
 cd /opt/imjang
@@ -76,7 +92,8 @@ sudo mkdir -p /opt/imjang/backups/{reagg,reconcile-rollback} && sudo chown -R ub
 | # | 할 일 | 명령 | 통과 기준(→ 아니면) |
 |---|---|---|---|
 | 1 | 시작 전 상태 기록 | `df -BG /` · `uptime` · `systemctl list-timers 'imjang-*'` · 박스 커밋 `git log --oneline -1` | 여유 12GB 이상, load 2 이하, 박스 = `c853388` (→ 중단: 시작하지 않음) |
-| 2 | **수집 타이머 정지**(배포 중 새 ETL 이미지가 옛 스키마에 붙는 것 방지) | `sudo systemctl stop imjang-etl@transactions-daily.timer` · 진행 중 잡 없음 확인 `systemctl is-active imjang-etl@transactions-daily.service` | `inactive` (→ 끝날 때까지 대기) |
+| 2 | **수집 타이머 정지 확인**(B2에서 정지 — 배포 중 새 ETL 이미지가 옛 스키마에 붙는 것 방지) | `systemctl is-active imjang-etl@transactions-daily.timer imjang-etl@transactions-daily.service` | 둘 다 `inactive` (→ B2) |
+| 2-1 | 배포 직전 변동 확인 | B5 | 같음 (→ 다르면 B3부터) |
 | 3 | 머지 → 자동 배포 | #346 merge commit. GitHub Actions `ci` → `deploy` 완료 확인 | deploy 성공, 박스 `git log -1` = 머지 커밋, 웹 응답 200 (→ 마이그레이션 실패면 R1, 앱 이상이면 R2) |
 | 4 | 마이그레이션 확인 | `$DC run --rm etl pnpm prisma migrate status` · 새 테이블 3개 존재 | "Database schema is up to date", 테이블 3개 (→ R1) |
 | 5 | **수집 정지 걸기**(점검 끝까지 수집이 돌지 않게, 이중 안전) | `$OPS scripts/ops/reconcile-transactions.ts --set-halt --reason="D0 배포 점검"` | `"active": true` |
@@ -121,7 +138,7 @@ sudo mkdir -p /opt/imjang/backups/{reagg,reconcile-rollback} && sudo chown -R ub
 | R2 | 앱 이상(화면·성능), 데이터는 정상 | ① `--set-halt` ② S3 변경이 이미 있으면 **먼저 R4로 재정합 일괄 롤백**(revert하면 롤백 도구가 사라진다) ③ 재집계를 했으면 R3 ④ revert PR 머지·배포. 새 테이블은 남겨도 무해 ⑤ 타이머 재개 |
 | R3 | 재집계 결과 이상 | `$OPS scripts/ops/reaggregate-properties.ts --rollback=/backups/reagg/<파일>.jsonl` (묶음마다 UPDATE 전에 백업이 기록돼 있다) → 같은 대상 dry-run으로 원래 변경 수가 다시 보이는지 |
 | R4 | 재정합 결과 이상 | ① `--halt-status`(아니면 `--set-halt`) ② `--rollback-since=<시각> [--rollback-until] [--source] [--sgg]` dry-run: 대상·예상·충돌 ③ 충돌이 있으면 기간·범위를 좁힌다 ④ `--apply --audit-dir=/backups/reconcile-rollback` ⑤ `verify.ok` 확인(아니면 감사 로그로 남은 실행 확인 후 같은 명령 재실행 — 끝난 실행은 건너뛴다) ⑥ 원인 수정 → §3 → 해제 |
-| R5 | 최후 수단(데이터 손상 의심, R3·R4로 안 됨) | 사이트 점검 공지 → 모든 ETL 타이머 정지 → P3 덤프를 **새 데이터베이스**에 복원해 대조 → 필요한 테이블만 교체(전체 교체는 별도 승인) |
+| R5 | 최후 수단(데이터 손상 의심, R3·R4로 안 됨) | 사이트 점검 공지 → 모든 ETL 타이머 정지 → B3 덤프를 **새 데이터베이스**에 복원해 대조 → **S1~S3가 다루는 테이블만** 교체(`Transaction`·`Property`, 필요하면 `IngestionRun`·새 테이블 3개). 다른 테이블(구독·게시글·가이드·생활시설·건축물대장 등)은 백업 뒤 기록이 있을 수 있어 교체하지 않는다. 전체 교체는 별도 승인 |
 
 ## 6. D+1 이후
 
