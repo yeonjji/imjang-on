@@ -25,16 +25,26 @@ export interface ParkingFeeComparison {
   countMonthly: number;
 }
 
-export async function getParkingFeeComparison(
-  r: { address: string; basicTime: number | null; basicCharge: number | null; monthCmmtkt: number | null },
-  addrPrefix: string | null,
-): Promise<ParkingFeeComparison | null> {
+type FeeRow = { address: string; basicTime: number | null; basicCharge: number | null; monthCmmtkt: number | null };
+
+/** 비교할 자기 요금(30분 환산·월정기). 접두어가 없거나 그룹 밖이거나 둘 다 없으면 null. */
+function ownFees(r: FeeRow, addrPrefix: string | null): { prefix: string; own30: number | null; ownMonthly: number | null } | null {
   if (!addrPrefix || addrPrefix === '__NO_MATCH__') return null;
   // 이 주차장이 비교 그룹(같은 '시도 시군구') 안에 있을 때만 비교한다(park-context와 같은 이유).
   if (!r.address.startsWith(`${addrPrefix} `)) return null;
   const own30 = per30(r.basicTime, r.basicCharge);
   const ownMonthly = r.monthCmmtkt && r.monthCmmtkt > 0 ? r.monthCmmtkt : null;
   if (own30 === null && ownMonthly === null) return null;
+  return { prefix: addrPrefix, own30, ownMonthly };
+}
+
+export async function getParkingFeeComparison(
+  r: { address: string; basicTime: number | null; basicCharge: number | null; monthCmmtkt: number | null },
+  addrPrefix: string | null,
+): Promise<ParkingFeeComparison | null> {
+  const own = ownFees(r, addrPrefix);
+  if (!own) return null;
+  const { own30, ownMonthly } = own;
 
   const rows = await prisma.$queryRaw<{ basicTime: number | null; basicCharge: number | null; monthCmmtkt: number | null }[]>`
     SELECT "basicTime", "basicCharge", "monthCmmtkt" FROM "Parking"
@@ -50,4 +60,28 @@ export async function getParkingFeeComparison(
     medianMonthly: months.length >= MIN_COMPARABLES ? median(months) : null,
     countMonthly: months.length,
   };
+}
+
+export interface ParkingFeeComparables { count30: number; countMonthly: number }
+
+/**
+ * 목록 점수 배치용: 접두어 안 공영주차장의 비교 가능 표본 수만 한 번에 센다. 주차장마다 getParkingFeeComparison을
+ * 부르면 같은 지역 공영주차장 전체를 주차장 수만큼 다시 읽는다(운영 첫 weekly에서 DB CPU 3분+ 점유).
+ */
+export async function parkingFeeComparables(addrPrefix: string): Promise<ParkingFeeComparables> {
+  const rows = await prisma.$queryRaw<{ basicTime: number | null; basicCharge: number | null; monthCmmtkt: number | null }[]>`
+    SELECT "basicTime", "basicCharge", "monthCmmtkt" FROM "Parking"
+    WHERE "prkplceSe" = '공영' AND address LIKE ${`${addrPrefix} %`}
+  `;
+  return {
+    count30: rows.filter((x) => per30(x.basicTime, x.basicCharge) !== null).length,
+    countMonthly: rows.filter((x) => !!x.monthCmmtkt && x.monthCmmtkt > 0).length,
+  };
+}
+
+/** 상세에 '요금, 주변과 비교하면' 카드가 보이는가 — feeCompareShown(getParkingFeeComparison(...))과 같다. */
+export function parkingFeeCompareShown(r: FeeRow, addrPrefix: string | null, comps: ParkingFeeComparables): boolean {
+  const own = ownFees(r, addrPrefix);
+  if (!own) return false;
+  return (own.own30 !== null && comps.count30 >= MIN_COMPARABLES) || (own.ownMonthly !== null && comps.countMonthly >= MIN_COMPARABLES);
 }

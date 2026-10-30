@@ -9,13 +9,13 @@ import { ownPharmacy, weeklyPharmacy } from '@/lib/content-score/pharmacy';
 import { ownChildcare, weeklyChildcare } from '@/lib/content-score/childcare';
 import { ownSchool, weeklySchool } from '@/lib/content-score/school';
 import { ownPark, weeklyPark } from '@/lib/content-score/park';
-import { ownParking, weeklyParking, feeCompareShown } from '@/lib/content-score/parking';
+import { ownParking, weeklyParking } from '@/lib/content-score/parking';
 import { ownCharger, weeklyCharger } from '@/lib/content-score/charger';
 import { nearbyFlags, type NearbyTable } from '@/lib/content-score/nearby-sql';
 import { primaryDept, getSameDeptNearby } from '@/lib/hospital/context';
 import { getPharmacyDong, countSundayClinicsNearby } from '@/lib/pharmacy/context';
-import { getParkAreaRank } from '@/lib/urban/park-context';
-import { getParkingFeeComparison } from '@/lib/urban/parking-context';
+import { parkAreaRankTotals, parkAreaRankShown } from '@/lib/urban/park-context';
+import { parkingFeeComparables, parkingFeeCompareShown } from '@/lib/urban/parking-context';
 import { resolveSigunguFromAddress } from '@/lib/region/from-address';
 import { resolveAddrPrefix } from '@/lib/urban/_shared';
 
@@ -54,6 +54,16 @@ function prefixResolver() {
       cache.set(address, p);
     }
     return p;
+  };
+}
+
+/** 같은 키는 한 번만 계산(청크 안 접두어별 집계용) */
+function memoByKey<T>(fn: (key: string) => Promise<T>): (key: string) => Promise<T> {
+  const cache = new Map<string, Promise<T>>();
+  return (key) => {
+    let v = cache.get(key);
+    if (!v) { v = fn(key); cache.set(key, v); }
+    return v;
   };
 }
 
@@ -154,11 +164,14 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
       const xy = await coords('Park', ids);
       const near = weekly ? await nearbyFlags('Park', ids, { infraChildcare: true, nearChildcare: false }) : null;
       const prefixOf = prefixResolver();
+      // 접두어(시도 시군구)별 1회 집계 — 공원마다 비교 쿼리를 부르지 않는다(운영 첫 weekly CPU 점유 대응)
+      const rankTotals = memoByKey(parkAreaRankTotals);
       const out: ScoredRow[] = [];
       for (const p of rows) {
         let wk: number | undefined;
         if (weekly) {
-          const rank = (await getParkAreaRank(p, await prefixOf(p.address))) !== null;
+          const prefix = await prefixOf(p.address);
+          const rank = parkAreaRankShown(p, prefix, prefix ? await rankTotals(prefix) : new Map());
           wk = sum(weeklyPark({ areaRank: rank, ...(near!.get(String(p.id)) ?? NO_FLAG) }));
         }
         out.push({ id: p.id, own: sum(ownPark(p, xy.has(String(p.id)))), weekly: wk, seoul: p.address.startsWith('서울') });
@@ -174,13 +187,16 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
       const xy = await coords('Parking', ids);
       const near = weekly ? await nearbyFlags('Parking', ids, { infraChildcare: true, nearChildcare: false }) : null;
       const prefixOf = prefixResolver();
+      // 접두어별 1회 집계 — 주차장마다 같은 지역 공영주차장 전체를 다시 읽지 않는다
+      const comparables = memoByKey(parkingFeeComparables);
       const out: ScoredRow[] = [];
       for (const r of rows) {
         let wk: number | undefined;
         if (weekly) {
           // 상세는 rdnmadr ?? lnmadr ?? address로 시군구를 찾는다(app/(public)/urban/[category]/[id]/page.tsx)
-          const cmp = await getParkingFeeComparison(r, await prefixOf(r.rdnmadr ?? r.lnmadr ?? r.address));
-          wk = sum(weeklyParking({ feeCompare: feeCompareShown(cmp), ...(near!.get(String(r.id)) ?? NO_FLAG) }));
+          const prefix = await prefixOf(r.rdnmadr ?? r.lnmadr ?? r.address);
+          const feeCompare = parkingFeeCompareShown(r, prefix, prefix ? await comparables(prefix) : { count30: 0, countMonthly: 0 });
+          wk = sum(weeklyParking({ feeCompare, ...(near!.get(String(r.id)) ?? NO_FLAG) }));
         }
         out.push({ id: r.id, own: sum(ownParking(r, xy.has(String(r.id)))), weekly: wk, seoul: r.address.startsWith('서울') });
       }
