@@ -11,7 +11,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { notify } from '@/scripts/ingest/notify';
-import { CONTENT_SCORE_SOURCE } from '@/lib/content-score/core';
+import { CONTENT_SCORE_SOURCE, SEOUL_RANK, SCORE_RANK, tieKey } from '@/lib/content-score/core';
 import { executeWithTimeout } from '@/lib/content-score/db';
 import { revalidatePaths } from '@/scripts/ingest/revalidator';
 import { ENTITIES, type EntityKey, type ScoredRow } from './entities';
@@ -44,17 +44,20 @@ async function writeChunk(table: string, rows: ScoredRow[], weekly: boolean): Pr
   const own = rows.map((r) => r.own);
   const wk = rows.map((r) => r.weekly ?? 0);
   const seoul = rows.map((r) => r.seoul);
+  const tie = rows.map((r) => tieKey(r.id));
   // weekly면 새 주간값, daily면 저장된 contentNearby를 그대로 더한다.
   const nearby = weekly ? Prisma.sql`v.wk` : Prisma.sql`t."contentNearby"`;
   const score = Prisma.sql`(v.own + ${nearby})`;
-  const rank = Prisma.sql`((CASE WHEN v.seoul THEN 10000 ELSE 0 END) + v.own + ${nearby})`;
+  // lib/content-score/core.ts listRankOf와 같은 식(서울 > 점수 > 섞임 값)
+  const rank = Prisma.sql`((CASE WHEN v.seoul THEN ${SEOUL_RANK} ELSE 0 END) + (v.own + ${nearby}) * ${SCORE_RANK} + v.tie)`;
   return executeWithTimeout(Prisma.sql`
     UPDATE ${Prisma.raw(`"${table}"`)} AS t SET
       "contentNearby" = ${nearby},
       "contentScore"  = ${score},
       "listRank"      = ${rank}
     FROM (SELECT unnest(${ids}::bigint[]) AS id, unnest(${own}::int[]) AS own,
-                 unnest(${wk}::int[]) AS wk, unnest(${seoul}::boolean[]) AS seoul) v
+                 unnest(${wk}::int[]) AS wk, unnest(${seoul}::boolean[]) AS seoul,
+                 unnest(${tie}::int[]) AS tie) v
     WHERE t.id = v.id
       AND (t."contentNearby", t."contentScore", t."listRank") IS DISTINCT FROM (${nearby}, ${score}, ${rank})
   `);

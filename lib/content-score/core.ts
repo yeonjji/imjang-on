@@ -8,7 +8,9 @@ export const CONTENT_SCORE_SOURCE = 'content-score';
 export type Breakdown = Record<string, number>;
 
 export const NEARBY_CAP = 2;
-const SEOUL_RANK = 10_000;
+// 정렬 키 = 서울 1,000,000 + 점수 × 10,000 + 섞임 값(0~9,999). 점수 최대 22라 자리가 겹치지 않는다.
+export const SEOUL_RANK = 1_000_000;
+export const SCORE_RANK = 10_000;
 
 export function sum(b: Breakdown): number {
   return Object.values(b).reduce((a, v) => a + v, 0);
@@ -34,6 +36,15 @@ export function filled(v: unknown): boolean {
   return true;
 }
 
-export function listRankOf(isSeoul: boolean, score: number): number {
-  return (isSeoul ? SEOUL_RANK : 0) + score;
+/**
+ * 동점끼리의 순서를 정하는 고정 섞임 값(0~9,999). id가 적재 순서(=대개 이름순)라 id로 동점을 가르면
+ * 첫 화면이 가나다순처럼 보인다 — id를 곱셈 해시(Knuth)로 흩어 지역·이름이 섞이게 한다.
+ * 같은 id는 항상 같은 값이라 페이지를 넘겨도 순서가 흔들리지 않는다(마지막 동점은 목록 쿼리의 id).
+ */
+export function tieKey(id: bigint): number {
+  return Number(((id * 2654435761n) % 4294967296n) % 10000n);
+}
+
+export function listRankOf(isSeoul: boolean, score: number, id: bigint): number {
+  return (isSeoul ? SEOUL_RANK : 0) + score * SCORE_RANK + tieKey(id);
 }
