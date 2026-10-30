@@ -9,9 +9,9 @@ describe('content-score ETL 배선', () => {
     expect(etl).toMatch(/content-score-daily\)\s+\$DC pnpm tsx scripts\/ingest\/content-score\/runner\.ts --mode=daily/);
     expect(etl).toMatch(/content-score-weekly\)\s+\$DC pnpm tsx scripts\/ingest\/content-score\/runner\.ts --mode=weekly/);
   });
-  it('타이머: daily 매일 23:00, weekly 일요일 23:30 UTC', () => {
-    expect(timers).toContain('content-score-daily|*-*-* 23:00:00');
-    expect(timers).toContain('content-score-weekly|Sun *-*-* 23:30:00');
+  it('타이머: 스펙 §4.3 시간대(02~14 UTC) — daily 매일 04:00, weekly 일요일 04:30 UTC', () => {
+    expect(timers).toContain('content-score-daily|*-*-* 04:00:00');
+    expect(timers).toContain('content-score-weekly|Sun *-*-* 04:30:00');
   });
   it('설치 직후 start 목록에도 들어 있다(하드코딩 목록)', () => {
     const start = timers.split('\n').find((l) => l.startsWith('sudo systemctl start'))!;

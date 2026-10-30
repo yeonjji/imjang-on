@@ -5,7 +5,7 @@
  * 생활 인프라는 상가(Store)를 뺀 6종으로 판정(설계 R2 — 상가는 업종 분류·숨김 규칙 때문에 EXISTS로 재현 불가).
  */
 import { Prisma } from '@prisma/client';
-import { prisma } from '@/lib/db';
+import { queryWithTimeout } from './db';
 
 export type NearbyTable = 'Hospital' | 'Pharmacy' | 'Childcare' | 'School' | 'Park' | 'Parking' | 'EvCharger';
 
@@ -44,7 +44,7 @@ export async function nearbyFlags(
   const nearCc = opts.nearChildcare
     ? Prisma.sql`EXISTS (SELECT 1 FROM "Childcare" x WHERE x.location IS NOT NULL AND ${CC_ACTIVE} ${table === 'Childcare' ? Prisma.sql`AND x.id <> t.id` : Prisma.empty} AND ST_DWithin(x.location, t.location, ${r.childcare}))`
     : Prisma.sql`false`;
-  const rows = await prisma.$queryRaw<{ id: bigint; apts: boolean; subway: boolean; infra: boolean; childcare: boolean }[]>`
+  const rows = await queryWithTimeout<{ id: bigint; apts: boolean; subway: boolean; infra: boolean; childcare: boolean }>(Prisma.sql`
     SELECT t.id,
       EXISTS (SELECT 1 FROM "Property" p WHERE p."propertyType" = 'APARTMENT' AND p.location IS NOT NULL AND p."txCount12m" > 0
               AND ST_DWithin(p.location, t.location, ${r.apts})) AS apts,
@@ -53,6 +53,6 @@ export async function nearbyFlags(
       ${nearCc} AS childcare
     FROM ${Prisma.raw(`"${table}"`)} t
     WHERE t.id = ANY(${ids}::bigint[]) AND t.location IS NOT NULL
-  `;
+  `);
   return new Map(rows.map((x) => [String(x.id), { apts: x.apts, subway: x.subway, infra: x.infra, childcare: x.childcare }]));
 }

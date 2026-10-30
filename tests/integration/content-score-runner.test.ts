@@ -65,6 +65,19 @@ describe('content-score runner', () => {
     expect(r.contentNearby).toBe(2);
     expect(r.contentScore).toBe(9);
   });
+  it('순서가 바뀐 엔터티의 목록 라우트만 재검증한다(상세는 제외), 변경 없으면 호출 안 함', async () => {
+    const calls: { paths: string[]; routes: string[] }[] = [];
+    const revalidate = async (paths: string[], routes: string[] = []) => { calls.push({ paths, routes }); return true; };
+    await prisma.$executeRawUnsafe(`UPDATE "Hospital" SET "contentScore" = 0, "listRank" = 0 WHERE id = $1`, rich);
+    await runContentScore({ entities: ['hospital'], mode: 'daily', revalidate });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].paths).toEqual(['/medical/hospital']);
+    expect(calls[0].routes).toEqual([]);
+    expect(calls[0].paths.some((p) => p.includes('['))).toBe(false);
+    calls.length = 0;
+    await runContentScore({ entities: ['hospital'], mode: 'daily', revalidate });
+    expect(calls).toHaveLength(0);
+  });
   it('주소 해석 안 되는 공원·주차장도 실패하지 않는다', async () => {
     await prisma.park.deleteMany({ where: { sourceId: { startsWith: 'UT-CSR-' } } });
     await prisma.park.create({ data: { sourceId: 'UT-CSR-PK', name: 'UT공원', address: '해석불가 주소', parkType: '근린공원', area: 100 } });

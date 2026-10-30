@@ -171,7 +171,9 @@
 - **daily**(자체 정보·집계 컬럼): 엔터티별 SQL 몇 개 + 작은 테이블 TS 판정. 바뀐 행만 UPDATE(`WHERE contentScore IS DISTINCT FROM 새값`). 해당 엔터티 수집 잡 뒤 또는 02:00~14:00 UTC 수집 없는 시간.
 - **weekly**(주변 정보·학구도·건축물대장 전체 재확인): 공간 EXISTS를 2,000행 청크로, 청크 사이 쉬기, `nice`·`statement_timeout`·읽기 우선. 끝나면 `contentNearby` 갱신 후 `listRank` 재계산.
 - 매물은 S1~S3(집계 정합성) 운영 반영 **이후** 적용(집계 컬럼이 점수 입력).
-- 실행 기록은 기존 `IngestionRun`에 남긴다.
+- 실행 기록은 기존 `IngestionRun`에 남긴다(`source='content-score'` — 헬스 체크의 '최근 성공 수집' 판정에서는 제외).
+- 구현 값: 타이머 daily 매일 04:00 UTC, weekly 일요일 04:30 UTC. weekly는 청크(1,000행, 약 288개) 사이 5초 쉬기(약 37분 분산), 무거운 쿼리(주변 판정·UPDATE)에 쿼리 단위 `statement_timeout` 60초.
+- 순서가 바뀐 엔터티는 **목록 라우트만** 즉시 재검증한다(상세는 제외 — 수십만 페이지 재렌더 방지). 배포 직후 첫 계산 전(전부 0점 = id순)에 캐시된 목록도 첫 실행 뒤 바로 풀린다.
 
 ## 5. 예상 DB 부하(운영 통계 2026-10-30, pg_class 추정치)
 

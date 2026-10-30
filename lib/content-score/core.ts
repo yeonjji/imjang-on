@@ -2,6 +2,9 @@
  * 목록 기본 정렬용 상세 내용 점수 공통 유틸.
  * 설계: docs/superpowers/specs/2026-10-30-list-content-score-design.md (핵심 2·부가 1·깊이 0~4·주변 합계 최대 2)
  */
+/** IngestionRun.source — 헬스 체크가 실제 수집과 구분할 때도 쓴다 */
+export const CONTENT_SCORE_SOURCE = 'content-score';
+
 export type Breakdown = Record<string, number>;
 
 export const NEARBY_CAP = 2;
