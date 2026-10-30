@@ -73,12 +73,13 @@ export function buildChildcareWhere(f: ChildcareFilter): Prisma.ChildcareWhereIn
 
 const PER_PAGE = 20;
 
+// 기본 정렬: 서울 → 상세 내용 점수 → id (docs/superpowers/specs/2026-10-30-list-content-score-design.md)
 export async function getChildcareList(f: ChildcareFilter, page = 1) {
   const where = buildChildcareWhere(f);
   const [rows, total] = await Promise.all([
     prisma.childcare.findMany({
       where,
-      orderBy: [{ name: 'asc' }],
+      orderBy: [{ listRank: 'desc' }, { id: 'asc' }],
       skip: (page - 1) * PER_PAGE,
       take: PER_PAGE,
       // 상세 페이지가 사라지면 목록이 유일한 열람 지점이 되므로, 상세에서 판단에 쓰이던

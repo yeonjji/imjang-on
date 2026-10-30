@@ -37,6 +37,7 @@ export function buildSchoolWhere(f: SchoolFilter): Prisma.SchoolWhereInput {
 
 const PER_PAGE = 30;
 
+// 기본 정렬: 서울 → 상세 내용 점수 → id (docs/superpowers/specs/2026-10-30-list-content-score-design.md)
 export async function getSchoolList(f: SchoolFilter, page = 1) {
   const where = buildSchoolWhere(f);
   // 상세 URL이 /school/[sigunguCode]/[id]라서 지역 미지정 목록도 sigunguCode 있는 학교만 노출
@@ -44,7 +45,7 @@ export async function getSchoolList(f: SchoolFilter, page = 1) {
   const [rows, total] = await Promise.all([
     prisma.school.findMany({
       where,
-      orderBy: [{ schoolKind: 'asc' }, { name: 'asc' }],
+      orderBy: [{ listRank: 'desc' }, { id: 'asc' }],
       skip: (page - 1) * PER_PAGE,
       take: PER_PAGE,
     }),
