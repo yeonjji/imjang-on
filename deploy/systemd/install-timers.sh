@@ -15,7 +15,7 @@ apt-maintenance-cost|*-*-* 17:00:00
 building-register|*-*-* 21:00:00
 hospital-nemc|Sat *-*-* 19:00:00
 content-score-daily|*-*-* 04:00:00
-content-score-weekly|Sun *-*-* 04:30:00
+content-score-weekly|*-*-02 04:30:00
 '
 sudo cp /opt/imjang/deploy/systemd/imjang-etl@.service /etc/systemd/system/
 while IFS='|' read -r job cal; do
