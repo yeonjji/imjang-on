@@ -1,13 +1,10 @@
 import { Card } from '@/components/ui/card';
 import { formatHourRange, hasAnyHours } from '@/lib/urban/parking-hours';
 import type { ParkingRaw } from '@/lib/urban/adapters/parking';
+import { parkingHourBlocks } from '@/lib/urban/parking-display';
 
 export function ParkingHoursTable({ row }: { row: ParkingRaw }) {
-  const hours = {
-    weekdayOpen: row.weekdayOpenHhmm, weekdayClose: row.weekdayCloseHhmm,
-    satOpen: row.satOpenHhmm, satClose: row.satCloseHhmm,
-    holidayOpen: row.holidayOpenHhmm, holidayClose: row.holidayCloseHhmm,
-  };
+  const hours = parkingHourBlocks(row);
   if (!hasAnyHours(hours)) return null;
 
   const rows = [

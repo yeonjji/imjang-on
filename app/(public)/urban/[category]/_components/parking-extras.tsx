@@ -3,13 +3,13 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { ParkingRaw } from '@/lib/urban/adapters/parking';
+import { parkingExtrasFlags } from '@/lib/urban/parking-display';
 
 const SPCMNT_THRESHOLD = 120;
 
 export function ParkingExtras({ row }: { row: ParkingRaw }) {
   const [expanded, setExpanded] = useState(false);
-  const hasBadges = row.pwdbsPpkZoneYn || !!row.enforceSe || !!row.feedingSe;
-  const hasNote = (row.spcmnt ?? '').trim().length > 0;
+  const { hasBadges, hasNote } = parkingExtrasFlags(row);
   if (!hasBadges && !hasNote) return null;
 
   const spcmnt = row.spcmnt ?? '';

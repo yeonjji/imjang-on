@@ -157,3 +157,61 @@ export async function getChildcareTypeCounts(sigunguCode?: string) {
   byType.all = total;
   return { total, byType };
 }
+
+// ── 어린이집 상세 표시 판정(컴포넌트·목록 점수 공용) ──
+
+function fmtConfirmDate(d: Date | null): string {
+  if (!d) return '-';
+  return d.toISOString().slice(0, 10);
+}
+
+/** '기본 정보' 카드 행. 값이 null이면 화면에 '-'. */
+export function childcareInfoRows(
+  item: Pick<Childcare, 'address' | 'tel' | 'fax' | 'homepage' | 'repName' | 'confirmDate' | 'vehicleOp' | 'services' | 'status'>,
+  regionFullName: string,
+): [string, string | null][] {
+  return [
+    ['지역', regionFullName],
+    ['주소', item.address],
+    ['전화', item.tel],
+    ['팩스', item.fax],
+    ['홈페이지', item.homepage],
+    ['대표자', item.repName],
+    ['인가일', fmtConfirmDate(item.confirmDate)],
+    ['통학차량', item.vehicleOp],
+    ['제공서비스', item.services],
+    ['운영상태', item.status ?? '정상'],
+  ];
+}
+
+export const CHILDCARE_ROLES = [
+  ['emRoleDirector', '원장'], ['emRoleTeacher', '보육교사'], ['emRoleSpecial', '특수교사'],
+  ['emRoleTherapy', '치료교사'], ['emRoleNutrition', '영양사'], ['emRoleNurse', '간호사'],
+  ['emRoleNurseAssist', '간호조무사'], ['emRoleCook', '조리원'], ['emRoleOffice', '사무직원'],
+] as const;
+// 근속 구간은 실인원이 아니라 **비율(%)**이다. 상류 필드명이 em_cnt_*라 수처럼 보이지만,
+// 운영 데이터 24,383건 실측 결과 구간 합이 98~102(평균 100.08)이고 총원과 일치하는 행은 0건이며,
+// 99.2%에서 한 구간 값이 총원을 넘는다(예: 교직원 7명에 80/0/0/0/20). 직역별(emRole*)은 실인원이 맞다.
+export const CHILDCARE_TENURES = [
+  ['emTenure0y', '1년 미만'], ['emTenure1y', '1~2년'], ['emTenure2y', '2~4년'],
+  ['emTenure4y', '4~6년'], ['emTenure6y', '6년 이상'],
+] as const;
+
+/** '교직원' 카드 행. 둘 다 비면 카드가 그려지지 않는다. */
+export function childcareStaffRows(item: Childcare) {
+  const roleRows = CHILDCARE_ROLES.map(([k, label]) => ({ label, v: childcareCount(item, k) })).filter((r) => r.v != null && r.v > 0);
+  const tenRows = CHILDCARE_TENURES.map(([k, label]) => ({ label, v: childcareCount(item, k) })).filter((r) => r.v != null);
+  return { roleRows, tenRows };
+}
+
+/** '시설' 카드 4항목. 값이 없으면 '-'. */
+export function childcareFacilityRows(
+  item: Pick<Childcare, 'roomCount' | 'roomSize' | 'playgroundCount' | 'cctvCount' | 'staffCount'>,
+): { label: string; value: string }[] {
+  return [
+    { label: '보육실', value: item.roomCount != null ? `${item.roomCount}실${item.roomSize != null ? ` · ${item.roomSize}㎡` : ''}` : '-' },
+    { label: '놀이터', value: item.playgroundCount != null ? `${item.playgroundCount}개` : '-' },
+    { label: 'CCTV', value: item.cctvCount != null ? `${item.cctvCount}대` : '-' },
+    { label: '교직원', value: item.staffCount != null ? `${item.staffCount}명` : '-' },
+  ];
+}
