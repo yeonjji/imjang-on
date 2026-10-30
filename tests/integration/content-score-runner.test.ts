@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { prisma } from '@/lib/db';
 import { runContentScore } from '@/scripts/ingest/content-score/runner';
+import { listRankOf } from '@/lib/content-score/core';
 
 const pt = (lat: number, lng: number) => `ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography`;
 let rich: bigint, poor: bigint, seoul: bigint;
@@ -43,8 +44,10 @@ describe('content-score runner', () => {
     expect(r.contentScore).toBe(7);
     expect(p.contentScore).toBe(0);
     expect(s.contentScore).toBe(6);
-    expect(s.listRank).toBe(10006); // 서울
-    expect(r.listRank).toBe(7);
+    // 정렬 키는 TS 공식(listRankOf)과 SQL 갱신 결과가 같아야 한다 — 서울 > 점수 > 섞임 값
+    expect(s.listRank).toBe(listRankOf(true, 6, seoul));
+    expect(r.listRank).toBe(listRankOf(false, 7, rich));
+    expect(s.listRank).toBeGreaterThan(r.listRank);
     expect(r.updatedAt.toISOString()).toBe(before.toISOString());
   });
   it('재실행은 0행 갱신(멱등)', async () => {
@@ -59,7 +62,7 @@ describe('content-score runner', () => {
     expect(r.updatedAt.toISOString()).toBe(before.toISOString());
   });
   it('weekly 뒤 daily는 저장된 주간 점수를 유지한다', async () => {
-    await prisma.$executeRawUnsafe(`UPDATE "Hospital" SET "contentNearby" = 2, "contentScore" = 9, "listRank" = 9 WHERE id = $1`, rich);
+    await prisma.$executeRawUnsafe(`UPDATE "Hospital" SET "contentNearby" = 2, "contentScore" = 9, "listRank" = $2 WHERE id = $1`, rich, listRankOf(false, 9, rich));
     await runContentScore({ entities: ['hospital'], mode: 'daily' });
     const r = await read(rich);
     expect(r.contentNearby).toBe(2);

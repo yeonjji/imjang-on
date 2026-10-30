@@ -156,7 +156,9 @@
 ### 4.1 스키마(대상 8개 테이블: Property, Hospital, Pharmacy, Childcare, School, Park, Parking, EvCharger)
 - `contentScore SMALLINT NOT NULL DEFAULT 0` — 위 점수표 합계(시설 색인 기준 재정의 때 재사용).
 - `contentNearby SMALLINT NOT NULL DEFAULT 0` — 주간 배치가 채우는 주변 점수(0~2). 일간 배치가 주변 계산을 반복하지 않게 분리.
-- `listRank INTEGER NOT NULL DEFAULT 0` — 정렬 전용 합성 키: `서울(1/0) × 10000 + (매물만) 색인 대상(1/0) × 1000 + contentScore`.
+- `listRank INTEGER NOT NULL DEFAULT 0` — 정렬 전용 합성 키: `서울(1/0) × 1,000,000 + contentScore × 10,000 + 섞임 값(0~9,999)`.
+  - 섞임 값 = `tieKey(id)`(id 곱셈 해시). 2026-10-30 운영 첫 반영 뒤 동점(예: 서울 최고점 약국 5,286곳)을 id로 가르니 적재 순서(=이름순) 때문에 첫 화면이 가나다순·숫자 이름순으로 보였다 → 동점 안을 고정 섞임 값으로 흩어 지역·이름이 섞이게 했다. 같은 id는 항상 같은 값이라 페이지 경계가 흔들리지 않는다.
+  - 매물(2단계)의 색인 대상 비트는 매물 계획에서 이 자리 체계에 맞춰 정한다.
 - 인덱스: `(listRank DESC, id)`. 매물은 필터가 걸리는 `(propertyType, listRank DESC, id)`.
 - 컬럼 추가는 상수 기본값이라 PostgreSQL에서 메타데이터 변경만(테이블 재작성 없음).
 - 배치 UPDATE는 **`updatedAt`을 건드리지 않는다**(사이트맵 lastmod·ISR 판단에 쓰이는 값 오염 방지). Prisma `@updatedAt`을 피하려고 raw SQL 사용.
