@@ -1,6 +1,5 @@
 import type { HospitalWithRelations } from '@/lib/hospital';
-
-type DoctorCounts = { general: number | null; intern: number | null; resident: number | null; specialist: number | null };
+import { hospitalDoctorRows, type DoctorCounts } from '@/lib/hospital/display';
 
 interface Props {
   depts: HospitalWithRelations['depts'];
@@ -11,25 +10,8 @@ interface Props {
   doctors: { med: DoctorCounts; dent: DoctorCounts; kor: DoctorCounts; midwife: number | null };
 }
 
-// 자격별 인원을 "전문의 N명 · 레지던트 N명 · ..." 형태로 (0/null은 생략)
-function doctorParts(c: DoctorCounts): string | null {
-  const parts = ([
-    ['specialist', '전문의'],
-    ['resident', '레지던트'],
-    ['intern', '인턴'],
-    ['general', '일반의'],
-  ] as const)
-    .filter(([k]) => (c[k] ?? 0) > 0)
-    .map(([k, label]) => `${label} ${c[k]}명`);
-  return parts.length > 0 ? parts.join(' · ') : null;
-}
-
 export function HospitalTabDiagnosis({ depts, staff, specialties, specialTreatments, nursingGrades, doctors }: Props) {
-  const doctorRows = [
-    { label: '의사', parts: doctorParts(doctors.med) },
-    { label: '치과의사', parts: doctorParts(doctors.dent) },
-    { label: '한의사', parts: doctorParts(doctors.kor) },
-  ].filter((r): r is { label: string; parts: string } => r.parts != null);
+  const doctorRows = hospitalDoctorRows(doctors);
   const hasMidwife = (doctors.midwife ?? 0) > 0;
 
   if (!depts.length && !staff.length && !specialties.length && !specialTreatments.length && !nursingGrades.length && doctorRows.length === 0 && !hasMidwife) {

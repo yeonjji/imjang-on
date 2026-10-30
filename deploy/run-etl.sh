@@ -33,5 +33,7 @@ case "${1:?job key required}" in
   apt-maintenance-cost) $DC pnpm tsx scripts/ingest/apt-maintenance-cost/runner.ts ;;  # 일일 한도까지 진행, 다음 날 이어 받음
   building-register) $DC pnpm tsx scripts/ingest/building-register/runner.ts ;;  # 100분 예산, 다음 날 이어 받음
   hospital-nemc)     $DC pnpm tsx scripts/ingest/hospital-nemc/runner.ts ;;  # 주 1회 전국 진료시간
+  content-score-daily)  $DC pnpm tsx scripts/ingest/content-score/runner.ts --mode=daily ;;   # 목록 정렬 점수(자체 정보)
+  content-score-weekly) $DC pnpm tsx scripts/ingest/content-score/runner.ts --mode=weekly ;;  # 주변·비교 정보, 청크 사이 쉬기
   *) echo "unknown job: $1" >&2; exit 2 ;;
 esac

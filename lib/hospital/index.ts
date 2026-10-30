@@ -36,6 +36,7 @@ export interface HospitalListFilter {
   q?: string;
 }
 
+// 기본 정렬: 서울 → 상세 내용 점수 → id (docs/superpowers/specs/2026-10-30-list-content-score-design.md)
 export async function getHospitalList(filter: HospitalListFilter, page: number, perPage = 20) {
   const q = filter.q?.trim();
   const where = {
@@ -47,7 +48,7 @@ export async function getHospitalList(filter: HospitalListFilter, page: number, 
   const [rows, total] = await Promise.all([
     prisma.hospital.findMany({
       where,
-      orderBy: { name: 'asc' },
+      orderBy: [{ listRank: 'desc' }, { id: 'asc' }],
       skip: (page - 1) * perPage,
       take: perPage,
       // 상세 페이지가 사라지면 목록이 유일한 열람 지점이 되므로, 상세에서 판단에 쓰이던

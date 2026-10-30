@@ -1,5 +1,6 @@
 import type { HospitalWithRelations } from '@/lib/hospital';
 import type { HoursView } from '@/lib/hospital/hours';
+import { hospitalHasHourInfo } from '@/lib/hospital/display';
 
 interface Props {
   detail: HospitalWithRelations['detail'];
@@ -20,10 +21,7 @@ export function HospitalTabOperation({ detail, transits, hours, tel }: Props) {
   const hira = hours?.source !== 'nemc';
   const days = hours?.days ?? [];
   // 점심·일요일·공휴일 휴진 문구는 심평원 값이라 심평원 출처일 때만 보인다(출처를 섞지 않는다).
-  const hasHourInfo =
-    days.length > 0 ||
-    !!hours?.note ||
-    (hira && !!(detail?.lunchWeekday || detail?.lunchSaturday || detail?.closedSunday || detail?.closedHoliday));
+  const hasHourInfo = hospitalHasHourInfo(detail, hours);
   return (
     <div className="flex flex-col gap-6">
       {hasHourInfo && (
