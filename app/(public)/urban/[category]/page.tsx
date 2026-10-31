@@ -11,8 +11,6 @@ import { UrbanCard } from './_components/urban-card';
 import { UrbanPagination } from './_components/urban-pagination';
 import { SiblingTabs } from '../../_components/sibling-tabs';
 import { SourceCaption } from '@/components/ui/source-caption';
-import { getUrbanHubSummary } from '@/lib/hub-summary/urban';
-import { HubIntro } from '../../_components/hub-intro';
 
 export const revalidate = 21_600;
 
@@ -75,10 +73,6 @@ export default async function UrbanListPage({ params, searchParams }: Params) {
   const defView = toUrbanCategoryView(def);
   const scopeLabel = region?.fullName ?? (effectiveSido ?? '전국');
 
-  const summary = await getUrbanHubSummary(def.slug, def.label, {
-    sigunguCode: sp.region, sido: effectiveSido, q: sp.q, sub: sp[subKey],
-  }, scopeLabel).catch(() => null);
-
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-8">
       <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted)]">
@@ -92,8 +86,9 @@ export default async function UrbanListPage({ params, searchParams }: Params) {
         <h1 className="text-2xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-3xl">
           {def.emoji} {scopeLabel} {def.label}
         </h1>
-        <p className="mt-2 text-sm text-[var(--color-muted)]">전체 {total.toLocaleString('ko-KR')}개</p>
-        <HubIntro summary={summary} category={def.slug} />
+        <p className="mt-2 break-keep text-sm text-[var(--color-muted)]">
+          {def.label} {total.toLocaleString('ko-KR')}곳의 위치를 지역별로 찾고, 주변 아파트 실거래가까지 함께 확인하세요.
+        </p>
       </div>
 
       <SiblingTabs currentHref={`/urban/${category}`} />
