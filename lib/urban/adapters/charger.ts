@@ -40,6 +40,7 @@ function toItem(row: ChargerRaw): UrbanItem<ChargerRaw> {
   };
 }
 
+// 기본 정렬: 서울 → 상세 내용 점수 → id (docs/superpowers/specs/2026-10-30-list-content-score-design.md)
 async function getList(f: UrbanListFilter, page: number): Promise<UrbanListResult<ChargerRaw>> {
   const addrPrefix = await resolveAddrPrefix(f);
   if (addrPrefix === '__NO_MATCH__') {
@@ -50,7 +51,7 @@ async function getList(f: UrbanListFilter, page: number): Promise<UrbanListResul
     prisma.evCharger.findMany({
       where,
       include: { units: true },
-      orderBy: { name: 'asc' },
+      orderBy: [{ listRank: 'desc' }, { id: 'asc' }],
       skip: (page - 1) * PER_PAGE,
       take: PER_PAGE,
     }),

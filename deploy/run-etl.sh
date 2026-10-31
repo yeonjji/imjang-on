@@ -46,5 +46,7 @@ case "${1:?job key required}" in
     exit $rc
     ;;
   property-aggregate-check) $DC pnpm tsx scripts/ingest/property-aggregates/runner.ts --mode=check ;;  # 주간 차이 점검(dry-run, S5 전까지 대기열에 안 넣음)
+  content-score-daily)  $DC pnpm tsx scripts/ingest/content-score/runner.ts --mode=daily ;;   # 목록 정렬 점수(자체 정보)
+  content-score-weekly) $DC pnpm tsx scripts/ingest/content-score/runner.ts --mode=weekly ;;  # 주변·비교 정보(실제 주기는 월 1회 — 잡 키만 weekly), 청크 사이 쉬기
   *) echo "unknown job: $1" >&2; exit 2 ;;
 esac

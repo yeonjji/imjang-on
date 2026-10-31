@@ -66,3 +66,18 @@ export function buildParkHeroLine(r: { area?: number | null; designatedAt?: Date
   if (r.designatedAt) parts.push(`${r.designatedAt.getUTCFullYear()}년 지정`);
   return parts.length ? parts.join(' · ') : null;
 }
+
+/** 공원 상세 '공원 기본정보' 행(컴포넌트·목록 점수 공용). 값이 null이면 그 행은 숨김. */
+export function parkInfoRows(
+  r: { parkType: string | null; area: number | null; designatedAt: Date | null; managingOrg: string | null; tel: string | null },
+  areaRank: { rank: number; total: number; scope: string } | null | undefined,
+): Array<[string, string | null]> {
+  return [
+    ['공원 유형', r.parkType],
+    ['면적', formatParkArea(r.area)],
+    ['면적 순위', areaRank ? `${areaRank.scope} ${areaRank.total}곳 중 ${areaRank.rank}위` : null],
+    ['지정 고시일', r.designatedAt ? r.designatedAt.toISOString().slice(0, 10) : null],
+    ['관리기관', r.managingOrg],
+    ['전화', r.tel],
+  ];
+}

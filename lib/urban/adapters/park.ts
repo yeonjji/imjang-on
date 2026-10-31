@@ -38,6 +38,7 @@ function toItem(row: ParkRaw): UrbanItem<ParkRaw> {
   return { id: row.id, name: row.name, address: row.address, sigunguCode: null, raw: row };
 }
 
+// 기본 정렬: 서울 → 상세 내용 점수 → id (docs/superpowers/specs/2026-10-30-list-content-score-design.md)
 async function getList(f: UrbanListFilter, page: number): Promise<UrbanListResult<ParkRaw>> {
   const addrPrefix = await resolveAddrPrefix(f);
   if (addrPrefix === '__NO_MATCH__') {
@@ -45,7 +46,7 @@ async function getList(f: UrbanListFilter, page: number): Promise<UrbanListResul
   }
   const where = buildWhere(f, addrPrefix);
   const [rows, total] = await Promise.all([
-    prisma.park.findMany({ where, orderBy: { name: 'asc' }, skip: (page - 1) * PER_PAGE, take: PER_PAGE }),
+    prisma.park.findMany({ where, orderBy: [{ listRank: 'desc' }, { id: 'asc' }], skip: (page - 1) * PER_PAGE, take: PER_PAGE }),
     prisma.park.count({ where }),
   ]);
   return { rows: rows.map(toItem), total, page, perPage: PER_PAGE, totalPages: Math.ceil(total / PER_PAGE) };

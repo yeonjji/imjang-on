@@ -1,23 +1,10 @@
 import { DetailsCard } from '@/components/ui/details-card';
-import { childcareCount } from '@/lib/childcare';
+import { childcareStaffRows } from '@/lib/childcare';
 import type { Childcare } from '@prisma/client';
 
-const ROLES = [
-  ['emRoleDirector', '원장'], ['emRoleTeacher', '보육교사'], ['emRoleSpecial', '특수교사'],
-  ['emRoleTherapy', '치료교사'], ['emRoleNutrition', '영양사'], ['emRoleNurse', '간호사'],
-  ['emRoleNurseAssist', '간호조무사'], ['emRoleCook', '조리원'], ['emRoleOffice', '사무직원'],
-] as const;
-// 근속 구간은 실인원이 아니라 **비율(%)**이다. 상류 필드명이 em_cnt_*라 수처럼 보이지만,
-// 운영 데이터 24,383건 실측 결과 구간 합이 98~102(평균 100.08)이고 총원과 일치하는 행은 0건이며,
-// 99.2%에서 한 구간 값이 총원을 넘는다(예: 교직원 7명에 80/0/0/0/20). 직역별(emRole*)은 실인원이 맞다.
-const TENURES = [
-  ['emTenure0y', '1년 미만'], ['emTenure1y', '1~2년'], ['emTenure2y', '2~4년'],
-  ['emTenure4y', '4~6년'], ['emTenure6y', '6년 이상'],
-] as const;
 
 export function ChildcareStaff({ item }: { item: Childcare }) {
-  const roleRows = ROLES.map(([k, label]) => ({ label, v: childcareCount(item, k) })).filter((r) => r.v != null && r.v > 0);
-  const tenRows = TENURES.map(([k, label]) => ({ label, v: childcareCount(item, k) })).filter((r) => r.v != null);
+  const { roleRows, tenRows } = childcareStaffRows(item);
   if (roleRows.length === 0 && tenRows.length === 0) return null;
   const summary = item.emRoleTot != null ? `총 ${item.emRoleTot}명` : `총 ${item.staffCount ?? '-'}명`;
   return (

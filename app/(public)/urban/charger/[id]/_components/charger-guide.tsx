@@ -1,38 +1,15 @@
 import { Card } from '@/components/ui/card';
-import { facilityKindLabel, floorLabel, maxOutputKw, installYearRange } from '@/lib/urban/charger-display';
+import { chargerGuideItems, type ChargerGuideRaw } from '@/lib/urban/charger-display';
 
-interface GuideRaw {
-  useTime: string | null;
-  parkingFree: boolean | null;
-  floorType: string | null;
-  floorNum: number | null;
-  facilityKind: string | null;
-  operatorTel: string | null;
-  locationDetail: string | null;
-}
 
 export function ChargerGuide({
   raw,
   units,
 }: {
-  raw: GuideRaw;
+  raw: ChargerGuideRaw;
   units: { outputKw?: number | null; installYear?: number | null }[];
 }) {
-  const maxKw = maxOutputKw(units);
-  const floor = floorLabel(raw.floorType, raw.floorNum);
-  const tiles: { label: string; value: string }[] = [];
-  if (raw.useTime) tiles.push({ label: '이용 시간', value: raw.useTime });
-  if (maxKw !== null) tiles.push({ label: '출력', value: `최대 ${maxKw}kW` });
-  if (raw.parkingFree !== null) tiles.push({ label: '주차료', value: raw.parkingFree ? '무료' : '유료' });
-  if (floor) tiles.push({ label: '설치 위치', value: floor });
-
-  const rows: [string, string | null][] = [
-    ['시설 구분', facilityKindLabel(raw.facilityKind)],
-    ['운영사 연락처', raw.operatorTel],
-    ['설치 연도', installYearRange(units)],
-    ['상세 위치', raw.locationDetail],
-  ];
-  const shownRows = rows.filter((r): r is [string, string] => !!r[1]);
+  const { tiles, rows: shownRows } = chargerGuideItems(raw, units);
   if (tiles.length === 0 && shownRows.length === 0) return null;
 
   return (

@@ -45,3 +45,32 @@ export function installYearRange(units: { installYear?: number | null }[]): stri
   const max = Math.max(...ys);
   return min === max ? `${min}년` : `${min}~${max}년`;
 }
+
+export interface ChargerGuideRaw {
+  useTime: string | null;
+  parkingFree: boolean | null;
+  floorType: string | null;
+  floorNum: number | null;
+  facilityKind: string | null;
+  operatorTel: string | null;
+  locationDetail: string | null;
+}
+
+/** 충전소 상세 '이용 안내' 카드의 타일·행(컴포넌트·목록 점수 공용). 둘 다 비면 카드가 그려지지 않는다. */
+export function chargerGuideItems(raw: ChargerGuideRaw, units: { outputKw?: number | null; installYear?: number | null }[]) {
+  const maxKw = maxOutputKw(units);
+  const floor = floorLabel(raw.floorType, raw.floorNum);
+  const tiles: { label: string; value: string }[] = [];
+  if (raw.useTime) tiles.push({ label: '이용 시간', value: raw.useTime });
+  if (maxKw !== null) tiles.push({ label: '출력', value: `최대 ${maxKw}kW` });
+  if (raw.parkingFree !== null) tiles.push({ label: '주차료', value: raw.parkingFree ? '무료' : '유료' });
+  if (floor) tiles.push({ label: '설치 위치', value: floor });
+  const all: [string, string | null][] = [
+    ['시설 구분', facilityKindLabel(raw.facilityKind)],
+    ['운영사 연락처', raw.operatorTel],
+    ['설치 연도', installYearRange(units)],
+    ['상세 위치', raw.locationDetail],
+  ];
+  const rows = all.filter((r): r is [string, string] => !!r[1]);
+  return { tiles, rows };
+}

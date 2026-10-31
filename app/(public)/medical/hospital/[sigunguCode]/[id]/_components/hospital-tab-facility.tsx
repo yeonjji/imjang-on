@@ -1,30 +1,6 @@
 import type { HospitalWithRelations } from '@/lib/hospital';
+import { hospitalVisibleBeds } from '@/lib/hospital/display';
 
-type BedKey =
-  | 'generalBedPremium' | 'generalBedNormal'
-  | 'icuAdultBed' | 'icuPediatricBed' | 'icuNeonatalBed'
-  | 'deliveryBed' | 'operatingRoomBed' | 'erBed'
-  | 'physicalTherapyBed' | 'isolationBed' | 'sterileRoomBed'
-  | 'psychiatryClosedPremium' | 'psychiatryClosedNormal'
-  | 'psychiatryOpenPremium' | 'psychiatryOpenNormal';
-
-const BED_ROWS: { key: BedKey; label: string }[] = [
-  { key: 'generalBedPremium', label: '일반병상(상급)' },
-  { key: 'generalBedNormal', label: '일반병상(일반)' },
-  { key: 'icuAdultBed', label: '중환자실(성인)' },
-  { key: 'icuPediatricBed', label: '중환자실(소아)' },
-  { key: 'icuNeonatalBed', label: '중환자실(신생아)' },
-  { key: 'deliveryBed', label: '분만실' },
-  { key: 'operatingRoomBed', label: '수술실' },
-  { key: 'erBed', label: '응급실 병상' },
-  { key: 'physicalTherapyBed', label: '물리치료실' },
-  { key: 'isolationBed', label: '격리실' },
-  { key: 'sterileRoomBed', label: '무균실' },
-  { key: 'psychiatryClosedPremium', label: '정신병동(폐쇄·상급)' },
-  { key: 'psychiatryClosedNormal', label: '정신병동(폐쇄·일반)' },
-  { key: 'psychiatryOpenPremium', label: '정신병동(개방·상급)' },
-  { key: 'psychiatryOpenNormal', label: '정신병동(개방·일반)' },
-];
 
 interface Props {
   facility: HospitalWithRelations['facility'];
@@ -47,7 +23,7 @@ export function HospitalTabFacility({ facility, equipment, mealSurcharges }: Pro
           )}
           <h3 className="mb-3 text-sm font-bold text-[var(--color-blue-dark)]">병상 현황</h3>
           <div className="divide-y divide-[var(--color-line)] rounded-xl border border-[var(--color-line)]">
-            {BED_ROWS.filter(r => (facility[r.key] ?? 0) > 0).map(r => (
+            {hospitalVisibleBeds(facility).map(r => (
               <div key={r.key} className="flex items-center justify-between px-4 py-2.5 text-sm">
                 <span className="text-[var(--color-muted)]">{r.label}</span>
                 <span className="font-semibold">{(facility[r.key] as number).toLocaleString()}개</span>
