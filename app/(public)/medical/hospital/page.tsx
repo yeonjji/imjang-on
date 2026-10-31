@@ -6,10 +6,8 @@ import { HospitalFilterPanel } from './_components/hospital-filter-panel';
 import { HospitalMobileFilterSheet } from './_components/hospital-mobile-filter-sheet';
 import { SiblingTabs } from '../../_components/sibling-tabs';
 import { SourceCaption } from '@/components/ui/source-caption';
-import { getMedicalRegionBreakdown } from '@/lib/hub-summary/medical';
 import type { Metadata } from 'next';
 import { CategoryFaq } from '../../_components/faq';
-import { HubIntro } from '../../_components/hub-intro';
 
 export const revalidate = 86_400;
 
@@ -33,11 +31,10 @@ export default async function HospitalListPage({ searchParams }: Props) {
   const sigunguCode = sp.region;
   const typeCode = sp.type;
 
-  const [{ rows, total, totalPages }, regions, typeCodes, summary] = await Promise.all([
+  const [{ rows, total, totalPages }, regions, typeCodes] = await Promise.all([
     getHospitalList({ sigunguCode, typeCode, q: sp.q }, page),
     getHospitalRegions(),
     getHospitalTypeCodes(),
-    getMedicalRegionBreakdown('hospital', '병원·의원', sigunguCode).catch(() => null),
   ]);
 
   return (
@@ -53,8 +50,9 @@ export default async function HospitalListPage({ searchParams }: Props) {
         <h1 className="text-2xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-3xl">
           병원·의원
         </h1>
-        <p className="mt-2 text-sm text-[var(--color-muted)]">전국 {total.toLocaleString('ko-KR')}개</p>
-          <HubIntro summary={summary} category="hospital" />
+        <p className="mt-2 break-keep text-sm text-[var(--color-muted)]">
+          병원·의원 {total.toLocaleString('ko-KR')}곳의 진료 정보·위치를 찾고, 주변 아파트 실거래가까지 함께 확인하세요.
+        </p>
       </div>
 
       <SiblingTabs currentHref="/medical/hospital" />
