@@ -46,7 +46,7 @@ export default async function PharmacyListPage({ searchParams }: Props) {
         <span className="font-semibold text-[var(--color-blue-dark)]">약국</span>
       </nav>
 
-      <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] md:p-7">
+      <div className="mb-6 rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] md:p-7">
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">의료시설 · 약국</p>
         <h1 className="text-2xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-3xl">
           약국
@@ -71,7 +71,7 @@ export default async function PharmacyListPage({ searchParams }: Props) {
         </aside>
 
         <main className="min-w-0 flex-1">
-          <div className="mb-4 rounded-[18px] border border-[var(--color-line)] bg-white px-5 py-3 shadow-[var(--shadow-soft)]">
+          <div className="mb-4 rounded-[22px] border border-[var(--color-line)] bg-white px-5 py-3 shadow-[var(--shadow-soft)]">
             <p className="text-base font-bold text-[var(--color-blue-dark)]">
               <span className="text-[var(--color-blue)]">{total.toLocaleString('ko-KR')}</span>개 약국
             </p>
@@ -82,7 +82,7 @@ export default async function PharmacyListPage({ searchParams }: Props) {
               조건에 맞는 약국이 없습니다.
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-3">
               {rows.map(p => <PharmacyCard key={String(p.id)} pharmacy={p} />)}
             </div>
           )}

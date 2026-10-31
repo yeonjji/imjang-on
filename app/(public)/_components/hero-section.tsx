@@ -12,7 +12,7 @@ import { TypeIconGrid } from './type-icon-grid';
  */
 export function HeroSection({ popularRegions }: { popularRegions: PopularRegion[] }) {
   return (
-    <section className="rounded-[28px] border border-[var(--color-line)] bg-gradient-to-br from-[#eaf2ff] via-[#f3f8ff] to-white p-6 md:p-10">
+    <section className="rounded-[22px] border border-[var(--color-line)] bg-white shadow-[var(--shadow-soft)] p-6 md:p-10">
       <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-[var(--color-sky-soft)] px-3.5 py-2 text-xs font-extrabold text-[var(--color-blue-dark)]">
         📍 실거래가·생활권 정보 통합 플랫폼
       </span>

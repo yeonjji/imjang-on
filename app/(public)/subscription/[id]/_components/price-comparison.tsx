@@ -19,7 +19,7 @@ export function PriceComparisonView({ local }: { local: SigunguMedian }) {
   const groupLabel = typeof local.label === 'string' && local.label.length > 0 ? local.label : FALLBACK_LABEL;
 
   return (
-    <section className="my-8 rounded-[18px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
+    <section className="my-8 rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
       <h2 className="text-base font-bold text-[var(--color-blue-dark)]">같은 {groupLabel} 실거래 시세</h2>
       <p className="mt-3 text-sm text-[var(--color-text)]">
         최근 12개월 아파트 매매 중위가 <strong>{formatBillion(local.median)}</strong>

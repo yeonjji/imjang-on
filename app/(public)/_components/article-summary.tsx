@@ -5,7 +5,7 @@ import remarkGfm from 'remark-gfm';
 export function ArticleSummary({ markdown }: { markdown: string }) {
   if (!markdown.trim()) return null;
   return (
-    <aside className="mt-8 rounded-[18px] border border-[var(--color-line)] bg-[var(--color-soft)] px-5 py-4">
+    <aside className="mt-8 rounded-[22px] border border-[var(--color-line)] bg-[var(--color-soft)] px-5 py-4">
       <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-blue)]">핵심 요약</p>
       <div className="board-prose mt-2 text-[15px] leading-relaxed text-[var(--color-text)]">
         <ReactMarkdown remarkPlugins={[[remarkGfm, { singleTilde: false }]]}>{markdown}</ReactMarkdown>

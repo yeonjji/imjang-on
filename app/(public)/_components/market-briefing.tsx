@@ -34,7 +34,7 @@ export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }
 
       <div className="mt-[18px] grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* 카드1: 오늘의 실거래 한눈에 */}
-        <section className="rounded-[20px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow)] md:col-span-2">
+        <section className="rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] md:col-span-2">
           <h3 className="mb-3.5 text-[15px] font-extrabold tracking-tight">
             오늘 시장에서 무슨 일이 <span className="text-[var(--color-blue)]">있었나</span>
           </h3>
@@ -55,7 +55,7 @@ export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }
 
         {/* 카드2: 인기 동네 TOP5 */}
         {popularRegions.length > 0 && (
-          <section className="rounded-[20px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow)]">
+          <section className="rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
             <h3 className="mb-3.5 text-[15px] font-extrabold tracking-tight">
               오늘 가장 <span className="text-[var(--color-blue)]">인기있는 동네</span>
             </h3>
@@ -76,7 +76,7 @@ export function MarketBriefing({ briefing }: { briefing: MarketBriefing | null }
 
         {/* 카드3: 거래량 급증 동네 */}
         {surgeRegions.length > 0 && (
-          <section className="rounded-[20px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow)]">
+          <section className="rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
             <h3 className="mb-2 text-[15px] font-extrabold tracking-tight">오늘의 <span className="text-[var(--color-blue)]">발견</span></h3>
             <p className="mb-3 text-xs text-[var(--color-muted)]">최근 30일 거래량이 직전 30일보다 급증한 지역</p>
             <ul>

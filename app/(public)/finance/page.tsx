@@ -27,7 +27,7 @@ export default async function FinancePage() {
         <span className="font-semibold text-[var(--color-blue-dark)]">대출상품</span>
       </nav>
 
-      <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
+      <div className="mb-6 rounded-[22px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">주거금융</p>
         <h1 className="text-3xl font-black tracking-tight text-[var(--color-blue-dark)]">
           서민금융 대출상품

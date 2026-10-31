@@ -40,14 +40,15 @@ export function PropertyDetailHero({
   ];
 
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-[var(--color-line)] bg-white shadow-[var(--shadow)]">
-      <div className="flex min-h-[200px] items-end bg-gradient-to-br from-[#1e3a8a] to-[#38bdf8] p-8 text-white">
-        <div>
-          <span className="mb-3 inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-bold">
+    <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-white shadow-[var(--shadow-soft)]">
+      <div className="flex items-center gap-5 p-6 md:p-7">
+        <div aria-hidden="true" className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px] border border-[var(--color-line)] bg-[var(--color-sky-soft)] text-2xl md:h-16 md:w-16 md:text-3xl">🏢</div>
+        <div className="min-w-0">
+          <span className="mb-2 inline-block rounded-full bg-[var(--color-sky-soft)] px-2 py-0.5 text-xs font-bold text-[var(--color-blue-dark)]">
             실거래가 상세
           </span>
-          <h1 className="text-3xl font-black tracking-tight md:text-4xl">{property.name}</h1>
-          <p className="mt-2 text-white/80">
+          <h1 className="break-keep text-2xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-3xl">{property.name}</h1>
+          <p className="mt-2 text-sm text-[var(--color-muted)]">
             {display}
             {builtYearShown ? ` · ${builtYearShown}년 준공` : ''}
             {property.households
@@ -56,7 +57,7 @@ export function PropertyDetailHero({
           </p>
         </div>
       </div>
-      <div className="grid grid-cols-2 divide-x divide-y divide-[var(--color-line)] md:grid-cols-4">
+      <div className="grid grid-cols-2 divide-x divide-y divide-[var(--color-line)] border-t border-[var(--color-line)] md:grid-cols-4">
         {boxes.map((box) => (
           <div key={box.label} className="bg-white p-5">
             <p className="text-xs text-[var(--color-muted)]">{box.label}</p>

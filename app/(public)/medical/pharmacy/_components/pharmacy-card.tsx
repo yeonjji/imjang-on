@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 import type { Pharmacy } from '@prisma/client';
 
 interface Props { pharmacy: Pharmacy; }
@@ -8,23 +9,25 @@ export function PharmacyCard({ pharmacy }: Props) {
   return (
     <Link prefetch={false}
       href={href}
-      className="block rounded-xl border border-[var(--color-line)] bg-white p-4 transition hover:border-[var(--color-blue)] hover:shadow-sm"
+      className="flex items-center gap-4 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-white px-5 py-4 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-sky)]"
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="truncate font-bold text-[var(--color-blue-dark)]">{pharmacy.name}</p>
-        <span className="shrink-0 rounded-full bg-[var(--color-sky-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--color-blue)]">
-          약국
-        </span>
-      </div>
-      <p className="mt-1 truncate text-xs text-[var(--color-muted)]">{pharmacy.address}</p>
-      {pharmacy.tel && (
-        <p className="mt-1 text-xs text-[var(--color-muted)]">{pharmacy.tel}</p>
-      )}
-      {pharmacy.openedAt && (
-        <p className="mt-1 text-xs text-[var(--color-muted)]">
-          개설 {new Date(pharmacy.openedAt).getUTCFullYear()}년
+      <div aria-hidden="true" className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px] bg-[var(--color-sky-soft)] text-2xl">💊</div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-base font-bold text-[var(--color-blue-dark)]">{pharmacy.name}</h3>
+          <Badge tone="blue">약국</Badge>
+        </div>
+        <p className="mt-1.5 truncate text-sm text-[var(--color-muted)]">
+          {pharmacy.address}
+          {pharmacy.tel ? ` · ${pharmacy.tel}` : ''}
         </p>
-      )}
+        {pharmacy.openedAt && (
+          <p className="mt-1 text-xs text-[var(--color-muted)]">
+            개설 {new Date(pharmacy.openedAt).getUTCFullYear()}년
+          </p>
+        )}
+      </div>
+      <span className="shrink-0 text-xs text-[var(--color-muted)]">상세 →</span>
     </Link>
   );
 }

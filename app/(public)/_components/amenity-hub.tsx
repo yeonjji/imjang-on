@@ -44,7 +44,7 @@ export function AmenityHub() {
           return (
             <article
               key={group.slug}
-              className="rounded-[20px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow)]"
+              className="rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]"
             >
               <Link
                 href={group.items[0].href}

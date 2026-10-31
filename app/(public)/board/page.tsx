@@ -80,7 +80,7 @@ export default async function BoardListPage({ searchParams }: Props) {
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10">
-      <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] md:p-7">
+      <div className="mb-6 rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] md:p-7">
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">소식</p>
         <h1 className="text-2xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-3xl">
           임장ON 브리핑

@@ -41,7 +41,7 @@ export default async function ListPage({
       </nav>
 
       {/* 상단 헤더 카드 */}
-      <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow)]">
+      <div className="mb-6 rounded-[22px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">부동산 통합 검색</p>
         <h1 className="text-3xl font-black tracking-tight text-[var(--color-blue-dark)]">실거래가 목록</h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">
@@ -60,7 +60,7 @@ export default async function ListPage({
       <div className="flex gap-6 items-start">
         {/* 사이드바 280px */}
         <aside className="hidden md:block w-[280px] shrink-0 sticky top-[88px]">
-          <div className="max-h-[calc(100vh-104px)] overflow-y-auto rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow)]">
+          <div className="max-h-[calc(100vh-104px)] overflow-y-auto rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
             <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-[var(--color-soft)]" />}>
               <ListFilterPanel sidoList={sidoList} />
             </Suspense>

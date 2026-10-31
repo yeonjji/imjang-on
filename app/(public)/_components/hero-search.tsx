@@ -42,7 +42,7 @@ export function HeroSearch({ popularRegions }: { popularRegions: PopularRegion[]
 
   return (
     <div ref={ref} className="relative mt-6">
-      <div className="flex items-center gap-2 rounded-2xl border border-[var(--color-line)] bg-white p-2 pl-4 shadow-[var(--shadow)]">
+      <div className="flex items-center gap-2 rounded-2xl border border-[var(--color-line)] bg-white p-2 pl-4 shadow-[var(--shadow-soft)]">
         <span className="text-[var(--color-muted)]" aria-hidden>🔍</span>
         <input
           value={q}
@@ -62,7 +62,7 @@ export function HeroSearch({ popularRegions }: { popularRegions: PopularRegion[]
       </div>
 
       {open && results && (results.properties.length > 0 || results.regions.length > 0) && (
-        <div className="absolute left-0 right-0 z-40 mt-2 rounded-2xl border border-[var(--color-line)] bg-white p-2 shadow-[var(--shadow)]">
+        <div className="absolute left-0 right-0 z-40 mt-2 rounded-2xl border border-[var(--color-line)] bg-white p-2 shadow-[var(--shadow-soft)]">
           {results.properties.length > 0 && (
             <>
               <p className="px-3 py-1 text-xs font-bold text-[var(--color-muted)]">단지</p>

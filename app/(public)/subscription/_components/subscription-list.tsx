@@ -27,7 +27,7 @@ export async function SubscriptionList({ categories, sido, status, sort, page }:
 
   return (
     <>
-      <div className="mb-4 rounded-[18px] border border-[var(--color-line)] bg-white px-5 py-3 shadow-[var(--shadow)]">
+      <div className="mb-4 rounded-[22px] border border-[var(--color-line)] bg-white px-5 py-3 shadow-[var(--shadow-soft)]">
         <p className="text-base font-bold text-[var(--color-blue-dark)]">
           청약 공고 <span className="text-[var(--color-blue)]">{total.toLocaleString('ko-KR')}</span>건
         </p>

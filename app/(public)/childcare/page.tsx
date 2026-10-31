@@ -47,7 +47,7 @@ export default async function ChildcareListPage({ searchParams }: Props) {
         <span className="font-semibold text-[var(--color-blue-dark)]">어린이집찾기</span>
       </nav>
 
-      <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
+      <div className="mb-6 rounded-[22px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">생활편의 · 어린이집찾기</p>
         <h1 className="text-3xl font-black tracking-tight text-[var(--color-blue-dark)]">어린이집찾기</h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">지역·운영유형으로 좁혀보세요. 어린이집을 누르면 정원·연령별 현황과 주변 아파트 실거래가까지 확인할 수 있어요.</p>
@@ -77,7 +77,7 @@ export default async function ChildcareListPage({ searchParams }: Props) {
         </aside>
 
         <main className="min-w-0 flex-1">
-          <div className="mb-4 rounded-[18px] border border-[var(--color-line)] bg-white px-5 py-3 shadow-[var(--shadow-soft)]">
+          <div className="mb-4 rounded-[22px] border border-[var(--color-line)] bg-white px-5 py-3 shadow-[var(--shadow-soft)]">
             <p className="text-base font-bold text-[var(--color-blue-dark)]"><span className="text-[var(--color-blue)]">{total.toLocaleString('ko-KR')}</span>개 어린이집</p>
           </div>
           {rows.length === 0 ? (

@@ -26,7 +26,7 @@ export function StatsBar({ stats }: { stats: HomeStats }) {
         "아파트/오피스텔/다세대"가 단어 중간에서 깨지고, 800px(111px)은 돼야 한 줄이었다.
         @4xl(896px)은 그 위로 잡은 여유값이다.
       */}
-      <div className="grid grid-cols-2 overflow-hidden rounded-[20px] border border-[var(--color-line)] bg-white shadow-[var(--shadow)] @4xl:grid-cols-4">
+      <div className="grid grid-cols-2 overflow-hidden rounded-[22px] border border-[var(--color-line)] bg-white shadow-[var(--shadow-soft)] @4xl:grid-cols-4">
       {ITEMS.map((item, i) => (
         <div
           key={item.key}

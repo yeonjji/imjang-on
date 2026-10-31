@@ -25,7 +25,7 @@ export function PropertyListCard({ property: p, deal }: Props) {
 
   return (
     <Link prefetch={false} href={href}>
-      <article className="grid grid-cols-1 md:grid-cols-[1fr_200px] gap-4 md:gap-6 items-start md:items-center rounded-[22px] border border-[var(--color-line)] bg-white px-6 py-5 shadow-[var(--shadow)] transition hover:shadow-lg">
+      <article className="grid grid-cols-1 md:grid-cols-[1fr_200px] gap-4 md:gap-6 items-start md:items-center rounded-[22px] border border-[var(--color-line)] bg-white px-6 py-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-sky)]">
         {/* 왼쪽 */}
         <div>
           {/* 뱃지 */}
@@ -83,7 +83,7 @@ export function PropertyListCard({ property: p, deal }: Props) {
         </div>
 
         {/* 오른쪽 요약 박스 */}
-        <div className="rounded-[18px] bg-[#eff6ff] px-4 py-3 text-sm text-[var(--color-muted)] leading-relaxed flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-2 md:gap-1 md:self-stretch">
+        <div className="rounded-[14px] bg-[#eff6ff] px-4 py-3 text-sm text-[var(--color-muted)] leading-relaxed flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-2 md:gap-1 md:self-stretch">
           <p className="font-semibold text-[var(--color-blue-dark)] whitespace-nowrap">12개월 거래 {p.txCount12m}건</p>
           <div className="flex flex-row md:flex-col gap-3 md:gap-0">
             {p.saleCount12m > 0 && <p className="whitespace-nowrap">매매 {p.saleCount12m}건</p>}
