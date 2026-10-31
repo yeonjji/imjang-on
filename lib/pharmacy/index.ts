@@ -40,12 +40,10 @@ export async function getPharmacyList(filter: PharmacyListFilter, page: number, 
   return { rows, total, page, perPage, totalPages: Math.ceil(total / perPage) };
 }
 
+// Prisma `distinct`는 전 행을 Node로 읽어 중복 제거(0.6초) → DB DISTINCT(0.03초). lib/hospital 참고.
 export async function getPharmacyRegions(): Promise<{ sido: string; sigungu: string; sigunguCode: string }[]> {
-  const rows = await prisma.pharmacy.findMany({
-    select: { sido: true, sigungu: true, sigunguCode: true },
-    where: { sido: { not: null }, sigungu: { not: null }, sigunguCode: { not: null } },
-    distinct: ['sigunguCode'],
-    orderBy: [{ sido: 'asc' }, { sigungu: 'asc' }],
-  });
-  return rows.map(r => ({ sido: r.sido!, sigungu: r.sigungu!, sigunguCode: r.sigunguCode! }));
+  return prisma.$queryRaw<{ sido: string; sigungu: string; sigunguCode: string }[]>`
+    SELECT DISTINCT sido, sigungu, "sigunguCode" FROM "Pharmacy"
+    WHERE sido IS NOT NULL AND sigungu IS NOT NULL AND "sigunguCode" IS NOT NULL
+    ORDER BY sido, sigungu`;
 }
