@@ -5,10 +5,10 @@ const seoul = '?sido=' + encodeURIComponent('서울');
 test.describe('urban parking LIST happy path', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) < 768, '데스크톱 사이드바 필터 사용');
 
-  test('진입 시 ?sido=서울 redirect + 카드 노출 + 카드 클릭 시 DETAIL', async ({ page }) => {
+  test('진입 시 전국 목록(redirect 없음) + 카드 노출 + 카드 클릭 시 DETAIL', async ({ page }) => {
     await page.goto('/urban/parking');
-    await expect(page).toHaveURL(/sido=/);
-    await expect(page.getByRole('heading', { level: 1, name: /주차장/ })).toBeVisible();
+    await expect(page).not.toHaveURL(/sido=/);
+    await expect(page.getByRole('heading', { level: 1, name: '전국 주차장' })).toBeVisible();
 
     const firstCard = page.locator('a:has(article)').first();
     await expect(firstCard).toBeVisible();

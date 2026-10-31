@@ -94,7 +94,7 @@ export const parkingDef: UrbanCategoryDef<ParkingRaw> = {
   label: '주차장',
   emoji: '🅿️',
   breadcrumbLabel: '주차장',
-  requiresSidoScope: true,
+  requiresSidoScope: false,
   subFilters: {
     paramKey: 'sub',
     defaultSlug: 'all',
