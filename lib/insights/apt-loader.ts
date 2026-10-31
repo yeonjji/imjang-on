@@ -47,7 +47,8 @@ export const loadAptInsight = cache(
 
     const coord = await cachedPropertyLatLng(propId);
     const [salesResult, region, subway, infra, areaSummary, latestTx, floorPremium, flags, complexFacts] = await Promise.all([
-      getUnifiedTransactions(propId, { page: 1, perPage: 30, dealType: 'SALE' }),
+      // 요약 문장의 근거라 유효 거래만(해제 제외).
+      getUnifiedTransactions(propId, { page: 1, perPage: 30, dealType: 'SALE', includeCancelled: false }),
       getRegionStats(property.sigunguCode ?? '', property.propertyType),
       coord ? cachedNearbySubway(coord.lat, coord.lng) : Promise.resolve({ stations: [], fallback: false }),
       coord ? cachedNearbyInfra(coord.lat, coord.lng) : Promise.resolve([] as Awaited<ReturnType<typeof getNearbyInfra>>),

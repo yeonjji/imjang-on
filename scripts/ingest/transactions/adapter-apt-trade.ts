@@ -1,15 +1,9 @@
 import { parseXml, getItems, getTotalCount, parseCommaNumber, parseYmd } from '@/scripts/ingest/xml-parse';
 import { PropertyType, DealType } from '@prisma/client';
 import type { Adapter, NormalizedTransaction } from '@/scripts/ingest/types';
+import { parseMolitDate, parseCancelType, parseCancelDate } from './molit-date';
 
-function parseYmdString(s: string): Date | null {
-  if (s.length !== 8) return null;
-  const y = Number(s.slice(0, 4));
-  const m = Number(s.slice(4, 6));
-  const d = Number(s.slice(6, 8));
-  if (!y || !m || !d) return null;
-  return new Date(Date.UTC(y, m - 1, d));
-}
+export { parseMolitDate } from './molit-date';
 
 export const adapterAptTrade: Adapter = {
   apiType: 'apt-trade',
@@ -28,12 +22,12 @@ export const adapterAptTrade: Adapter = {
       exclusiveArea: Number(item.excluUseAr ?? 0),
       floor: item.floor ? Number(item.floor) : null,
       dealAmount: parseCommaNumber(item.dealAmount),
-      registerDate: item.rgstDate ? parseYmdString(String(item.rgstDate)) : null,
+      registerDate: item.rgstDate ? parseMolitDate(String(item.rgstDate)) : null,
       dealingType: item.dealingGbn ? String(item.dealingGbn) : null,
       buyerType: item.buyerGbn ? String(item.buyerGbn) : null,
       sellerType: item.slerGbn ? String(item.slerGbn) : null,
-      cancelDate: item.cdealDay ? parseYmdString(String(item.cdealDay)) : null,
-      cancelType: item.cdealType ? String(item.cdealType) : null,
+      cancelDate: parseCancelDate(item.cdealDay),
+      cancelType: parseCancelType(item.cdealType),
       deposit: null,
       monthlyRent: null,
       contractTerm: null,

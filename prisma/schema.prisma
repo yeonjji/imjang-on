@@ -1202,3 +1202,37 @@ model Guide {
   @@index([status, publishedAt(sort: Desc)])
   @@index([category, status])
 }
+
+/// 매물 재집계 대기열(S2). 거래를 바꾸는 트랜잭션 안에서 넣고, 집계 작업이 FOR UPDATE SKIP LOCKED로 비운다.
+/// 프로세스가 중간에 죽어도 집계 대상이 사라지지 않게 하는 것이 목적(D1). FK는 두지 않는다(잠금 상호작용 최소화).
+model PropertyAggregateQueue {
+  propertyId BigInt   @id
+  enqueuedAt DateTime @default(now())
+
+  @@index([enqueuedAt])
+}
+
+/// 재정합(S3)이 Transaction에서 뺀 행의 보관본. 원래 행 전체를 jsonb로 남겨 그대로 복원한다(삭제가 아니라 이동).
+/// reason: 'cancel'(해제본으로 대체) · 'correction'(정정본으로 대체) · 'reassign'(다른 매물로 재배정)
+model TransactionArchive {
+  id            BigInt   @id @default(autoincrement())
+  transactionId BigInt
+  propertyId    BigInt
+  sigunguCode   String   @db.VarChar(5)
+  row           Json
+  reason        String   @db.VarChar(20)
+  runId         BigInt
+  archivedAt    DateTime @default(now())
+
+  @@index([runId])
+  @@index([transactionId])
+}
+
+/// 재정합 실행이 Transaction에 넣은 행 — 실행 단위 롤백(넣은 행 삭제 + 보관본 복원)에 쓴다.
+model ReconcileInsert {
+  runId         BigInt
+  transactionId BigInt
+
+  @@id([runId, transactionId])
+  @@index([transactionId])
+}

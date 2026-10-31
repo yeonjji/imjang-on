@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { validDealSql } from '@/lib/transaction/valid-deal';
 import { lastContractDate, round } from './shared';
 
 export interface FloorPremiumResult {
@@ -35,7 +36,7 @@ export async function computeFloorPremium(): Promise<FloorPremiumResult> {
       WHERE "propertyType" = 'APARTMENT' AND "dealType" = 'SALE'
         AND "contractDate" >= (CURRENT_DATE - INTERVAL '24 months')
         AND "dealAmount" IS NOT NULL AND "floor" IS NOT NULL AND "floor" > 0
-        AND "exclusiveArea" > 0 AND "cancelDate" IS NULL
+        AND "exclusiveArea" > 0 AND ${validDealSql()}
     ), fit AS (
       SELECT regr_slope(ppa, f) AS slope, regr_r2(ppa, f) AS r2, AVG(ppa) AS mean_ppa
       FROM sale

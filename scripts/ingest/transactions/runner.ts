@@ -2,7 +2,10 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { fetchPage } from '@/scripts/ingest/http';
 import { findOrCreateProperty } from '@/scripts/ingest/property-matcher';
-import { updatePropertyAggregates } from '@/scripts/ingest/aggregator';
+import { drainAggregateQueue } from '@/scripts/ingest/aggregate-queue';
+import { reconcileScope, area2, type ApiTx, type ReconcileResult } from './reconcile';
+import { RunBreaker, type ScopeOutcome } from './run-breaker';
+import { getHalt, setHalt } from './halt';
 import { revalidatePaths, propertyPath } from '@/scripts/ingest/revalidator';
 import { notify } from '@/scripts/ingest/notify';
 
@@ -20,7 +23,7 @@ import { createHash } from 'node:crypto';
 import { getRangeMonths } from './months';
 import { parseXml, assertNormalResponse } from '@/scripts/ingest/xml-parse';
 
-const ADAPTERS: Record<ApiType, Adapter> = {
+export const ADAPTERS: Record<ApiType, Adapter> = {
   'apt-trade': adapterAptTrade,
   'apt-rent': adapterAptRent,
   'offi-trade': adapterOffiTrade,
@@ -37,6 +40,10 @@ interface RunArgs {
   limit?: number;
   from?: string;
   to?: string;
+  /** recheck: 다시 확인할 월 오프셋 범위(예: '2-6' = 2~6개월 전) */
+  offsets?: string;
+  /** recheck: 이 기간(일) 안에 완료한 범위는 건너뛴다 */
+  windowDays: number;
 }
 
 function parseArgs(): RunArgs {
@@ -49,7 +56,12 @@ function parseArgs(): RunArgs {
   const limit = get('limit') !== undefined ? Number(get('limit')) : undefined;
   const from = get('from');
   const to = get('to');
-  return { api, mode, months, monthOffset, limit, from, to };
+  const offsets = get('offsets');
+  if (mode === 'recheck' && !offsets) throw new Error('--mode=recheck에는 --offsets=2-6 형식이 필요하다');
+  const windowDays = Number(get('window-days') ?? '7');
+  if (!Number.isInteger(windowDays) || windowDays < 1) throw new Error(`--window-days는 1 이상의 정수: ${get('window-days')}`);
+  if (limit !== undefined && (!Number.isInteger(limit) || limit < 1)) throw new Error(`--limit는 1 이상의 정수: ${get('limit')}`);
+  return { api, mode, months, monthOffset, limit, from, to, offsets, windowDays };
 }
 
 export interface IngestTaskKey {
@@ -147,10 +159,22 @@ function dedupeAdjacentSgg(keys: IngestTaskKey[]): IngestTaskKey[] {
 
 async function main() {
   const args = parseArgs();
+  // 차단기로 정지된 상태면 원인 확인·해제 전까지 원천을 부르지 않는다(halt.ts). 해제: reconcile-transactions --clear-halt --reason=…
+  const halt = await getHalt();
+  if (halt.active) {
+    const info = { mode: args.mode, haltedSince: halt.since, reason: halt.reason };
+    logger.error(info, 'transactions ETL is halted — not running (clear with scripts/ops/reconcile-transactions.ts --clear-halt --reason=…)');
+    await notify('warn', 'ETL halted — skipped', info);
+    process.exitCode = 1;
+    await prisma.$disconnect();
+    return;
+  }
   const apis = args.api === 'all' ? (Object.keys(ADAPTERS) as ApiType[]) : [args.api];
   const months =
     args.mode === 'daily'
       ? getDailyMonths()
+      : args.mode === 'recheck'
+        ? getOffsetMonths(args.offsets!, new Date())
       : args.from && args.to
         ? getRangeMonths(args.from, args.to)
         : args.monthOffset !== undefined
@@ -166,7 +190,7 @@ async function main() {
 
   const sources = apis.map((a) => ADAPTERS[a].source);
   const doneRuns = await prisma.ingestionRun.findMany({
-    where: { source: { in: sources }, status: 'OK', ...doneRunFilter(args.mode, new Date()) },
+    where: { source: { in: sources }, status: 'OK', ...doneRunFilter(args.mode, new Date(), args.windowDays) },
     select: { source: true, targetKey: true },
   });
   // daily: 오늘(KST) 완료분만 스킵 → 날짜가 바뀌면 이번달·전달 전체 재처리(self-heal 유지)
@@ -178,6 +202,8 @@ async function main() {
   let failed = 0;
   let skipped = 0;
   const affectedPropertyIds = new Set<bigint>();
+  // 재정합 집계(알림·로그용)
+  const rec = { archived: 0, orphans: 0, propertyMismatch: 0, cancelDateRepaired: 0, outOfScope: 0, outOfMonth: 0, guarded: {} as Record<string, number> };
 
   const taskKeys = buildIngestTaskKeys(
     apis.map((a) => ({ api: a, source: ADAPTERS[a].source })),
@@ -187,34 +213,35 @@ async function main() {
   );
   skipped = apis.length * months.length * sigunguIds.length - taskKeys.length;
 
-  const tasks: Array<() => Promise<void>> = taskKeys.map((k) => async () => {
-    try {
-      const upserted = await runOne(
-        ADAPTERS[k.api as ApiType],
-        k.sgg,
-        sigunguToRegionCode.get(k.sgg)!,
-        k.yyyymm,
-        affectedPropertyIds,
-      );
-      totalUpserted += upserted;
-    } catch (err) {
-      failed++;
-      logger.error({ err, api: k.source, sgg: k.sgg, yyyymm: k.yyyymm }, 'sigungu-month failed');
-    }
-  });
   // --limit: 한 실행이 처리할 타깃(시군구·월) 수 상한. 대량 write가 누적되면 Supabase가
   // 디스크 압박으로 read-only(25006)로 빠지므로, 짧게 나눠 실행해 스파이크를 낮춘다.
   // resume(doneKeys)가 이어주므로 여러 번 돌리면 전체가 완료된다.
-  const pending = args.limit ? tasks.slice(0, args.limit) : tasks;
-  logger.info({ pending: pending.length, total: tasks.length, limit: args.limit ?? null }, 'tasks to run this pass');
+  const pending = args.limit ? taskKeys.slice(0, args.limit) : taskKeys;
+  logger.info({ pending: pending.length, total: taskKeys.length, limit: args.limit ?? null }, 'tasks to run this pass');
+  // 실행 전체 누적 이상 감지 — 기준을 넘으면 새 범위를 시작하지 않는다(run-breaker.ts)
+  const breaker = new RunBreaker();
   // Supabase pooler 동시 연결 제약 — 5로 두면 connection pool / statement timeout 빈발
-  await runWithLimit(pending, 2);
-
-  if (affectedPropertyIds.size > 0) {
-    await updatePropertyAggregates(Array.from(affectedPropertyIds));
+  const out = await runScopeTasks(
+    pending,
+    (k) => runOne(ADAPTERS[k.api as ApiType], k.sgg, sigunguToRegionCode.get(k.sgg)!, k.yyyymm),
+    { concurrency: 2, breaker, label: (k) => ({ api: k.source, sgg: k.sgg, yyyymm: k.yyyymm }) },
+  );
+  failed = out.failed.length;
+  for (const { result: r } of out.done) {
+    // 가드에 걸린 범위는 아무것도 쓰지 않았다 — 계획 수치를 합치지 않는다.
+    if (r.status === 'skipped') { rec.guarded[r.skipReason!] = (rec.guarded[r.skipReason!] ?? 0) + 1; continue; }
+    totalUpserted += r.inserted;
+    r.affectedPropertyIds.forEach((id) => affectedPropertyIds.add(id));
+    rec.archived += r.archived.cancel + r.archived.correction;
+    rec.orphans += r.orphans; rec.propertyMismatch += r.propertyMismatch; rec.cancelDateRepaired += r.cancelDateRepaired;
+    rec.outOfScope += r.outOfScope; rec.outOfMonth += r.outOfMonth;
   }
 
-  if (args.mode === 'daily') {
+  // 집계는 대기열이 보장한다(단위마다 같은 트랜잭션에서 넣음). 여기서는 쌓인 대기열을 비운다.
+  // 실패하거나 30분 예산을 넘겨도 대기열에 남아 property-aggregates 잡이 이어서 처리한다.
+  const drained = await drainAggregateQueue({ deadline: Date.now() + 30 * 60_000 });
+
+  if (args.mode !== 'backfill') {
     const paths: string[] = [];
     const props = await prisma.property.findMany({
       where: { id: { in: Array.from(affectedPropertyIds) } },
@@ -226,108 +253,90 @@ async function main() {
     await revalidatePaths(paths);
   }
 
-  const summary = { totalUpserted, skipped, failed, properties: affectedPropertyIds.size };
+  const guarded = Object.values(rec.guarded).reduce((a, b) => a + b, 0);
+  const summary = {
+    mode: args.mode, totalUpserted, skipped, failed, properties: affectedPropertyIds.size, ...rec,
+    breaker: breaker.trip, notStarted: out.notStarted.length,
+    aggregated: drained.processed, aggregateQueueRemaining: drained.remaining, aggregateStop: drained.stoppedBy,
+  };
   logger.info(summary, 'runner done');
-  await notify(failed === 0 ? 'info' : failed >= 5 ? 'warn' : 'info', 'ETL run complete', summary);
+  await notify(drained.stoppedBy === 'error' || guarded > 0 || failed >= 5 || breaker.tripped ? 'warn' : 'info',
+    breaker.tripped ? 'ETL run stopped by breaker' : 'ETL run complete', summary);
+  // 차단기로 멈춘 실행은 실패로 끝내 systemd·알림에 드러나게 하고, 정지를 기록해 다음 예약 실행도 원인 확인 전까지 돌지 않게 한다.
+  // 이미 끝난 범위는 그대로다(필요하면 기간 단위 롤백). 해제 후 재실행하면 남은 범위를 이어 간다.
+  if (breaker.tripped) {
+    await setHalt(`breaker:${breaker.trip!.reason}`, { trip: breaker.trip, mode: args.mode, notStarted: out.notStarted.length });
+    process.exitCode = 1;
+  }
 
   await prisma.$disconnect();
 }
 
-async function runOne(
+/**
+ * 범위들을 동시성 제한으로 돈다. 범위를 **시작하기 전에** 차단기를 보고, 멈춰 있으면 시작하지 않는다(notStarted).
+ * 진행 중인 범위는 끝까지 간다. 끝난 범위는 차단기에 기록하고, 처음 기준을 넘는 순간 사유·누적값·시점·마지막 범위를 남긴다.
+ */
+export async function runScopeTasks<K>(
+  keys: K[],
+  run: (k: K) => Promise<ReconcileResult>,
+  opts: { concurrency: number; breaker: RunBreaker; label: (k: K) => Record<string, unknown> },
+): Promise<{ done: Array<{ key: K; result: ReconcileResult }>; failed: K[]; notStarted: K[] }> {
+  const done: Array<{ key: K; result: ReconcileResult }> = [];
+  const failed: K[] = [];
+  const notStarted: K[] = [];
+  const tasks = keys.map((k) => async () => {
+    if (opts.breaker.tripped) { notStarted.push(k); return; }
+    let outcome: ScopeOutcome;
+    try {
+      const result = await run(k);
+      done.push({ key: k, result });
+      outcome = result.status === 'skipped' ? { kind: 'guarded' }
+        : { kind: 'done', db: result.db, api: result.api, inserted: result.inserted, archived: result.archived.cancel + result.archived.correction };
+    } catch (err) {
+      failed.push(k);
+      outcome = { kind: 'error' };
+      logger.error({ err, ...opts.label(k) }, 'sigungu-month failed');
+    }
+    const before = opts.breaker.trip; // 기록 직전과 비교 — 동시에 끝난 다른 범위가 먼저 멈췄으면 다시 남기지 않는다
+    opts.breaker.record(outcome);
+    if (!before && opts.breaker.trip) {
+      logger.error({ ...opts.breaker.trip, lastScope: opts.label(k), remaining: keys.length - done.length - failed.length },
+        'run breaker tripped — no new scopes will start (finished scopes are kept)');
+    }
+  });
+  await runWithLimit(tasks, opts.concurrency);
+  return { done, failed, notStarted };
+}
+
+export async function runOne(
   adapter: Adapter,
   sigungu: string,
   regionCode: string,
   yyyymm: string,
-  affectedProps: Set<bigint>,
-): Promise<number> {
+): Promise<ReconcileResult> {
   const targetKey = `${sigungu}-${yyyymm}`;
   const run = await prisma.ingestionRun.create({
     data: { source: adapter.source, targetKey, status: 'RUNNING' },
   });
 
   try {
-    const rows = await fetchAll(adapter, sigungu, yyyymm);
+    const { rows, totalCount, complete } = await fetchAll(adapter, sigungu, yyyymm);
 
-    // 시군구 내 기존 매물 일괄 로드 → findOrCreateProperty의 findFirst N번 → 1번으로 축소
-    // redirectToId: null — 병합으로 리다이렉트된 패자는 캐시에서 제외한다. 안 그러면
-    // (type, name) 키가 생존자/패자 중 findMany가 마지막으로 돌려준 쪽으로 고정되어,
-    // 패자로 확정되면 그날 이후의 거래가 전부 301된 행에 쌓여 영영 복구 불가능해진다.
-    const existingProps = await prisma.property.findMany({
-      where: { regionCode: { startsWith: sigungu }, redirectToId: null },
-    });
-    const propCache = new Map<string, (typeof existingProps)[0]>();
-    for (const p of existingProps) {
-      propCache.set(`${p.propertyType}:${p.name}`, p);
+    const { api, excluded } = await resolveApiRows(adapter, sigungu, regionCode, rows, { create: true });
+
+    // 원천과 DB를 범위 단위로 맞춘다(삽입·보관·해제일 수정·대기열·완료 기록이 한 트랜잭션). reconcile.ts 참고.
+    const r = await reconcileScope({ source: adapter.source, sigunguCode: sigungu, yyyymm, api, complete, totalCount, excluded }, run.id);
+    if (r.status === 'skipped') {
+      // 가드에 걸리면 아무것도 쓰지 않았다 — OK가 아니므로 다음 실행이 다시 시도한다.
+      await prisma.ingestionRun.update({
+        where: { id: run.id },
+        data: { status: 'ERROR', errorMessage: `reconcile skipped: ${r.skipReason} (api=${r.api}, db=${r.db}, total=${totalCount})`, finishedAt: new Date() },
+      });
+      logger.warn({ source: adapter.source, sgg: sigungu, yyyymm, ...r, affectedPropertyIds: undefined }, 'sigungu-month guarded');
+      return r;
     }
-
-    // 행별 property 확정 (캐시 miss 시에만 findOrCreateProperty 호출)
-    type Resolved = { row: NormalizedTransaction; property: (typeof existingProps)[0] };
-    const resolved: Resolved[] = [];
-    for (const row of rows) {
-      if (!row.name) continue;
-      const key = `${row.propertyType}:${row.name}`;
-      let property = propCache.get(key);
-      if (!property) {
-        property = await findOrCreateProperty({
-          propertyType: row.propertyType,
-          name: row.name,
-          sigunguCode: row.sigunguCode,
-          regionCode,
-          address: buildAddress(row),
-          buildYear: row.buildYear,
-          roadName: row.roadName,
-        });
-        propCache.set(key, property);
-      }
-      resolved.push({ row, property });
-    }
-
-    // 거래 배치 insert (rawHash unique → skipDuplicates로 멱등 처리)
-    const { count: upserted } = await prisma.transaction.createMany({
-      skipDuplicates: true,
-      data: resolved.map(({ row, property }) => ({
-        rawHash: computeHash(row, property.id),
-        propertyId: property.id,
-        propertyType: row.propertyType,
-        regionCode: property.regionCode,
-        sigunguCode: row.sigunguCode,
-        dealType: row.dealType,
-        contractDate: row.contractDate,
-        exclusiveArea: row.exclusiveArea,
-        floor: row.floor,
-        buildYear: row.buildYear,
-        dealAmount: row.dealAmount,
-        registerDate: row.registerDate,
-        dealingType: row.dealingType,
-        buyerType: row.buyerType,
-        sellerType: row.sellerType,
-        cancelDate: row.cancelDate,
-        cancelType: row.cancelType,
-        deposit: row.deposit,
-        monthlyRent: row.monthlyRent,
-        contractTerm: row.contractTerm,
-        contractType: row.contractType,
-        useRRRight: row.useRRRight,
-        preDeposit: row.preDeposit,
-        preMonthlyRent: row.preMonthlyRent,
-        umd: row.umd,
-        jibun: row.jibun,
-        roadName: row.roadName,
-        source: adapter.source,
-        externalKey: row.externalKey,
-      })),
-    });
-
-    for (const { property } of resolved) {
-      affectedProps.add(property.id);
-    }
-
-    await prisma.ingestionRun.update({
-      where: { id: run.id },
-      data: { status: 'OK', rowsUpserted: upserted, finishedAt: new Date() },
-    });
-    logger.info({ source: adapter.source, sgg: sigungu, yyyymm, upserted }, 'sigungu-month ok');
-    return upserted;
+    logger.info({ source: adapter.source, sgg: sigungu, yyyymm, status: r.status, inserted: r.inserted, archived: r.archived, orphans: r.orphans }, 'sigungu-month ok');
+    return r;
   } catch (err) {
     await prisma.ingestionRun.update({
       where: { id: run.id },
@@ -337,24 +346,149 @@ async function runOne(
   }
 }
 
-async function fetchAll(adapter: Adapter, sigungu: string, yyyymm: string): Promise<NormalizedTransaction[]> {
-  const all: NormalizedTransaction[] = [];
-  let pageNo = 1;
-  while (true) {
-    const xml = await fetchPage({
-      operation: adapter.endpoint,
-      lawdCd: sigungu,
-      dealYmd: yyyymm,
-      pageNo,
-      numOfRows: 1000,
-    });
-    assertNormalResponse(parseXml(xml));
-    const { rows, totalCount } = adapter.parseRows(xml, sigungu);
-    all.push(...rows);
-    if (all.length >= totalCount || rows.length < 1000 || pageNo > 10) break;
-    pageNo++;
+/**
+ * 원천 행의 매물을 확정해 ApiTx로 만든다. 단지명이 없는 행은 excluded로 센다.
+ * create=false(운영 dry-run)면 매물을 만들지 않고, 없는 매물의 행은 unknownProperty로 세어 뺀다(쓰기 없음).
+ */
+export async function resolveApiRows(
+  adapter: Adapter, sigungu: string, regionCode: string, rows: NormalizedTransaction[], opts: { create: boolean },
+): Promise<{ api: ApiTx[]; excluded: number; unknownProperty: number }> {
+  // 시군구 내 기존 매물 일괄 로드 → findOrCreateProperty의 findFirst N번 → 1번으로 축소
+  // redirectToId: null — 병합으로 리다이렉트된 패자는 캐시에서 제외한다. 안 그러면
+  // (type, name) 키가 생존자/패자 중 findMany가 마지막으로 돌려준 쪽으로 고정되어,
+  // 패자로 확정되면 그날 이후의 거래가 전부 301된 행에 쌓여 영영 복구 불가능해진다.
+  const existingProps = await prisma.property.findMany({
+    where: { regionCode: { startsWith: sigungu }, redirectToId: null },
+    select: { id: true, propertyType: true, name: true, regionCode: true },
+    orderBy: { id: 'asc' },
+  });
+  // 같은 이름이 여럿이면 가장 오래된 매물(findOrCreateProperty와 같은 기준) — 실행마다 같은 매물로 확정한다.
+  const propCache = new Map<string, { id: bigint; regionCode: string }>();
+  for (const p of existingProps) {
+    const k = `${p.propertyType}:${p.name}`;
+    if (!propCache.has(k)) propCache.set(k, p);
   }
-  return all;
+
+  // 행별 property 확정 (캐시 miss 시에만 findOrCreateProperty 호출)
+  const api: ApiTx[] = [];
+  let excluded = 0;
+  let unknownProperty = 0;
+  for (const row of rows) {
+    if (!row.name) { excluded++; continue; }
+    const key = `${row.propertyType}:${row.name}`;
+    let property = propCache.get(key);
+    if (!property) {
+      if (!opts.create) { unknownProperty++; continue; }
+      property = await findOrCreateProperty({
+        propertyType: row.propertyType,
+        name: row.name,
+        sigunguCode: row.sigunguCode,
+        regionCode,
+        address: buildAddress(row),
+        buildYear: row.buildYear,
+        roadName: row.roadName,
+      });
+      propCache.set(key, property);
+    }
+    api.push(toApiTx(row, property.id, property.regionCode, adapter.source));
+  }
+  return { api, excluded, unknownProperty };
+}
+
+export function toApiTx(row: NormalizedTransaction, propertyId: bigint, regionCode: string, source: string): ApiTx {
+  return {
+    propertyId,
+    dealType: row.dealType,
+    contractDate: row.contractDate,
+    exclusiveArea: row.exclusiveArea,
+    floor: row.floor,
+    dealAmount: row.dealAmount,
+    deposit: row.deposit,
+    monthlyRent: row.monthlyRent,
+    cancelType: row.cancelType,
+    cancelDate: row.cancelDate,
+    data: {
+      propertyId,
+      propertyType: row.propertyType,
+      regionCode,
+      sigunguCode: row.sigunguCode,
+      dealType: row.dealType,
+      contractDate: row.contractDate,
+      exclusiveArea: area2(row.exclusiveArea), // 저장값 = 재정합 키(Prisma의 number 변환에 기대지 않는다)
+      floor: row.floor,
+      buildYear: row.buildYear,
+      dealAmount: row.dealAmount,
+      registerDate: row.registerDate,
+      dealingType: row.dealingType,
+      buyerType: row.buyerType,
+      sellerType: row.sellerType,
+      cancelDate: row.cancelDate,
+      cancelType: row.cancelType,
+      deposit: row.deposit,
+      monthlyRent: row.monthlyRent,
+      contractTerm: row.contractTerm,
+      contractType: row.contractType,
+      useRRRight: row.useRRRight,
+      preDeposit: row.preDeposit,
+      preMonthlyRent: row.preMonthlyRent,
+      umd: row.umd,
+      jibun: row.jibun,
+      roadName: row.roadName,
+      source,
+      externalKey: row.externalKey,
+    },
+  };
+}
+
+/** 한 번에 요청하는 건수. 운영 최대 범위가 3,506행(2026-10-28)이라 대부분 호출 한 번으로 끝난다. */
+export const SINGLE_CALL_ROWS = 5000;
+/** 한 번에 다 오지 않을 때의 페이지 크기(이전부터 쓰던 값). */
+export const PAGE_ROWS = 1000;
+/** 페이지 수집 상한. 넘으면 불완전으로 본다(조용히 자르지 않는다). */
+const MAX_PAGES = 100;
+
+type FetchResult = { rows: NormalizedTransaction[]; totalCount: number; complete: boolean; mode: 'single' | 'paged' };
+
+/**
+ * 원천 한 범위(시군구·월)를 받는다. complete = 받은 건수가 totalCount와 같고 모든 페이지가 정상이다.
+ * 1) numOfRows=5000으로 한 번 호출 → 받은 건수 = totalCount면 끝(페이지 경계의 중복·누락 위험이 없다).
+ * 2) 아니면(5,000건 초과, API가 요청 건수를 줄여 보냄 등) 처음부터 1,000건 페이지로 다시 받는다.
+ *    페이지마다 totalCount가 같아야 하고, 앞 페이지와 똑같은 페이지(페이지 번호 무시)·빈 페이지·건수 초과는 불완전이다.
+ * 오류 응답은 예외(assertNormalResponse) — 단위가 ERROR로 남는다. 불완전이면 호출자가 DB를 바꾸지 않는다(재정합 가드).
+ */
+export async function fetchAll(
+  adapter: Adapter, sigungu: string, yyyymm: string, fetch: typeof fetchPage = fetchPage,
+): Promise<FetchResult> {
+  const get = async (pageNo: number, numOfRows: number) => {
+    const xml = await fetch({ operation: adapter.endpoint, lawdCd: sigungu, dealYmd: yyyymm, pageNo, numOfRows });
+    assertNormalResponse(parseXml(xml));
+    return adapter.parseRows(xml, sigungu);
+  };
+
+  const first = await get(1, SINGLE_CALL_ROWS);
+  if (first.rows.length === first.totalCount) {
+    return { rows: first.rows, totalCount: first.totalCount, complete: true, mode: 'single' };
+  }
+  if (first.rows.length > first.totalCount) {
+    return { rows: first.rows, totalCount: first.totalCount, complete: false, mode: 'single' };
+  }
+
+  // 한 번에 다 오지 않았다 → 페이지 수집. 첫 호출과 섞지 않고 1쪽부터 다시 받는다(페이지 크기가 달라 경계가 어긋난다).
+  const totalCount = first.totalCount;
+  const all: NormalizedTransaction[] = [];
+  let prevRows: string | null = null;
+  for (let pageNo = 1; pageNo <= MAX_PAGES; pageNo++) {
+    const page = await get(pageNo, PAGE_ROWS);
+    const incomplete = { rows: all, totalCount, complete: false, mode: 'paged' as const };
+    if (page.totalCount !== totalCount) return incomplete; // 받는 중 원천이 바뀜
+    if (page.rows.length === 0) return incomplete; // 다 받기 전에 빈 페이지
+    const rowsKey = JSON.stringify(page.rows); // 헤더의 pageNo는 요청을 따라 바뀔 수 있어 행 내용으로 비교
+    if (rowsKey === prevRows) return incomplete; // 페이지 번호를 무시하고 같은 페이지를 돌려줌
+    prevRows = rowsKey;
+    all.push(...page.rows);
+    if (all.length >= totalCount) break;
+  }
+  return { rows: all, totalCount, complete: all.length === totalCount, mode: 'paged' };
 }
 
 /**
@@ -389,6 +523,15 @@ export function computeHash(row: NormalizedTransaction, propertyId: bigint): str
 function getMonthByOffset(offset: number): string {
   const now = new Date();
   return ymd(new Date(now.getFullYear(), now.getMonth() - offset, 1));
+}
+
+/** '2-6' → 2~6개월 전의 YYYYMM 목록(KST 기준이 아닌 박스 시각 — getDailyMonths와 같은 규칙). */
+export function getOffsetMonths(range: string, now: Date): string[] {
+  const m = /^(\d+)-(\d+)$/.exec(range);
+  if (!m || Number(m[1]) > Number(m[2])) throw new Error(`--offsets 형식 오류: ${range} (예: 2-6)`);
+  const out: string[] = [];
+  for (let i = Number(m[1]); i <= Number(m[2]); i++) out.push(ymd(new Date(now.getFullYear(), now.getMonth() - i, 1)));
+  return out;
 }
 
 function getDailyMonths(): string[] {

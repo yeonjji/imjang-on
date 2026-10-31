@@ -22,6 +22,21 @@ function dealBadgeClass(dealType: DealType): string {
   return `inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-bold ${DEAL_COLOR[dealType]}`;
 }
 
+// 해제 거래: 회색 테두리 배지로 거래유형 배지(색)와 구분한다. 행 글자는 흐리게 하지 않고 금액만 취소선.
+const CANCELLED_BADGE =
+  'ml-1 inline-block whitespace-nowrap rounded-full border border-slate-300 bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-600';
+const CANCELLED_NOTE = '계약 후 해제 신고된 거래예요. 시세·평균·거래 건수 통계에는 넣지 않아요.';
+const NO_CANCELLED: Record<DealType, number> = { SALE: 0, JEONSE: 0, WOLSE: 0 };
+
+function CancelledBadge() {
+  return <span data-cancelled-badge className={CANCELLED_BADGE}>해제</span>;
+}
+
+function Price({ row }: { row: UnifiedTxRow }) {
+  const text = formatPrice(row);
+  return row.cancelled ? <s className="text-slate-500">{text}</s> : <>{text}</>;
+}
+
 function formatPrice(row: UnifiedTxRow): string {
   if (row.dealType === 'SALE') return formatBillion(row.dealAmount);
   if (row.dealType === 'JEONSE') return formatBillion(row.deposit);
@@ -43,11 +58,15 @@ export function UnifiedTransactionTable({
   propertyId,
   initialRows,
   counts,
+  cancelledCounts = NO_CANCELLED,
   id,
 }: {
   propertyId: string;
   initialRows: UnifiedTxRow[];
+  /** 거래유형별 전체 건수(해제 포함 — 표에 보이는 행과 같은 기준). */
   counts: Record<DealType, number>;
+  /** 거래유형별 해제 건수. 0이면 정상·해제 구분 표시를 하지 않는다. */
+  cancelledCounts?: Record<DealType, number>;
   id?: string;
 }) {
   const [tab, setTab] = useState<DealTab>('ALL');
@@ -57,7 +76,11 @@ export function UnifiedTransactionTable({
   const ref = useRef<HTMLElement>(null);
 
   const totalCount = tab === 'ALL' ? counts.SALE + counts.JEONSE + counts.WOLSE : counts[tab];
+  const cancelledCount =
+    tab === 'ALL' ? cancelledCounts.SALE + cancelledCounts.JEONSE + cancelledCounts.WOLSE : cancelledCounts[tab];
   const activeLabel = TABS.find((t) => t.key === tab)!.label;
+  // 범례는 지금 보이는 행에 해제 거래가 있을 때만.
+  const showNote = rows.some((r) => r.cancelled);
 
   function changeTab(next: DealTab) {
     if (next === tab) return;
@@ -88,7 +111,8 @@ export function UnifiedTransactionTable({
         <h2 className="text-xl font-bold text-[var(--color-blue-dark)]">
           최근 실거래 내역{' '}
           <span className="text-sm font-medium text-[var(--color-muted)]">
-            ({activeLabel} {totalCount}건)
+            ({activeLabel} {totalCount}건
+            {cancelledCount > 0 && ` · 정상 ${totalCount - cancelledCount}건 · 해제 ${cancelledCount}건`})
           </span>
         </h2>
         <div className="flex gap-1 rounded-lg bg-[var(--color-soft)] p-1">
@@ -129,13 +153,14 @@ export function UnifiedTransactionTable({
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-t border-[var(--color-line)]">
-                  <td className="px-4 py-3">
+                  <td className="whitespace-nowrap px-4 py-3">
                     <span className={dealBadgeClass(r.dealType)}>{DEAL_LABEL[r.dealType]}</span>
+                    {r.cancelled && <CancelledBadge />}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">{r.contractDate}</td>
                   <td className="whitespace-nowrap px-4 py-3">{formatPyeong(r.exclusiveArea)}</td>
                   <td className="whitespace-nowrap px-4 py-3">{r.floor ? `${r.floor}층` : '-'}</td>
-                  <td className="px-4 py-3 text-right font-semibold">{formatPrice(r)}</td>
+                  <td className="px-4 py-3 text-right font-semibold"><Price row={r} /></td>
                 </tr>
               ))}
             </tbody>
@@ -146,7 +171,10 @@ export function UnifiedTransactionTable({
             {rows.map((r) => (
               <li key={r.id} className="px-4 py-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span className={dealBadgeClass(r.dealType)}>{DEAL_LABEL[r.dealType]}</span>
+                  <span>
+                    <span className={dealBadgeClass(r.dealType)}>{DEAL_LABEL[r.dealType]}</span>
+                    {r.cancelled && <CancelledBadge />}
+                  </span>
                   <span className="whitespace-nowrap text-xs text-[var(--color-muted)]">
                     {r.contractDate}
                   </span>
@@ -154,11 +182,17 @@ export function UnifiedTransactionTable({
                 <div className="mt-1.5 text-sm text-[var(--color-muted)]">
                   {formatPyeong(r.exclusiveArea)} · {r.floor ? `${r.floor}층` : '-'}
                 </div>
-                <div className="mt-0.5 font-semibold">{formatPrice(r)}</div>
+                <div className="mt-0.5 font-semibold"><Price row={r} /></div>
               </li>
             ))}
           </ul>
 
+          {showNote && (
+            <p className="flex items-start gap-1.5 border-t border-[var(--color-line)] px-4 py-2.5 text-sm text-[var(--color-muted)]">
+              <span className={`${CANCELLED_BADGE} ml-0 shrink-0`}>해제</span>
+              <span>{CANCELLED_NOTE}</span>
+            </p>
+          )}
           <div className="border-t border-[var(--color-line)] px-4">
             <Pagination
               current={page}

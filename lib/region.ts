@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { withValidDeal } from '@/lib/transaction/valid-deal';
 
 // 대한민국 17개 시도는 행정구역이 바뀌지 않으므로 정적 상수로 관리
 const SIDO_LIST: { code: string; sido: string; fullName: string }[] = [
@@ -284,7 +285,7 @@ export async function getPopularSigungus(limit = 6): Promise<PopularRegion[]> {
   async function topCodes(where: { contractDate?: { gte: Date } }) {
     const rows = await prisma.transaction.groupBy({
       by: ['sigunguCode'],
-      where,
+      where: withValidDeal(where),
       _count: { sigunguCode: true },
       orderBy: { _count: { sigunguCode: 'desc' } },
       take: limit,

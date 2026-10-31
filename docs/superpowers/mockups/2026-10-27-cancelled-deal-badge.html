@@ -1,0 +1,55 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>해제 거래 배지 시안</title>
+<style>
+:root{--blue-dark:#1e3a8a;--muted:#64748b;--line:#dbeafe;--text:#172033;--bg:#f7fbff;--soft:#eff6ff}
+body{margin:0;background:var(--bg);font-family:Pretendard,'Noto Sans KR',-apple-system,sans-serif;color:var(--text)}
+.wrap{display:flex;flex-wrap:wrap;gap:28px;padding:28px}
+.board{width:680px;max-width:100%}.board.m{width:375px}
+.tag{font-size:13px;color:var(--muted);margin:0 0 8px}
+h2{font-size:20px;color:var(--blue-dark);margin:0 0 12px}h2 small{font-size:14px;color:var(--muted);font-weight:500}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:var(--soft);text-align:left;font-size:12px;color:var(--muted);padding:12px 16px}
+td{padding:12px 16px;border-top:1px solid var(--line)}td.r{text-align:right;font-weight:600}
+.b{display:inline-block;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700;white-space:nowrap}
+.sale{background:#dbeafe;color:#1d4ed8}.jeonse{background:#dcfce7;color:#15803d}
+.cx{background:#f1f5f9;color:#475569;margin-left:4px;border:1px solid #cbd5e1}
+tr.cancel td.r s{color:#64748b}
+.legend{font-size:13px;color:var(--muted);padding:10px 16px;border-top:1px solid var(--line);line-height:1.6}
+li{list-style:none;padding:12px 16px;border-top:1px solid var(--line)} li:first-child{border-top:0}
+ul{margin:0;padding:0}.row{display:flex;justify-content:space-between;align-items:center}
+.sub{font-size:14px;color:var(--muted);margin-top:6px}.price{font-weight:600;margin-top:2px}
+li.cancel .price s{color:#64748b}
+.note{font-size:12px;color:var(--muted);margin:12px 0 0;border-top:1px dashed var(--line);padding-top:10px}
+.flag{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;font-size:14px;margin-bottom:14px}
+</style></head><body><div class="wrap">
+
+<div class="board">
+<p class="tag">A. 실거래 내역 표(태블릿 이상) — 확정(2026-10-27): 해제 거래도 그대로 보이고 '해제' 배지·금액 취소선. 행 글자는 흐리게 하지 않음</p>
+<div class="flag">⚠️ 거래 데이터 특이사항 · 최근 12개월 <b style="color:var(--blue-dark)">해제 신고 2건</b>은 통계에서 제외했습니다.</div>
+<h2>최근 실거래 내역 <small>(전체 5건 · 정상 3건 · 해제 2건)</small></h2>
+<div class="card">
+<table><thead><tr><th>유형</th><th>계약일</th><th>평형</th><th>층</th><th style="text-align:right">거래가</th></tr></thead><tbody>
+<tr class="cancel"><td><span class="b sale">매매</span><span class="b cx">해제</span></td><td>2026-10-22</td><td>26평</td><td>7층</td><td class="r"><s>31억</s></td></tr>
+<tr class="cancel"><td><span class="b sale">매매</span><span class="b cx">해제</span></td><td>2026-10-17</td><td>26평</td><td>5층</td><td class="r"><s>30억</s></td></tr>
+<tr><td><span class="b jeonse">전세</span></td><td>2026-10-07</td><td>26평</td><td>9층</td><td class="r">6억</td></tr>
+<tr><td><span class="b sale">매매</span></td><td>2026-09-27</td><td>26평</td><td>5층</td><td class="r">10억</td></tr>
+<tr><td><span class="b sale">매매</span></td><td>2026-04-10</td><td>26평</td><td>5층</td><td class="r">9.8억</td></tr>
+</tbody></table>
+<div class="legend"><span class="b cx" style="margin:0 4px 0 0">해제</span>계약 후 해제 신고된 거래예요. 시세·평균·거래 건수 통계에는 넣지 않아요.</div>
+</div>
+<p class="note">범례 줄은 지금 보이는 페이지에 해제 거래가 있을 때만 나와요. 내역 건수는 표에 보이는 행과 같은 기준(해제 포함)이고, 해제가 있으면 '정상 N건 · 해제 N건'을 함께 보여요. 해제가 없으면 '(전체 N건)'만. "해제" 배지는 회색 테두리로 거래유형 배지(색)와 구분해요.</p>
+</div>
+
+<div class="board m">
+<p class="tag">B. 모바일 375px — 카드 목록</p>
+<h2>최근 실거래 내역 <small>(전체 5건 · 정상 3건 · 해제 2건)</small></h2>
+<div class="card"><ul>
+<li class="cancel"><div class="row"><span><span class="b sale">매매</span><span class="b cx">해제</span></span><span style="font-size:12px;color:var(--muted)">2026-10-22</span></div><div class="sub">26평 · 7층</div><div class="price"><s>31억</s></div></li>
+<li><div class="row"><span class="b jeonse">전세</span><span style="font-size:12px;color:var(--muted)">2026-10-07</span></div><div class="sub">26평 · 9층</div><div class="price">6억</div></li>
+<li><div class="row"><span class="b sale">매매</span><span style="font-size:12px;color:var(--muted)">2026-09-27</span></div><div class="sub">26평 · 5층</div><div class="price">10억</div></li>
+</ul>
+<div class="legend"><span class="b cx" style="margin:0 4px 0 0">해제</span>계약 후 해제 신고된 거래예요. 시세·평균·거래 건수 통계에는 넣지 않아요.</div>
+</div>
+</div>
+
+</div></body></html>

@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import type { PropertyType } from '@prisma/client';
 import { updatePropertyAggregates } from '@/scripts/ingest/aggregator';
+import { enqueuePropertyAggregates } from '@/scripts/ingest/aggregate-queue';
 import { computeHash } from '@/scripts/ingest/transactions/runner';
 import type { NormalizedTransaction } from '@/scripts/ingest/types';
 import { planGroupMerge, hashInputFromDbRow } from './core';
@@ -24,7 +25,24 @@ interface GroupRow {
   address: string;
 }
 
+/**
+ * --apply 차단(S3, 2026-10-28). 이 도구는 옛 해시(computeHash — 해제 여부·같은 조건 여러 건을 구분 못 함)로
+ * 같은 거래를 판정한다. 재정합(S3)이 넣은 행은 다른 해시를 써서, 병합하면 같은 거래가 중복되고(재정합은 건수 차이로
+ * 지우지 않아 영구히 남음), 해제본·정상본 중 하나를 지운다. 재정합 키 기준으로 다시 쓰기 전까지 실제 변경을 막는다.
+ * dry-run은 읽기만 하므로 허용한다.
+ */
+export const MERGE_APPLY_BLOCKED_MESSAGE =
+  '매물 병합 --apply는 차단되어 있습니다: 이 도구는 거래 재정합(S3)의 거래 식별 방식과 호환되지 않아 중복 거래를 만들 수 있습니다. '
+  + '재정합 키 기준으로 고친 뒤 차단을 해제하세요(설계 docs/superpowers/specs/2026-10-27-property-aggregate-integrity-design.md §13-6). '
+  + 'DB는 변경하지 않았습니다. dry-run(--apply 없이)은 사용할 수 있습니다.';
+
+export class MergeApplyBlockedError extends Error {
+  constructor() { super(MERGE_APPLY_BLOCKED_MESSAGE); this.name = 'MergeApplyBlockedError'; }
+}
+
 export async function mergeDuplicateProperties(opts: { apply: boolean; limit?: number }): Promise<MergeStats> {
+  // DB를 읽기 전에 막는다 — 다른 스크립트가 함수를 직접 불러도 실제 변경은 불가능하다.
+  if (opts.apply) throw new MergeApplyBlockedError();
   const stats: MergeStats = { groups: 0, losers: 0, moved: 0, deleted: 0, failed: 0 };
 
   // redirectToId IS NULL — 이미 리다이렉트된 행(2026-07-01 개편분, 이전 병합분)은 대상이 아니다.
@@ -155,6 +173,8 @@ export async function mergeDuplicateProperties(opts: { apply: boolean; limit?: n
               areaTypes: [],
             },
           });
+          // 생존자 재집계를 같은 트랜잭션에서 대기열에 남긴다 — 아래 즉시 집계 전에 죽어도 누락되지 않게(D1).
+          await enqueuePropertyAggregates(t, [plan.survivor.id]);
         },
         // 기본 5,000ms interactive-transaction 타임아웃은 운영 SSH 터널 위에서 거래가
         // 수백 건인 패자를 옮길 때 넘기기 쉽다(P2028). 넉넉히 잡는다.
@@ -191,6 +211,11 @@ export async function mergeDuplicateProperties(opts: { apply: boolean; limit?: n
 
 async function main() {
   const apply = process.argv.includes('--apply');
+  if (apply) {
+    console.error(`[차단] ${MERGE_APPLY_BLOCKED_MESSAGE}`);
+    process.exitCode = 2;
+    return;
+  }
   const limitArg = process.argv.find((a) => a.startsWith('--limit='));
   const limit = limitArg ? Number(limitArg.split('=')[1]) : undefined;
 

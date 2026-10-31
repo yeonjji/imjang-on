@@ -52,4 +52,4 @@ export interface Adapter {
   parseRows: (xml: string, sigunguCode: string) => FetchPage;
 }
 
-export type Mode = 'daily' | 'backfill';
+export type Mode = 'daily' | 'backfill' | 'recheck';

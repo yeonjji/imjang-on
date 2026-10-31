@@ -1,79 +1,110 @@
+import { Prisma, type PrismaClient } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { validDealSql } from '@/lib/transaction/valid-deal';
 
-export async function updatePropertyAggregates(propertyIds: bigint[]): Promise<void> {
-  if (propertyIds.length === 0) return;
+/** prisma 또는 interactive transaction 클라이언트. 대기열 소비는 트랜잭션 안에서 집계한다. */
+export type Db = PrismaClient | Prisma.TransactionClient;
 
-  await prisma.$executeRaw`
-    WITH agg AS (
-      SELECT
-        "propertyId" AS pid,
-        COUNT(*)::int AS cnt_total,
-        (COUNT(*) FILTER (WHERE "contractDate" >= NOW() - INTERVAL '12 months'))::int AS cnt_12m,
-        MAX("contractDate") AS last_at,
+/** 매물 집계 컬럼(저장값). 순서는 SQL 비교·백업·롤백에서 공용. */
+export const AGG_COLUMNS = [
+  'txCountTotal', 'txCount12m', 'lastTxAt',
+  'saleCount12m', 'saleAvgPrice12m', 'saleLastPrice', 'saleLastAt',
+  'jeonseCount12m', 'jeonseAvgDeposit12m', 'jeonseLastDeposit', 'jeonseLastAt',
+  'wolseCount12m', 'wolseAvgDeposit12m', 'wolseAvgRent12m', 'wolseLastDeposit', 'wolseLastRent', 'wolseLastAt',
+  'areaTypes',
+] as const;
+export type AggColumn = (typeof AGG_COLUMNS)[number];
 
-        (COUNT(*) FILTER (WHERE "dealType"='SALE' AND "contractDate" >= NOW() - INTERVAL '12 months'))::int AS sale_cnt,
-        (AVG("dealAmount") FILTER (WHERE "dealType"='SALE' AND "contractDate" >= NOW() - INTERVAL '12 months'))::bigint AS sale_avg,
-        (array_agg("dealAmount" ORDER BY "contractDate" DESC) FILTER (WHERE "dealType"='SALE'))[1]::bigint AS sale_last,
-        MAX("contractDate") FILTER (WHERE "dealType"='SALE') AS sale_last_at,
-
-        (COUNT(*) FILTER (WHERE "dealType"='JEONSE' AND "contractDate" >= NOW() - INTERVAL '12 months'))::int AS jeonse_cnt,
-        (AVG("deposit") FILTER (WHERE "dealType"='JEONSE' AND "contractDate" >= NOW() - INTERVAL '12 months'))::bigint AS jeonse_avg,
-        (array_agg("deposit" ORDER BY "contractDate" DESC) FILTER (WHERE "dealType"='JEONSE'))[1]::bigint AS jeonse_last,
-        MAX("contractDate") FILTER (WHERE "dealType"='JEONSE') AS jeonse_last_at,
-
-        (COUNT(*) FILTER (WHERE "dealType"='WOLSE' AND "contractDate" >= NOW() - INTERVAL '12 months'))::int AS wolse_cnt,
-        (AVG("deposit") FILTER (WHERE "dealType"='WOLSE' AND "contractDate" >= NOW() - INTERVAL '12 months'))::bigint AS wolse_dep_avg,
-        (AVG("monthlyRent") FILTER (WHERE "dealType"='WOLSE' AND "contractDate" >= NOW() - INTERVAL '12 months'))::int AS wolse_rent_avg,
-        (array_agg("deposit" ORDER BY "contractDate" DESC) FILTER (WHERE "dealType"='WOLSE'))[1]::bigint AS wolse_last_dep,
-        (array_agg("monthlyRent" ORDER BY "contractDate" DESC) FILTER (WHERE "dealType"='WOLSE'))[1]::int AS wolse_last_rent,
-        MAX("contractDate") FILTER (WHERE "dealType"='WOLSE') AS wolse_last_at
-      FROM "Transaction"
-      WHERE "propertyId" = ANY(${propertyIds}::bigint[])
-      GROUP BY "propertyId"
-    )
-    UPDATE "Property" p
-    SET
-      "txCountTotal" = agg.cnt_total,
-      "txCount12m"   = agg.cnt_12m,
-      "lastTxAt"     = agg.last_at,
-      "saleCount12m"     = agg.sale_cnt,
-      "saleAvgPrice12m"  = agg.sale_avg,
-      "saleLastPrice"    = agg.sale_last,
-      "saleLastAt"       = agg.sale_last_at,
-      "jeonseCount12m"      = agg.jeonse_cnt,
-      "jeonseAvgDeposit12m" = agg.jeonse_avg,
-      "jeonseLastDeposit"   = agg.jeonse_last,
-      "jeonseLastAt"        = agg.jeonse_last_at,
-      "wolseCount12m"       = agg.wolse_cnt,
-      "wolseAvgDeposit12m"  = agg.wolse_dep_avg,
-      "wolseAvgRent12m"     = agg.wolse_rent_avg,
-      "wolseLastDeposit"    = agg.wolse_last_dep,
-      "wolseLastRent"       = agg.wolse_last_rent,
-      "wolseLastAt"         = agg.wolse_last_at
-    FROM agg
-    WHERE p.id = agg.pid
-  `;
-
-  // 면적대(평형): 단지별 거래의 전용면적을 평으로 반올림해 DISTINCT 집계.
-  // ⚠️ 이전 버전은 inner ARRAY(SELECT ... WHERE propertyId = ANY(batch)) 서브쿼리가
-  //    바깥 단지와 상관(correlate)되지 않아 '배치 전체 전역 분포'를 모든 단지에 복사했다
-  //    (모든 카드에 동일한 1~146평이 뜨는 원인). GROUP BY 내 array_agg로 단지별 집계한다.
-  //    exclusiveArea < 10㎡(주거단위로 불가능한 값)는 이상치라 제외.
-  await prisma.$executeRaw`
-    UPDATE "Property" p
-    SET "areaTypes" = sub.types
-    FROM (
+/**
+ * 대상 매물의 '올바른' 집계값 CTE(agg). 유효 거래(해제 제외, lib/transaction/valid-deal.ts)만 센다.
+ * 대상 매물을 ids로 LEFT JOIN해, 유효 거래가 0건인 매물도 0/null 행을 만든다(낡은 값 잔존 방지).
+ * 최근가(saleLastPrice 등)는 계약일 → id 역순으로 고른다 — 같은 날 여러 건일 때 결정적이어야 dry-run·적용·화면(getLatestTransactionsByType)이
+ * 같은 거래를 가리킨다(S4 리허설에서 계약일만 정렬해 25행이 실행마다 달라지는 것을 발견).
+ * 면적대(areaTypes)는 통계가 아니라 '이 단지에 있는 평형' 정보라 해제 거래도 포함하고, 10㎡ 미만은 이상치로 뺀다.
+ */
+function aggCte(propertyIds: bigint[]): Prisma.Sql {
+  return Prisma.sql`
+    WITH ids AS (
+      SELECT unnest(${propertyIds}::bigint[]) AS pid
+    ),
+    valid AS (
+      SELECT * FROM "Transaction"
+      WHERE "propertyId" = ANY(${propertyIds}::bigint[]) AND ${validDealSql()}
+    ),
+    area AS (
       SELECT "propertyId" AS pid,
              array_agg(DISTINCT ROUND("exclusiveArea" / 3.3057851239669422)::int
                        ORDER BY ROUND("exclusiveArea" / 3.3057851239669422)::int) AS types
       FROM "Transaction"
-      WHERE "propertyId" = ANY(${propertyIds}::bigint[])
-        AND "exclusiveArea" >= 10
+      WHERE "propertyId" = ANY(${propertyIds}::bigint[]) AND "exclusiveArea" >= 10
       GROUP BY "propertyId"
-    ) sub
-    WHERE p.id = sub.pid
-  `;
+    ),
+    stats AS (
+      SELECT
+        ids.pid AS pid,
+        COUNT(v.id)::int AS "txCountTotal",
+        (COUNT(v.id) FILTER (WHERE v."contractDate" >= NOW() - INTERVAL '12 months'))::int AS "txCount12m",
+        MAX(v."contractDate") AS "lastTxAt",
+        (COUNT(v.id) FILTER (WHERE v."dealType"='SALE' AND v."contractDate" >= NOW() - INTERVAL '12 months'))::int AS "saleCount12m",
+        (AVG(v."dealAmount") FILTER (WHERE v."dealType"='SALE' AND v."contractDate" >= NOW() - INTERVAL '12 months'))::bigint AS "saleAvgPrice12m",
+        (array_agg(v."dealAmount" ORDER BY v."contractDate" DESC, v.id DESC) FILTER (WHERE v."dealType"='SALE'))[1]::bigint AS "saleLastPrice",
+        MAX(v."contractDate") FILTER (WHERE v."dealType"='SALE') AS "saleLastAt",
+        (COUNT(v.id) FILTER (WHERE v."dealType"='JEONSE' AND v."contractDate" >= NOW() - INTERVAL '12 months'))::int AS "jeonseCount12m",
+        (AVG(v."deposit") FILTER (WHERE v."dealType"='JEONSE' AND v."contractDate" >= NOW() - INTERVAL '12 months'))::bigint AS "jeonseAvgDeposit12m",
+        (array_agg(v."deposit" ORDER BY v."contractDate" DESC, v.id DESC) FILTER (WHERE v."dealType"='JEONSE'))[1]::bigint AS "jeonseLastDeposit",
+        MAX(v."contractDate") FILTER (WHERE v."dealType"='JEONSE') AS "jeonseLastAt",
+        (COUNT(v.id) FILTER (WHERE v."dealType"='WOLSE' AND v."contractDate" >= NOW() - INTERVAL '12 months'))::int AS "wolseCount12m",
+        (AVG(v."deposit") FILTER (WHERE v."dealType"='WOLSE' AND v."contractDate" >= NOW() - INTERVAL '12 months'))::bigint AS "wolseAvgDeposit12m",
+        (AVG(v."monthlyRent") FILTER (WHERE v."dealType"='WOLSE' AND v."contractDate" >= NOW() - INTERVAL '12 months'))::int AS "wolseAvgRent12m",
+        (array_agg(v."deposit" ORDER BY v."contractDate" DESC, v.id DESC) FILTER (WHERE v."dealType"='WOLSE'))[1]::bigint AS "wolseLastDeposit",
+        (array_agg(v."monthlyRent" ORDER BY v."contractDate" DESC, v.id DESC) FILTER (WHERE v."dealType"='WOLSE'))[1]::int AS "wolseLastRent",
+        MAX(v."contractDate") FILTER (WHERE v."dealType"='WOLSE') AS "wolseLastAt"
+      FROM ids
+      LEFT JOIN valid v ON v."propertyId" = ids.pid
+      GROUP BY ids.pid
+    ),
+    agg AS (
+      SELECT s.*, COALESCE(a.types, '{}'::int[]) AS "areaTypes"
+      FROM stats s LEFT JOIN area a ON a.pid = s.pid
+    )`;
+}
 
-  logger.info({ count: propertyIds.length }, 'property aggregates updated');
+const cols = (prefix: string) => Prisma.raw(AGG_COLUMNS.map((c) => `${prefix}."${c}"`).join(', '));
+/** 저장값과 계산값이 하나라도 다른 행. */
+const CHANGED = Prisma.sql`(${cols('p')}) IS DISTINCT FROM (${cols('agg')})`;
+const asJson = (prefix: string) => Prisma.raw(AGG_COLUMNS.map((c) => `'${c}', ${prefix}."${c}"`).join(', '));
+
+export interface AggregateDiff {
+  id: bigint;
+  /** 바뀌기 전 저장값(jsonb — 백업·롤백용). */
+  old: Record<AggColumn, unknown>;
+  new: Record<AggColumn, unknown>;
+}
+
+/** 쓰지 않고 바뀔 행만 돌려준다(dry-run·백업용). */
+export async function diffPropertyAggregates(propertyIds: bigint[], db: Db = prisma): Promise<AggregateDiff[]> {
+  if (propertyIds.length === 0) return [];
+  return db.$queryRaw<AggregateDiff[]>`
+    ${aggCte(propertyIds)}
+    SELECT p.id, jsonb_build_object(${asJson('p')}) AS old, jsonb_build_object(${asJson('agg')}) AS new
+    FROM "Property" p JOIN agg ON agg.pid = p.id
+    WHERE ${CHANGED}
+    ORDER BY p.id`;
+}
+
+/**
+ * 매물 거래 집계(누적·12개월·최근가·면적대)를 다시 계산해 **바뀐 행만** 쓴다(쓰기·WAL 최소화).
+ * db에 트랜잭션 클라이언트를 넘기면 그 트랜잭션 안에서 실행된다(대기열 소비). 반환: 실제로 바뀐 행 수.
+ */
+export async function updatePropertyAggregates(propertyIds: bigint[], db: Db = prisma): Promise<number> {
+  if (propertyIds.length === 0) return 0;
+  const changed = await db.$executeRaw`
+    ${aggCte(propertyIds)}
+    UPDATE "Property" p
+    SET ${Prisma.raw(AGG_COLUMNS.map((c) => `"${c}" = agg."${c}"`).join(', '))}
+    FROM agg
+    WHERE p.id = agg.pid AND ${CHANGED}`;
+  logger.info({ count: propertyIds.length, changed }, 'property aggregates updated');
+  return changed;
 }
