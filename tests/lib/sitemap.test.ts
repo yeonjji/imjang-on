@@ -23,9 +23,9 @@ describe('sitemap STATIC_ENTRIES', () => {
     }
   });
 
-  it('/urban/parking 정식 URL(?sido)만 포함하고 리다이렉트되는 bare 엔트리는 제외한다', () => {
-    expect(STATIC_ENTRIES.some((e) => e.url.includes('/urban/parking?sido='))).toBe(true);
-    expect(STATIC_ENTRIES.some((e) => e.url.endsWith('/urban/parking'))).toBe(false);
+  it('/urban/parking 은 전국 기본(bare) URL만 포함하고 ?sido 엔트리는 없다', () => {
+    expect(STATIC_ENTRIES.some((e) => e.url.endsWith('/urban/parking'))).toBe(true);
+    expect(STATIC_ENTRIES.some((e) => e.url.includes('/urban/parking?sido='))).toBe(false);
   });
 });
 
@@ -80,7 +80,8 @@ describe('목록 정본 경로 헬퍼', () => {
     // requiresSidoScope !== false 인 카테고리는 bare가 307이라 정본이 될 수 없다.
     expect(amenityListPath(AMENITY_CATEGORIES.convenience)).toBe('/amenity/convenience?sido=%EC%84%9C%EC%9A%B8');
     expect(amenityListPath(AMENITY_CATEGORIES.market)).toBe('/amenity/market');
-    expect(urbanListPath(URBAN_CATEGORIES.parking)).toBe('/urban/parking?sido=%EC%84%9C%EC%9A%B8');
+    expect(urbanListPath(URBAN_CATEGORIES.parking)).toBe('/urban/parking');
+    expect(urbanListPath(URBAN_CATEGORIES.park)).toBe('/urban/park');
     expect(urbanListPath(URBAN_CATEGORIES.charger)).toBe('/urban/charger');
   });
 });

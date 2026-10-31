@@ -74,7 +74,7 @@ export const parkDef: UrbanCategoryDef<ParkRaw> = {
   label: '공원',
   emoji: '🌳',
   breadcrumbLabel: '공원',
-  requiresSidoScope: true,
+  requiresSidoScope: false,
   subFilters: {
     paramKey: 'sub',
     defaultSlug: 'all',
