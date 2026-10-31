@@ -9,6 +9,11 @@
 ## 0. 결정 요약
 
 ### 0-1. 머지 전략 — #346 하나를 main으로(merge commit)
+
+> **2026-10-31 준비 결과(P6 진행분):** main이 `c853388` → `0091ba7`로 움직였다(목록 정렬 #347~#350, 마이그레이션 `20261030000000_add_content_score` 운영 적용됨). #346에 main을 merge(`663553a`) — 충돌은 `deploy/run-etl.sh`·`deploy/systemd/install-timers.sh` 두 곳(같은 자리에 잡·타이머 추가)으로 **양쪽 모두 유지**(타이머 16개, 시각 겹침 없음). **마이그레이션 순서:** S2·S3(`20261028`·`20261029`)가 운영에 이미 적용된 `20261030`보다 이름이 앞서지만, main 상태로 만든 로컬 DB에서 `migrate deploy`가 두 개를 정상 적용하고 `up to date`·스키마 차이 없음을 확인. 로컬 전체 검증: lint·typecheck·unit 2,078·integration 208(10 skip = 병합 도구 --apply 차단)·build 통과. #346 기준을 main으로 변경(REST API — `gh pr edit`은 토큰 scope 부족) 후 닫았다 다시 열어 CI. **아래 표의 '충돌 없음·빨리감기'는 더 이상 사실이 아니다 — merge commit으로만 머지.**
+>
+> **P7 미충족(2026-10-31 확인):** 박스 `.env.production`에 `DISCORD_WEBHOOK_URL`이 없다 → 모든 ETL 알림이 `notify (no webhook configured)`로 버려진다(OCI 이전 이후 계속). S3 자동 중단(halt)도 알림이 가지 않는다 → **배포 전 웹훅 설정 필요**(비밀값 — 사용자가 박스에 직접 추가).
+
 | 확인 | 결과(2026-10-28) |
 |---|---|
 | main 최신 | `c853388`(#343). S1 브랜치의 분기점과 같다 → **main은 그 뒤로 움직이지 않았다** |
