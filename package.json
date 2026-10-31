@@ -29,6 +29,7 @@
     "backfill:market-region": "dotenv -e .env.local -- tsx scripts/ingest/amenities/market-region-backfill.ts",
     "backfill:amenity-entities": "dotenv -e .env.local -- tsx scripts/ingest/amenities/entity-backfill.ts",
     "seed:regions:api": "dotenv -e .env.local -- tsx scripts/ingest/regions/seed-from-api.ts",
+    "ingest:content-score": "tsx scripts/ingest/content-score/runner.ts",
     "ingest:run": "dotenv -e .env.local -- tsx scripts/ingest/transactions/runner.ts",
     "ops:merge-properties": "dotenv -e .env.local -- tsx scripts/ops/merge-duplicate-properties/index.ts",
     "ingest:subscriptions": "dotenv -e .env.local -- tsx scripts/ingest/subscriptions/runner.ts",

@@ -463,11 +463,18 @@ model EvCharger {
   facilityKindDetail String?  @db.VarChar(4)
   operatorTel        String?  @db.VarChar(30)
   locationDetail     String?  @db.VarChar(300)
+  /// 상세 내용 점수(목록 기본 정렬). scripts/ingest/content-score가 갱신 — 설계 docs/superpowers/specs/2026-10-30-list-content-score-design.md
+  contentScore  Int @default(0) @db.SmallInt
+  /// 주간 배치 계산분(주변 최대 2 + 비교 블록). contentScore에 포함된 값
+  contentNearby Int @default(0) @db.SmallInt
+  /// 정렬 키 = 서울 10000 + contentScore
+  listRank      Int @default(0)
   updatedAt    DateTime                              @updatedAt
 
   units EvChargerUnit[]
 
   @@index([chargeSpeed])
+  @@index([listRank(sort: Desc), id])
 }
 
 model EvChargerUnit {
@@ -540,9 +547,16 @@ model Park {
   designatedAt        DateTime? @db.Date
   managingOrg         String?   @db.VarChar(100)
   tel                 String?   @db.VarChar(30)
+  /// 상세 내용 점수(목록 기본 정렬). scripts/ingest/content-score가 갱신 — 설계 docs/superpowers/specs/2026-10-30-list-content-score-design.md
+  contentScore  Int @default(0) @db.SmallInt
+  /// 주간 배치 계산분(주변 최대 2 + 비교 블록). contentScore에 포함된 값
+  contentNearby Int @default(0) @db.SmallInt
+  /// 정렬 키 = 서울 10000 + contentScore
+  listRank      Int @default(0)
   updatedAt DateTime                              @updatedAt
 
   @@index([parkType])
+  @@index([listRank(sort: Desc), id])
 }
 
 model School {
@@ -565,11 +579,18 @@ model School {
   admissionPeriod String?   @db.VarChar(10)
   foundedAt       DateTime? @db.Date
   anniversaryAt   DateTime? @db.Date
+  /// 상세 내용 점수(목록 기본 정렬). scripts/ingest/content-score가 갱신 — 설계 docs/superpowers/specs/2026-10-30-list-content-score-design.md
+  contentScore  Int @default(0) @db.SmallInt
+  /// 주간 배치 계산분(주변 최대 2 + 비교 블록). contentScore에 포함된 값
+  contentNearby Int @default(0) @db.SmallInt
+  /// 정렬 키 = 서울 10000 + contentScore
+  listRank      Int @default(0)
   updatedAt  DateTime                              @updatedAt
 
   @@index([schoolKind])
   @@index([region])
   @@index([sigunguCode, schoolKind])
+  @@index([listRank(sort: Desc), id])
 }
 
 model Childcare {
@@ -659,10 +680,17 @@ model Childcare {
   waitCntM6  Int?
   waitCntTot Int?
 
+  /// 상세 내용 점수(목록 기본 정렬). scripts/ingest/content-score가 갱신 — 설계 docs/superpowers/specs/2026-10-30-list-content-score-design.md
+  contentScore  Int @default(0) @db.SmallInt
+  /// 주간 배치 계산분(주변 최대 2 + 비교 블록). contentScore에 포함된 값
+  contentNearby Int @default(0) @db.SmallInt
+  /// 정렬 키 = 서울 10000 + contentScore
+  listRank      Int @default(0)
   updatedAt DateTime @updatedAt
 
   @@index([sigunguCode, status])
   @@index([crType])
+  @@index([listRank(sort: Desc), id])
 }
 
 model Parking {
@@ -707,10 +735,17 @@ model Parking {
   insttNm        String?   @db.VarChar(80)
   referenceDate  DateTime? @db.Date
 
+  /// 상세 내용 점수(목록 기본 정렬). scripts/ingest/content-score가 갱신 — 설계 docs/superpowers/specs/2026-10-30-list-content-score-design.md
+  contentScore  Int @default(0) @db.SmallInt
+  /// 주간 배치 계산분(주변 최대 2 + 비교 블록). contentScore에 포함된 값
+  contentNearby Int @default(0) @db.SmallInt
+  /// 정렬 키 = 서울 10000 + contentScore
+  listRank      Int @default(0)
   updatedAt DateTime @updatedAt
 
   @@index([prkplceSe])
   @@index([chargeInfo])
+  @@index([listRank(sort: Desc), id])
 }
 
 model Hospital {
@@ -743,6 +778,12 @@ model Hospital {
   drKorSpecialist  Int?
   midwifeCount     Int?
   location  Unsupported("geography(Point,4326)")?
+  /// 상세 내용 점수(목록 기본 정렬). scripts/ingest/content-score가 갱신 — 설계 docs/superpowers/specs/2026-10-30-list-content-score-design.md
+  contentScore  Int @default(0) @db.SmallInt
+  /// 주간 배치 계산분(주변 최대 2 + 비교 블록). contentScore에 포함된 값
+  contentNearby Int @default(0) @db.SmallInt
+  /// 정렬 키 = 서울 10000 + contentScore
+  listRank      Int @default(0)
   updatedAt DateTime @updatedAt
   facility          HospitalFacility?
   detail            HospitalDetail?
@@ -758,6 +799,7 @@ model Hospital {
   @@index([typeCode])
   @@index([sigunguCode])
   @@index([sigunguCode, typeCode])
+  @@index([listRank(sort: Desc), id])
 }
 
 model HospitalFacility {
@@ -956,8 +998,15 @@ model Pharmacy {
   tel          String?  @db.VarChar(30)
   openedAt     DateTime? @db.Date
   location  Unsupported("geography(Point,4326)")?
+  /// 상세 내용 점수(목록 기본 정렬). scripts/ingest/content-score가 갱신 — 설계 docs/superpowers/specs/2026-10-30-list-content-score-design.md
+  contentScore  Int @default(0) @db.SmallInt
+  /// 주간 배치 계산분(주변 최대 2 + 비교 블록). contentScore에 포함된 값
+  contentNearby Int @default(0) @db.SmallInt
+  /// 정렬 키 = 서울 10000 + contentScore
+  listRank      Int @default(0)
   updatedAt DateTime @updatedAt
   @@index([sigunguCode])
+  @@index([listRank(sort: Desc), id])
 }
 
 enum SubscriptionSource {

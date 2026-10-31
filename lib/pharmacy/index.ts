@@ -20,6 +20,7 @@ export interface PharmacyListFilter {
   q?: string;
 }
 
+// 기본 정렬: 서울 → 상세 내용 점수 → id (docs/superpowers/specs/2026-10-30-list-content-score-design.md)
 export async function getPharmacyList(filter: PharmacyListFilter, page: number, perPage = 20) {
   const q = filter.q?.trim();
   const where = {
@@ -30,7 +31,7 @@ export async function getPharmacyList(filter: PharmacyListFilter, page: number, 
   const [rows, total] = await Promise.all([
     prisma.pharmacy.findMany({
       where,
-      orderBy: { name: 'asc' },
+      orderBy: [{ listRank: 'desc' }, { id: 'asc' }],
       skip: (page - 1) * perPage,
       take: perPage,
     }),
