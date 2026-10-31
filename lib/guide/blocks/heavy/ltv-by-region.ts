@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { validDealSql } from '@/lib/transaction/valid-deal';
 import { lastContractDate } from './shared';
 
 /**
@@ -35,7 +36,7 @@ export async function computeLtvByRegion(): Promise<LtvByRegionResult> {
     JOIN "Region" r ON r.code = p."regionCode"
     WHERE t."propertyType" = 'APARTMENT' AND t."dealType" = 'SALE'
       AND t."contractDate" >= (CURRENT_DATE - INTERVAL '12 months')
-      AND t."dealAmount" IS NOT NULL AND t."cancelDate" IS NULL
+      AND t."dealAmount" IS NOT NULL AND ${validDealSql('t')}
       AND p."redirectToId" IS NULL
     GROUP BY r.sido
     HAVING COUNT(*) >= 100

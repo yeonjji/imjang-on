@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { validDealSql } from '@/lib/transaction/valid-deal';
 import { lastContractDate } from './shared';
 
 export interface AreaPriceRow {
@@ -28,7 +29,7 @@ export async function computeAreaPrice(): Promise<AreaPriceResult> {
     FROM "Transaction"
     WHERE "propertyType" = 'APARTMENT' AND "dealType" = 'SALE'
       AND "contractDate" >= (CURRENT_DATE - INTERVAL '12 months')
-      AND "dealAmount" IS NOT NULL AND "cancelDate" IS NULL AND "exclusiveArea" > 0
+      AND "dealAmount" IS NOT NULL AND ${validDealSql()} AND "exclusiveArea" > 0
     GROUP BY 1
     ORDER BY MIN("exclusiveArea")
   `;

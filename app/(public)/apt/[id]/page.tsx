@@ -6,6 +6,7 @@ import {
   getLatestTransactionsByType,
   getUnifiedTransactions,
   getTransactionCounts,
+  getCancelledTransactionCounts,
   getSameFloorComparison,
 } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
@@ -124,9 +125,10 @@ export default async function AptDetailPage({ params }: Params) {
   // 콜드 ISR 렌더마다 DB 왕복 1회가 그대로 TTFB에 더해진다.
   const dongUmd = umdOfProperty(property.address);
 
-  const [unified, counts, chart, areaSummary, latestTx, nearby, sameFloor, floorPremium, flags, infra, nearbySubs, subway, dongTx] = await Promise.all([
+  const [unified, counts, cancelledCounts, chart, areaSummary, latestTx, nearby, sameFloor, floorPremium, flags, infra, nearbySubs, subway, dongTx] = await Promise.all([
     safe(getUnifiedTransactions(propId, { page: 1, perPage: 15 }), { rows: [], totalCount: 0 }, 'getUnifiedTransactions'),
     safe(getTransactionCounts(propId), { SALE: 0, JEONSE: 0, WOLSE: 0 }, 'getTransactionCounts'),
+    safe(getCancelledTransactionCounts(propId), { SALE: 0, JEONSE: 0, WOLSE: 0 }, 'getCancelledTransactionCounts'),
     safe(getMonthlyChartData(propId), { SALE: [], JEONSE: [], WOLSE: [] }, 'getMonthlyChartData'),
     safe(getAreaSummary(propId), [], 'getAreaSummary'),
     safe(getLatestTransactionsByType(propId), {}, 'getLatestTransactionsByType'),
@@ -263,6 +265,7 @@ export default async function AptDetailPage({ params }: Params) {
             propertyId={String(propId)}
             initialRows={unified.rows}
             counts={counts}
+            cancelledCounts={cancelledCounts}
           />
           <section id="chart">
             <h2 className="mb-4 text-xl font-bold text-[var(--color-blue-dark)]">

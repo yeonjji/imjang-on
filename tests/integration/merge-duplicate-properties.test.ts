@@ -87,6 +87,7 @@ describe('mergeDuplicateProperties', () => {
     // REGION으로 좁혀 이 파일이 만든 행만 정리한다.
     await prisma.transaction.deleteMany({ where: { regionCode: REGION } });
     await prisma.property.deleteMany({ where: { regionCode: REGION } });
+    await prisma.propertyAggregateQueue.deleteMany({});
     await seedRegion();
   });
 
@@ -100,6 +101,7 @@ describe('mergeDuplicateProperties', () => {
     await prisma.transaction.create({ data: tx(b.id, 5, 84.9, 120000) });
 
     const stats = await mergeDuplicateProperties({ apply: false });
+    expect(await prisma.propertyAggregateQueue.count()).toBe(0); // dry-run은 대기열도 건드리지 않는다
     expect(stats.groups).toBe(1);
     expect(stats.losers).toBe(1);
     // dry-run도 해시·충돌 판정을 실제로 돌리므로 --apply와 같은 수치가 나와야 한다
@@ -144,6 +146,8 @@ describe('mergeDuplicateProperties', () => {
     await prisma.transaction.create({ data: tx(b.id, 6, 84.9, 130000) });
 
     const stats = await mergeDuplicateProperties({ apply: true });
+    // 생존자 재집계가 병합과 같은 트랜잭션에서 대기열에 남는다(즉시 집계 전에 죽어도 누락 없음, S2)
+    expect((await prisma.propertyAggregateQueue.findMany()).map((q) => q.propertyId)).toContain(a.id);
     expect(stats.moved).toBe(1);
     expect(stats.deleted).toBe(0);
 

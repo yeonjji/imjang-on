@@ -2,7 +2,7 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { fetchPage } from '@/scripts/ingest/http';
 import { findOrCreateProperty } from '@/scripts/ingest/property-matcher';
-import { updatePropertyAggregates } from '@/scripts/ingest/aggregator';
+import { drainAggregateQueue, enqueuePropertyAggregates } from '@/scripts/ingest/aggregate-queue';
 import { revalidatePaths, propertyPath } from '@/scripts/ingest/revalidator';
 import { notify } from '@/scripts/ingest/notify';
 
@@ -15,6 +15,7 @@ import { adapterRhRent } from './adapter-rh-rent';
 import { doneRunFilter, buildDoneKeys } from './resume';
 import { getSigunguTargets } from './sigungu';
 
+import type { Prisma } from '@prisma/client';
 import type { Adapter, ApiType, Mode, NormalizedTransaction } from '@/scripts/ingest/types';
 import { createHash } from 'node:crypto';
 import { getRangeMonths } from './months';
@@ -210,9 +211,9 @@ async function main() {
   // Supabase pooler 동시 연결 제약 — 5로 두면 connection pool / statement timeout 빈발
   await runWithLimit(pending, 2);
 
-  if (affectedPropertyIds.size > 0) {
-    await updatePropertyAggregates(Array.from(affectedPropertyIds));
-  }
+  // 집계는 대기열이 보장한다(단위마다 같은 트랜잭션에서 넣음). 여기서는 쌓인 대기열을 비운다.
+  // 실패하거나 30분 예산을 넘겨도 대기열에 남아 property-aggregates 잡이 이어서 처리한다.
+  const drained = await drainAggregateQueue({ deadline: Date.now() + 30 * 60_000 });
 
   if (args.mode === 'daily') {
     const paths: string[] = [];
@@ -226,9 +227,12 @@ async function main() {
     await revalidatePaths(paths);
   }
 
-  const summary = { totalUpserted, skipped, failed, properties: affectedPropertyIds.size };
+  const summary = {
+    totalUpserted, skipped, failed, properties: affectedPropertyIds.size,
+    aggregated: drained.processed, aggregateQueueRemaining: drained.remaining, aggregateStop: drained.stoppedBy,
+  };
   logger.info(summary, 'runner done');
-  await notify(failed === 0 ? 'info' : failed >= 5 ? 'warn' : 'info', 'ETL run complete', summary);
+  await notify(drained.stoppedBy === 'error' ? 'warn' : failed === 0 ? 'info' : failed >= 5 ? 'warn' : 'info', 'ETL run complete', summary);
 
   await prisma.$disconnect();
 }
@@ -282,50 +286,43 @@ async function runOne(
       resolved.push({ row, property });
     }
 
-    // 거래 배치 insert (rawHash unique → skipDuplicates로 멱등 처리)
-    const { count: upserted } = await prisma.transaction.createMany({
-      skipDuplicates: true,
-      data: resolved.map(({ row, property }) => ({
-        rawHash: computeHash(row, property.id),
-        propertyId: property.id,
-        propertyType: row.propertyType,
-        regionCode: property.regionCode,
-        sigunguCode: row.sigunguCode,
-        dealType: row.dealType,
-        contractDate: row.contractDate,
-        exclusiveArea: row.exclusiveArea,
-        floor: row.floor,
-        buildYear: row.buildYear,
-        dealAmount: row.dealAmount,
-        registerDate: row.registerDate,
-        dealingType: row.dealingType,
-        buyerType: row.buyerType,
-        sellerType: row.sellerType,
-        cancelDate: row.cancelDate,
-        cancelType: row.cancelType,
-        deposit: row.deposit,
-        monthlyRent: row.monthlyRent,
-        contractTerm: row.contractTerm,
-        contractType: row.contractType,
-        useRRRight: row.useRRRight,
-        preDeposit: row.preDeposit,
-        preMonthlyRent: row.preMonthlyRent,
-        umd: row.umd,
-        jibun: row.jibun,
-        roadName: row.roadName,
-        source: adapter.source,
-        externalKey: row.externalKey,
-      })),
-    });
+    const data = resolved.map(({ row, property }) => ({
+      rawHash: computeHash(row, property.id),
+      propertyId: property.id,
+      propertyType: row.propertyType,
+      regionCode: property.regionCode,
+      sigunguCode: row.sigunguCode,
+      dealType: row.dealType,
+      contractDate: row.contractDate,
+      exclusiveArea: row.exclusiveArea,
+      floor: row.floor,
+      buildYear: row.buildYear,
+      dealAmount: row.dealAmount,
+      registerDate: row.registerDate,
+      dealingType: row.dealingType,
+      buyerType: row.buyerType,
+      sellerType: row.sellerType,
+      cancelDate: row.cancelDate,
+      cancelType: row.cancelType,
+      deposit: row.deposit,
+      monthlyRent: row.monthlyRent,
+      contractTerm: row.contractTerm,
+      contractType: row.contractType,
+      useRRRight: row.useRRRight,
+      preDeposit: row.preDeposit,
+      preMonthlyRent: row.preMonthlyRent,
+      umd: row.umd,
+      jibun: row.jibun,
+      roadName: row.roadName,
+      source: adapter.source,
+      externalKey: row.externalKey,
+    }));
+    const upserted = await saveTaskTransactions(prisma, run.id, data);
 
     for (const { property } of resolved) {
       affectedProps.add(property.id);
     }
 
-    await prisma.ingestionRun.update({
-      where: { id: run.id },
-      data: { status: 'OK', rowsUpserted: upserted, finishedAt: new Date() },
-    });
     logger.info({ source: adapter.source, sgg: sigungu, yyyymm, upserted }, 'sigungu-month ok');
     return upserted;
   } catch (err) {
@@ -335,6 +332,32 @@ async function runOne(
     });
     throw err;
   }
+}
+
+/**
+ * 한 단위(시군구·월)의 거래 저장 + 재집계 대기열 넣기 + 단위 완료(OK) 기록을 **한 트랜잭션**으로.
+ * 이전에는 실행 끝에서 한 번만 집계해, 그 전에 프로세스가 끝나면 OK인 단위의 매물이 영구히 집계에서 빠졌다(D1).
+ * 이제 중간에 죽어도 (a) 트랜잭션이 롤백되어 단위가 OK가 아니므로 재실행이 다시 처리하거나
+ * (b) 커밋되었으면 대기열에 매물이 남아 drainAggregateQueue가 집계한다.
+ */
+export async function saveTaskTransactions(
+  db: typeof prisma,
+  runId: bigint,
+  data: Prisma.TransactionCreateManyInput[],
+): Promise<number> {
+  return db.$transaction(
+    async (t) => {
+      // rawHash unique → skipDuplicates로 멱등(재정합 방식은 S3)
+      const { count } = await t.transaction.createMany({ skipDuplicates: true, data });
+      await enqueuePropertyAggregates(t, data.map((d) => d.propertyId as bigint));
+      await t.ingestionRun.update({
+        where: { id: runId },
+        data: { status: 'OK', rowsUpserted: count, finishedAt: new Date() },
+      });
+      return count;
+    },
+    { timeout: 120_000, maxWait: 30_000 },
+  );
 }
 
 async function fetchAll(adapter: Adapter, sigungu: string, yyyymm: string): Promise<NormalizedTransaction[]> {

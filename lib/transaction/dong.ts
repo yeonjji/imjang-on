@@ -1,5 +1,6 @@
 import type { DealType, PropertyType } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import { withValidDeal } from '@/lib/transaction/valid-deal';
 
 export interface DongTransaction {
   id: string;
@@ -45,17 +46,16 @@ export async function getDongTransactions(opts: {
   const regionCode = `${sigunguCode}00000`;
 
   const rows = await prisma.transaction.findMany({
-    where: {
+    // 해제 신고된 거래를 '최근 거래'로 보여주지 않는다(해제 구분값만 있는 행 포함 — valid-deal.ts).
+    where: withValidDeal({
       regionCode,
       umd,
-      // 해제 신고된 거래를 '최근 거래'로 보여주지 않는다.
-      cancelDate: null,
       ...(dealType ? { dealType } : {}),
       ...(propertyType ? { propertyType } : {}),
       // 조회 단계에서 제외한다. 가져온 뒤 거르면 앞 N건이 전부 자기 건물일 때
       // 다른 거래를 놓친다.
       ...(excludePropertyId ? { propertyId: { not: excludePropertyId } } : {}),
-    },
+    }),
     // 같은 계약일 안에서 순서가 흔들리지 않게 id로 잇는다(저장소 관례).
     orderBy: [{ contractDate: 'desc' }, { id: 'desc' }],
     take: limit,
