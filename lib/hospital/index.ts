@@ -66,20 +66,16 @@ export async function getHospitalList(filter: HospitalListFilter, page: number, 
 
 export type HospitalListRow = Awaited<ReturnType<typeof getHospitalList>>['rows'][number];
 
+// 필터 옵션은 DB에서 DISTINCT로 접는다. Prisma `distinct`는 전 행(병원 약 8만)을 읽어 Node에서
+// 중복 제거해 목록 진입마다 1.6초(지역)+0.4초(종별)가 걸렸다 — DB DISTINCT는 0.07초·0.05초.
 export async function getHospitalRegions(): Promise<{ sido: string; sigungu: string; sigunguCode: string }[]> {
-  const rows = await prisma.hospital.findMany({
-    select: { sido: true, sigungu: true, sigunguCode: true },
-    where: { sido: { not: null }, sigungu: { not: null }, sigunguCode: { not: null } },
-    distinct: ['sigunguCode'],
-    orderBy: [{ sido: 'asc' }, { sigungu: 'asc' }],
-  });
-  return rows.map(r => ({ sido: r.sido!, sigungu: r.sigungu!, sigunguCode: r.sigunguCode! }));
+  return prisma.$queryRaw<{ sido: string; sigungu: string; sigunguCode: string }[]>`
+    SELECT DISTINCT sido, sigungu, "sigunguCode" FROM "Hospital"
+    WHERE sido IS NOT NULL AND sigungu IS NOT NULL AND "sigunguCode" IS NOT NULL
+    ORDER BY sido, sigungu`;
 }
 
 export async function getHospitalTypeCodes(): Promise<{ typeCode: string; typeName: string }[]> {
-  return prisma.hospital.findMany({
-    select: { typeCode: true, typeName: true },
-    distinct: ['typeCode'],
-    orderBy: { typeName: 'asc' },
-  });
+  return prisma.$queryRaw<{ typeCode: string; typeName: string }[]>`
+    SELECT DISTINCT "typeCode", "typeName" FROM "Hospital" ORDER BY "typeName"`;
 }
