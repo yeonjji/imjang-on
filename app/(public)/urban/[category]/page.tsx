@@ -54,7 +54,7 @@ export default async function UrbanListPage({ params, searchParams }: Params) {
   const subKey = def.subFilters?.paramKey ?? 'sub';
   const basePath = `/urban/${def.slug}`;
 
-  const [{ rows, total, totalPages, perPage }, sidoList, region] = await Promise.all([
+  const [{ rows, total, totalPages, perPage }, sidoList] = await Promise.all([
     getUrbanList(def.slug, {
       sigunguCode: sp.region,
       sido: effectiveSido,
@@ -67,11 +67,9 @@ export default async function UrbanListPage({ params, searchParams }: Params) {
       // 빌드 프리렌더 시 DB 블립에도 배포 통과; ISR이 다음 사이클에 채움
     }, page).catch(() => ({ rows: [], total: 0, page, perPage: 20, totalPages: 0 })),
     getSidoList().catch(() => []),
-    sp.region ? getSigunguByCode(sp.region).catch(() => null) : Promise.resolve(null),
   ]);
 
   const defView = toUrbanCategoryView(def);
-  const scopeLabel = region?.fullName ?? (effectiveSido ?? '전국');
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-8">
@@ -84,7 +82,7 @@ export default async function UrbanListPage({ params, searchParams }: Params) {
       <div className="mb-6 rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] md:p-7">
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">도시인프라 · {def.breadcrumbLabel}</p>
         <h1 className="text-2xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-3xl">
-          {scopeLabel} {def.label}
+          {def.label}
         </h1>
         <p className="mt-2 break-keep text-sm text-[var(--color-muted)]">
           {def.label} {total.toLocaleString('ko-KR')}곳의 위치를 지역별로 찾고, 주변 아파트 실거래가까지 함께 확인하세요.

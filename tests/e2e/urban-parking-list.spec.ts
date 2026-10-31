@@ -8,7 +8,7 @@ test.describe('urban parking LIST happy path', () => {
   test('진입 시 전국 목록(redirect 없음) + 카드 노출 + 카드 클릭 시 DETAIL', async ({ page }) => {
     await page.goto('/urban/parking');
     await expect(page).not.toHaveURL(/sido=/);
-    await expect(page.getByRole('heading', { level: 1, name: '전국 주차장' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: '주차장' })).toBeVisible();
 
     const firstCard = page.locator('a:has(article)').first();
     await expect(firstCard).toBeVisible();
