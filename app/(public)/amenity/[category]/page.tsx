@@ -82,7 +82,7 @@ export default async function AmenityListPage({ params, searchParams }: Params) 
       <div className="mb-6 rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] md:p-7">
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">상권·편의 · {def.breadcrumbLabel}</p>
         <h1 className="text-2xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-3xl">
-          {def.emoji} {scopeLabel} {def.label}
+          {scopeLabel} {def.label}
         </h1>
         <p className="mt-2 break-keep text-sm text-[var(--color-muted)]">
           {def.label} {total.toLocaleString('ko-KR')}곳의 위치를 지역별로 찾고, 주변 아파트 실거래가까지 함께 확인하세요.
