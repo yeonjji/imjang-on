@@ -58,7 +58,7 @@ export default async function GuideListPage({ searchParams }: Props) {
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10">
       {/* Hero card — shared */}
-      <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] md:p-7">
+      <div className="mb-6 rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] md:p-7">
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">가이드</p>
         <h1 className="text-2xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-3xl">생활·부동산 가이드</h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">공공데이터를 토대로 개념·절차를 쉽게 풀어 설명합니다.</p>
@@ -101,7 +101,7 @@ async function SectionContent() {
           </div>
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {section.items.map((g) => (
-              <li key={g.slug} className="rounded-[18px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-blue)]">
+              <li key={g.slug} className="rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-blue)]">
                 <span className="inline-block rounded-full bg-[var(--color-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">
                   {guideCategoryLabel(g.category)}
                 </span>
@@ -130,7 +130,7 @@ async function GridContent({ page, category }: { page: number; category: GuideCa
       ) : (
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {rows.map((g) => (
-            <li key={g.slug} className="rounded-[18px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-blue)]">
+            <li key={g.slug} className="rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-blue)]">
               <span className="inline-block rounded-full bg-[var(--color-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">
                 {guideCategoryLabel(g.category)}
               </span>

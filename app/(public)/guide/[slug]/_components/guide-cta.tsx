@@ -34,7 +34,7 @@ function ItemCards({ items }: { items: LifeSubItem[] }) {
         <Link
           key={item.href}
           href={item.href}
-          className="flex items-center justify-between gap-2 rounded-[20px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-blue)]"
+          className="flex items-center justify-between gap-2 rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-blue)]"
         >
           <span className="flex items-center gap-2.5 text-[15px] font-black tracking-tight text-[var(--color-blue-dark)]">
             <span aria-hidden className="text-lg">

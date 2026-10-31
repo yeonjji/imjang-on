@@ -4,7 +4,7 @@ export function ListSkeleton() {
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
-          className="animate-pulse rounded-[22px] border border-[var(--color-line)] bg-white px-6 py-5 shadow-[var(--shadow)]"
+          className="animate-pulse rounded-[22px] border border-[var(--color-line)] bg-white px-6 py-5 shadow-[var(--shadow-soft)]"
         >
           <div className="flex flex-col gap-3">
             <div className="h-5 w-16 rounded-lg bg-[var(--color-soft)]" />

@@ -8,7 +8,7 @@ export function ChildcareHero({ item }: { item: Childcare }) {
       ? Math.round((item.currentCount / item.capacity) * 100)
       : null;
   return (
-    <div className="rounded-[26px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
+    <div className="rounded-[22px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
       <div className="flex items-start gap-5">
         <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl border border-[var(--color-line)] bg-[var(--color-sky-soft)] text-3xl">👶</div>
         <div className="min-w-0 flex-1">

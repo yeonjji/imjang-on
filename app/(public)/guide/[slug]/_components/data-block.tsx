@@ -39,7 +39,7 @@ function BlockShell({
 }) {
   const asOfLabel = asOf ? formatAsOf(asOf) : (asOfText?.replace(/-/g, '.') ?? null);
   return (
-    <section className="my-8 rounded-[18px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
+    <section className="my-8 rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
       <h3 className="text-base font-bold text-[var(--color-blue-dark)]">{title}</h3>
       <p className="mt-1 text-sm text-[var(--color-muted)]">{note}</p>
       <div className="mt-3 overflow-x-auto">

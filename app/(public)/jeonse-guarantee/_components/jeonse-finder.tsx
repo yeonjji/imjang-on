@@ -102,7 +102,7 @@ export function JeonseFinder({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="rounded-[20px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
+      <div className="rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
         <input
           type="text"
           value={query}
@@ -200,7 +200,7 @@ export function JeonseFinder({
         </p>
 
         {rows.length === 0 ? (
-          <p className="rounded-[20px] border border-[var(--color-line)] bg-white px-5 py-10 text-center text-sm text-[var(--color-muted)]">
+          <p className="rounded-[22px] border border-[var(--color-line)] bg-white px-5 py-10 text-center text-sm text-[var(--color-muted)]">
             조건에 맞는 보증상품이 없습니다. 지역·대상 조건을 넓혀 보세요.
           </p>
         ) : (
@@ -235,7 +235,7 @@ function ResultCard({ row }: { row: Row }) {
   return (
     <Link
       href={`/jeonse-guarantee/${p.grntDvcd}`}
-      className="block rounded-[18px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-blue)]"
+      className="block rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-blue)]"
     >
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-base font-bold text-[var(--color-blue-dark)]">{p.rcmdProdNm}</h3>

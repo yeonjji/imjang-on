@@ -34,7 +34,7 @@ export default async function JeonseGuaranteePage() {
         <span className="font-semibold text-[var(--color-blue-dark)]">맞춤 전세보증 찾기</span>
       </nav>
 
-      <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
+      <div className="mb-6 rounded-[22px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">주거금융</p>
         <h1 className="text-3xl font-black tracking-tight text-[var(--color-blue-dark)]">맞춤 전세보증 찾기</h1>
         <p className="mt-2 break-keep text-sm text-[var(--color-muted)]">

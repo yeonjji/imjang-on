@@ -5,7 +5,7 @@ import type { ChargerRaw } from '@/lib/urban/adapters/charger';
 export function ChargerHero({ item }: { item: UrbanItem<ChargerRaw> }) {
   const r = item.raw;
   return (
-    <div className="flex items-center gap-5 rounded-[26px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
+    <div className="flex items-center gap-5 rounded-[22px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
       <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl border border-[var(--color-line)] bg-[var(--color-sky-soft)] text-3xl">
         ⚡
       </div>

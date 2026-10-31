@@ -15,7 +15,7 @@ export function FinanceTabs({ currentHref }: Props) {
   return (
     <div
       data-testid="finance-tabs"
-      className="mb-4 rounded-[18px] border border-[var(--color-line)] bg-white px-4 shadow-[var(--shadow-soft)]"
+      className="mb-4 rounded-[22px] border border-[var(--color-line)] bg-white px-4 shadow-[var(--shadow-soft)]"
     >
       <nav aria-label="금융정보 카테고리" className="flex gap-6 overflow-x-auto overflow-y-hidden">
         {FINANCE_ITEMS.map((item) => {

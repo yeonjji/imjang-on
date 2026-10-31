@@ -22,7 +22,7 @@ export function SubscriptionCard({ item }: { item: SubscriptionListItem }) {
 
   return (
     <Link href={`/subscription/${item.id}`}>
-      <article className="rounded-[22px] border border-[var(--color-line)] bg-white px-6 py-5 shadow-[var(--shadow)] transition hover:shadow-lg">
+      <article className="rounded-[22px] border border-[var(--color-line)] bg-white px-6 py-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-sky)]">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Badge tone="blue">{categoryLabel(item.category)}</Badge>
           <Badge tone={STATUS_TONE[st.status]} className="whitespace-nowrap">

@@ -64,7 +64,7 @@ export default async function SchoolSigunguListPage({ params, searchParams }: Pa
         <span className="font-semibold text-[var(--color-blue-dark)]">{regionDisplay.fullName}</span>
       </nav>
 
-      <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
+      <div className="mb-6 rounded-[22px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">학교찾기 · {regionDisplay.fullName}</p>
         <h1 className="text-3xl font-black tracking-tight text-[var(--color-blue-dark)]">{regionDisplay.sigungu} 학교</h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">전체 {kindCounts.total.toLocaleString('ko-KR')}개 · <Link href="/school" className="font-semibold text-[var(--color-blue)]">전국에서 검색 →</Link></p>
@@ -85,7 +85,7 @@ export default async function SchoolSigunguListPage({ params, searchParams }: Pa
         </aside>
 
         <main className="min-w-0 flex-1">
-          <div className="mb-4 rounded-[18px] border border-[var(--color-line)] bg-white px-5 py-3 shadow-[var(--shadow-soft)]">
+          <div className="mb-4 rounded-[22px] border border-[var(--color-line)] bg-white px-5 py-3 shadow-[var(--shadow-soft)]">
             <p className="text-base font-bold text-[var(--color-blue-dark)]"><span className="text-[var(--color-blue)]">{total.toLocaleString('ko-KR')}</span>개 학교</p>
           </div>
           {rows.length === 0 ? (

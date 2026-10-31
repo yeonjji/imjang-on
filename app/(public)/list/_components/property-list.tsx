@@ -49,7 +49,7 @@ export async function PropertyList({
 
   return (
     <>
-      <div className="mb-4 rounded-[18px] border border-[var(--color-line)] bg-white px-5 py-3 shadow-[var(--shadow)]">
+      <div className="mb-4 rounded-[22px] border border-[var(--color-line)] bg-white px-5 py-3 shadow-[var(--shadow-soft)]">
         <p className="text-base font-bold text-[var(--color-blue-dark)]">
           검색 결과 <span className="text-[var(--color-blue)]">{totalCapped ? '1,000+' : total.toLocaleString('ko-KR')}</span>건
         </p>

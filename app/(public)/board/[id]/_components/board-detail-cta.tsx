@@ -11,7 +11,7 @@ import {
 import type { MarketBriefing } from '@/lib/briefing';
 
 const cardClass =
-  'flex flex-col rounded-[20px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]';
+  'flex flex-col rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]';
 
 /** refDate(YYYY-MM-DD) → "6월 21일[ 최근] 수집 기준" (isFallback 시 '오늘' 단정 회피). */
 function refDateLabel(b: MarketBriefing): string {
@@ -87,7 +87,7 @@ export async function BoardDetailCta() {
       </div>
       <Link
         href="/finance"
-        className="mt-4 flex items-center justify-between rounded-[20px] border border-[var(--color-line)] bg-[var(--color-soft)] px-5 py-4 transition hover:border-[var(--color-blue)]"
+        className="mt-4 flex items-center justify-between rounded-[22px] border border-[var(--color-line)] bg-[var(--color-soft)] px-5 py-4 transition hover:border-[var(--color-blue)]"
       >
         <span className="text-sm font-bold text-[var(--color-blue-dark)]">💳 금융정보도 둘러보세요</span>
         <span className="text-[13px] font-bold text-[var(--color-blue)]">바로가기 →</span>

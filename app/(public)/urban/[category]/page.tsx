@@ -87,7 +87,7 @@ export default async function UrbanListPage({ params, searchParams }: Params) {
         <span className="font-semibold text-[var(--color-blue-dark)]">{def.breadcrumbLabel}</span>
       </nav>
 
-      <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] md:p-7">
+      <div className="mb-6 rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] md:p-7">
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">도시인프라 · {def.breadcrumbLabel}</p>
         <h1 className="text-2xl font-black tracking-tight text-[var(--color-blue-dark)] md:text-3xl">
           {def.emoji} {scopeLabel} {def.label}
@@ -113,7 +113,7 @@ export default async function UrbanListPage({ params, searchParams }: Params) {
         </aside>
 
         <main className="min-w-0 flex-1">
-          <div className="mb-4 rounded-[18px] border border-[var(--color-line)] bg-white px-5 py-3 shadow-[var(--shadow-soft)]">
+          <div className="mb-4 rounded-[22px] border border-[var(--color-line)] bg-white px-5 py-3 shadow-[var(--shadow-soft)]">
             <p className="text-base font-bold text-[var(--color-blue-dark)]">
               <span className="text-[var(--color-blue)]">{total.toLocaleString('ko-KR')}</span>개 {def.label}
             </p>

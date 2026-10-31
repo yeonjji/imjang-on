@@ -10,7 +10,7 @@ export function ParkCard({ item }: { item: UrbanItem<ParkRaw> }) {
 
   return (
     <Link prefetch={false} href={`/urban/park/${item.id}`}>
-      <article className="flex items-center gap-4 rounded-[18px] border border-[var(--color-line)] bg-white px-5 py-4 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-sky)]">
+      <article className="flex items-center gap-4 rounded-[22px] border border-[var(--color-line)] bg-white px-5 py-4 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-sky)]">
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[var(--color-sky-soft)] text-2xl">{emoji}</div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">

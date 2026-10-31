@@ -9,7 +9,7 @@ export function LoanCard({ item }: { item: LoanSummary }) {
   const hasSub = targets.length > 0 || regions.length > 0;
   return (
     <Link href={`/finance/${item.seq}`} className="block h-full">
-      <article className="flex h-full flex-col rounded-[22px] border border-[var(--color-line)] bg-white px-6 py-5 shadow-[var(--shadow-soft)] transition hover:shadow-lg">
+      <article className="flex h-full flex-col rounded-[22px] border border-[var(--color-line)] bg-white px-6 py-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-sky)]">
         <div className="mb-2 flex items-start justify-between gap-3">
           <h3 className="break-keep text-lg font-bold text-[var(--color-blue-dark)]">
             {item.finprdnm}

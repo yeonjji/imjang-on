@@ -33,7 +33,7 @@ export function HomeNews({ posts }: { posts: HomePostItem[] }) {
         {/* 대표(최신 1건) */}
         <Link
           href={boardPath(featured.id)}
-          className="flex flex-col rounded-[20px] border border-[var(--color-line)] bg-[var(--color-soft)] p-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-blue)]"
+          className="flex flex-col rounded-[22px] border border-[var(--color-line)] bg-[var(--color-soft)] p-5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-blue)]"
         >
           <span className="inline-block w-fit rounded-full bg-white px-2.5 py-0.5 text-xs font-bold text-[var(--color-blue)]">
             {categoryLabel(featured.category)}
@@ -53,7 +53,7 @@ export function HomeNews({ posts }: { posts: HomePostItem[] }) {
 
         {/* 리스트(다음 4건) */}
         {list.length > 0 && (
-          <ul className="rounded-[20px] border border-[var(--color-line)] bg-white p-3 shadow-[var(--shadow-soft)]">
+          <ul className="rounded-[22px] border border-[var(--color-line)] bg-white p-3 shadow-[var(--shadow-soft)]">
             {list.map((p) => (
               <li key={p.slug} className="border-b border-[var(--color-line)] last:border-0">
                 <Link

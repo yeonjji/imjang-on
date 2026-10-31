@@ -58,7 +58,7 @@ export default async function SubscriptionPage({
         <span className="font-semibold text-[var(--color-blue-dark)]">청약 목록</span>
       </nav>
 
-      <div className="mb-6 rounded-[26px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow)]">
+      <div className="mb-6 rounded-[22px] border border-[var(--color-line)] bg-white p-7 shadow-[var(--shadow-soft)]">
         <p className="mb-1 text-xs font-bold text-[var(--color-blue)]">청약·분양 통합</p>
         <h1 className="text-3xl font-black tracking-tight text-[var(--color-blue-dark)]">청약 목록</h1>
         <p className="mt-2 break-keep text-sm text-[var(--color-muted)]">
@@ -73,7 +73,7 @@ export default async function SubscriptionPage({
 
       <div className="flex items-start gap-6">
         <aside className="sticky top-[88px] hidden w-[280px] shrink-0 md:block">
-          <div className="max-h-[calc(100vh-104px)] overflow-y-auto rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow)]">
+          <div className="max-h-[calc(100vh-104px)] overflow-y-auto rounded-[22px] border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
             <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-[var(--color-soft)]" />}>
               <SubscriptionFilterPanel sidoList={sidoList} />
             </Suspense>
