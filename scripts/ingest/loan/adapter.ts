@@ -6,6 +6,7 @@ import {
   assertNormalResponse,
 } from '@/scripts/ingest/xml-parse';
 import { toTags, emptyToNull, sanitizeRawItem } from './normalize';
+import { decodeEntities } from '@/lib/text/decode-entities';
 import type { LoanProductRow } from './types';
 
 // 대출상품 응답(XML 한 페이지) → 행 + totalCount.
@@ -19,7 +20,8 @@ export function parseLoanProducts(xml: string): { rows: LoanProductRow[]; totalC
     const it = raw as Record<string, unknown>;
     return {
       seq: Number(it.seq),
-      finprdnm: String(it.finprdnm ?? ''),
+      // 원천이 괄호 등을 '&#40;'처럼 엔티티로 내려준다. 표시 경로가 여러 곳이라 저장 시 한 번 푼다.
+      finprdnm: decodeEntities(String(it.finprdnm ?? '')),
       ofrinstnm: emptyToNull(it.ofrinstnm),
       instCtg: emptyToNull(it.instCtg),
       lnlmt: parseCommaNumber(it.lnlmt as string | number | null | undefined),

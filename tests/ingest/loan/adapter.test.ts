@@ -28,6 +28,11 @@ describe('parseLoanProducts', () => {
     expect((rows[0].rawJson as any).rltsite).toBe('https://www.fsb.or.kr');
     expect((rows[0].rawJson as any).cnpl).toBe(1397);
   });
+  it('상품명의 HTML 엔티티를 디코딩해 저장한다', () => {
+    const encoded = xml.replace('사잇돌Ⅱ대출_대환형', '전세자금보증&amp;#40;특례&amp;#41;_정책서민금융 이용자');
+    const { rows } = parseLoanProducts(encoded);
+    expect(rows[0].finprdnm).toBe('전세자금보증(특례)_정책서민금융 이용자');
+  });
   it('resultCode 가 비정상이면 throw 한다', () => {
     const bad = xml.replace('<resultCode>00</resultCode>', '<resultCode>30</resultCode>');
     expect(() => parseLoanProducts(bad)).toThrow();
