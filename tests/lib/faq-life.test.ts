@@ -117,3 +117,15 @@ describe('buildChargerFaq', () => {
     expect(items[2].a).toBe('이용 제한이 있는 충전소입니다. 운영기관에 이용 가능 여부를 확인하세요.');
   });
 });
+
+describe('괄호로 끝나는 이름의 조사(괄호 앞 말 기준)', () => {
+  const base = {
+    useTime: null, parkingFree: null, accessLimited: false, limitDetail: null, operatorTel: null, units: [],
+  };
+  it('받침 있는 말 + 괄호 → 은', () => {
+    expect(buildChargerFaq({ ...base, name: '죽전역해링턴플레이스더원(대구)' })[0].q).toBe('죽전역해링턴플레이스더원(대구)은 누구나 이용할 수 있나요?');
+  });
+  it('받침 없는 말 + 괄호 → 는', () => {
+    expect(buildChargerFaq({ ...base, name: '사남중심지활성화센터(사천)' })[0].q).toBe('사남중심지활성화센터(사천)는 누구나 이용할 수 있나요?');
+  });
+});

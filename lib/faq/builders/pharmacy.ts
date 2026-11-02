@@ -1,6 +1,6 @@
 import type { FaqItem } from '@/lib/faq/data';
 import type { PharmacyDong } from '@/lib/pharmacy/context';
-import { josa } from '@/lib/seo/josa';
+import { josaName as josa } from '@/lib/seo/josa';
 
 const HIRA = '건강보험심사평가원';
 

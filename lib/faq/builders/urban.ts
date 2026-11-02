@@ -1,5 +1,5 @@
 import type { FaqItem } from '@/lib/faq/data';
-import { josa } from '@/lib/seo/josa';
+import { josaName as josa } from '@/lib/seo/josa';
 import { formatParkArea } from '@/lib/urban/adapters/park';
 import { parkFacilityGroups, soccerFieldCount } from '@/lib/urban/park-display';
 import { normalizeFees, type FeeInput } from '@/lib/urban/parking-fees';

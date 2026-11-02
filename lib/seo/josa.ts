@@ -31,3 +31,12 @@ export function josa(word: string, withBatchim: string, withoutBatchim: string):
   if (withBatchim === '으로' && f === 'rieul') return word + withoutBatchim;
   return word + (f !== 'none' ? withBatchim : withoutBatchim);
 }
+
+/**
+ * 끝의 괄호(예: '○○센터(사천)')는 건너뛰고 괄호 앞 말에 맞춰 조사를 붙인다(맞춤법: 괄호 앞 말 기준).
+ * josaName('더원(대구)','은','는') → '더원(대구)은'.
+ */
+export function josaName(word: string, withBatchim: string, withoutBatchim: string): string {
+  const base = word.replace(/\s*\([^()]*\)\s*$/, '') || word;
+  return word + josa(base, withBatchim, withoutBatchim).slice(base.length);
+}
