@@ -49,6 +49,9 @@ import {
   cachedNearbySubwayPark,
 } from '@/lib/insights/park-loader';
 import { nameWithAddress } from '@/lib/seo/meta-description';
+import { Faq } from '@/app/(public)/_components/faq';
+import { composeDetailFaq } from '@/lib/faq/compose';
+import { buildParkFaq, buildParkingFaq } from '@/lib/faq/builders/urban';
 
 export const revalidate = 86_400;
 // 동적 세그먼트는 generateStaticParams가 없으면 revalidate가 무시되고 매 요청 동적 렌더된다.
@@ -145,6 +148,13 @@ export default async function UrbanDetailPage({ params }: Params) {
       : null;
 
   const others = otherList.rows.filter((s) => s.id !== item.id).slice(0, 4);
+  const urbanFaq = composeDetailFaq(
+    parkRaw
+      ? buildParkFaq({ ...parkRaw, name: item.name, areaRank: areaRankProp })
+      : def.slug === 'parking'
+        ? buildParkingFaq({ ...r, name: item.name })
+        : [],
+  );
 
   const PARK_ANCHORS = [
     { href: '#info', label: '공원 정보' },
@@ -238,6 +248,7 @@ export default async function UrbanDetailPage({ params }: Params) {
           {coord && <NearbyInfra categories={infra} />}
           <BoardBriefingSection />
           <RelatedGuides pageKey="urban" />
+          {urbanFaq && <Faq items={urbanFaq} />}
           <MainSourceBlock id={URBAN_SOURCE[def.slug]} />
         </main>
         <aside><UrbanDetailSidebar others={others} def={def} sigunguCode={sigunguCode} anchors={def.slug === 'park' ? PARK_ANCHORS : undefined} /></aside>

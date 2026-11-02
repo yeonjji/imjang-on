@@ -24,6 +24,9 @@ import { SITE_URL } from '@/lib/site';
 import { qualifiedTitle } from '@/lib/seo/title';
 import { pharmacyDescriptor } from '@/lib/seo/facility-descriptor';
 import { resolveSigunguLabelFromAddress } from '@/lib/region/from-address';
+import { Faq } from '@/app/(public)/_components/faq';
+import { composeDetailFaq } from '@/lib/faq/compose';
+import { buildPharmacyFaq } from '@/lib/faq/builders/pharmacy';
 import type { Metadata } from 'next';
 
 // 시설 정보는 거의 불변이라 7일 캐시 — 크롤러 재생성(ISR write·원본전송)을 대폭 절감.
@@ -79,6 +82,11 @@ export default async function PharmacyDetailPage({ params }: Params) {
   ]);
 
   const others = otherList.rows.filter(p => p.id !== pharmacy.id).slice(0, 4);
+  const years = pharmacyYears(pharmacy.openedAt, new Date().getUTCFullYear());
+  const openedYear = pharmacy.openedAt ? pharmacy.openedAt.getUTCFullYear() : null;
+  const pharmacyFaq = composeDetailFaq(
+    buildPharmacyFaq({ name: pharmacy.name, tel: pharmacy.tel, years, openedYear, dong, sundayClinics }),
+  );
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10">
@@ -123,8 +131,8 @@ export default async function PharmacyDetailPage({ params }: Params) {
           <PharmacyInfo pharmacy={pharmacy} />
           <SourceCaption ids={['hira']} />
           <PharmacyNeighborhood
-            years={pharmacyYears(pharmacy.openedAt, new Date().getUTCFullYear())}
-            openedYear={pharmacy.openedAt ? pharmacy.openedAt.getUTCFullYear() : null}
+            years={years}
+            openedYear={openedYear}
             dong={dong}
             sundayClinics={sundayClinics}
           />
@@ -145,6 +153,7 @@ export default async function PharmacyDetailPage({ params }: Params) {
           {coord && <NearbyInfra categories={infra} />}
           <BoardBriefingSection />
           <RelatedGuides pageKey="medical/pharmacy" />
+          {pharmacyFaq && <Faq items={pharmacyFaq} />}
           <MainSourceBlock id="hira" />
         </div>
         <aside>

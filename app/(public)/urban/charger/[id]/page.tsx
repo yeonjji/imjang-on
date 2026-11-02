@@ -30,6 +30,9 @@ import { BoardBriefingSection } from '@/app/(public)/_components/board-briefing-
 import { RelatedGuides } from '@/app/(public)/_components/related-guides';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { nameWithAddress } from '@/lib/seo/meta-description';
+import { Faq } from '@/app/(public)/_components/faq';
+import { composeDetailFaq } from '@/lib/faq/compose';
+import { buildChargerFaq } from '@/lib/faq/builders/urban';
 
 export const revalidate = 86_400; // 실시간 상태를 렌더에서 뺐으므로 다른 상세와 같은 1일 ISR
 // 동적 세그먼트는 generateStaticParams가 없으면 revalidate가 무시되고 매 요청 동적 렌더된다.
@@ -96,6 +99,7 @@ export default async function ChargerDetailPage({ params }: Params) {
   ]);
 
   const others = otherList.rows.filter((s) => s.id !== item.id).slice(0, 4);
+  const chargerFaq = composeDetailFaq(buildChargerFaq({ ...r, name: item.name }));
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10">
@@ -146,6 +150,7 @@ export default async function ChargerDetailPage({ params }: Params) {
           {coord && <NearbyInfra categories={infra} />}
           <BoardBriefingSection />
           <RelatedGuides pageKey="urban" />
+          {chargerFaq && <Faq items={chargerFaq} />}
           <MainSourceBlock id="kepco-ev" />
         </main>
         <aside>

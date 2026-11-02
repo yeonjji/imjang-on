@@ -10,7 +10,7 @@ test.describe('공원 상세 보강', () => {
     await expect(page.getByText('면적 58,462 ㎡ · 축구장 약 8개 크기 · 2016년 지정')).toBeVisible({ timeout: 5000 });
     await expect(page.getByRole('heading', { name: '공원 시설' })).toBeVisible();
     await expect(page.getByText('그네', { exact: true })).toBeVisible();
-    await expect(page.getByText('서울특별시 서초구청')).toBeVisible();
+    await expect(page.getByText('서울특별시 서초구청', { exact: true })).toBeVisible();
   });
 
   test('빈 공원: 시설 카드 없이 주소만', async ({ page }) => {

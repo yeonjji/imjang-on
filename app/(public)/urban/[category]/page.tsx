@@ -10,6 +10,7 @@ import { UrbanMobileFilterSheet } from './_components/urban-mobile-filter-sheet'
 import { UrbanCard } from './_components/urban-card';
 import { UrbanPagination } from './_components/urban-pagination';
 import { SiblingTabs } from '../../_components/sibling-tabs';
+import { CategoryFaq } from '../../_components/faq';
 import { SourceCaption } from '@/components/ui/source-caption';
 
 export const revalidate = 21_600;
@@ -128,6 +129,8 @@ export default async function UrbanListPage({ params, searchParams }: Params) {
           <SourceCaption ids={[URBAN_SOURCE[def.slug]]} />
         </main>
       </div>
+
+      <CategoryFaq category={def.slug} />
     </div>
   );
 }
