@@ -15,7 +15,7 @@ test.describe('urban parking DETAIL', () => {
     await expect(page.getByText(/24시간 운영/).first()).toBeVisible();
     // 요금 grid
     await expect(page.getByRole('heading', { name: '요금', exact: true })).toBeVisible();
-    await expect(page.getByText('30분 500원')).toBeVisible();
+    await expect(page.getByText('30분 500원', { exact: true })).toBeVisible();
     // 부대정보 배지
     await expect(page.getByRole('heading', { name: '부대정보' })).toBeVisible();
     await expect(page.getByText('♿ 장애인전용 구획')).toBeVisible();

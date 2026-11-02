@@ -65,7 +65,9 @@ describe('resolveFaq 숫자', () => {
     expect(a('apt', /어디서 가져오나요/, STATS)).toContain('44,573개 단지');
     expect(a('subscription', /경쟁률과 당첨 가점/, STATS)).toContain('5,436건');
     expect(a('childcare', /유형/, STATS)).toContain('24,672곳 중 국공립은 6,650곳(약 27%)');
-    expect(a('life', /어떤 생활편의/, STATS)).toContain('전기차 충전소 106,477곳');
+    expect(a('park', /어디서 가져오나요/, STATS)).toContain('공원 17,281곳');
+    expect(a('parking', /어디서 가져오나요/, STATS)).toContain('공영주차장은 9,876곳');
+    expect(a('charger', /어디서 가져오나요/, STATS)).toContain('충전소 106,477곳');
   });
   it('stats가 null이면 숫자 없는 문장', () => {
     expect(a('apt', /어디서 가져오나요/, null)).not.toMatch(/\d+,\d{3}/);
