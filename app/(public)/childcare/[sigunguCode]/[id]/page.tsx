@@ -24,7 +24,6 @@ import { RelatedGuides } from '@/app/(public)/_components/related-guides';
 import { Faq } from '@/app/(public)/_components/faq';
 import { composeDetailFaq } from '@/lib/faq/compose';
 import { buildChildcareFaq } from '@/lib/faq/builders/childcare';
-import { InsightSection } from '@/components/ui/insight-section';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
 import { mapImageUrl } from '@/lib/seo/static-map';
 import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
@@ -106,7 +105,7 @@ export default async function ChildcareDetailPage({ params }: Params) {
     .slice(0, 4)
     .map((o) => ({ id: o.id, name: o.name }));
 
-  const { narrative, dateModified } = await loadChildcareInsight(itemId);
+  const { dateModified } = await loadChildcareInsight(itemId);
 
   const childcareFaq = composeDetailFaq(
     buildChildcareFaq({
@@ -160,7 +159,6 @@ export default async function ChildcareDetailPage({ params }: Params) {
       </nav>
 
       <ChildcareHero item={item} />
-      {narrative && <InsightSection sentences={narrative.sentences} />}
 
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-6">

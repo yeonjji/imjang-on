@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { getHospitalList } from '@/lib/hospital';
 import type { NearbyApartment } from '@/lib/amenity/nearby';
 import { loadHospitalInsight, cachedHospitalById, cachedHospitalLatLng, cachedNearbyApartmentsHosp, cachedNearbyInfraHosp, cachedNearbySubwayHosp } from '@/lib/insights/hospital-loader';
-import { InsightSection } from '@/components/ui/insight-section';
 import { HospitalHero } from './_components/hospital-hero';
 import { HospitalSummaryCards } from './_components/hospital-summary-cards';
 import { HospitalTabs } from './_components/hospital-tabs';
@@ -84,8 +83,6 @@ export default async function HospitalDetailPage({ params }: Params) {
   ]);
 
   const others = otherList.rows.filter(h => h.id !== hospital.id).slice(0, 4);
-  const { narrative } = await loadHospitalInsight(hospitalId);
-
   // 진료시간: 심평원 우선, 없으면 국립중앙의료원. 탭·카드·FAQ가 같은 값을 쓴다.
   const hours = effectiveHours(hospital.detail, hospital.nemcHours);
   const weekHours = hours ? [0, 1, 2, 3, 4, 5, 6].map((d) => hours.at(d)) : null;
@@ -156,7 +153,6 @@ export default async function HospitalDetailPage({ params }: Params) {
       </nav>
 
       <HospitalHero hospital={hospital} />
-      {narrative && <InsightSection sentences={narrative.sentences} />}
 
       <div className="mt-5">
         <HospitalSummaryCards

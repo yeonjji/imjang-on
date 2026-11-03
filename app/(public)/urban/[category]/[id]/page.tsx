@@ -37,7 +37,6 @@ import { resolveAddrPrefix } from '@/lib/urban/_shared';
 import { buildParkHeroLine } from '@/lib/urban/park-display';
 import type { ParkRaw } from '@/lib/urban/adapters/park';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
-import { InsightSection } from '@/components/ui/insight-section';
 import { mapImageUrl } from '@/lib/seo/static-map';
 import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
 import { SITE_URL } from '@/lib/site';
@@ -132,9 +131,9 @@ export default async function UrbanDetailPage({ params }: Params) {
       : Promise.resolve({ stations: [], fallback: false }),
   ]);
 
-  const { narrative, dateModified } = isPark
+  const { dateModified } = isPark
     ? await loadParkInsight(itemId)
-    : { narrative: null, dateModified: undefined as string | undefined };
+    : { dateModified: undefined as string | undefined };
 
   const parkRaw = isPark ? (item as UrbanItem<ParkRaw>).raw : null;
   const addrPrefix = sigunguCode ? await resolveAddrPrefix({ sigunguCode }) : null;
@@ -208,7 +207,6 @@ export default async function UrbanDetailPage({ params }: Params) {
         def={def}
         summaryLine={isPark ? buildParkHeroLine((item as UrbanItem<ParkRaw>).raw) : null}
       />
-      {narrative && <InsightSection sentences={narrative.sentences} />}
 
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-6">
