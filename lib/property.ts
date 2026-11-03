@@ -223,6 +223,31 @@ export function buildPriceCondition(
   return cond;
 }
 
+// 가격 필터·정렬·카드 표시를 같은 값(최근 12개월 내 마지막 거래가)으로 맞춘다.
+// 거래유형 '전체'는 화면 문구("매매가 기준")대로 매매가를 쓴다.
+const PRICE_BASIS = {
+  sale: { price: 'saleLastPrice', count: 'saleCount12m' },
+  jeonse: { price: 'jeonseLastDeposit', count: 'jeonseCount12m' },
+  wolse: { price: 'wolseLastDeposit', count: 'wolseCount12m' },
+  all: { price: 'saleLastPrice', count: 'saleCount12m' },
+} as const satisfies Record<DealFilter, { price: string; count: string }>;
+
+export function buildPriceWhere(
+  deal: DealFilter,
+  priceMin: number | undefined,
+  priceMax: number | undefined,
+  priceSort: boolean,
+): Prisma.PropertyWhereInput {
+  const priceCond = buildPriceCondition(priceMin, priceMax);
+  if (!priceCond && !priceSort) return {};
+  const basis = PRICE_BASIS[deal];
+  // 카드는 12개월 내 거래가 있을 때만 가격을 보여주므로, 기준 거래유형의 12개월 거래를 요구한다
+  // (없으면 화면에 안 보이는 옛 가격으로 걸러지거나 정렬된다).
+  const where: Prisma.PropertyWhereInput = { [basis.count]: { gt: 0 } };
+  if (priceCond) Object.assign(where, { [basis.price]: priceCond });
+  return where;
+}
+
 export function buildKeywordCondition(
   q: string | undefined,
 ): Prisma.PropertyWhereInput | undefined {
@@ -290,22 +315,8 @@ export async function getPropertyList({
     where.region = { sido: sidoFullName(sido) };
   }
 
-  const priceCond = buildPriceCondition(priceMin, priceMax);
-  if (priceCond) {
-    if (deal === 'jeonse') {
-      where.jeonseAvgDeposit12m = priceCond;
-    } else if (deal === 'wolse') {
-      where.wolseAvgDeposit12m = priceCond;
-    } else if (deal === 'sale') {
-      where.saleAvgPrice12m = priceCond;
-    } else {
-      where.OR = [
-        { saleAvgPrice12m: priceCond },
-        { jeonseAvgDeposit12m: priceCond },
-        { wolseAvgDeposit12m: priceCond },
-      ];
-    }
-  }
+  const priceSort = sort === 'price_desc' || sort === 'price_asc';
+  Object.assign(where, buildPriceWhere(deal, priceMin, priceMax, priceSort));
 
   // areaRange → areaTypes filter
   if (areaRange) {
@@ -328,15 +339,9 @@ export async function getPropertyList({
   // deal + sort → orderBy
   let orderBy: Prisma.PropertyOrderByWithRelationInput;
 
-  if (sort === 'price_desc' || sort === 'price_asc') {
+  if (priceSort) {
     const direction = sort === 'price_desc' ? ('desc' as const) : ('asc' as const);
-    if (deal === 'jeonse') {
-      orderBy = { jeonseLastDeposit: { sort: direction, nulls: 'last' } };
-    } else if (deal === 'wolse') {
-      orderBy = { wolseLastDeposit: { sort: direction, nulls: 'last' } };
-    } else {
-      orderBy = { saleLastPrice: { sort: direction, nulls: 'last' } };
-    }
+    orderBy = { [PRICE_BASIS[deal].price]: { sort: direction, nulls: 'last' } };
   } else if (deal === 'sale') {
     orderBy = sort === 'volume' ? { saleCount12m: 'desc' } : { saleLastAt: 'desc' };
   } else if (deal === 'jeonse') {

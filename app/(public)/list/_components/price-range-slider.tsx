@@ -45,6 +45,8 @@ export function PriceRangeSlider({ min, max, step, valueMin, valueMax, onChange 
   const rangeLabel = isDefault ? '전체' : `${formatManwon(localMin)} ~ ${formatManwon(localMax)}`;
 
   function commit() {
+    // 키 입력(Tab 등)만으로 값이 그대로면 재조회하지 않는다.
+    if (localMin === valueMin && localMax === valueMax) return;
     onChange(localMin, localMax);
   }
 
@@ -74,6 +76,7 @@ export function PriceRangeSlider({ min, max, step, valueMin, valueMax, onChange 
           onChange={(e) => setLocalMin(Math.min(Number(e.target.value), localMax - step))}
           onMouseUp={commit}
           onTouchEnd={commit}
+          onKeyUp={commit}
           className={`${THUMB_STYLE}${localMin >= localMax - step ? ' z-10' : ''}`}
         />
         {/* 최댓값 핸들 */}
@@ -86,6 +89,7 @@ export function PriceRangeSlider({ min, max, step, valueMin, valueMax, onChange 
           onChange={(e) => setLocalMax(Math.max(Number(e.target.value), localMin + step))}
           onMouseUp={commit}
           onTouchEnd={commit}
+          onKeyUp={commit}
           className={THUMB_STYLE}
         />
       </div>
