@@ -1,0 +1,144 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>대출 이자 계산기 시안</title><!-- 2026-11-03 승인 반영: 기간 기본 2년 통일·몇백~몇천 문구 제거. 구현본이 최종 -->
+<style>
+:root{--blue:#2563eb;--blue-dark:#1e3a8a;--sky-soft:#e0f2fe;--bg:#f7fbff;--soft:#f1f7ff;--text:#172033;--muted:#64748b;--line:#dbeafe;--shadow:0 8px 24px rgba(37,99,235,.06)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;color:var(--text);font-size:14px;line-height:1.6}
+.wrap{display:flex;flex-wrap:wrap;gap:32px;padding:28px;align-items:flex-start}
+.board{width:760px;max-width:100%}.board.m{width:375px}
+.tag{font-size:13px;color:var(--muted);margin:0 0 10px;border-left:3px solid var(--blue);padding-left:8px}
+.ctx{background:#fff;border:1px solid var(--line);border-radius:22px;padding:20px 24px;margin-bottom:16px;box-shadow:var(--shadow);opacity:.6}
+.ctx h3{margin:0 0 10px;font-size:18px;color:var(--blue-dark)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.m .grid3{grid-template-columns:repeat(2,1fr)}
+.metric{background:var(--soft);border-radius:14px;padding:10px 14px}.metric span{display:block;font-size:12px;color:var(--muted)}.metric b{color:var(--blue-dark)}
+.card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:var(--shadow)}
+.m .card{padding:20px}
+.card h2{margin:0;font-size:18px;color:var(--blue-dark)}
+.sub{margin:4px 0 18px;font-size:13px;color:var(--muted)}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:14px;font-weight:600;color:var(--blue-dark);margin-bottom:6px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.m .row2{grid-template-columns:1fr}
+.inp{display:flex;align-items:center;border:1px solid var(--line);border-radius:12px;background:#fff;padding:0 14px;min-height:46px}
+.inp:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px var(--sky-soft)}
+.inp input{flex:1;border:0;outline:0;font:inherit;font-size:16px;color:var(--text);min-width:0;background:transparent}
+.inp em{font-style:normal;color:var(--muted);font-size:14px}
+select{width:100%;min-height:46px;border:1px solid var(--line);border-radius:12px;padding:0 12px;font:inherit;font-size:16px;color:var(--text);background:#fff}
+.readout{font-size:13px;color:var(--muted);margin-top:4px;min-height:20px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;min-height:34px}
+.chip[aria-pressed=true]{background:var(--blue);border-color:var(--blue);color:#fff}
+.chip:disabled{opacity:.4;cursor:not-allowed}
+.hint{font-size:13px;color:var(--muted);margin-top:6px}
+.hint b{color:var(--text);font-weight:600}
+.result{background:var(--soft);border-radius:16px;padding:18px 20px;margin-top:6px}
+.result .lbl{font-size:13px;color:var(--muted)}
+.result .big{font-size:28px;font-weight:800;color:var(--blue-dark);letter-spacing:-.01em}
+.result .two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+.result .two b{display:block;font-size:16px;color:var(--blue-dark)}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+details{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+summary{cursor:pointer;font-weight:600;color:var(--blue-dark);list-style:none;min-height:32px;display:flex;align-items:center;justify-content:space-between}
+summary::after{content:'▾';color:var(--muted)}details[open] summary::after{content:'▴'}
+table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
+th{font-size:12px;color:var(--muted);text-align:right;font-weight:600;padding:8px 6px;border-bottom:1px solid var(--line)}th:first-child{text-align:left}
+td{padding:9px 6px;text-align:right;border-bottom:1px solid var(--line)}td:first-child{text-align:left;font-weight:600}
+td .up{display:block;font-size:12px;color:var(--muted);font-weight:400}
+.notes{margin:16px 0 0;padding:12px 0 0;border-top:1px dashed var(--line);font-size:13px;color:var(--muted)}
+.notes li{margin:2px 0 2px 16px}
+.src{font-size:12px;color:var(--muted);margin-top:8px}
+.design{font-size:13px;color:var(--muted);margin-top:12px;background:#fff;border:1px dashed var(--line);border-radius:12px;padding:10px 14px}
+.design b{color:var(--text)}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+</style></head><body><div class="wrap">
+
+<!-- A -->
+<div class="board">
+<p class="tag">A. 서민금융 상세 · 금리 범위형 자동 적용 (예: 버팀목전세자금 · irt "2.1~2.9" · 만기일시상환, 혼합상환)</p>
+<div class="ctx"><h3>한눈에 (기존)</h3><div class="grid3"><div class="metric"><span>금리</span><b>2.1~2.9%</b></div><div class="metric"><span>금리구분</span><b>변동금리</b></div><div class="metric"><span>상환방식</span><b>만기일시상환, 혼합상환</b></div></div></div>
+<div class="card calc" data-cfg='{"title":"대출 이자 계산기","rate":{"kind":"range","min":2.1,"max":2.9},"rateRaw":"2.1~2.9","variable":true,"mixed":true,"term":2,"limit":null,"source":"금리: 서민금융진흥원 대출상품한눈에 · 수집일 2026-11-01"}'></div>
+<p class="design"><b>설계 메모</b> · 위치: '한눈에' 카드 바로 아래 · 범위형은 [최저][최고] 칩, <b>기본은 최고금리</b>(보수적) · 상환방식이 여러 개면 '만기일시상환을 고른 경우 기준' 문구 · 기간 기본값은 원천 최대 총 대출기간(정수 1~10)일 때만, 아니면 2년</p>
+</div>
+
+<!-- B -->
+<div class="board">
+<p class="tag">B. 서민금융 상세 · 비정형 금리 → 직접 입력 (예: 경영안정지원자금 · irt "은행금리-1.8" · 한도 5억)</p>
+<div class="card calc" data-cfg='{"title":"대출 이자 계산기","rate":{"kind":"manual"},"rateRaw":"은행금리-1.8","variable":true,"mixed":false,"term":2,"limit":50000,"source":"상품 안내 금리: 서민금융진흥원 대출상품한눈에 · 수집일 2026-11-01"}'></div>
+<p class="design"><b>설계 메모</b> · 금리 칸은 비워 두고 원문("은행금리-1.8")을 그대로 보여 줌 · 임의 값 자동 입력 없음 · 상품 한도가 있으면 한도 초과 빠른선택 칩 비활성 + '상품 한도' 칩(누를 때만 입력)</p>
+</div>
+
+<!-- C -->
+<div class="board">
+<p class="tag">C. 맞춤 전세보증 상세 · 금리·금액 모두 직접 입력 (예: 무주택 청년 특례전세)</p>
+<div class="ctx"><h3>우대 · 이자지원 (기존)</h3><p style="margin:0">이자 지원: 최대 연 2.8%p</p></div>
+<div class="card calc" data-cfg='{"title":"전세대출 예상 이자 계산기","jeonse":true,"rate":{"kind":"manual"},"rateRaw":null,"variable":false,"mixed":false,"term":2,"limit":null,"source":null}'></div>
+<p class="design"><b>설계 메모</b> · 위치: '우대·이자지원' 아래, '지역별 최대 임차보증금' 위 · 보증한도·한도비율을 금액에 넣지 않음, 한도 칩 없음 · 금리 기본값 없음, '이 보증상품의 금리가 아님' 명시 · 이자지원(%p)은 계산에 반영하지 않음</p>
+</div>
+
+<!-- D mobile -->
+<div class="board m">
+<p class="tag">D. 모바일 375px (A와 동일 컴포넌트)</p>
+<div class="card calc" data-cfg='{"title":"대출 이자 계산기","rate":{"kind":"single","value":3.47},"rateRaw":"3.47","variable":false,"mixed":false,"term":2,"limit":20000,"source":"금리: 서민금융진흥원 대출상품한눈에 · 수집일 2026-11-01","preset":10000}'></div>
+<p class="design"><b>설계 메모</b> · 단일 금리(예: 우리 청년맞춤형 전세대출 3.47%)는 자동 입력 + '상품 안내 금리' 표시 · 입력란 16px(iOS 확대 방지) · 칩·버튼 34~46px 터치영역 · 이 화면만 시안 설명용으로 금액 1억을 미리 넣음(실제는 빈 칸)</p>
+</div>
+
+<!-- E -->
+<div class="board">
+<p class="tag">E. 별도 수정 — 금리 단위(%) 누락 (계산기와 분리된 작은 수정)</p>
+<div class="card">
+<div class="cmp">
+<div><div class="sub" style="margin:0 0 6px">현재</div><div class="metric"><span>금리</span><b>2.1~2.9</b></div><p class="hint">FAQ: "…금리는 3.47 수준입니다"<br>목록 카드: "· 금리 3.47"</p></div>
+<div><div class="sub" style="margin:0 0 6px">수정 후</div><div class="metric"><span>금리</span><b>2.1~2.9%</b></div><p class="hint">FAQ: "…금리는 연 3.47% 수준입니다"<br>목록 카드: "· 금리 3.47%"</p></div>
+</div>
+<p class="hint">순수 숫자·범위형에만 % 부착. "은행금리-1.8", "기준금리 + 2.5", "연 2.51% (…)"처럼 설명·단위가 있는 값은 원문 그대로.</p>
+</div>
+</div>
+
+</div>
+<script>
+const won=n=>Math.round(n).toLocaleString('ko-KR')+'원';
+function manwonLabel(m){if(!m)return'';const eok=Math.floor(m/10000),r=m%10000;return (eok?eok+'억':'')+(r?(eok?' ':'')+r.toLocaleString('ko-KR')+'만':'')+'원'}
+const CHIPS=[5000,10000,15000,20000,30000];
+document.querySelectorAll('.calc').forEach(root=>{
+ const c=JSON.parse(root.dataset.cfg);
+ const rateInit=c.rate.kind==='single'?c.rate.value:c.rate.kind==='range'?c.rate.max:'';
+ const ratePart=c.rate.kind==='range'
+  ?`<div class="chips" role="group" aria-label="상품 금리 선택"><button class="chip rc" data-v="${c.rate.min}" aria-pressed="false">최저 ${c.rate.min}%</button><button class="chip rc" data-v="${c.rate.max}" aria-pressed="true">최고 ${c.rate.max}%</button></div><p class="hint">상품 안내 금리 <b>${c.rateRaw}%</b> · 실제 금리는 소득·우대조건·은행 심사에 따라 이 범위 안팎에서 정해집니다.</p>`
+  :c.rate.kind==='single'?`<p class="hint">상품 안내 금리 <b>${c.rateRaw}%</b>를 넣었습니다. 바꿔서 계산할 수 있습니다.</p>`
+  :c.jeonse?`<p class="hint">이 보증상품에는 대출금리가 정해져 있지 않습니다. 은행에서 안내받은 금리를 입력하세요.</p>`
+  :`<p class="hint">상품 안내 금리 <b>${c.rateRaw}</b> — 숫자 하나로 정해지지 않아 자동으로 넣지 않았습니다. 확인한 금리를 입력하세요.</p>`;
+ const chips=CHIPS.map(v=>`<button class="chip ac" data-v="${v}" ${c.limit&&v>c.limit?'disabled':''} aria-pressed="false">${manwonLabel(v).replace('원','')}</button>`).join('')+(c.limit?`<button class="chip ac" data-v="${c.limit}" aria-pressed="false">상품 한도 ${manwonLabel(c.limit).replace('원','')}</button>`:'');
+ const terms=[1,2,3,4,5,6,7,8,9,10].map(y=>`<option value="${y}" ${y===c.term?'selected':''}>${y}년</option>`).join('');
+ root.innerHTML=`<h2>${c.title}</h2>
+ <p class="sub">만기일시상환 기준 · 매달 이자만 내고 원금은 만기에 한 번에 갚는 방식${c.mixed?' · 이 상품은 다른 상환방식도 있어 <b style="color:var(--text);font-weight:600">만기일시상환을 고른 경우</b>로 계산합니다':''}</p>
+ <div class="field"><label>대출금액</label><div class="inp"><input class="amt" inputmode="numeric" placeholder="예: 10,000" value="${c.preset?c.preset.toLocaleString('ko-KR'):''}"><em>만원</em></div><div class="readout"></div><div class="chips">${chips}</div>${c.limit?`<p class="hint">이 상품 대출한도 <b>${manwonLabel(c.limit)}</b> (상품 안내 기준)</p>`:''}</div>
+ <div class="row2"><div class="field"><label>연 금리</label><div class="inp"><input class="rate" inputmode="decimal" placeholder="예: 3.5" value="${rateInit}"><em>%</em></div>${ratePart}</div>
+ <div class="field"><label>대출기간 (계산을 위한 가정)</label><select class="term">${terms}</select><p class="hint">만기 연장 없이 같은 금리가 유지된다고 가정합니다.</p></div></div>
+ <div class="result" aria-live="polite"></div>
+ <ul class="notes">
+  <li>모든 금액은 <b style="color:var(--text);font-weight:600">예상 금액</b>입니다. 실제 이자는 은행의 일할 계산 방식(대출 일수 기준)과 납입일에 따라 이 금액과 다를 수 있습니다.</li>
+  ${c.variable?'<li>변동금리 상품은 기간 중 금리가 바뀌면 이자도 바뀝니다.</li>':''}
+  <li>보증료·인지세 등 부대비용과 ${c.jeonse?'이자지원·':''}우대금리는 반영하지 않았습니다.</li>
+  ${c.jeonse?'<li>실제 대출 가능 금액은 보증한도와 별개로 소득·보증금·은행 심사에 따라 정해집니다.</li>':''}
+ </ul>${c.source?`<p class="src">${c.source}</p>`:''}`;
+ const $=s=>root.querySelector(s);
+ function render(){
+  const P=Number($('.amt').value.replace(/[^0-9]/g,''))*10000, r=Number($('.rate').value), y=Number($('.term').value);
+  $('.readout').textContent=P?manwonLabel(P/10000):'';
+  root.querySelectorAll('.ac').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.v)*10000===P)));
+  root.querySelectorAll('.rc').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.v)===r)));
+  const res=$('.result');
+  if(!P||!(r>0)||r>30){res.innerHTML=`<p class="empty">${r>30?'연 금리는 30% 이하로 입력하세요.':'대출금액과 연 금리를 입력하면 예상 이자를 보여 드립니다.'}</p>`;return}
+  const m=x=>P*x/100/12;
+  const rows=[0,0.5,1].map(d=>{const rr=+(r+d).toFixed(2);return `<tr><td>${d?`+${d}%p`:'입력 금리'} <span class="up">${rr}%</span></td><td>${won(m(rr))}${d?`<span class="up">월 +${won(m(rr)-m(r))}</span>`:''}</td><td>${won(P*rr/100*y)}${d?`<span class="up">+${won(P*d/100*y)}</span>`:''}</td></tr>`}).join('');
+  res.innerHTML=`<div class="lbl">예상 월 이자</div><div class="big">${won(m(r))}</div>
+  <div class="two"><div><span class="lbl">연간 예상 이자</span><b>${won(P*r/100)}</b></div><div><span class="lbl">${y}년간 예상 총이자</span><b>${won(P*r/100*y)}</b></div></div>
+  <details><summary>금리가 오르면 얼마나 늘어날까요?</summary><table><thead><tr><th>금리</th><th>월 이자</th><th>${y}년 총이자</th></tr></thead><tbody>${rows}</tbody></table></details>`;
+ }
+ $('.amt').addEventListener('input',e=>{const d=e.target.value.replace(/[^0-9]/g,'');e.target.value=d?Number(d).toLocaleString('ko-KR'):'';render()});
+ $('.rate').addEventListener('input',render);$('.term').addEventListener('change',render);
+ root.querySelectorAll('.ac').forEach(b=>b.addEventListener('click',()=>{$('.amt').value=Number(b.dataset.v).toLocaleString('ko-KR');render()}));
+ root.querySelectorAll('.rc').forEach(b=>b.addEventListener('click',()=>{$('.rate').value=b.dataset.v;render()}));
+ render();
+});
+</script></body></html>
