@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getLoanProduct, LOAN_SECTIONS, isDisplayable, isPlausibleValue, formatLoanValue, decodeEntities } from '@/lib/loan/detail';
@@ -13,6 +14,8 @@ import { recommendLoans, MAX_RELATED } from '@/lib/loan/related';
 import { RelatedLoans } from './_components/related-loans';
 import { getLoanDiscovery } from '@/lib/loan/discovery';
 import { LoanDiscoverySection } from './_components/loan-discovery-section';
+import { InterestCalculator } from '@/components/ui/interest-calculator';
+import { loanCalculatorConfig } from '@/lib/loan/calculator-config';
 import { BoardBriefingSection } from '../../_components/board-briefing-section';
 import { RelatedGuides } from '../../_components/related-guides';
 import { Faq } from '../../_components/faq';
@@ -58,6 +61,8 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
   const rltsite = isDisplayable(raw.rltsite) ? String(raw.rltsite) : null;
   const related = recommendLoans(product, await getLoanSummaries(), MAX_RELATED);
   const discovery = await getLoanDiscovery(product);
+  // 만기일시상환 상품만 '대출 이자 계산기'를 '한눈에' 바로 아래 노출(계산은 브라우저).
+  const calculator = loanCalculatorConfig(product);
 
   const loanFaq = composeDetailFaq(
     buildLoanFaq({
@@ -101,19 +106,22 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ seq
             // '한눈에'는 핵심 수치라 색 틴트 메트릭 박스 그리드로(텍스트 단조로움 완화).
             if (section.title === '한눈에') {
               return (
-                <Card key={section.title}>
-                  <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">{section.title}</h2>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {visible.map((f) => (
-                      <div key={f.key} className="rounded-[14px] bg-[var(--color-soft)] px-4 py-3">
-                        <span className="mb-1 block text-xs text-[var(--color-muted)]">{f.label}</span>
-                        <strong className="block break-keep text-sm font-bold text-[var(--color-blue-dark)]">
-                          {formatLoanValue(raw[f.key], f.unit)}
-                        </strong>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
+                <Fragment key={section.title}>
+                  <Card>
+                    <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">{section.title}</h2>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {visible.map((f) => (
+                        <div key={f.key} className="rounded-[14px] bg-[var(--color-soft)] px-4 py-3">
+                          <span className="mb-1 block text-xs text-[var(--color-muted)]">{f.label}</span>
+                          <strong className="block break-keep text-sm font-bold text-[var(--color-blue-dark)]">
+                            {formatLoanValue(raw[f.key], f.unit)}
+                          </strong>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                  {calculator && <InterestCalculator variant="loan" {...calculator} />}
+                </Fragment>
               );
             }
 

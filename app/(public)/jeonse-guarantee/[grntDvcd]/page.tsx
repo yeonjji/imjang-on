@@ -15,6 +15,7 @@ import { composeDetailFaq } from '@/lib/faq/compose';
 import { buildJeonseFaq } from '@/lib/faq/builders/jeonse';
 import { shortSidoFromRegionCode } from '@/lib/region';
 import { Card } from '@/components/ui/card';
+import { InterestCalculator } from '@/components/ui/interest-calculator';
 import { SourceCaption } from '@/components/ui/source-caption';
 import { JsonLd, breadcrumbSchema, financialProductSchema } from '@/lib/seo/json-ld';
 import { SITE_URL } from '@/lib/site';
@@ -164,6 +165,9 @@ export default async function JeonseGuaranteeDetailPage({ params }: { params: Pr
               </dl>
             </Card>
           )}
+
+          {/* 보증상품이라 대출금리·상환방식 데이터가 없다 → 금리·금액 모두 직접 입력, 보증한도는 넘기지 않는다. */}
+          <InterestCalculator variant="jeonse" rate={{ kind: 'manual' }} />
 
           {regions.length > 0 && (
             <Card>
