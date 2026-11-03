@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import type { RelatedLoan } from '@/lib/loan/related';
+import { formatLoanRate } from '@/lib/loan/rate';
 
 export function RelatedLoanCard({ item }: { item: RelatedLoan }) {
   return (
@@ -17,7 +18,7 @@ export function RelatedLoanCard({ item }: { item: RelatedLoan }) {
           )}
         </div>
         <p className="text-sm text-[var(--color-muted)]">{item.summaryLine}</p>
-        {item.irt && <p className="mt-1 text-sm text-[var(--color-muted)]">금리 {item.irt}</p>}
+        {item.irt && <p className="mt-1 text-sm text-[var(--color-muted)]">금리 {formatLoanRate(item.irt)}</p>}
         {item.reasons.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {item.reasons.map((r) => (

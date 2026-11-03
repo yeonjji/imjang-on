@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatLoanValue, decodeEntities, isPlausibleValue } from '@/lib/loan/detail';
+import { formatLoanValue, decodeEntities, isPlausibleValue, LOAN_SECTIONS } from '@/lib/loan/detail';
 
 describe('decodeEntities', () => {
   it('HTML 엔티티를 디코딩한다', () => {
@@ -32,5 +32,14 @@ describe('isPlausibleValue', () => {
     expect(isPlausibleValue('2,3', '년')).toBe(true);
     expect(isPlausibleValue('5(최대 60개월, 보증기간 이내)', '년')).toBe(true); // 텍스트라 판단 안 함
     expect(isPlausibleValue('9% 이내', undefined)).toBe(true);
+  });
+});
+
+describe('LOAN_SECTIONS 금리', () => {
+  it("'한눈에' 금리는 % 단위로 표시한다(원천 정의 '금리(연, %)')", () => {
+    const irt = LOAN_SECTIONS.flatMap((s) => s.fields).find((f) => f.key === 'irt');
+    expect(irt?.unit).toBe('%');
+    expect(formatLoanValue('2.1~2.9', irt?.unit)).toBe('2.1~2.9%');
+    expect(formatLoanValue('은행금리-1.8', irt?.unit)).toBe('은행금리-1.8');
   });
 });
