@@ -1,6 +1,7 @@
 import type { FaqItem } from '@/lib/faq/data';
 import { formatAsOf } from '@/lib/format';
 import { decodeEntities } from '@/lib/text/decode-entities';
+import { formatLoanRate, isNumericRate } from '@/lib/loan/rate';
 
 const KINFA = '서민금융진흥원';
 
@@ -22,7 +23,12 @@ export function buildLoanFaq(p: LoanFaqInput): FaqItem[] {
 
   if (p.lnlmt != null || has(p.irt)) {
     const limit = p.lnlmt != null ? `대출한도는 최대 ${p.lnlmt.toLocaleString('ko-KR')}만원` : '';
-    const rate = has(p.irt) ? `${limit ? ', ' : ''}금리는 ${decodeEntities(p.irt.trim())}` : '';
+    const rateText = has(p.irt)
+      ? isNumericRate(p.irt)
+        ? `연 ${formatLoanRate(p.irt)}`
+        : decodeEntities(p.irt.trim())
+      : '';
+    const rate = rateText ? `${limit ? ', ' : ''}금리는 ${rateText}` : '';
     items.push({
       q: `${name}의 대출한도와 금리는 어떻게 되나요?`,
       a: `${limit}${rate} 수준입니다(상품 안내 기준). 실제 한도·금리는 소득·신용·담보 등 개인 상황에 따라 달라지니 취급기관에서 확인하세요.`,

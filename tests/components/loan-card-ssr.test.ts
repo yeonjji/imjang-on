@@ -47,7 +47,7 @@ describe('LoanCard SSR', () => {
     const html = renderToStaticMarkup(createElement(LoanCard, { item: base }));
     expect(html).toContain('서민금융진흥원');
     expect(html).toContain('공공기관');
-    expect(html).toContain('금리 3.5');
+    expect(html).toContain('금리 3.5%');
     expect(html).toContain('1,200');
     expect(html).toContain('상시');
     expect(html).toContain('href="/finance/1"');

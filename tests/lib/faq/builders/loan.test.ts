@@ -24,6 +24,11 @@ describe('buildLoanFaq', () => {
     expect(items.length).toBeGreaterThanOrEqual(2);
   });
 
+  it('숫자형 금리에는 "연 …%"를 붙인다(원천 정의: 금리(연, %))', () => {
+    const q = buildLoanFaq({ ...base, irt: '3.47' }).find((i) => i.q.includes('대출한도'));
+    expect(q!.a).toContain('금리는 연 3.47% 수준');
+  });
+
   it('omits 한도·금리 item when both lnlmt and irt are absent', () => {
     const items = buildLoanFaq({ ...base, lnlmt: null, irt: null });
     expect(items.some((i) => i.q.includes('대출한도'))).toBe(false);

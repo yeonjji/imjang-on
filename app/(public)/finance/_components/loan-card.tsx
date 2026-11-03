@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { targetLabels } from '@/lib/loan/categories';
+import { formatLoanRate } from '@/lib/loan/rate';
 import type { LoanSummary } from '@/lib/loan/list';
 
 export function LoanCard({ item }: { item: LoanSummary }) {
@@ -23,7 +24,7 @@ export function LoanCard({ item }: { item: LoanSummary }) {
         <p className="text-sm text-[var(--color-muted)]">
           {item.ofrinstnm ?? '—'}
           {item.instCtg ? ` · ${item.instCtg}` : ''}
-          {item.irt ? ` · 금리 ${item.irt}` : ''}
+          {item.irt ? ` · 금리 ${formatLoanRate(item.irt)}` : ''}
         </p>
         {hasSub && (
           <p className="mt-1 text-xs text-[var(--color-muted)]">

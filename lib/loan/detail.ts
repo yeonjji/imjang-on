@@ -17,7 +17,7 @@ export const LOAN_SECTIONS: LoanSection[] = [
     title: '한눈에',
     fields: [
       { key: 'lnlmt', label: '대출한도(만원)' },
-      { key: 'irt', label: '금리' },
+      { key: 'irt', label: '금리', unit: '%' }, // 원천 정의 '금리(연, %)' — lib/loan/rate.ts
       { key: 'irtCtg', label: '금리구분' },
       { key: 'maxtotlntrm', label: '최대 총 대출기간', unit: '년' },
       { key: 'maxdfrmtrm', label: '최대 거치기간', unit: '년' },
