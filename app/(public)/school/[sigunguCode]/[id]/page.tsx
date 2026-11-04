@@ -21,7 +21,6 @@ import { Faq } from '@/app/(public)/_components/faq';
 import { composeDetailFaq } from '@/lib/faq/compose';
 import { buildSchoolFaq } from '@/lib/faq/builders/school';
 import { JsonLd, placeSchema, breadcrumbSchema, provenanceNodes } from '@/lib/seo/json-ld';
-import { InsightSection } from '@/components/ui/insight-section';
 import { mapImageUrl } from '@/lib/seo/static-map';
 import { isNarrativeIndexable, robotsFor } from '@/lib/seo/indexable';
 import { qualifiedTitle } from '@/lib/seo/title';
@@ -102,8 +101,6 @@ export default async function SchoolDetailPage({ params }: Params) {
       : Promise.resolve({ stations: [], fallback: false }),
   ]);
 
-  const { narrative } = await loadSchoolInsight(schoolId);
-
   const others = otherList.rows.filter((s) => s.id !== school.id).slice(0, 4);
 
   const schoolFaq = composeDetailFaq(
@@ -157,7 +154,6 @@ export default async function SchoolDetailPage({ params }: Params) {
       </nav>
 
       <SchoolHero school={school} />
-      {narrative && <InsightSection sentences={narrative.sentences} />}
 
       <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-6">
