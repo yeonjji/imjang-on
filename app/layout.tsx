@@ -32,15 +32,6 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
-      <head>
-        {/* AdSense 인증·광고: 크롤러가 head에서 실제 <script>를 찾을 수 있도록
-            next/script(preload만 남김) 대신 원본 태그를 그대로 둔다. */}
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7716793757405086"
-          crossOrigin="anonymous"
-        />
-      </head>
       <body>
         <JsonLd data={[organizationSchema(), webSiteSchema()]} />
         {children}

@@ -1,5 +1,7 @@
 'use client';
 
+// (public) 레이아웃 위에 둔다 — 이 레이아웃이 AdSense를 싣기 때문에, 에러 화면이 그 안에서 렌더되면 광고 스크립트가 따라온다.
+
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { ErrorState, ERROR_QUICK_LINKS } from '@/components/error-state';
