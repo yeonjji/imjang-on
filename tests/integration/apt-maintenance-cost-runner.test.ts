@@ -84,15 +84,19 @@ describe('runCollect 우선순위·재시도', () => {
 describe('빈 응답 재시도 간격', () => {
   it('빈 응답은 마지막 수집 후 7일이 지나야 다시 받는다', async () => {
     const day = 86_400_000;
+    // 고정 YM은 월말+60일이 지나면 빈 응답이 확정으로 바뀌어 재시도 대상이 아니게 된다 → 지난달 기준.
+    const now = new Date();
+    const prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+    const ym = `${prev.getUTCFullYear()}${String(prev.getUTCMonth() + 1).padStart(2, '0')}`;
     await prisma.aptMaintenanceCost.createMany({
       data: [
-        row(`${PREFIX}0`, YM, { commonTotal: null, fetchedAt: new Date(Date.now() - 1 * day) }), // 1일 전 → 건너뜀
-        row(`${PREFIX}1`, YM, { commonTotal: null, fetchedAt: new Date(Date.now() - 8 * day) }), // 8일 전 → 재시도
-        ...codes.slice(2).map((c) => row(c, YM)),
+        row(`${PREFIX}0`, ym, { commonTotal: null, fetchedAt: new Date(Date.now() - 1 * day) }), // 1일 전 → 건너뜀
+        row(`${PREFIX}1`, ym, { commonTotal: null, fetchedAt: new Date(Date.now() - 8 * day) }), // 8일 전 → 재시도
+        ...codes.slice(2).map((c) => row(c, ym)),
       ],
     });
     const seen = new Set<string>();
-    await runCollect({ months: [YM], kaptCodes: codes, concurrency: 1, fetchItem: async (op, k, ym) => { seen.add(k); return fakeFetch(op, k, ym); } });
+    await runCollect({ months: [ym], kaptCodes: codes, concurrency: 1, fetchItem: async (op, k, ym) => { seen.add(k); return fakeFetch(op, k, ym); } });
     expect([...seen]).toEqual([`${PREFIX}1`]);
   });
 });
