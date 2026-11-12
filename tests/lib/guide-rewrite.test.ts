@@ -34,9 +34,9 @@ describe('validateGuideDraft', () => {
 });
 
 describe('content/guides 초안 전부', () => {
-  it('28편 모두 파싱·검증 통과', () => {
+  it('38편 모두 파싱·검증 통과', () => {
     const files = readdirSync('content/guides').filter((f) => f.endsWith('.md'));
-    expect(files.length).toBe(28);
+    expect(files.length).toBe(38); // 재작성 28 + 2026-11 신규 10
     for (const f of files) {
       const d = parseGuideDraft(readFileSync(`content/guides/${f}`, 'utf8'));
       expect(validateGuideDraft(d, { sourceName: 'x', sourceUrl: 'x' }), f).toEqual([]);
