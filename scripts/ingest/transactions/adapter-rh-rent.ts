@@ -1,4 +1,4 @@
-import { parseXml, getItems, getTotalCount, parseCommaNumber, parseYmd } from '@/scripts/ingest/xml-parse';
+import { parseXml, getItems, getTotalCount, parseCommaNumber, parseYmd, parseUseRRRight } from '@/scripts/ingest/xml-parse';
 import { PropertyType, DealType } from '@prisma/client';
 import type { Adapter, NormalizedTransaction } from '@/scripts/ingest/types';
 
@@ -37,7 +37,7 @@ export const adapterRhRent: Adapter = {
         monthlyRent,
         contractTerm: item.contractTerm ? String(item.contractTerm) : null,
         contractType: item.contractType ? String(item.contractType) : null,
-        useRRRight: item.useRRRight ? String(item.useRRRight) === 'Y' : null,
+        useRRRight: parseUseRRRight(item.useRRRight),
         preDeposit: parseCommaNumber(item.preDeposit),
         preMonthlyRent: parseCommaNumber(item.preMonthlyRent),
         sigunguCode,

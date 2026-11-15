@@ -36,7 +36,7 @@
         <aptSeq>28260-4712</aptSeq>
         <buildYear>2020</buildYear>
         <contractTerm> </contractTerm>
-        <contractType> </contractType>
+        <contractType>갱신</contractType>
         <dealYear>2023</dealYear>
         <dealMonth>2</dealMonth>
         <dealDay>15</dealDay>
@@ -50,7 +50,7 @@
         <sggCd>28275</sggCd>
         <preDeposit> </preDeposit>
         <preMonthlyRent> </preMonthlyRent>
-        <useRRRight> </useRRRight>
+        <useRRRight>사용</useRRRight>
       </item>
     </items>
     <totalCount>2</totalCount>
