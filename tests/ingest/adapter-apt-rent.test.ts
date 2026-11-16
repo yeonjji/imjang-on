@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { adapterAptRent } from '@/scripts/ingest/transactions/adapter-apt-rent';
+import { parseUseRRRight } from '@/scripts/ingest/xml-parse';
 
 const xml = readFileSync(resolve('tests/ingest/fixtures/apt-rent-sample.xml'), 'utf-8');
 
@@ -43,5 +44,22 @@ describe('adapter-apt-rent', () => {
     const { rows } = adapterAptRent.parseRows(xml, '28275');
     expect(rows[1].jibun).toBe('가-');
     expect(rows[1].roadName).toBe('봉오대로 270');
+  });
+});
+
+// 원천은 갱신요구권을 쓴 계약에 "사용", 나머지는 공백을 보낸다('Y'는 오지 않는다 — 2026-11 실측).
+// 'Y'로 비교하던 탓에 "사용"이 전부 false로 저장됐다.
+describe('갱신요구권 사용 여부', () => {
+  it('"사용"은 true, 공백은 null', () => {
+    const { rows } = adapterAptRent.parseRows(xml, '28275');
+    expect(rows[0].useRRRight).toBeNull();
+    expect(rows[1]).toMatchObject({ contractType: '갱신', useRRRight: true });
+  });
+
+  it('parseUseRRRight: "사용"만 true, 그 외 값은 null', () => {
+    expect(parseUseRRRight('사용')).toBe(true);
+    expect(parseUseRRRight('')).toBeNull();
+    expect(parseUseRRRight(undefined)).toBeNull();
+    expect(parseUseRRRight('미사용')).toBeNull();
   });
 });

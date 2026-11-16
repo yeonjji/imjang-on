@@ -47,6 +47,14 @@ export function parseCommaNumber(v: string | number | undefined | null): number 
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * 전월세 갱신요구권 사용 여부. 원천은 사용한 계약에만 "사용"을, 나머지는 공백을 보낸다
+ * ('Y'는 오지 않는다 — 2026-11 실측). 공백은 미사용과 해당 없음(신규)을 구분하지 않으므로 null.
+ */
+export function parseUseRRRight(v: unknown): true | null {
+  return String(v ?? '').trim() === '사용' ? true : null;
+}
+
 export function parseYmd(year: unknown, month: unknown, day: unknown): Date | null {
   const y = Number(year);
   const m = Number(month);
