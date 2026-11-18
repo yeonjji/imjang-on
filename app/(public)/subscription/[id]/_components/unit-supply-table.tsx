@@ -16,7 +16,8 @@ function supply(n: number | null): string {
   return n != null && n > 0 ? `${n.toLocaleString('ko-KR')}세대` : '-';
 }
 
-export function UnitSupplyTable({ units }: { units: SubscriptionUnit[] }) {
+// rental: 임대 공고는 금액을 '분양가'가 아니라 청약홈 원문 표기 '공급금액'으로 부른다(lib/subscription/rental.ts).
+export function UnitSupplyTable({ units, rental = false }: { units: SubscriptionUnit[]; rental?: boolean }) {
   if (units.length === 0) return null;
 
   return (
@@ -31,7 +32,7 @@ export function UnitSupplyTable({ units }: { units: SubscriptionUnit[] }) {
             <th className="px-4 py-3 font-semibold">면적</th>
             <th className="px-4 py-3 font-semibold">일반공급</th>
             <th className="px-4 py-3 font-semibold">특별공급</th>
-            <th className="px-6 py-3 text-right font-semibold">분양가</th>
+            <th className="px-6 py-3 text-right font-semibold">{rental ? '공급금액(최고)' : '분양가'}</th>
           </tr>
         </thead>
         <tbody>
@@ -72,11 +73,18 @@ export function UnitSupplyTable({ units }: { units: SubscriptionUnit[] }) {
         ))}
       </ul>
 
+      {rental && (
+        <p className="mx-6 mt-4 rounded-xl bg-[var(--color-soft)] px-4 py-2.5 text-sm text-[var(--color-text)]">
+          임대주택입니다. 공급금액은 청약홈에 실린 주택형별 최고 금액이며, 임대보증금·월 임대료·분양전환
+          가격은 입주자모집 공고문에서 확인하세요.
+        </p>
+      )}
+
       {/* 면적 기준(공급/전용)이 주택형마다 달라 셀마다 병기했다는 걸 밝힌다.
           분양가·실거래 비교 시 면적당 단가를 내지 않는 이유이기도 하다(price-comparison.tsx 참고). */}
       <p className="px-6 pb-4 pt-2 text-xs text-[var(--color-muted)]">
         면적은 공고 원자료에 실린 기준(공급 또는 전용)을 그대로 표기합니다. 주택형마다 기준이
-        다를 수 있어, 분양가와 실거래를 비교할 때 면적당 단가는 따로 계산하지 않았습니다.
+        다를 수 있어, {rental ? '공급금액과' : '분양가와'} 실거래를 비교할 때 면적당 단가는 따로 계산하지 않았습니다.
       </p>
       <div className="h-2" />
     </Card>

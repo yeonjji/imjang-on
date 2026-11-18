@@ -21,6 +21,7 @@ function item(over: Partial<SubscriptionListItem> = {}): SubscriptionListItem {
     maxPrice: 90000,
     minArea: 59,
     maxArea: 84,
+    isRental: false,
     ...over,
   };
 }

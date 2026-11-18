@@ -29,6 +29,7 @@ import { Faq } from '../../_components/faq';
 import { composeDetailFaq } from '@/lib/faq/compose';
 import { buildSubscriptionFaq } from '@/lib/faq/builders/subscription';
 import { subscriptionResultsFaq } from '@/lib/faq/builders/insight';
+import { isRentalNotice } from '@/lib/subscription/rental';
 
 export const revalidate = 21_600;
 // 동적 세그먼트는 generateStaticParams가 없으면 revalidate가 무시되고 매 요청 동적 렌더된다.
@@ -51,7 +52,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const indexable = notice.totalSupply != null || notice.units.length > 0;
   return {
     title: `${notice.name} 청약 · ${categoryLabel(notice.category)}`,
-    description: `${region}${notice.name} 청약${supply}. 접수 일정·주택형별 분양가와 주변 단지 시세를 한눈에 확인하세요.`,
+    description: `${region}${notice.name} 청약${supply}. 접수 일정·주택형별 ${isRentalNotice(notice.category, notice.rawJson) ? '공급금액과' : '분양가와'} 주변 단지 시세를 한눈에 확인하세요.`,
     alternates: { canonical: `/subscription/${notice.id}` },
     robots: indexable ? { index: true, follow: true } : { index: false, follow: true },
   };
@@ -64,6 +65,7 @@ export default async function SubscriptionDetailPage({ params }: Params) {
   const notice = await getSubscriptionById(noticeId);
   if (!notice) notFound();
 
+  const rental = isRentalNotice(notice.category, notice.rawJson);
   const coord = await getSubscriptionLatLng(noticeId);
   const [nearbyApts, infra, subway, results] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([]),
@@ -106,9 +108,9 @@ export default async function SubscriptionDetailPage({ params }: Params) {
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex min-w-0 flex-col gap-8">
           <ScheduleTimeline notice={notice} />
-          <UnitSupplyTable units={notice.units} />
+          <UnitSupplyTable units={notice.units} rental={rental} />
           <SubscriptionResultsSection data={results} category={notice.category} />
-          <PriceComparison address={notice.address} />
+          <PriceComparison address={notice.address} rental={rental} />
           <SourceCaption ids={['applyhome', 'lh-presub']} />
 
           {coord ? (
