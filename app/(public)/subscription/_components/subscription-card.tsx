@@ -11,6 +11,7 @@ import {
   formatAreaRange,
   type SubscriptionListItem,
 } from '@/lib/subscription';
+import { supplyAmountLabel } from '@/lib/subscription/rental';
 
 export function SubscriptionCard({ item }: { item: SubscriptionListItem }) {
   const st = deriveStatus(item.receiptBegin, item.receiptEnd);
@@ -47,7 +48,9 @@ export function SubscriptionCard({ item }: { item: SubscriptionListItem }) {
             </strong>
           </div>
           <div className="rounded-[14px] bg-[var(--color-soft)] px-4 py-3">
-            <span className="mb-1 block text-xs text-[var(--color-muted)]">분양가</span>
+            <span className="mb-1 block text-xs text-[var(--color-muted)]">
+              {supplyAmountLabel(item.isRental)}
+            </span>
             <strong className="block whitespace-nowrap text-sm font-bold text-[var(--color-blue-dark)]">
               {formatPriceRange(item.minPrice, item.maxPrice)}
             </strong>

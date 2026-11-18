@@ -15,7 +15,7 @@ const FALLBACK_LABEL = '시군구';
  * 없는 옛 스냅샷 데이터는 예전 문구로 폴백한다 — 줄 자체를 생략하지는 않는다, median/count는
  * 여전히 유효한 값이라서다.
  */
-export function PriceComparisonView({ local }: { local: SigunguMedian }) {
+export function PriceComparisonView({ local, rental = false }: { local: SigunguMedian; rental?: boolean }) {
   const groupLabel = typeof local.label === 'string' && local.label.length > 0 ? local.label : FALLBACK_LABEL;
 
   return (
@@ -26,8 +26,9 @@ export function PriceComparisonView({ local }: { local: SigunguMedian }) {
         <span className="text-[var(--color-muted)]"> · 거래 {local.count.toLocaleString('ko-KR')}건</span>
       </p>
       <p className="mt-3 text-xs text-[var(--color-muted)]">
-        분양가는 공고에 적힌 최고 공급금액입니다. 실거래는 전용면적 기준이라, 면적당 단가는
-        비교하지 않았습니다.
+        {rental
+          ? '이 공고는 임대주택이라, 공고의 공급금액을 매매 실거래가와 그대로 비교할 수 없습니다.'
+          : '분양가는 공고에 적힌 최고 공급금액입니다. 실거래는 전용면적 기준이라, 면적당 단가는 비교하지 않았습니다.'}
       </p>
       <SourceCaption ids={['applyhome', 'molit-rtms']} />
     </section>
@@ -44,7 +45,7 @@ export function PriceComparisonView({ local }: { local: SigunguMedian }) {
  * 전용 12%, UnitSupplyTable 참고) 실거래는 전용면적이라, 단가를 나란히 두면 비교가 안 된다.
  * 총액끼리만 본다.
  */
-export async function PriceComparison({ address }: { address: string | null }) {
+export async function PriceComparison({ address, rental = false }: { address: string | null; rental?: boolean }) {
   const sgg = await resolveSigunguFromAddress(address).catch(() => null);
   const snapshot = sgg ? await readSigunguMedianSnapshot().catch(() => null) : null;
   const local = sgg && snapshot ? snapshot[sgg] : null;
@@ -55,5 +56,5 @@ export async function PriceComparison({ address }: { address: string | null }) {
   // 않는다 — PriceComparisonView가 폴백 문구로 대체한다.
   if (!local || !Number.isFinite(local.median) || !Number.isFinite(local.count)) return null;
 
-  return <PriceComparisonView local={local} />;
+  return <PriceComparisonView local={local} rental={rental} />;
 }

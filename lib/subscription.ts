@@ -4,6 +4,7 @@ import type { SubscriptionCategory } from '@prisma/client';
 import type { SubscriptionNotice, SubscriptionUnit } from '@prisma/client';
 import { formatBillion, formatPyeong } from '@/lib/format';
 import { GONE_SUBSCRIPTION_IDS } from '@/lib/subscription/gone-ids';
+import { isRentalNotice } from '@/lib/subscription/rental';
 
 // ---- 카테고리 ----
 export interface CategoryMeta {
@@ -114,6 +115,8 @@ export interface SubscriptionListItem {
   maxPrice: number | null;
   minArea: number | null;
   maxArea: number | null;
+  /** 임대 공고면 금액을 '분양가'가 아니라 '공급금액'으로 표기한다(lib/subscription/rental.ts). */
+  isRental: boolean;
 }
 
 export interface SubscriptionListResult {
@@ -137,6 +140,8 @@ interface ListRow {
   max_price: number | null;
   min_area: number | null;
   max_area: number | null;
+  rent_secd_nm: string | null;
+  house_dtl_secd_nm: string | null;
 }
 
 function mapListRow(r: ListRow): SubscriptionListItem {
@@ -153,6 +158,10 @@ function mapListRow(r: ListRow): SubscriptionListItem {
     maxPrice: r.max_price,
     minArea: r.min_area,
     maxArea: r.max_area,
+    isRental: isRentalNotice(r.category, {
+      RENT_SECD_NM: r.rent_secd_nm,
+      HOUSE_DTL_SECD_NM: r.house_dtl_secd_nm,
+    }),
   };
 }
 
@@ -234,7 +243,9 @@ export async function getSubscriptionList(opts: {
       MIN(u."topAmount")::int AS min_price,
       MAX(u."topAmount")::int AS max_price,
       MIN(u.area)::float AS min_area,
-      MAX(u.area)::float AS max_area
+      MAX(u.area)::float AS max_area,
+      n."rawJson"->>'RENT_SECD_NM' AS rent_secd_nm,
+      n."rawJson"->>'HOUSE_DTL_SECD_NM' AS house_dtl_secd_nm
     FROM "SubscriptionNotice" n
     LEFT JOIN "SubscriptionUnit" u ON u."noticeId" = n.id
     ${where}
@@ -613,7 +624,9 @@ export async function getNearbySubscriptions(opts: {
         MIN(u."topAmount")::int AS min_price,
         MAX(u."topAmount")::int AS max_price,
         MIN(u.area)::float AS min_area,
-        MAX(u.area)::float AS max_area
+        MAX(u.area)::float AS max_area,
+        n."rawJson"->>'RENT_SECD_NM' AS rent_secd_nm,
+        n."rawJson"->>'HOUSE_DTL_SECD_NM' AS house_dtl_secd_nm
       FROM "SubscriptionNotice" n
       LEFT JOIN "SubscriptionUnit" u ON u."noticeId" = n.id
       WHERE n."regionName" = ${sido}
