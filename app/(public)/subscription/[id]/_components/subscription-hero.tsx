@@ -7,10 +7,12 @@ import {
   STATUS_TONE,
   type SubscriptionDetail,
 } from '@/lib/subscription';
+import { aptNoticeBadges } from '@/lib/subscription/apt-detail';
 
 export function SubscriptionHero({ notice }: { notice: SubscriptionDetail }) {
   const st = deriveStatus(notice.receiptBegin, notice.receiptEnd);
   const dday = ddayLabel(st);
+  const facts = aptNoticeBadges(notice.category, notice.rawJson);
 
   return (
     <div className="flex items-center gap-5 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-white p-6 shadow-[var(--shadow-soft)] md:p-7">
@@ -30,6 +32,16 @@ export function SubscriptionHero({ notice }: { notice: SubscriptionDetail }) {
           {notice.regionName ?? '지역 미정'}
           {notice.developer ? ` · 시행 ${notice.developer}` : ''}
         </p>
+        {facts.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-dashed border-[var(--color-line)] pt-3">
+            {facts.map((f) => (
+              <Badge key={f} tone="gray" className="whitespace-nowrap">
+                {f}
+              </Badge>
+            ))}
+            <span className="pl-1 text-xs text-[var(--color-muted)]">청약홈 공고 기준</span>
+          </div>
+        )}
       </div>
     </div>
   );

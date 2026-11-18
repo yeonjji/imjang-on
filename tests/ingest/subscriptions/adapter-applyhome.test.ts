@@ -48,6 +48,12 @@ describe('normalizeUnit (APT vs urbty 필드 차이)', () => {
     expect(u.specialSupply).toBe(Number(row.SPSPLY_HSHLDCO));
     expect(u.topAmount).toBe(Number(String(row.LTTOT_TOP_AMOUNT).replace(/,/g, '')));
   });
+  it('공고문으로 확인한 원자료 오기는 보정하고 rawJson은 원본을 둔다', () => {
+    const row = { HOUSE_MANAGE_NO: '2025820009', HOUSE_TY: '055.9700B', SUPLY_AR: '82.4825', LTTOT_TOP_AMOUNT: '693790' };
+    const u = normalizeUnit(row);
+    expect(u.topAmount).toBe(69379);
+    expect((u.rawJson as Record<string, unknown>).LTTOT_TOP_AMOUNT).toBe('693790');
+  });
   it('urbty: TP/EXCLUSE_AR/SUPLY_AMOUNT 로 폴백한다', () => {
     const row = load('applyhome-urbty-mdl.json').data[0];
     const u = normalizeUnit(row);
