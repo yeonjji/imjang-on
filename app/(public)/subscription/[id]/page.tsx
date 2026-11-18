@@ -30,6 +30,9 @@ import { composeDetailFaq } from '@/lib/faq/compose';
 import { buildSubscriptionFaq } from '@/lib/faq/builders/subscription';
 import { subscriptionResultsFaq } from '@/lib/faq/builders/insight';
 import { isRentalNotice } from '@/lib/subscription/rental';
+import { pricePerPyeong, specialSupplyBreakdown } from '@/lib/subscription/apt-detail';
+import { findAmountCorrection, type AmountCorrection } from '@/lib/subscription/amount-corrections';
+import { SpecialSupplyBreakdown } from './_components/special-supply-breakdown';
 
 export const revalidate = 21_600;
 // 동적 세그먼트는 generateStaticParams가 없으면 revalidate가 무시되고 매 요청 동적 렌더된다.
@@ -66,6 +69,14 @@ export default async function SubscriptionDetailPage({ params }: Params) {
   if (!notice) notFound();
 
   const rental = isRentalNotice(notice.category, notice.rawJson);
+  // APT 보강(lib/subscription/apt-detail.ts): 비APT·임대는 빈 값이라 화면이 그대로다.
+  const perPyeong = Object.fromEntries(notice.units.map((u) => [String(u.id), pricePerPyeong(notice, u)]));
+  const special = notice.category === 'APT' ? specialSupplyBreakdown(notice.units) : null;
+  // 어댑터가 이미 보정값을 저장한다 — 저장값이 보정값과 같은 주택형만 "보정함"을 밝힌다.
+  const corrections = notice.units.flatMap((u): AmountCorrection[] => {
+    const c = findAmountCorrection(notice.houseManageNo, u.houseType);
+    return c && u.topAmount === c.amount ? [c] : [];
+  });
   const coord = await getSubscriptionLatLng(noticeId);
   const [nearbyApts, infra, subway, results] = await Promise.all([
     coord ? getNearbyApartments(coord.lat, coord.lng) : Promise.resolve([]),
@@ -108,7 +119,14 @@ export default async function SubscriptionDetailPage({ params }: Params) {
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex min-w-0 flex-col gap-8">
           <ScheduleTimeline notice={notice} />
-          <UnitSupplyTable units={notice.units} rental={rental} />
+          <UnitSupplyTable
+            units={notice.units}
+            rental={rental}
+            perPyeong={perPyeong}
+            special={special}
+            corrections={corrections}
+          />
+          <SpecialSupplyBreakdown data={special} />
           <SubscriptionResultsSection data={results} category={notice.category} />
           <PriceComparison address={notice.address} rental={rental} />
           <SourceCaption ids={['applyhome', 'lh-presub']} />

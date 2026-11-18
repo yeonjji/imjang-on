@@ -1,5 +1,6 @@
 import { SubscriptionCategory, SubscriptionSource } from '@prisma/client';
 import { logger } from '@/lib/logger';
+import { correctedTopAmount } from '@/lib/subscription/amount-corrections';
 import { fetchOdcloud } from './http';
 import { parseFlexibleDate } from './dates';
 import type { NormalizedNotice, NormalizedUnit } from './types';
@@ -76,7 +77,12 @@ export function normalizeUnit(row: Record<string, unknown>): NormalizedUnit {
     area: num(row.SUPLY_AR) ?? num(row.EXCLUSE_AR),
     generalSupply: num(row.SUPLY_HSHLDCO),
     specialSupply: num(row.SPSPLY_HSHLDCO),
-    topAmount: num(row.LTTOT_TOP_AMOUNT) ?? num(row.SUPLY_AMOUNT),
+    // 공고문으로 확인한 원자료 오기만 보정(lib/subscription/amount-corrections.ts). rawJson은 원본 그대로.
+    topAmount: correctedTopAmount(
+      row.HOUSE_MANAGE_NO,
+      str(row.HOUSE_TY) ?? str(row.TP),
+      num(row.LTTOT_TOP_AMOUNT) ?? num(row.SUPLY_AMOUNT),
+    ),
     rawJson: row,
   };
 }
