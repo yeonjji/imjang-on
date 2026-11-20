@@ -1,6 +1,7 @@
 import type { Property } from '@prisma/client';
 import { formatBillion } from '@/lib/format';
 import { Card } from '@/components/ui/card';
+import { signedPct, type VolumeCompare } from '@/lib/apt-region/compare';
 
 const ITEMS = [
   {
@@ -37,12 +38,15 @@ const ITEMS = [
   },
 ] as const;
 
+// volume(아파트만): 단지 매매 거래량을 직전 12개월과, 같은 기간 시군구 아파트 매매 거래량 변화와 나란히 보여준다.
 export function DealSummarySection({
   property,
   id,
+  volume,
 }: {
   property: Property;
   id?: string;
+  volume?: VolumeCompare | null;
 }) {
   return (
     <Card id={id}>
@@ -54,6 +58,16 @@ export function DealSummarySection({
             <div>
               <p className="text-sm font-bold text-[var(--color-blue-dark)]">{item.title}</p>
               <p className="mt-1 text-sm text-[var(--color-muted)]">{item.getValue(property)}</p>
+              {item.title === '거래 분위기' && volume && (
+                <p className="mt-1 text-sm font-semibold text-[var(--color-blue-dark)]">
+                  매매 {volume.n12}건 · 직전 12개월 {volume.nPrev}건 대비 {signedPct(volume.changePct)}
+                  {volume.region && (
+                    <span className="font-normal text-[var(--color-muted)]">
+                      {' '}({volume.region.label} 아파트 {signedPct(volume.region.changePct)})
+                    </span>
+                  )}
+                </p>
+              )}
             </div>
           </div>
         ))}
