@@ -170,8 +170,16 @@ export interface AreaSummaryItem {
   /** 직전 12개월(12~24개월 전) 매매 평균. 평형 보정 변동률의 기준값. */
   avgPrior12m: number | null;
   countPrior12m: number;
-  /** 평형 보정 변동률(%): 최근 12개월 평균 vs 직전 12개월 평균. 각 기간 표본<2건이면 null(노이즈 방지). */
+  /**
+   * 평형 보정 변동률(%): 최근 12개월 vs 직전 12개월의 **㎡당 중간값**. 각 기간 표본<2건이면 null(노이즈 방지).
+   * 지역 비교(lib/apt-region, 시군구 같은 면적대 ㎡당 중간값)와 같은 기준이어야 나란히 놓을 수 있다(2026-11-20 결정).
+   */
   changePct12m: number | null;
+  /** 이 평형 거래들의 전용면적 중간값(㎡). 지역 비교의 면적대를 정한다. */
+  areaSqm: number | null;
+  /** 최근 12개월 ㎡당 매매가 중간값(만원). */
+  medPpa12m: number | null;
+  medPpaPrior12m: number | null;
   /** 동일 평형 12개월 전세 평균(만원)·건수. 전세가율의 분자. */
   jeonseAvg12m: number | null;
   jeonseCount12m: number;
@@ -192,18 +200,27 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
       cnt_prior: number;
       jeonse_avg: number | null;
       jeonse_cnt: number;
+      area_sqm: number | null;
+      med_ppa_12m: number | null;
+      med_ppa_prior: number | null;
     }>
   >`
     WITH base AS (
       SELECT
         ROUND("exclusiveArea"::numeric / 3.3057851239669422)::int AS area_pyeong,
         "dealAmount",
-        "contractDate"
+        "contractDate",
+        "exclusiveArea"::float AS sqm,
+        CASE WHEN "exclusiveArea" > 0 THEN "dealAmount"::float / "exclusiveArea"::float END AS ppa
       FROM "Transaction"
       WHERE "propertyId" = ${propertyId}
         AND "dealType" = 'SALE'
         AND "dealAmount" IS NOT NULL
         AND ${validDealSql()}
+    ),
+    sizes AS (
+      SELECT area_pyeong, percentile_cont(0.5) WITHIN GROUP (ORDER BY sqm) AS area_sqm
+      FROM base GROUP BY area_pyeong
     ),
     latest AS (
       SELECT DISTINCT ON (area_pyeong)
@@ -216,7 +233,8 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
       SELECT
         area_pyeong,
         AVG("dealAmount")::float AS avg_12m,
-        COUNT(*)::int AS cnt_12m
+        COUNT(*)::int AS cnt_12m,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY ppa) AS med_ppa_12m
       FROM base
       WHERE "contractDate" >= NOW() - INTERVAL '12 months'
       GROUP BY area_pyeong
@@ -225,7 +243,8 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
       SELECT
         area_pyeong,
         AVG("dealAmount")::float AS avg_prior,
-        COUNT(*)::int AS cnt_prior
+        COUNT(*)::int AS cnt_prior,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY ppa) AS med_ppa_prior
       FROM base
       WHERE "contractDate" >= NOW() - INTERVAL '24 months'
         AND "contractDate" < NOW() - INTERVAL '12 months'
@@ -252,8 +271,12 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
       p.avg_prior,
       COALESCE(p.cnt_prior, 0) AS cnt_prior,
       j.jeonse_avg,
-      COALESCE(j.jeonse_cnt, 0) AS jeonse_cnt
+      COALESCE(j.jeonse_cnt, 0) AS jeonse_cnt,
+      z.area_sqm,
+      s.med_ppa_12m,
+      p.med_ppa_prior
     FROM latest l
+    LEFT JOIN sizes z ON z.area_pyeong = l.area_pyeong
     LEFT JOIN stats s ON s.area_pyeong = l.area_pyeong
     LEFT JOIN prior p ON p.area_pyeong = l.area_pyeong
     LEFT JOIN jeonse j ON j.area_pyeong = l.area_pyeong
@@ -263,8 +286,8 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
   return rows.map((r) => {
     // 평형 보정 변동률: 국토부 미제공. 두 기간 각각 표본 2건 이상일 때만 계산(단건 노이즈 배제).
     const changePct12m =
-      r.avg_12m != null && r.avg_prior != null && r.cnt_12m >= 2 && r.cnt_prior >= 2
-        ? pctChange(r.avg_12m, r.avg_prior)
+      r.med_ppa_12m != null && r.med_ppa_prior != null && r.med_ppa_prior > 0 && r.cnt_12m >= 2 && r.cnt_prior >= 2
+        ? pctChange(r.med_ppa_12m, r.med_ppa_prior)
         : null;
     // 평형 일치 전세가율·갭: 국토부 미제공. 동일 평형 매매·전세 각 표본 2건 이상일 때만(평형 혼합 금지).
     const jeonseRatioPct =
@@ -283,6 +306,9 @@ export async function getAreaSummary(propertyId: bigint): Promise<AreaSummaryIte
       avgPrior12m: r.avg_prior,
       countPrior12m: r.cnt_prior,
       changePct12m,
+      areaSqm: r.area_sqm,
+      medPpa12m: r.med_ppa_12m,
+      medPpaPrior12m: r.med_ppa_prior,
       jeonseAvg12m: r.jeonse_avg,
       jeonseCount12m: r.jeonse_cnt,
       jeonseRatioPct,
@@ -537,4 +563,26 @@ export async function getUnifiedTransactions(
     })),
     totalCount,
   };
+}
+
+export interface SaleVolume {
+  /** 최근 12개월 유효 매매 수 */
+  n12: number;
+  /** 직전 12개월(12~24개월 전) 유효 매매 수 */
+  nPrev: number;
+}
+
+/** 단지 매매 거래량(최근 12개월 vs 직전 12개월). 지역 거래량 변동과 나란히 보여준다(lib/apt-region). */
+export async function getSaleVolume(propertyId: bigint): Promise<SaleVolume> {
+  const rows = await prisma.$queryRaw<Array<{ n12: number; nprev: number }>>`
+    SELECT
+      COUNT(*) FILTER (WHERE "contractDate" >= NOW() - INTERVAL '12 months')::int AS n12,
+      COUNT(*) FILTER (WHERE "contractDate" < NOW() - INTERVAL '12 months')::int AS nprev
+    FROM "Transaction"
+    WHERE "propertyId" = ${propertyId}
+      AND "dealType" = 'SALE'
+      AND "contractDate" >= NOW() - INTERVAL '24 months'
+      AND ${validDealSql()}
+  `;
+  return { n12: rows[0]?.n12 ?? 0, nPrev: rows[0]?.nprev ?? 0 };
 }

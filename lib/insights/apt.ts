@@ -4,6 +4,7 @@ import type { UnitMix, DensityFacts } from '@/lib/insights/apt-complex';
 import { formatBillion } from '@/lib/format';
 import { josa } from '@/lib/seo/josa';
 import { walkMinutes } from '@/lib/walk-minutes';
+import { signedPct, manwonPerSqm } from '@/lib/apt-region/compare';
 
 export interface AptInsightInput {
   name: string;
@@ -15,9 +16,27 @@ export interface AptInsightInput {
    * 최근 실거래와 **같은 평형**의 12개월 변동률(getAreaSummary 기준, 표본 2건 미만이면 null).
    * 월평균은 평형을 구분하지 않아 24평·45평이 섞이므로 산문 근거로 쓰지 않는다.
    */
-  saleTrend: { changePct: number; pyeong: number; sampleCount: number } | null;
+  saleTrend: {
+    changePct: number;
+    pyeong: number;
+    sampleCount: number;
+    /** 같은 기간 시군구 같은 면적대 ㎡당 중간값 변동률(아파트만, 표본 충분할 때). */
+    region?: { label: string; changePct: number } | null;
+  } | null;
   regionAvgSaleManwon: number | null;
   regionSampleCount: number;
+  /**
+   * 아파트 전용 가격 위치(시군구 같은 면적대 ㎡당 가격 분포 안의 백분위, lib/apt-region).
+   * undefined면 옛 방식(시군구 단지 평균 대비, 빌라·오피스텔)을 쓰고, null이면 표본이 모자라 표시하지 않는다.
+   */
+  regionPeer?: {
+    label: string;
+    pyeong: number;
+    bandLabel: string;
+    ppa: number;
+    position: string;
+    regionMedian: number;
+  } | null;
   nearestStation: { name: string; lines: string[]; distanceMeters: number } | null;
   infra: { label: string; count: number; capped: boolean }[];
   /** 색인 게이트 통과 후 서술을 다양화하는 고유 파생지표(있을 때만 문장 발화). */
@@ -49,11 +68,14 @@ function tTrend(d: AptInsightInput): Insight | null {
       : pct <= -3 ? `−${Math.abs(t.changePct).toFixed(1)}%`
       : '보합';
     const tone = pct >= 3 ? ('up' as const) : pct <= -3 ? ('down' as const) : undefined;
+    const region = t.region
+      ? ` 같은 기간 ${t.region.label} 같은 면적대 아파트의 ㎡당 중간값 변동은 ${signedPct(t.region.changePct)}입니다.`
+      : '';
     return { key: 'trend',
-      text: `${t.pyeong}평 최근 12개월 평균 실거래가는 직전 12개월 평균보다 ${body}(표본 ${t.sampleCount}건, 최근 실거래 ${formatBillion(last)}).`,
+      text: `${t.pyeong}평 최근 12개월 ㎡당 중간 거래가는 직전 12개월보다 ${body}(표본 ${t.sampleCount}건, 최근 실거래 ${formatBillion(last)}).${region}`,
       display: [{
         shape: 'tile', key: 'trend', label: '가격 흐름', value: tileValue,
-        sub: `${t.pyeong}평 · 직전 12개월 대비 · 표본 ${t.sampleCount}건`,
+        sub: `${t.pyeong}평 · 직전 12개월 대비 · 표본 ${t.sampleCount}건${t.region ? ` · ${t.region.label} 같은 면적대 ${signedPct(t.region.changePct)}` : ''}`,
         ...(tone ? { tone } : {}),
       }] };
   }
@@ -64,6 +86,7 @@ function tTrend(d: AptInsightInput): Insight | null {
 
 // P: 시군구 평균 대비 가격 위치 (벤치마크 = getRegionStats)
 function pPeer(d: AptInsightInput): Insight | null {
+  if (d.regionPeer !== undefined) return pPeerRegion(d.regionPeer);
   if (!d.saleDeals.length || d.regionAvgSaleManwon == null || d.regionSampleCount < 5) return null;
   // tTrend과 동일한 오름차순 정렬 후 마지막(=최근) 건을 써서 두 모듈의 '최근 실거래' 값을 일치시킨다.
   const sorted = [...d.saleDeals].sort((a, b) => a.contractDate.localeCompare(b.contractDate));
@@ -80,6 +103,19 @@ function pPeer(d: AptInsightInput): Insight | null {
       shape: 'tile', key: 'peer', label: '가격 수준',
       value: formatBillion(latest),
       sub: `${d.sigunguName} 평균 ${formatBillion(avg)}`,
+    }] };
+}
+
+// P(아파트): 시군구 같은 면적대 ㎡당 가격 분포 안에서 이 단지 평형의 위치.
+// 옛 방식은 평형 무관 최근 1건을 시군구 '단지 평균들의 평균'과 비교해 면적이 섞였다(2026-11 검토).
+function pPeerRegion(r: AptInsightInput['regionPeer']): Insight | null {
+  if (!r) return null;
+  return { key: 'peer',
+    text: `${r.pyeong}평 최근 12개월 ㎡당 거래가(${manwonPerSqm(r.ppa)})는 ${r.label} 같은 면적대(${r.bandLabel}) 아파트 매매 중 ${r.position} 수준입니다(지역 중간값 ${manwonPerSqm(r.regionMedian)}).`,
+    display: [{
+      shape: 'tile', key: 'peer', label: '가격 수준',
+      value: r.position,
+      sub: `${r.pyeong}평 ㎡당 ${manwonPerSqm(r.ppa)} · ${r.label} 같은 면적대 중간값 ${manwonPerSqm(r.regionMedian)}`,
     }] };
 }
 

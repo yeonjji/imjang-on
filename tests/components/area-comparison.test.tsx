@@ -14,6 +14,7 @@ const AREAS: AreaSummaryItem[] = [
     area: 34, lastPrice: 200000, avg12m: 195000, count12m: 12,
     avgPrior12m: 185000, countPrior12m: 10, changePct12m: 5.2,
     jeonseAvg12m: 107000, jeonseCount12m: 8, jeonseRatioPct: 55, gap12m: 90000,
+    areaSqm: 112.4, medPpa12m: 1735, medPpaPrior12m: 1650,
   },
 ];
 
@@ -35,5 +36,23 @@ describe('AreaComparison', () => {
     const out = renderToStaticMarkup(<AreaComparison areas={AREAS} />);
     expect(out).not.toContain('면적 구성');
     expect(out).not.toContain('단지 구성');
+  });
+
+  it('지역 위치가 있으면 평형 카드에 붙이고 막대 설명을 단다', () => {
+    const out = renderToStaticMarkup(
+      <AreaComparison
+        areas={AREAS}
+        regionLabel="강남구"
+        regionRows={{ 34: { bandLabel: '102~135㎡', ppa: 1735, pct: 40.2, position: '하위 40%', regionMedian: 1900, regionCount: 812, dist: [1200, 1500, 1900, 2300, 2700], regionChangePct: 3.21 } }}
+      />,
+    );
+    expect(out).toContain('강남구 같은 면적대(102~135㎡) 중 하위 40%');
+    expect(out).toContain('지역 변동 +3.2%');
+    expect(out).toContain('㎡당 중간값');
+  });
+
+  it('지역 위치가 없으면(빌라·오피스텔·표본 부족) 막대 설명도 없다', () => {
+    const out = renderToStaticMarkup(<AreaComparison areas={AREAS} />);
+    expect(out).not.toContain('같은 면적대');
   });
 });
