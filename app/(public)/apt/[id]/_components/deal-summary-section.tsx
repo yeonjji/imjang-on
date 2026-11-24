@@ -1,7 +1,8 @@
 import type { Property } from '@prisma/client';
 import { formatBillion } from '@/lib/format';
 import { Card } from '@/components/ui/card';
-import { signedPct, type VolumeCompare } from '@/lib/apt-region/compare';
+import Link from 'next/link';
+import { signedPct, type VolumeCompare, type RentCompare } from '@/lib/apt-region/compare';
 
 const ITEMS = [
   {
@@ -43,10 +44,15 @@ export function DealSummarySection({
   property,
   id,
   volume,
+  rent,
+  rentGuide,
 }: {
   property: Property;
   id?: string;
   volume?: VolumeCompare | null;
+  /** 아파트만: 전월세 계약을 시군구와 비교(갱신계약 5건 미만이면 null). */
+  rent?: RentCompare | null;
+  rentGuide?: { slug: string; title: string }[];
 }) {
   return (
     <Card id={id}>
@@ -72,6 +78,42 @@ export function DealSummarySection({
           </div>
         ))}
       </div>
+      {rent && (
+        <div className="mt-3 rounded-2xl border border-[var(--color-line)] p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">전월세 계약, {rent.label}와 비교</h3>
+            <span className="text-xs text-[var(--color-muted)]">최근 12개월 전월세 {rent.rent}건</span>
+          </div>
+          <table className="mt-3 w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-[var(--color-muted)]">
+                <th className="pb-1 font-semibold"><span className="sr-only">항목</span></th>
+                <th className="whitespace-nowrap pb-1 text-right font-semibold">이 단지</th>
+                <th className="break-keep pb-1 pl-2 text-right font-semibold">{rent.label}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rent.rows.map((r) => (
+                <tr key={r.label} className="border-t border-[var(--color-line)]">
+                  <th scope="row" className="break-keep py-2 pr-2 text-left font-normal text-[var(--color-text)]">{r.label}</th>
+                  <td className="whitespace-nowrap py-2 text-right font-bold text-[var(--color-blue-dark)]">
+                    {r.own}
+                    {r.ownN != null && <span className="ml-1 text-xs font-normal text-[var(--color-muted)]">({r.ownN}건)</span>}
+                  </td>
+                  <td className="whitespace-nowrap py-2 pl-2 text-right text-[var(--color-text)]">{r.region ?? '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-2 break-keep text-sm leading-relaxed text-[var(--color-text)]">{rent.summary}</p>
+          {rentGuide?.map((g) => (
+            <Link key={g.slug} href={`/guide/${g.slug}`} className="mt-2 block text-sm font-bold text-[var(--color-blue)] hover:underline">
+              관련 분석 · {g.title} →
+            </Link>
+          ))}
+          <p className="mt-2 text-xs text-[var(--color-muted)]">출처: 국토교통부 실거래가 공개시스템 · 계약구분·갱신요구권은 신고 항목 기준</p>
+        </div>
+      )}
     </Card>
   );
 }

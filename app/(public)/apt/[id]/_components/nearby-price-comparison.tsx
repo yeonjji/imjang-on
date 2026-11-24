@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { formatNearbyPrice, formatNearbyParts, type NearbyProperty, type NearbyTab } from '@/lib/nearby';
+import type { AgeBaseline } from '@/lib/apt-region/compare';
 
 const TABS: { key: NearbyTab; label: string }[] = [
   { key: 'ALL', label: '전체' },
@@ -16,10 +17,13 @@ export function NearbyPriceComparison({
   items,
   slug,
   id,
+  baseline,
 }: {
   items: NearbyProperty[];
   slug: 'apt' | 'officetel' | 'villa';
   id?: string;
+  /** 아파트만: 시군구 같은 면적대·같은 연식대 ㎡당 중간값 대비 이 단지 평형(lib/apt-region). */
+  baseline?: AgeBaseline | null;
 }) {
   const [tab, setTab] = useState<NearbyTab>('ALL');
 
@@ -46,6 +50,27 @@ export function NearbyPriceComparison({
           ))}
         </div>
       </div>
+      {baseline && (
+        <div className="mb-4 rounded-2xl border border-[var(--color-line)] p-4">
+          <p className="break-keep text-sm font-bold text-[var(--color-blue-dark)]">
+            같은 면적대 · 비슷한 연식({baseline.ageLabel}) {baseline.label} 아파트와 비교
+          </p>
+          <ul className="mt-2 grid gap-2 sm:grid-cols-3">
+            {baseline.rows.map((r) => (
+              <li key={r.pyeong} className="rounded-xl bg-[var(--color-soft)] px-3 py-2 text-sm">
+                <b className="text-[var(--color-blue-dark)]">{r.pyeong}평</b>{' '}
+                <span className="font-bold text-[var(--color-blue-dark)]">
+                  {r.diffPct >= 0.5 ? '+' : r.diffPct <= -0.5 ? '−' : ''}
+                  {Math.abs(Math.round(r.diffPct))}%
+                </span>
+                <span className="block text-xs text-[var(--color-muted)]">
+                  ㎡당 {Math.round(r.ppa).toLocaleString('ko-KR')}만원 · 지역 {Math.round(r.regionMedian).toLocaleString('ko-KR')}만원 ({r.regionCount.toLocaleString('ko-KR')}건)
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <ul className="divide-y divide-[var(--color-line)]">
         {items.map((it) => (
           <li key={it.id}>
