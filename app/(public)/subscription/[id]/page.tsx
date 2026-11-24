@@ -30,6 +30,8 @@ import { composeDetailFaq } from '@/lib/faq/compose';
 import { buildSubscriptionFaq } from '@/lib/faq/builders/subscription';
 import { subscriptionResultsFaq } from '@/lib/faq/builders/insight';
 import { isRentalNotice } from '@/lib/subscription/rental';
+import { isNewbuildEligible, readNewbuildSnapshot, newbuildView } from '@/lib/subscription/newbuild-compare';
+import { getSectionGuides } from '@/lib/apt-region/section-guides';
 import { pricePerPyeong, specialSupplyBreakdown } from '@/lib/subscription/apt-detail';
 import { findAmountCorrection, type AmountCorrection } from '@/lib/subscription/amount-corrections';
 import { SpecialSupplyBreakdown } from './_components/special-supply-breakdown';
@@ -69,6 +71,13 @@ export default async function SubscriptionDetailPage({ params }: Params) {
   if (!notice) notFound();
 
   const rental = isRentalNotice(notice.category, notice.rawJson);
+  // 분양가 ÷ 주변 신축 시세(야간 스냅샷 1행). 대상 밖이거나 표본 부족이면 기존 시군구 중위가 줄만.
+  const eligibleNb = isNewbuildEligible(notice);
+  const [nbSnap, guides] = await Promise.all([
+    eligibleNb ? readNewbuildSnapshot(noticeId).catch(() => null) : Promise.resolve(null),
+    eligibleNb ? getSectionGuides().catch(() => ({})) : Promise.resolve({}),
+  ]);
+  const newbuild = newbuildView(notice.units, nbSnap);
   // APT 보강(lib/subscription/apt-detail.ts): 비APT·임대는 빈 값이라 화면이 그대로다.
   const perPyeong = Object.fromEntries(notice.units.map((u) => [String(u.id), pricePerPyeong(notice, u)]));
   const special = notice.category === 'APT' ? specialSupplyBreakdown(notice.units) : null;
@@ -128,7 +137,7 @@ export default async function SubscriptionDetailPage({ params }: Params) {
           />
           <SpecialSupplyBreakdown data={special} />
           <SubscriptionResultsSection data={results} category={notice.category} />
-          <PriceComparison address={notice.address} rental={rental} />
+          <PriceComparison address={notice.address} rental={rental} newbuild={newbuild} guide={(guides as Awaited<ReturnType<typeof getSectionGuides>>).subscriptions?.[0] ?? null} />
           <SourceCaption ids={['applyhome', 'lh-presub']} />
 
           {coord ? (
