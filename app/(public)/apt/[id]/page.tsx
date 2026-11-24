@@ -8,6 +8,7 @@ import {
   getTransactionCounts,
   getCancelledTransactionCounts,
   getSameFloorComparison,
+  getSaleVolume,
 } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
 import { propertyAddress, metaRegionName, isPropertyIndexable } from '@/lib/property';
@@ -17,6 +18,8 @@ import { DealSummarySection } from './_components/deal-summary-section';
 import { UnifiedTransactionTable } from './_components/unified-transaction-table';
 import { PriceCharts } from './_components/price-charts';
 import { AreaComparison } from './_components/area-comparison';
+import { readAptRegionSnapshot } from '@/lib/apt-region/snapshot';
+import { areaRegionRow, volumeCompare, type AreaRegionRow } from '@/lib/apt-region/compare';
 import { ComplexInfoSection } from './_components/complex-info-section';
 import { MaintenanceCostSection } from './_components/maintenance-cost-section';
 import { getMaintenanceCostView } from '@/lib/maintenance-cost-query';
@@ -125,6 +128,11 @@ export default async function AptDetailPage({ params }: Params) {
   // 콜드 ISR 렌더마다 DB 왕복 1회가 그대로 TTFB에 더해진다.
   const dongUmd = umdOfProperty(property.address);
 
+  // 지역 비교(야간 스냅샷 1행 + 단지 거래량)는 아래 본 조회와 병렬로 시작한다.
+  const regionPromise = Promise.all([
+    safe(readAptRegionSnapshot(property.sigunguCode), null, 'readAptRegionSnapshot'),
+    safe(getSaleVolume(propId), { n12: 0, nPrev: 0 }, 'getSaleVolume'),
+  ]);
   const [unified, counts, cancelledCounts, chart, areaSummary, latestTx, nearby, sameFloor, floorPremium, flags, infra, nearbySubs, subway, dongTx] = await Promise.all([
     safe(getUnifiedTransactions(propId, { page: 1, perPage: 15 }), { rows: [], totalCount: 0 }, 'getUnifiedTransactions'),
     safe(getTransactionCounts(propId), { SALE: 0, JEONSE: 0, WOLSE: 0 }, 'getTransactionCounts'),
@@ -175,6 +183,14 @@ export default async function AptDetailPage({ params }: Params) {
       'getDongTransactions',
     ),
   ]);
+
+  const [regionSnap, saleVolume] = await regionPromise;
+  const regionRows: Record<number, AreaRegionRow> = {};
+  for (const a of areaSummary) {
+    const row = areaRegionRow(a, regionSnap);
+    if (row) regionRows[a.area] = row;
+  }
+  const volume = volumeCompare(saleVolume, regionSnap);
 
   const { narrative, dateModified, complexFacts } = await safe(
     loadAptInsight(propId),
@@ -243,7 +259,7 @@ export default async function AptDetailPage({ params }: Params) {
       {narrative && <InsightDashboard narrative={narrative} />}
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-8">
-          <DealSummarySection id="summary" property={property} />
+          <DealSummarySection id="summary" property={property} volume={volume} />
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">
@@ -279,7 +295,7 @@ export default async function AptDetailPage({ params }: Params) {
             dongLabel={dongUmd}
             propertyType={property.propertyType}
           />
-          <AreaComparison id="area" areas={areaSummary} />
+          <AreaComparison id="area" areas={areaSummary} regionRows={regionRows} regionLabel={regionSnap?.label} />
           <ComplexInfoSection id="complex" facts={complexFacts} unitMix={unitMix} now={now} />
           <MaintenanceCostSection id="maintenance-cost" view={maintenance} />
           <BuildingRegisterSection id="building-register" view={building} />

@@ -11,6 +11,7 @@ case "${1:?job key required}" in
     $DC pnpm tsx scripts/dashboard/refresh-snapshot.ts
     $DC pnpm tsx scripts/guide/refresh-data-snapshot.ts
     $DC pnpm tsx scripts/subscription/refresh-median-snapshot.ts
+    $DC pnpm tsx scripts/apt-region/refresh-snapshot.ts  # 아파트 상세 지역 비교(시군구×면적대 ㎡당 분포)
     ;;
   subscriptions)
     for s in apt urbty remndr pblpvt opt lh; do

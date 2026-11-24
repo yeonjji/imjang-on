@@ -31,7 +31,7 @@ describe('buildAptNarrative', () => {
 
   it('tTrend: 변동률은 평형이 일치하는 기준(saleTrend)을 쓰고 평형·표본을 함께 밝힌다', () => {
     const n = buildAptNarrative(base)!;
-    expect(n.text).toContain('34평 최근 12개월 평균 실거래가');
+    expect(n.text).toContain('34평 최근 12개월 ㎡당 중간 거래가');
     expect(n.text).toContain('표본 7건');
     expect(n.text).toContain('8% 높습니다'); // saleTrend.changePct=8 (원자료 first/last +13%이 아님)
     expect(n.text).not.toContain('13%'); // 원자료 기준을 쓰지 않음을 확인
@@ -40,7 +40,7 @@ describe('buildAptNarrative', () => {
 
   it('tTrend: 하락이면 낮다고 쓰고, 같은 평형 표본이 없으면 방향 단정 없이 최근가만', () => {
     const down = buildAptNarrative({ ...base, saleTrend: { changePct: -10, pyeong: 24, sampleCount: 3 } })!;
-    expect(down.text).toContain('24평 최근 12개월 평균 실거래가');
+    expect(down.text).toContain('24평 최근 12개월 ㎡당 중간 거래가');
     expect(down.text).toContain('10% 낮습니다');
 
     const none = buildAptNarrative({ ...base, saleTrend: null })!;
@@ -195,5 +195,30 @@ describe('파생지표 서술(floor/flags) — 색인 게이트 통과 후에만
 
   it('파생지표 부재(기존 입력)면 fired는 core 4키 그대로 — 하위호환', () => {
     expect(buildAptNarrative(base)!.fired).toEqual(['scale', 'trend', 'peer', 'access']);
+  });
+});
+
+describe('buildAptNarrative — 아파트 지역 비교(lib/apt-region)', () => {
+  const peer = { label: '의정부시', pyeong: 23, bandLabel: '60~85㎡', ppa: 395.8, position: '하위 22%', regionMedian: 485.5 };
+
+  it('regionPeer가 있으면 가격 수준 타일을 시군구 같은 면적대 백분위로 그린다', () => {
+    const n = buildAptNarrative({ ...base, regionPeer: peer })!;
+    expect(n.fired).toContain('peer');
+    expect(n.text).toContain('23평 최근 12개월 ㎡당 거래가(396만원)는 의정부시 같은 면적대(60~85㎡) 아파트 매매 중 하위 22% 수준입니다');
+    const tile = n.display!.find((u) => u.key === 'peer')!;
+    expect(tile).toMatchObject({ label: '가격 수준', value: '하위 22%' });
+    expect(n.text).not.toContain('평균보다'); // 옛 단지 평균 비교 문장이 섞이지 않는다
+  });
+
+  it('regionPeer가 null(표본 부족)이면 옛 방식으로 돌아가지 않고 가격 수준을 생략한다', () => {
+    const n = buildAptNarrative({ ...base, regionPeer: null })!;
+    expect(n.fired).not.toContain('peer');
+  });
+
+  it('가격 흐름에 같은 기간 지역 같은 면적대 변동을 나란히 붙인다', () => {
+    const n = buildAptNarrative({ ...base, saleTrend: { changePct: 4.8, pyeong: 26, sampleCount: 5, region: { label: '의정부시', changePct: 3.21 } } })!;
+    expect(n.text).toContain('같은 기간 의정부시 같은 면적대 아파트의 ㎡당 중간값 변동은 +3.2%입니다');
+    const tile = n.display!.find((u) => u.key === 'trend') as { sub?: string };
+    expect(tile.sub).toContain('의정부시 같은 면적대 +3.2%');
   });
 });
