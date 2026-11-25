@@ -34,3 +34,26 @@ describe('PriceComparisonView SSR — label 폴백/표기', () => {
     expect(html).not.toContain('같은 시군구');
   });
 });
+
+describe('PriceComparisonView SSR — 같은 가격대 공고 경쟁률', () => {
+  // 연산역 수자인 센트리오(15800) 실측 축약: 부산 27건, 중간값 0.39, 청약 결과 수집 전
+  const peers = {
+    sido: '부산', lo: 872.6, hi: 1308.9, n: 27, med: 0.39, own: null,
+    top: [{ id: '2977', name: '가야역 롯데캐슬 스카이엘', ym: '2025.07', ppa: 1094.9, rate: 0.24 }],
+  };
+  it('중간값·비교 건수·가까운 공고 링크를 그리고, 이 공고 결과가 없으면 수집 전으로 표시', () => {
+    const html = renderToStaticMarkup(
+      createElement(PriceComparisonView, { local: null, peers, guide: { slug: 'g', title: '분양가는 주변 시세보다 정말 쌀까' } }),
+    );
+    expect(html).toContain('같은 가격대 공고 경쟁률');
+    expect(html).toContain('0.39 : 1');
+    expect(html).toContain('공고 27건');
+    expect(html).toContain('이 공고(청약 결과 수집 전)');
+    expect(html).toContain('href="/subscription/2977"');
+    expect(html).toContain('관련 분석 · 분양가는 주변 시세보다 정말 쌀까');
+  });
+  it('peers가 없으면 박스를 그리지 않는다', () => {
+    const html = renderToStaticMarkup(createElement(PriceComparisonView, { local: { median: 1, count: 1, label: '수원시' } }));
+    expect(html).not.toContain('같은 가격대 공고 경쟁률');
+  });
+});
