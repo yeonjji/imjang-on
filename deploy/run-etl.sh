@@ -19,6 +19,8 @@ case "${1:?job key required}" in
     done
     # 청약 결과(경쟁률·가점·특별공급): 공고 수집 뒤, 30분 예산
     $DC pnpm tsx scripts/ingest/subscription-results/runner.ts || echo "WARN: subscription-results failed"
+    # 공고별 분양가 ÷ 주변 신축 시세(새 공고·공고 후 60일 이내만 계산)
+    $DC pnpm tsx scripts/subscription/refresh-newbuild-snapshot.ts || echo "WARN: subscription-newbuild failed"
     ;;
   amenities)
     # school=NEIS_API_KEY / childcare=CHILDCARE_API_KEY 필요(미설정 시 해당 소스만 실패, 나머지 정상)
