@@ -4,10 +4,12 @@ import { formatBillion } from '@/lib/format';
 import { SourceCaption } from '@/components/ui/source-caption';
 import Link from 'next/link';
 import type { NewbuildView } from '@/lib/subscription/newbuild-compare';
+import type { PeerCompetitionSnapshot } from '@/lib/subscription/peer-competition';
 
 const PYEONG = 3.3058;
 const won33 = (ppa: number) => `${Math.round(ppa * PYEONG).toLocaleString('ko-KR')}만원`;
 const ratio = (r: number) => `${(Math.round(r * 100) / 100).toFixed(2)}배`;
+const cmpRate = (r: number) => `${r.toFixed(2)} : 1`;
 
 /** label이 없거나 빈 값일 때(이 필드가 생기기 전에 쓰인 스냅샷) 쓰는 예전 문구. */
 const FALLBACK_LABEL = '시군구';
@@ -25,12 +27,15 @@ export function PriceComparisonView({
   local,
   rental = false,
   newbuild = null,
+  peers = null,
   guide,
 }: {
   local: SigunguMedian | null;
   rental?: boolean;
   /** APT 분양주택만: 주택형별 분양가 ÷ 반경 2km 준공 10년 이내 아파트 같은 면적대 ㎡당 중간값. */
   newbuild?: NewbuildView | null;
+  /** APT 분양주택만: 같은 시도·비슷한 ㎡당 분양가 공고의 1순위 해당지역 경쟁률. */
+  peers?: PeerCompetitionSnapshot | null;
   guide?: { slug: string; title: string } | null;
 }) {
   const groupLabel = local && typeof local.label === 'string' && local.label.length > 0 ? local.label : FALLBACK_LABEL;
@@ -110,13 +115,56 @@ export function PriceComparisonView({
             : '분양가는 공고에 적힌 최고 공급금액입니다. 실거래는 전용면적 기준이라, 면적당 단가는 비교하지 않았습니다.'}
         </p>
       )}
-      {newbuild && guide && (
+      {peers && <PeerCompetition peers={peers} />}
+      {(newbuild || peers) && guide && (
         <Link href={`/guide/${guide.slug}`} className="mt-3 block text-sm font-bold text-[var(--color-blue)] hover:underline">
           관련 분석 · {guide.title} →
         </Link>
       )}
       <SourceCaption ids={['applyhome', 'molit-rtms']} />
     </section>
+  );
+}
+
+/** 같은 가격대 공고 경쟁률. 가격은 위 표와 같은 전용 3.3㎡당으로 보여준다. */
+function PeerCompetition({ peers }: { peers: PeerCompetitionSnapshot }) {
+  return (
+    <div className="mt-4 rounded-2xl bg-[var(--color-soft)] p-4">
+      <h3 className="text-sm font-bold text-[var(--color-blue-dark)]">같은 가격대 공고 경쟁률</h3>
+      <p className="mt-0.5 break-keep text-xs text-[var(--color-muted)]">
+        {peers.sido} · 최근 24개월 · 분양가 전용 3.3㎡당 {won33(peers.lo)}~{won33(peers.hi)} 공고 {peers.n}건
+      </p>
+      <dl className="mt-3 flex flex-wrap gap-x-8 gap-y-2">
+        <div>
+          <dd className="text-lg font-bold text-[var(--color-blue-dark)] tabular-nums">{cmpRate(peers.med)}</dd>
+          <dt className="text-xs text-[var(--color-muted)]">비교 공고 1순위 해당지역 경쟁률 중간값</dt>
+        </div>
+        <div>
+          <dd className="text-lg font-bold text-[var(--color-blue-dark)] tabular-nums">{peers.own != null ? cmpRate(peers.own) : '—'}</dd>
+          <dt className="text-xs text-[var(--color-muted)]">{peers.own != null ? '이 공고' : '이 공고(청약 결과 수집 전)'}</dt>
+        </div>
+      </dl>
+      <p className="mt-3 text-xs font-semibold text-[var(--color-muted)]">분양가가 가까운 공고</p>
+      <ul className="mt-1.5 divide-y divide-[var(--color-line)] rounded-xl border border-[var(--color-line)] bg-white">
+        {peers.top.map((p) => (
+          <li key={p.id} className="flex items-start justify-between gap-3 px-3 py-2.5 text-sm">
+            <div className="min-w-0">
+              <Link href={`/subscription/${p.id}`} className="break-keep font-semibold text-[var(--color-blue)] hover:underline">
+                {p.name}
+              </Link>
+              <span className="block text-xs text-[var(--color-muted)] tabular-nums">
+                {p.ym} 공고 · 전용 3.3㎡당 {won33(p.ppa)}
+              </span>
+            </div>
+            <span className="shrink-0 font-bold text-[var(--color-blue-dark)] tabular-nums">{cmpRate(p.rate)}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-xs leading-relaxed text-[var(--color-muted)]">
+        경쟁률은 입지·공급 규모·시기에 따라 크게 달라지는 참고값입니다. 1 : 1 미만은 1순위 해당지역 접수가 공급보다 적었다는
+        뜻입니다. 조합원 취소분 공고와 해당지역에 일부만 배정한 공고는 비교에서 뺐습니다.
+      </p>
+    </div>
   );
 }
 
@@ -134,11 +182,13 @@ export async function PriceComparison({
   address,
   rental = false,
   newbuild = null,
+  peers = null,
   guide = null,
 }: {
   address: string | null;
   rental?: boolean;
   newbuild?: NewbuildView | null;
+  peers?: PeerCompetitionSnapshot | null;
   guide?: { slug: string; title: string } | null;
 }) {
   const sgg = await resolveSigunguFromAddress(address).catch(() => null);
@@ -150,7 +200,7 @@ export async function PriceComparison({
   // 렌더 전에 형태를 확인해 어긋나면 줄 자체를 생략한다. label은 없어도(옛 스냅샷) 던지지
   // 않는다 — PriceComparisonView가 폴백 문구로 대체한다.
   const localOk = !!local && Number.isFinite(local.median) && Number.isFinite(local.count);
-  if (!localOk && !newbuild) return null;
+  if (!localOk && !newbuild && !peers) return null;
 
-  return <PriceComparisonView local={localOk ? local : null} rental={rental} newbuild={newbuild} guide={guide} />;
+  return <PriceComparisonView local={localOk ? local : null} rental={rental} newbuild={newbuild} peers={peers} guide={guide} />;
 }

@@ -31,6 +31,7 @@ import { buildSubscriptionFaq } from '@/lib/faq/builders/subscription';
 import { subscriptionResultsFaq } from '@/lib/faq/builders/insight';
 import { isRentalNotice } from '@/lib/subscription/rental';
 import { isNewbuildEligible, readNewbuildSnapshot, newbuildView } from '@/lib/subscription/newbuild-compare';
+import { readPeerCompetitionSnapshot } from '@/lib/subscription/peer-competition';
 import { getSectionGuides } from '@/lib/apt-region/section-guides';
 import { pricePerPyeong, specialSupplyBreakdown } from '@/lib/subscription/apt-detail';
 import { findAmountCorrection, type AmountCorrection } from '@/lib/subscription/amount-corrections';
@@ -73,8 +74,9 @@ export default async function SubscriptionDetailPage({ params }: Params) {
   const rental = isRentalNotice(notice.category, notice.rawJson);
   // 분양가 ÷ 주변 신축 시세(야간 스냅샷 1행). 대상 밖이거나 표본 부족이면 기존 시군구 중위가 줄만.
   const eligibleNb = isNewbuildEligible(notice);
-  const [nbSnap, guides] = await Promise.all([
+  const [nbSnap, peers, guides] = await Promise.all([
     eligibleNb ? readNewbuildSnapshot(noticeId).catch(() => null) : Promise.resolve(null),
+    eligibleNb ? readPeerCompetitionSnapshot(noticeId).catch(() => null) : Promise.resolve(null),
     eligibleNb ? getSectionGuides().catch(() => ({})) : Promise.resolve({}),
   ]);
   const newbuild = newbuildView(notice.units, nbSnap);
@@ -137,7 +139,7 @@ export default async function SubscriptionDetailPage({ params }: Params) {
           />
           <SpecialSupplyBreakdown data={special} />
           <SubscriptionResultsSection data={results} category={notice.category} />
-          <PriceComparison address={notice.address} rental={rental} newbuild={newbuild} guide={(guides as Awaited<ReturnType<typeof getSectionGuides>>).subscriptions?.[0] ?? null} />
+          <PriceComparison address={notice.address} rental={rental} newbuild={newbuild} peers={peers} guide={(guides as Awaited<ReturnType<typeof getSectionGuides>>).subscriptions?.[0] ?? null} />
           <SourceCaption ids={['applyhome', 'lh-presub']} />
 
           {coord ? (
