@@ -9,6 +9,7 @@ import {
   getCancelledTransactionCounts,
   getSameFloorComparison,
   getSaleVolume,
+  getRentStats,
 } from '@/lib/transaction';
 import { getNearbyProperties } from '@/lib/nearby';
 import { propertyAddress, metaRegionName, isPropertyIndexable } from '@/lib/property';
@@ -19,7 +20,9 @@ import { UnifiedTransactionTable } from './_components/unified-transaction-table
 import { PriceCharts } from './_components/price-charts';
 import { AreaComparison } from './_components/area-comparison';
 import { readAptRegionSnapshot } from '@/lib/apt-region/snapshot';
-import { areaRegionRow, volumeCompare, type AreaRegionRow } from '@/lib/apt-region/compare';
+import { areaRegionRow, volumeCompare, rentCompare, ageBaseline, type AreaRegionRow } from '@/lib/apt-region/compare';
+import { getSectionGuides } from '@/lib/apt-region/section-guides';
+import { SectionGuideLink } from './_components/section-guide-link';
 import { ComplexInfoSection } from './_components/complex-info-section';
 import { MaintenanceCostSection } from './_components/maintenance-cost-section';
 import { getMaintenanceCostView } from '@/lib/maintenance-cost-query';
@@ -132,6 +135,8 @@ export default async function AptDetailPage({ params }: Params) {
   const regionPromise = Promise.all([
     safe(readAptRegionSnapshot(property.sigunguCode), null, 'readAptRegionSnapshot'),
     safe(getSaleVolume(propId), { n12: 0, nPrev: 0 }, 'getSaleVolume'),
+    safe(getRentStats(propId), { rent: 0, wolse: 0, renew: 0, rrUsed: 0, jeonseRenewN: 0, jeonseRenewIncPct: null }, 'getRentStats'),
+    safe(getSectionGuides(), {}, 'getSectionGuides'),
   ]);
   const [unified, counts, cancelledCounts, chart, areaSummary, latestTx, nearby, sameFloor, floorPremium, flags, infra, nearbySubs, subway, dongTx] = await Promise.all([
     safe(getUnifiedTransactions(propId, { page: 1, perPage: 15 }), { rows: [], totalCount: 0 }, 'getUnifiedTransactions'),
@@ -184,13 +189,15 @@ export default async function AptDetailPage({ params }: Params) {
     ),
   ]);
 
-  const [regionSnap, saleVolume] = await regionPromise;
+  const [regionSnap, saleVolume, rentStats, guides] = await regionPromise;
   const regionRows: Record<number, AreaRegionRow> = {};
   for (const a of areaSummary) {
     const row = areaRegionRow(a, regionSnap);
     if (row) regionRows[a.area] = row;
   }
   const volume = volumeCompare(saleVolume, regionSnap);
+  const rent = rentCompare(rentStats, regionSnap);
+  const baseline = ageBaseline(areaSummary, property.builtYear, regionSnap);
 
   const { narrative, dateModified, complexFacts } = await safe(
     loadAptInsight(propId),
@@ -259,7 +266,7 @@ export default async function AptDetailPage({ params }: Params) {
       {narrative && <InsightDashboard narrative={narrative} />}
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="flex flex-col gap-8">
-          <DealSummarySection id="summary" property={property} volume={volume} />
+          <DealSummarySection id="summary" property={property} volume={volume} rent={rent} rentGuide={guides.rent} />
           {coord && (
             <Card id="map">
               <h2 className="mb-4 text-lg font-bold text-[var(--color-blue-dark)]">
@@ -298,11 +305,13 @@ export default async function AptDetailPage({ params }: Params) {
           <AreaComparison id="area" areas={areaSummary} regionRows={regionRows} regionLabel={regionSnap?.label} />
           <ComplexInfoSection id="complex" facts={complexFacts} unitMix={unitMix} now={now} />
           <MaintenanceCostSection id="maintenance-cost" view={maintenance} />
+          {maintenance && <SectionGuideLink items={guides.maintenance} />}
           <BuildingRegisterSection id="building-register" view={building} />
+          {building && <SectionGuideLink items={guides.building} />}
           <SameFloorObservation id="same-floor" pair={sameFloor} />
           <FloorPremiumView id="floor-premium" data={floorPremium} />
           <TransactionFlagsView id="data-notes" data={flags} />
-          <NearbyPriceComparison id="nearby" items={nearby} slug="apt" />
+          <NearbyPriceComparison id="nearby" items={nearby} slug="apt" baseline={baseline} />
           {shortSido && nearbySubs && nearbySubs.items.length > 0 && (
             <NearbySubscriptions
               id="subscriptions-nearby"
@@ -311,8 +320,11 @@ export default async function AptDetailPage({ params }: Params) {
               sido={shortSido}
             />
           )}
+          {shortSido && nearbySubs && nearbySubs.items.length > 0 && <SectionGuideLink items={guides.subscriptions} />}
           <SchoolZoneSection id="school-zone" view={schoolZone} />
+          {schoolZone && <SectionGuideLink items={guides.school} />}
           <NearbySubway data={subway} />
+          {subway.stations.length > 0 && <SectionGuideLink items={guides.subway} />}
           <NearbyInfra categories={infra} />
           <BoardBriefingSection />
           <RelatedGuides pageKey="apt" />

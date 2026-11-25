@@ -37,6 +37,8 @@ export interface RegionBand {
   q: number[] | null;
   /** 직전 12개월 ㎡당 가격 중간값. nPrev가 MIN_REGION_SAMPLE 미만이면 null. */
   medPrev: number | null;
+  /** 연식대별 최근 12개월 ㎡당 중간값(표본 MIN_REGION_SAMPLE 이상만). PR2 이전 스냅샷에는 없다. */
+  age?: Partial<Record<1 | 2 | 3 | 4 | 5, { n12: number; med: number }>>;
 }
 
 export interface AptRegionSnapshot {
@@ -45,6 +47,8 @@ export interface AptRegionSnapshot {
   sale12: number;
   salePrev: number;
   bands: Partial<Record<AreaBandKey, RegionBand>>;
+  /** 최근 12개월 아파트 전월세 계약 지표(PR2 이전 스냅샷에는 없다). */
+  rent?: RentStats;
 }
 
 /** 지역 같은 면적대 거래 중 이 값보다 싼 거래의 비율(0~100). 분위점 사이는 선형 보간. */
@@ -156,4 +160,138 @@ export function volumeCompare(
     changePct,
     region: snap && regionPct != null ? { label: snap.label, changePct: regionPct } : null,
   };
+}
+
+// ---- 연식대(PR2: 같은 면적·비슷한 연식 기준선) ----
+export const AGE_BANDS = [
+  { key: 1, label: '준공 5년 이내', max: 5 },
+  { key: 2, label: '준공 6~10년', max: 10 },
+  { key: 3, label: '준공 11~20년', max: 20 },
+  { key: 4, label: '준공 21~30년', max: 30 },
+  { key: 5, label: '준공 31년 이상', max: Infinity },
+] as const;
+export type AgeBandKey = (typeof AGE_BANDS)[number]['key'];
+
+/** 경과 연수 = 올해 − 준공연도. SQL(snapshot.ts)과 같은 경계를 쓴다. */
+export function ageBand(builtYear: number, year = new Date().getFullYear()): AgeBandKey {
+  const age = year - builtYear;
+  return AGE_BANDS.find((b) => age <= b.max)!.key;
+}
+export function ageBandLabel(key: AgeBandKey): string {
+  return AGE_BANDS.find((b) => b.key === key)!.label;
+}
+
+export interface AgeBaselineRow {
+  pyeong: number;
+  ppa: number;
+  regionMedian: number;
+  regionCount: number;
+  diffPct: number;
+}
+export interface AgeBaseline {
+  label: string;
+  ageLabel: string;
+  rows: AgeBaselineRow[];
+}
+
+/** 주변 단지 비교 상단 기준선: 평형별로 시군구 같은 면적대·같은 연식대 ㎡당 중간값 대비. 최대 3행. */
+export function ageBaseline(
+  areas: { area: number; areaSqm: number | null; medPpa12m: number | null; count12m: number }[],
+  builtYear: number | null,
+  snap: AptRegionSnapshot | null,
+): AgeBaseline | null {
+  if (!snap || builtYear == null) return null;
+  const ak = ageBand(builtYear);
+  const rows: AgeBaselineRow[] = [];
+  for (const a of areas) {
+    if (a.areaSqm == null || a.medPpa12m == null || a.count12m < MIN_ROW_SAMPLE) continue;
+    const cell = snap.bands[areaBand(a.areaSqm)]?.age?.[ak];
+    if (!cell || cell.n12 < MIN_REGION_SAMPLE) continue;
+    rows.push({ pyeong: a.area, ppa: a.medPpa12m, regionMedian: cell.med, regionCount: cell.n12, diffPct: pctChange(a.medPpa12m, cell.med) });
+    if (rows.length === 3) break;
+  }
+  return rows.length ? { label: snap.label, ageLabel: ageBandLabel(ak), rows } : null;
+}
+
+// ---- 전월세 계약(PR2: 갱신 블록) ----
+export interface RentStats {
+  /** 최근 12개월 전세+월세 계약 수 */
+  rent: number;
+  wolse: number;
+  /** 계약구분 '갱신' */
+  renew: number;
+  /** 갱신요구권 사용 */
+  rrUsed: number;
+  /** 종전 보증금이 있는 전세 갱신 계약 수와 보증금 인상률 중간값(%) */
+  jeonseRenewN: number;
+  jeonseRenewIncPct: number | null;
+}
+
+/** 단지 갱신계약이 이보다 적으면 블록을 그리지 않는다(2026-11-20 결정). */
+export const MIN_RENEW = 5;
+/** 인상률 행을 그리는 단지 전세 갱신 최소 건수. */
+export const MIN_RENEW_INC = 3;
+
+export interface RentRow {
+  label: string;
+  own: string;
+  ownN?: number;
+  region: string | null;
+}
+export interface RentCompare {
+  label: string;
+  rent: number;
+  rows: RentRow[];
+  summary: string;
+}
+
+const pctOf = (n: number, d: number) => (d > 0 ? (n / d) * 100 : null);
+const fmtPct = (v: number) => `${(Math.round(v * 10) / 10).toFixed(1)}%`;
+
+export function rentCompare(own: RentStats, snap: AptRegionSnapshot | null): RentCompare | null {
+  if (own.renew < MIN_RENEW || !snap?.rent) return null;
+  const r = snap.rent;
+  const regionOk = r.rent >= MIN_REGION_SAMPLE;
+  const oWolse = pctOf(own.wolse, own.rent)!;
+  const rWolse = regionOk ? pctOf(r.wolse, r.rent) : null;
+  const oRenew = pctOf(own.renew, own.rent)!;
+  const rRenew = regionOk ? pctOf(r.renew, r.rent) : null;
+  const oRr = pctOf(own.rrUsed, own.renew)!;
+  const rRr = r.renew >= MIN_REGION_SAMPLE ? pctOf(r.rrUsed, r.renew) : null;
+  const incOk = own.jeonseRenewN >= MIN_RENEW_INC && own.jeonseRenewIncPct != null;
+  const rInc = r.jeonseRenewN >= MIN_REGION_SAMPLE ? r.jeonseRenewIncPct : null;
+
+  const rows: RentRow[] = [
+    { label: '월세 비중', own: fmtPct(oWolse), ownN: own.wolse, region: rWolse != null ? fmtPct(rWolse) : null },
+    { label: '갱신 계약 비중', own: fmtPct(oRenew), ownN: own.renew, region: rRenew != null ? fmtPct(rRenew) : null },
+    { label: '갱신 중 갱신요구권 사용', own: fmtPct(oRr), ownN: own.rrUsed, region: rRr != null ? fmtPct(rRr) : null },
+  ];
+  if (incOk) {
+    rows.push({
+      label: '전세 갱신 보증금 인상률(중간값)',
+      own: signedPct(own.jeonseRenewIncPct!),
+      ownN: own.jeonseRenewN,
+      region: rInc != null ? signedPct(rInc) : null,
+    });
+  }
+
+  // 해석 문장: 지역과 차이가 뚜렷한 항목만 말한다(비율 10%p, 인상률 1%p). 없으면 차이가 없다고 쓴다.
+  const wolseDiff = rWolse != null && Math.abs(oWolse - rWolse) >= 10 ? (oWolse < rWolse ? '낮' : '높') : null;
+  const rrDiff = rRr != null && Math.abs(oRr - rRr) >= 10 ? (oRr > rRr ? '높' : '낮') : null;
+  let summary: string;
+  if (wolseDiff && rrDiff) {
+    summary = `이 단지는 ${snap.label}보다 월세 비중이 ${wolseDiff}고, 갱신할 때 갱신요구권을 쓰는 비율이 ${rrDiff}습니다.`;
+  } else if (wolseDiff) {
+    summary = `이 단지는 ${snap.label}보다 월세 비중이 ${wolseDiff}습니다.`;
+  } else if (rrDiff) {
+    summary = `이 단지는 ${snap.label}보다 갱신할 때 갱신요구권을 쓰는 비율이 ${rrDiff}습니다.`;
+  } else {
+    summary = `월세 비중과 갱신요구권 사용 비율은 ${snap.label} 전체와 큰 차이가 없습니다.`;
+  }
+  if (incOk && rInc != null) {
+    const d = own.jeonseRenewIncPct! - rInc;
+    summary += Math.abs(d) < 1 ? ' 전세 갱신 시 보증금 인상률은 지역과 비슷한 수준입니다.'
+      : ` 전세 갱신 시 보증금 인상률은 지역보다 ${d > 0 ? '높습니다' : '낮습니다'}.`;
+  }
+  return { label: snap.label, rent: own.rent, rows, summary };
 }

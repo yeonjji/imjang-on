@@ -21,14 +21,11 @@ const keyFor = (code: string) => `${APT_REGION_KEY_PREFIX}${code}`;
 const QUANTILES = Prisma.raw(`ARRAY[${QUANTILE_STEPS.join(',')}]::float8[]`);
 const round1 = (v: number) => Math.round(v * 10) / 10;
 
-export async function computeAptRegionSnapshots(): Promise<Record<string, AptRegionSnapshot>> {
-  const rows = await prisma.$queryRaw<
-    Array<{ grp: string; label: string; members: string[]; band: number; n12: bigint; nprev: bigint; q: number[] | null; med_prev: number | null }>
-  >`
-    WITH codes AS (
+// 거래가 있는 시군구 코드 → 집계 그룹(일반구는 시 코드)·라벨. 세 집계가 같은 그룹 정의를 쓴다.
+const GROUP_CTE = Prisma.sql`
+    codes AS (
       SELECT DISTINCT "sigunguCode" AS code FROM "Transaction"
-      WHERE "propertyType" = 'APARTMENT' AND "dealType" = 'SALE'
-        AND "contractDate" >= (CURRENT_DATE - INTERVAL '24 months')
+      WHERE "propertyType" = 'APARTMENT' AND "contractDate" >= (CURRENT_DATE - INTERVAL '24 months')
     ),
     -- 세종은 구가 없어 동들이 level 2로 들어가 있다(같은 코드에 이름이 여럿). 그럴 땐 시도 이름을 쓴다 —
     -- 아니면 '합강동' 같은 동 이름이 시 전체 집계의 이름으로 붙는다(2026-11-20 실측).
@@ -45,13 +42,27 @@ export async function computeAptRegionSnapshots(): Promise<Record<string, AptReg
       LEFT JOIN l2 a ON a.code = c.code
       LEFT JOIN l2 b ON a.code IS NULL AND b.code = LEFT(c.code, 4) || '0'
       WHERE COALESCE(a.code, b.code) IS NOT NULL
-    ),
+    )`;
+
+// 면적대·연식대 경계는 compare.ts(areaBand·ageBand)와 같아야 한다.
+const BAND_SQL = Prisma.raw(`CASE WHEN t."exclusiveArea" < 60 THEN 1 WHEN t."exclusiveArea" < 85 THEN 2
+             WHEN t."exclusiveArea" < 102 THEN 3 WHEN t."exclusiveArea" < 135 THEN 4 ELSE 5 END`);
+const AGE_SQL = Prisma.raw(`CASE WHEN p."builtYear" IS NULL THEN NULL
+             WHEN EXTRACT(YEAR FROM CURRENT_DATE)::int - p."builtYear" <= 5 THEN 1
+             WHEN EXTRACT(YEAR FROM CURRENT_DATE)::int - p."builtYear" <= 10 THEN 2
+             WHEN EXTRACT(YEAR FROM CURRENT_DATE)::int - p."builtYear" <= 20 THEN 3
+             WHEN EXTRACT(YEAR FROM CURRENT_DATE)::int - p."builtYear" <= 30 THEN 4 ELSE 5 END`);
+
+export async function computeAptRegionSnapshots(): Promise<Record<string, AptRegionSnapshot>> {
+  const rows = await prisma.$queryRaw<
+    Array<{ grp: string; label: string; members: string[]; band: number; n12: bigint; nprev: bigint; q: number[] | null; med_prev: number | null }>
+  >`
+    WITH ${GROUP_CTE},
     base AS (
       SELECT g.grp,
         t."dealAmount"::float8 / t."exclusiveArea"::float8 AS ppa,
         t."contractDate" >= (CURRENT_DATE - INTERVAL '12 months') AS recent,
-        CASE WHEN t."exclusiveArea" < 60 THEN 1 WHEN t."exclusiveArea" < 85 THEN 2
-             WHEN t."exclusiveArea" < 102 THEN 3 WHEN t."exclusiveArea" < 135 THEN 4 ELSE 5 END AS band
+        ${BAND_SQL} AS band
       FROM "Transaction" t
       JOIN grp g ON g.code = t."sigunguCode"
       WHERE t."propertyType" = 'APARTMENT' AND t."dealType" = 'SALE'
@@ -72,6 +83,42 @@ export async function computeAptRegionSnapshots(): Promise<Record<string, AptReg
     FROM agg a
   `;
 
+  // 같은 면적대 × 연식대 최근 12개월 ㎡당 중간값(주변 단지 비교 기준선). 표본 미달 칸은 버린다.
+  const ageRows = await prisma.$queryRaw<Array<{ grp: string; band: number; age: number; n12: bigint; med: number }>>`
+    WITH ${GROUP_CTE}
+    SELECT g.grp, ${BAND_SQL} AS band, ${AGE_SQL} AS age,
+      COUNT(*) AS n12,
+      percentile_cont(0.5) WITHIN GROUP (ORDER BY t."dealAmount"::float8 / t."exclusiveArea"::float8) AS med
+    FROM "Transaction" t
+    JOIN grp g ON g.code = t."sigunguCode"
+    JOIN "Property" p ON p.id = t."propertyId"
+    WHERE t."propertyType" = 'APARTMENT' AND t."dealType" = 'SALE'
+      AND t."contractDate" >= (CURRENT_DATE - INTERVAL '12 months')
+      AND t."dealAmount" > 0 AND t."exclusiveArea" > 0 AND p."builtYear" IS NOT NULL AND ${validDealSql('t')}
+    GROUP BY 1, 2, 3
+    HAVING COUNT(*) >= ${MIN_REGION_SAMPLE}
+  `;
+
+  // 최근 12개월 아파트 전월세 계약 지표(갱신 블록).
+  const rentRows = await prisma.$queryRaw<
+    Array<{ grp: string; rent: bigint; wolse: bigint; renew: bigint; rr: bigint; jr_n: bigint; jr_inc: number | null }>
+  >`
+    WITH ${GROUP_CTE}
+    SELECT g.grp,
+      COUNT(*) AS rent,
+      COUNT(*) FILTER (WHERE t."dealType" = 'WOLSE') AS wolse,
+      COUNT(*) FILTER (WHERE t."contractType" = '갱신') AS renew,
+      COUNT(*) FILTER (WHERE t."useRRRight" IS TRUE) AS rr,
+      COUNT(*) FILTER (WHERE t."contractType" = '갱신' AND t."dealType" = 'JEONSE' AND t."preDeposit" > 0 AND t.deposit > 0) AS jr_n,
+      percentile_cont(0.5) WITHIN GROUP (ORDER BY (t.deposit - t."preDeposit")::float8 / t."preDeposit")
+        FILTER (WHERE t."contractType" = '갱신' AND t."dealType" = 'JEONSE' AND t."preDeposit" > 0 AND t.deposit > 0) * 100 AS jr_inc
+    FROM "Transaction" t
+    JOIN grp g ON g.code = t."sigunguCode"
+    WHERE t."propertyType" = 'APARTMENT' AND t."dealType" IN ('JEONSE', 'WOLSE')
+      AND t."contractDate" >= (CURRENT_DATE - INTERVAL '12 months') AND ${validDealSql('t')}
+    GROUP BY g.grp
+  `;
+
   const groups = new Map<string, { snap: AptRegionSnapshot; members: string[] }>();
   for (const r of rows) {
     let g = groups.get(r.grp);
@@ -90,6 +137,23 @@ export async function computeAptRegionSnapshots(): Promise<Record<string, AptReg
       medPrev: nPrev >= MIN_REGION_SAMPLE && r.med_prev != null ? round1(r.med_prev) : null,
     };
     g.snap.bands[r.band as AreaBandKey] = band;
+  }
+  for (const r of ageRows) {
+    const b = groups.get(r.grp)?.snap.bands[r.band as AreaBandKey];
+    if (!b || r.age == null) continue;
+    (b.age ??= {})[r.age as 1 | 2 | 3 | 4 | 5] = { n12: Number(r.n12), med: round1(r.med) };
+  }
+  for (const r of rentRows) {
+    const g = groups.get(r.grp);
+    if (!g) continue;
+    g.snap.rent = {
+      rent: Number(r.rent),
+      wolse: Number(r.wolse),
+      renew: Number(r.renew),
+      rrUsed: Number(r.rr),
+      jeonseRenewN: Number(r.jr_n),
+      jeonseRenewIncPct: r.jr_inc != null ? round1(r.jr_inc) : null,
+    };
   }
 
   const out: Record<string, AptRegionSnapshot> = {};

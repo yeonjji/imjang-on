@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import type { DealType, Prisma } from '@prisma/client';
 import type { MonthPoint } from '@/lib/price-chart';
 import { pctChange } from '@/lib/price-chart';
+import type { RentStats } from '@/lib/apt-region/compare';
 import { validDealSql, cancelledDealSql, withValidDeal, isCancelledDeal, CANCELLED_DEAL_WHERE } from '@/lib/transaction/valid-deal';
 
 // 해제 거래 처리 기준(lib/transaction/valid-deal.ts): 통계·비교·헤드라인은 유효 거래만,
@@ -585,4 +586,34 @@ export async function getSaleVolume(propertyId: bigint): Promise<SaleVolume> {
       AND ${validDealSql()}
   `;
   return { n12: rows[0]?.n12 ?? 0, nPrev: rows[0]?.nprev ?? 0 };
+}
+
+/** 단지 최근 12개월 전월세 계약 지표(갱신 블록). 지역 값은 lib/apt-region 스냅샷과 같은 정의다. */
+export async function getRentStats(propertyId: bigint): Promise<RentStats> {
+  const rows = await prisma.$queryRaw<
+    Array<{ rent: number; wolse: number; renew: number; rr: number; jr_n: number; jr_inc: number | null }>
+  >`
+    SELECT
+      COUNT(*)::int AS rent,
+      COUNT(*) FILTER (WHERE "dealType" = 'WOLSE')::int AS wolse,
+      COUNT(*) FILTER (WHERE "contractType" = '갱신')::int AS renew,
+      COUNT(*) FILTER (WHERE "useRRRight" IS TRUE)::int AS rr,
+      COUNT(*) FILTER (WHERE "contractType" = '갱신' AND "dealType" = 'JEONSE' AND "preDeposit" > 0 AND deposit > 0)::int AS jr_n,
+      percentile_cont(0.5) WITHIN GROUP (ORDER BY (deposit - "preDeposit")::float8 / "preDeposit")
+        FILTER (WHERE "contractType" = '갱신' AND "dealType" = 'JEONSE' AND "preDeposit" > 0 AND deposit > 0) * 100 AS jr_inc
+    FROM "Transaction"
+    WHERE "propertyId" = ${propertyId}
+      AND "dealType" IN ('JEONSE', 'WOLSE')
+      AND "contractDate" >= NOW() - INTERVAL '12 months'
+      AND ${validDealSql()}
+  `;
+  const r = rows[0];
+  return {
+    rent: r?.rent ?? 0,
+    wolse: r?.wolse ?? 0,
+    renew: r?.renew ?? 0,
+    rrUsed: r?.rr ?? 0,
+    jeonseRenewN: r?.jr_n ?? 0,
+    jeonseRenewIncPct: r?.jr_inc ?? null,
+  };
 }
